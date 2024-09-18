@@ -1,0 +1,1 @@
+2023-06-16 15:51:36: imagepng(INS-36-412.png): failed to open stream: Permission denied2023-06-16 15:51:38: imagepng(INS-36-412.png): failed to open stream: Permission denied2023-06-16 15:53:09: imagepng(INS-36-412.png): failed to open stream: Permission denied2023-06-16 15:53:09: imagepng(INS-36-412.png): failed to open stream: Permission denied

@@ -1,0 +1,77 @@
+1. ALUR BERTAMBAHNYA STOK PFP
+    1. Melalui proses
+        1. Kabag PMC membuat ORDER PFP
+        2. Kabag PMC memposting Order PFP
+        3. Bagian Gudang membuat Kartu Proses PFP yang merujuk kepada Nomor Order PFP
+        4. Bagian Gudang memposting kartu proses PFP yang Sudah lengkap
+        5. Bagian Persiapan mengapprove kartu proses PFP yang Sudah diposting
+        6. Bagian Processing menginput perjalanan proses
+        7. Bagian Processing memasukan (approve) kartu proses yang Sudah lengkap sehingga menambah jumlah stock digudang PFP
+        8. Data trn_stock_pfp bertambah
+        9. Jumlah stock PFP di data mst_gerige bertambah
+    2. Melalui Pembelian dari vendor (Penerimaan Kain Jadi)
+        1. Bagian gudang PFP menginput Penerimaan Kain Jadi PFP dari Vendor
+        2. Bagian Gudang memposting dan approval Penerimaan Kain Jadi PFP
+        3. Data trn_stock_pfp bertambah
+        4. Jumlah stock PFP di data mst_gerige bertambah
+    3. -
+2. -
+
+#COPY FOLDER ANTARA PC DAN SERVER
+scp -r /path/to/file user@server.example.fi:/path/to/remote/destination
+sudo scp -i /Users/cto/www/ssh/cooljar/cooljar_private_key_open_ssh -r root@178.128.153.51:/var/www/html
+
+----Diskusi Dengan Bu Nadeth----
+# 2020-06-10
+## Pembatalan kartu proses
+1. kartu proses yang belum di processing atau belum buka greige,  bisa dibatalkan atau dibuat jadi tidak valid oleh bagian persiapan, dengas syarat, bagian gudang menyetujui pembatalan tersebut. stock booked kembali ke stok awal.
+2. Pada halaman processing, ada menu kembalikan greige dengan syarat belum ada satupun proses yang diinput termasuk buka greige.
+3. Pembatalan yang diproses oleh bagian persiapan akan menyababkan ....
+## Pemotongan Greige
+1. Biasanya dilakukan ketika butuh greige yang panjang nya tidak tersedia digudang.
+2. Proses pemotongan greige akan mengembalikan dua roll atau lebih greige denngan total panjang yang sama.
+3. Fields:
+    1. Dikerjakan oleh,
+    2. Diperintahkan oleh,
+    3. Alasan / keterangan
+    4. kartu proses id jika ada, sebagai dasar (balancing)
+## Greige Keluar Gudang
+1. Mengeluarkan greige dari gudang untuk berbagai keperluan diluar proses.
+2. Biasanya roll yang pendek2 untuk dijadikan sample.
+
+# 2020-06-11
+## Trn Wo
+1. Papper Tube dibuatkan master data
+----Diskusi Dengan Bu Nadeth----
+
+-------------
+# Modul gudang jadi.
+1. Kain finish Hasil inspecting masuk ke stock gudang jadi.
+2. Setelah masuk ke stock gudang jadi, kain finish memiliki beberapa proses lanjutan yaitu:
+A. Dikirim Ke Buyer.
+B. Dikirim ke makloon untuk diproses lebih lanjut (proses yang tidak bisa dilakukan di gajah).
+3. Kain finish yang akan dikirim ke buyer melalui fitur surat jalan, nama kain disurat jalan bisa ditulis bebas sesuai keinginan.
+4. Gudang jadi mempunyai fitur menerima kain finish dari makloon.
+5. Gudang jadi dapat menerima pengembalian/retur dari buyer.
+6. Barang retur dari buyer akan menjadi stock ex finish.
+7. Satuan pengiriman kain finish ke buyer disamakan dengan satuan kain pada mater greige group (yard, meter, kg, pcs, dll).
+8. Status kain yang ada di gudang jadi adalah:
+    A. Akan dikirim ke makloon.
+    B. Diterima dari makloon.
+    C. Sudah dikirim ke buyer.
+    D. Dikembalikan oleh buyer (retur).
+    E. Pindah ke gudang ex finish.
+--------------
+1. semua gudang punya fitur mutasi antar gudang, contoh nya dari gudang PFP dimutasi ke gudang jadi untuk langsung dijual.
+2. mutasi antar gudang disertai surat mutasi.
+--------------
+permasalahan mix quality, dibuat greige goup dan grege baru yang namanya mix quality, nantinya semua stock greige bisa dirubah nama greige nya menjadi mix quality,
+misalnya magnolia 01 dirubah menjadi mix quality. greige mix quality biasanya dipakai untuk digabung dalam satu wo. atau biasanya dicelup hitam. intinya adalah
+semua greige sisa yang masih bisa dipakai dijadikan greige dengan nama mix quantity.
+--------------
+
+1. penerimaan gudang jadi (penerimaan dari packing) ada no wo nya. Jadi setiap penerimaan dari packing ditandai wo nya.
+2. ketika dikirim ke vendor, pada surat pengantar diterakan nomor wo supaya kalau vendor mulangin kain jadi, bisa ketauan wo nya.
+
+2020-08-12
+1. tambah field pada fitur greige keluar

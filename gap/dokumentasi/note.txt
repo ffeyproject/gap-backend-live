@@ -1,0 +1,24 @@
+#GAP
+
+# KONEKSI SERVER GAP DO
+sudo ssh -i /Users/cooljar/www/ssh/cooljar/cooljar_private_key_open_ssh root@68.183.234.145
+sudo ssh -i /Users/cooljar/www/ssh/cooljar/cooljar_private_key_open_ssh cooljar@68.183.234.145
+Postgre:
+	Root Password: ikhjwe728gs2432j2s
+	cooljar password: ikhjwe728gs2432j2s
+MySql:
+	Root Password: ikhjwe728gs2432j2s
+SSH Passphrase: mautauaja
+
+Akun-akun:
+- Email
+  	- Address: projectnewgap@gmail.com
+	- Password: MauTauAja123
+- Github
+    - Email: projectnewgap@gmail.com
+    - Username: gajahAngkasaPerkasa
+    - Password: mautauaja123**
+
+Masalah Dynamic Form
+https://github.com/wbraganca/yii2-dynamicform/issues/224
+
