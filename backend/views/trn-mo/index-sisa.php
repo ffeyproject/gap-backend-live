@@ -25,7 +25,7 @@ $this->params['breadcrumbs'][] = $this->title;
         //'toolbar' => false,
         'panel' => [
             'type' => GridView::TYPE_DEFAULT,
-            'before'=>Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']),
+            'before'=>Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index-sisa'], ['class' => 'btn btn-default']),
         ],
         /*'toolbar' => [
             [

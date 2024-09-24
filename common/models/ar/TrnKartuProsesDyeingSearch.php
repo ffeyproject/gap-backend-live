@@ -17,6 +17,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     private $from_date;
     private $to_date;
     public $motif;
+    public $woDateRange;
+    public $openDateRange;
 
     /**
      * {@inheritdoc}
@@ -26,7 +28,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu'], 'safe'],
-            [['woNo', 'dateRange', 'motif'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange'], 'safe'],
         ];
     }
 
@@ -66,6 +68,16 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         ]);
 
         $dataProvider->sort->attributes['dateRange'] = [
+            'asc' => ['trn_kartu_proses_dyeing.date' => SORT_ASC],
+            'desc' => ['trn_kartu_proses_dyeing.date' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['woDateRange'] = [
+            'asc' => ['trn_wo.date' => SORT_ASC],
+            'desc' => ['trn_wo.date' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['openDateRange'] = [
             'asc' => [new Expression("CAST(kpd.value AS jsonb)->>'tanggal' ASC")],
             'desc' => [new Expression("CAST(kpd.value AS jsonb)->>'tanggal' DESC")],
         ];
@@ -93,6 +105,28 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             $this->to_date = substr($this->dateRange, 14);
 
             if($this->from_date == $this->to_date){
+                $query->andFilterWhere(['trn_kartu_proses_dyeing.date' => $this->from_date]);
+            }else{
+                $query->andFilterWhere(['between', 'trn_kartu_proses_dyeing.date', $this->from_date, $this->to_date]);
+            }
+        }
+
+        if(!empty($this->woDateRange)){
+            $this->from_date = substr($this->woDateRange, 0, 10);
+            $this->to_date = substr($this->woDateRange, 14);
+
+            if($this->from_date == $this->to_date){
+                $query->andFilterWhere(['trn_wo.date' => $this->from_date]);
+            }else{
+                $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date, $this->to_date]);
+            }
+        }
+
+        if(!empty($this->openDateRange)){
+            $this->from_date = substr($this->openDateRange, 0, 10);
+            $this->to_date = substr($this->openDateRange, 14);
+
+            if($this->from_date == $this->to_date){
                 $query->andWhere(new Expression("CAST(kpd.value AS jsonb)->>'tanggal' = :from_date"))
                 ->addParams([':from_date' => $this->from_date]);
             }else{
@@ -106,7 +140,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         }
         
         $isFiltering = false;
-        if (!empty($this->dateRange)) {
+        if (!empty($this->openDateRange)) {
             $isFiltering = true;
         }
         // grid filtering conditions

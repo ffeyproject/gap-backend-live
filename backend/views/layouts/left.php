@@ -396,6 +396,10 @@ $moduleId = $controller->module->id;
                         'label' => 'Maklon', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-maklon/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-maklon'
                     ],
+                    [
+                        'label' => 'Rekap Dyeing Siap Kirim', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-dyeing/siap-kirim'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-dyeing'
+                    ],
                 ]
             ],
 

@@ -57,6 +57,28 @@ class TrnKartuProsesDyeingController extends Controller
     }
 
     /**
+     * Lists all TrnKartuProsesDyeing models.
+     * @return mixed
+     */
+    public function actionSiapKirim()
+    {
+        $searchModel = new TrnKartuProsesDyeingSearch();
+        $params = Yii::$app->request->queryParams;
+        $dataProvider = $searchModel->search($params);
+
+        $dataProvider->query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
+
+        $dataProvider->sort->defaultOrder = [
+            'openDateRange' => SORT_ASC, // Mengatur urutan default berdasarkan openDateRange
+        ];
+
+        return $this->render('index-sisa', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
      * Displays a single TrnKartuProsesDyeing model.
      * @param integer $id
      * @return mixed

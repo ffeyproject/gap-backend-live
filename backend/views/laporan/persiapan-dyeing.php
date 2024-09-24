@@ -49,7 +49,7 @@ $this->params['breadcrumbs'][] = $this->title;
             //     },
             // ],
             [
-                'attribute' => 'dateRange',
+                'attribute' => 'openDateRange',
                 'label' => 'TANGGAL',
                 'value' => function($data){
                     /* @var $data TrnKartuProsesDyeing*/
