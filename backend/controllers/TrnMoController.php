@@ -7,6 +7,7 @@ use backend\models\form\TrnMoPrintingForm;
 use common\models\ar\TrnMoColor;
 use common\models\ar\TrnNotif;
 use common\models\ar\TrnScGreige;
+use common\models\ar\TrnMoSisaSearch;
 use kartik\mpdf\Pdf;
 use Yii;
 use common\models\ar\TrnMo;
@@ -21,6 +22,8 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
 use yii\data\Pagination;
+use yii\helpers\BaseVarDumper;
+
 
 
 /**
@@ -68,35 +71,25 @@ class TrnMoController extends Controller
         $searchModel = new TrnMoSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $showAll = Yii::$app->request->get('_tog1149016d') === 'all';
+        $dataProvider->pagination->pageSize = 500;  
 
-        $dataProvider->pagination = false;
+        $filtered_models = [];
+        $filter_models = false; // if you only want to filter if there is some value
 
-        $models = $dataProvider->getModels();
-
-        $filteredModels = array_filter($models, function($model) {
-            return $model->getWoSisaBatch() <> 0;
-        });
-
-        $totalCount = count($filteredModels);
-        
-        if ($showAll) {
-            $pagination = false;
-        } else {
-            $pagination = new \yii\data\Pagination([
-                'totalCount' => $totalCount,
-                'pageSize' => 20,
-            ]);
-
-            $filteredModels = array_slice($filteredModels, $pagination->offset, $pagination->limit);
+    
+        foreach ($dataProvider->models as $model) {
+            // if ($model->status == 1) // example
+            if ($model->woSisaBatch > 0 ) { // better approach, using virtual attribute $status
+                $filter_models = true;
+                $filtered_models[] = $model;
+            }
         }
+    
+        if ($filter_models){
+            $dataProvider->setModels($filtered_models);
+        }
+
         
-        // Set model yang sudah difilter dan di-paginate kembali ke data provider
-        $dataProvider->setModels($filteredModels);
-        $dataProvider->pagination = $pagination;
-        $dataProvider->setTotalCount($totalCount);
-
-
         return $this->render('index-sisa', [    
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,

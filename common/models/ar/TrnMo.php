@@ -200,6 +200,9 @@ class TrnMo extends \yii\db\ActiveRecord
         ];
     }
 
+    public $status_sisa;
+
+
     /**
      * {@inheritdoc}
      */
@@ -391,6 +394,11 @@ class TrnMo extends \yii\db\ActiveRecord
     {
         return $this->hasMany(TrnMoColor::className(), ['mo_id' => 'id']);
     }
+
+    public function getTrnMoColor()
+{
+    return $this->hasMany(TrnMoColor::className(), ['mo_id' => 'id']);
+}
 
     /**
      * @return \yii\db\ActiveQuery
@@ -708,5 +716,13 @@ class TrnMo extends \yii\db\ActiveRecord
         $yearTwoDigit = substr($year, 2, 2);
         $empCode = 'M'.$sc->marketing->id;
         $this->no = "{$empCode}/{$yearTwoDigit}{$month}/{$tipeKontrakCode}/{$jenisProsesCode}-{$noUrut}";
+    }
+    
+    /**
+     * @return int total batch yang belum diinputkan ke dalam Work Order yang berstatus OK
+     */    
+    public function getWoSisaBatch(){
+
+        return $this->colorQty - $this->trnWoColorsOkQty;
     }
 }

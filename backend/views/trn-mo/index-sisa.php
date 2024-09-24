@@ -149,10 +149,13 @@ $this->params['breadcrumbs'][] = $this->title;
                 'hAlign'=>'right'
             ],
             [
-                'attribute'=>'woSisaBatch',
                 'label'=>'WO Sisa (Batch)',
                 'format'=>'decimal',
-                'hAlign'=>'right'
+                'hAlign'=>'right',
+                'value' => function($data){
+                    /* @var $data TrnMo*/
+                    return $data->woSisaBatch;
+                }
             ],
             /*[
                 'attribute'=>'created_at',

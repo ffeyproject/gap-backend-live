@@ -138,7 +138,7 @@ use common\models\ar\TrnStockGreige;
                 <?php
                 $stockFresh = $greige->stock;
                 $bookedFresh = $greige->booked;
-                $availableFresh = $stockFresh - $bookedFresh;
+                $availableFresh = $greige->available;
 
                 $stockWip = $greige->stock_wip;
                 $bookedWip = $greige->booked_wip;
