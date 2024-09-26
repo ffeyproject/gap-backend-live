@@ -459,4 +459,35 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
         }
         return null;
     }
+
+    
+    /**
+    * Retrieves the latest KartuProcessDyeingProcess model for the given kartu_proses_id.
+    *
+    * @return KartuProcessDyeingProcess|null The latest KartuProcessDyeingProcess model, or null if not found.
+    */
+    public function getLatestKartuProcessDyeingProcess() {
+        $model = $this->getKartuProcessDyeingProcesses()->all();
+        $tanggal = [];
+        if($model !== null){
+            foreach($model as $m){
+                $dcd = \yii\helpers\Json::decode($m['value']);
+                if(!isset($dcd['tanggal'])){
+                    continue;
+                }
+                $tanggal[] = [
+                    'tanggal' => $dcd['tanggal'],
+                    'process_id' => $m['process_id'],
+                ];
+            }
+        }
+        if(count($tanggal) > 1){
+            array_multisort(array_column($tanggal, 'tanggal'), SORT_ASC, $tanggal);
+        }
+
+        return end($tanggal);
+    }
+    
+    
+
 }

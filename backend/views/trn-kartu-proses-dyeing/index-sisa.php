@@ -1,6 +1,7 @@
 <?php
 use common\models\ar\TrnKartuProsesDyeing;
 use common\models\ar\TrnStockGreige;
+use common\models\ar\MstProcessDyeing;
 use yii\helpers\Html;
 use kartik\grid\GridView;
 
@@ -115,6 +116,21 @@ $this->params['breadcrumbs'][] = $this->title;
                     if($tanggalBuka !== null){
                         $newDate = date('j F Y', strtotime($tanggalBuka . ' + 14 days'));
                         return $newDate;
+                    }
+                    return null;
+                },
+                'format' => 'raw',
+            ],
+            [
+                'label'=>'Terakhir Proses',
+                'value'=> function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                   $process_id = $data->latestKartuProcessDyeingProcess['process_id'];
+                   $tanggal = $data->latestKartuProcessDyeingProcess['tanggal'];
+                    if($process_id !== null || $tanggal !== null){
+                        $proses = MstProcessDyeing::find()->where(['id' => $process_id])->one()->nama_proses;
+                        $tgl = date('j F Y', strtotime($tanggal));
+                        return $proses.' - '.$tgl;
                     }
                     return null;
                 },
