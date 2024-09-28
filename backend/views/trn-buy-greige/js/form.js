@@ -26,3 +26,57 @@ $( "#BtnKonversi" ).click(function() {
         });*/
     }
 });
+
+$('#BtnAddMultiple').on('click', function() {
+    var qty = parseInt($('#qty-add-multiple').val());
+    var pcs = parseInt($('#pcs-add-multiple').val());
+
+    if (!qty || !pcs) {
+        alert('Please enter valid quantity and pcs.');
+        return;
+    }
+
+    var isEmpty = false;
+    if ($('.dynamicform_wrapper .container-items tr.item').length === 1) {
+        var firstQty = $('.dynamicform_wrapper .container-items tr.item:first input').val();
+
+        if (!firstQty) {
+            isEmpty = true;
+            // $('.dynamicform_wrapper .container-items tr.item:first').remove();
+        }   
+    }
+
+    // Loop untuk menambahkan item sesuai jumlah pcs
+    for (var i = 0; i < pcs; i++) {
+        // Clone row item dari dynamicform
+        var clone = $('.dynamicform_wrapper .container-items tr.item:last').clone(true);
+        
+        // Update index untuk input yang di-clone
+        clone.find('input').each(function() {
+            var name = $(this).attr('name');
+            var newName = name.replace(/\[\d+\]/, '[' + ($('.container-items tr.item').length) + ']');
+            $(this).attr('name', newName).val(qty); // Set nilai qty untuk input qty
+        });
+
+        // Append row baru ke table
+        $('.dynamicform_wrapper .container-items').append(clone);
+    }
+
+
+    if (isEmpty) {
+        // Jika baris pertama kosong, hapus baris pertama
+        $('.dynamicform_wrapper .container-items tr.item:first').remove();
+    }
+
+    updateRowNumbers();
+
+    // Reset input setelah selesai
+    $('#qty-add-multiple').val('');
+    $('#pcs-add-multiple').val('');
+});
+
+function updateRowNumbers() {
+    $('.container-items tr.item').each(function(index) {
+        $(this).find('.panel-title-address').text(index + 1); // Perbarui nomor baris
+    });
+}

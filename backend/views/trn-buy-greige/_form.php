@@ -102,6 +102,33 @@ use yii\web\View;
         </div>
 
         <div class="col-md-4">
+        <div class="box">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Add Multiple Items</h3>
+                </div>
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label>Qty</label>
+                            <input type="text" id="qty-add-multiple" class="form-control">
+                        </div>
+
+                        <div class="col-md-1">
+                            <label for=""><br></label>
+                            <h5>X</h5>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label>Pcs</label>
+                            <input type="text" id="pcs-add-multiple" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for=""><br></label>
+                            <?= Html::Button('Add', ['class' => 'btn btn-success btn-flat btn-block', 'id' => 'BtnAddMultiple']) ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="box">
                 <div class="box-header with-border">
                     <h3 class="box-title">Items</h3>
