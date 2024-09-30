@@ -38,13 +38,14 @@ if(!empty($searchModel->greige_id)){
         'resizableColumns' => false,
         'responsiveWrap' => false,
         'pjax' => true,
-        'toolbar' => [
-            '{toggleData}',
-            '{export}'
-        ],
         'panel' => [
             'type' => 'default',
-            'before'=>Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']),
+            'before'=>
+                    Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).' '.
+                    Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> Add All Items', 'javascript:void(0)', [
+                        'class' => 'btn btn-success',
+                        'onclick' => 'choseAllItems(); return false;'
+                    ]),
             'after'=>false,
         ],
         'columns' => [
@@ -77,6 +78,7 @@ if(!empty($searchModel->greige_id)){
                             $dataStr = \yii\helpers\Json::encode($data);
                             return Html::a('<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>', '#', [
                                 'title' => 'Tambah kedalam item',
+                                'class' => 'add-mix-btn',
                                 'onclick' => "addSelectedItem(event, {$dataStr})"
                             ]);
                         }

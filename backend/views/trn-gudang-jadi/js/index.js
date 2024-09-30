@@ -1,7 +1,7 @@
 var itemTable = $('#ItemsTable').DataTable({
     data: [],
     columns: [
-        //{ "data": function (row, type, set) {return "-";}},
+        { "data": function (row, type, set, meta) {return meta.row +1;}},
         { "data": "id" },
         { "data": "jenisGudangName" },
         { "data": "marketingName" },
@@ -30,6 +30,7 @@ var itemTable = $('#ItemsTable').DataTable({
 
 $('#ItemsTable tbody').on( 'click', 'button.removeItemData', function () {
     itemTable.row( $(this).parents('tr') ).remove().draw();
+    updateRowNumbers();
 } );
 
 function addSelectedItem(e, data){
@@ -47,6 +48,7 @@ function addSelectedItem(e, data){
     }
 
     itemTable.row.add(data).draw(false);
+    updateRowNumbers();
 }
 
 function readyForSend(event) {
@@ -376,3 +378,16 @@ function openQRWindow(event, id) {
 $(document).on('pjax:success', function() {
     //setInfoSelected();
 });*/
+
+function choseAllItems(params) {
+    $('.add-mix-btn').each(function() {
+        $(this).click(); // Trigger click untuk setiap tombol dengan class 'add-mix-btn'
+    });
+}
+
+
+function updateRowNumbers() {
+    $('#ItemsTable tbody tr').each(function(index) {
+        $(this).find('td:first').text(index + 1); // Memperbarui nomor baris
+    });
+}

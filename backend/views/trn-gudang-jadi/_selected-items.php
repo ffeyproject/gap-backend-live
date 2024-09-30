@@ -18,6 +18,7 @@ use yii\web\JsExpression;
         <table id="ItemsTable" class="table table-bordered">
             <thead>
             <tr>
+                <th>#</th>
                 <th>ID</th>
                 <th>Jenis Gudang</th>
                 <th>Marketing</th>
