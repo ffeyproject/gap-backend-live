@@ -78,6 +78,33 @@ class TrnKartuProsesDyeingController extends Controller
         ]);
     }
 
+    public function actionGetDataMasukPacking()
+    {
+        $searchModel = new TrnKartuProsesDyeingSearch();
+        $params = Yii::$app->request->queryParams;
+        $dataProvider = $searchModel->search($params);
+
+        $dataProvider->query->andWhere(['or', 
+            ['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_APPROVED], 
+            ['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_INSPECTED],
+        ]);
+
+
+        $dataProvider->sort->defaultOrder = [
+            'approved_at' => SORT_DESC, // Mengatur urutan default berdasarkan openDateRange
+        ];
+        
+        $dataProvider->sort->attributes['approved_at'] = [
+            'asc' => [new Expression("coalesce(trn_kartu_proses_dyeing.approved_at, 0) ASC")],
+            'desc' => [new Expression("coalesce(trn_kartu_proses_dyeing.approved_at, 0) DESC")],
+        ];
+
+        return $this->render('index_masuk_packing', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
     /**
      * Displays a single TrnKartuProsesDyeing model.
      * @param integer $id

@@ -400,6 +400,10 @@ $moduleId = $controller->module->id;
                         'label' => 'Rekap Dyeing Siap Kirim', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-dyeing/siap-kirim'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-dyeing'
                     ],
+                    [
+                        'label' => 'Rekap Dyeing Masuk Packing', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-dyeing/get-data-masuk-packing'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-dyeing'
+                    ],
                 ]
             ],
 

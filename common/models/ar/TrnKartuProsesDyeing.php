@@ -488,6 +488,25 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
         return end($tanggal);
     }
     
+
+    /**
+     * Gets the resin finish process panjang_jadi.
+     *
+     * @return mixed|null The resin finish panjang_jadi, or null if not found.
+     */
+    public function getResinFinish()
+    {
+        $model = $this->getKartuProcessDyeingProcesses()->andWhere(['process_id'=>11])->one();
+        if($model !== null){
+            try {
+                $model = \yii\helpers\Json::decode($model['value']);
+                return $model['panjang_jadi'];
+            }catch (Throwable $t){
+                return null;
+            }
+        }
+        return null;
+    }
     
 
 }

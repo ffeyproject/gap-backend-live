@@ -19,6 +19,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $motif;
     public $woDateRange;
     public $openDateRange;
+    public $marketingName;
+    public $dateRangeMasukPacking;
 
     /**
      * {@inheritdoc}
@@ -28,7 +30,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking'], 'safe'],
         ];
     }
 
@@ -54,7 +56,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         // $query->joinWith(['wo.greige']);
         $query->joinWith(['wo.greige', 'kartuProcessDyeingProcesses kpd' => function($query) {
             $query->onCondition(['kpd.process_id' => 1]);
-        }]);
+        }]);    
+        $query->joinWith(['mo.scGreige.sc.marketing as mkt']);
 
         // add conditions that should always apply here
 
@@ -77,19 +80,25 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'desc' => ['trn_wo.date' => SORT_DESC],
         ];
 
+
+        $dataProvider->sort->attributes['dateRangeMasukPacking'] = [
+            'asc' => ['trn_kartu_proses_dyeing.approved_at' => SORT_ASC],
+            'desc' => ['trn_kartu_proses_dyeing.approved_at' => SORT_DESC],
+        ];
+
         $dataProvider->sort->attributes['openDateRange'] = [
             'asc' => [new Expression("CAST(kpd.value AS jsonb)->>'tanggal' ASC")],
             'desc' => [new Expression("CAST(kpd.value AS jsonb)->>'tanggal' DESC")],
         ];
 
-        $dataProvider->sort->attributes['woNo'] = [
-            'asc' => ['trn_wo.no' => SORT_ASC],
-            'desc' => ['trn_wo.no' => SORT_DESC],
-        ];
-
         $dataProvider->sort->attributes['motif'] = [
             'asc' => ['mst_greige.nama_kain' => SORT_ASC],
             'desc' => ['mst_greige.nama_kain' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['marketingName'] = [
+            'asc' => ['mkt.full_name' => SORT_ASC],
+            'desc' => ['mkt.full_name' => SORT_DESC],
         ];
 
         $this->load($params);
@@ -138,6 +147,19 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
                 ]);
             }
         }
+
+        if (!empty($this->dateRangeMasukPacking)) {
+            // Explode the date range into start and end dates
+            list($start_date, $end_date) = explode(' to ', $this->dateRangeMasukPacking);
+    
+            // Convert the dates to UNIX timestamp
+            $start_timestamp = strtotime($start_date);
+            $end_timestamp = strtotime($end_date . ' 23:59:59'); // end of the day
+    
+            // Apply the filter between the two timestamps
+            $query->andFilterWhere(['between', 'trn_kartu_proses_dyeing.approved_at', $start_timestamp, $end_timestamp]);
+        }
+        
         
         $isFiltering = false;
         if (!empty($this->openDateRange)) {
@@ -172,7 +194,9 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.note', $this->note])
             ->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.reject_notes', $this->reject_notes])
             ->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.nomor_kartu', $this->nomor_kartu])
+            ->andFilterWhere(['ilike', 'mkt.full_name', $this->marketingName])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
+            ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
             ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
         ;
 
