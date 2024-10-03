@@ -12,8 +12,9 @@ use kartik\grid\GridView;
 $this->title = 'Marketing Order';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+<?= $this->render('_rekap-total', ['searchModel' => $searchModel, 'dataProvider' => $dataProvider]) ?>
+
 <div class="trn-mo-index">
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
@@ -80,16 +81,19 @@ $this->params['breadcrumbs'][] = $this->title;
                 'filterWidgetOptions' => [
                     'convertFormat'=>true,
                     'pluginOptions'=>[
-                        //'timePicker'=>true,
-                        //'timePickerIncrement'=>5,
                         'locale'=>[
-                            //'format'=>'Y-m-d H:i:s',
                             'format'=>'Y-m-d',
                             'separator'=>' to ',
-                        ]
+                        ],
+                        'maxSpan' => [
+                            'days' => 31,
+                        ],
+                    ],
+                    'options' => [
+                        'autocomplete' => 'off'
                     ]
                 ]
-            ],
+            ],            
             [
                 'attribute' => 'nomorSc',
                 'format' => 'html',
