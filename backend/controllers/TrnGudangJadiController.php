@@ -379,7 +379,7 @@ class TrnGudangJadiController extends Controller
     }
 
     // bagussona
-    public function actionQr($id, $param1, $param2)
+    public function actionQr($id, $param1, $param2, $param3)
     {
         $model = $this->findModel($id);
         $is_design_or_atikel = NULL;
@@ -389,7 +389,16 @@ class TrnGudangJadiController extends Controller
         $grade_alias = $query_builder->select('*')->from('wms_grade')->where(['=', 'grade_from', $model->grade])->one();
         // $getGrade = $model->gradeName ? $model->gradeName : '-';
         $getGrade = $grade_alias['grade_to'];
-        $getMeter = round($model->qty * 0.9144, 1);
+
+        $roundUp = true;
+        if($param3 == 0){
+            $roundUp = false;
+        }
+        if($roundUp){
+            $getMeter = round($model->qty * 0.9144, 1);
+        }else{
+            $getMeter = round($model->qty * 0.9144, 2);
+        }
         if ($model->source == 1) { //1 == SOURCE_PACKING
             $getTableData = (new \yii\db\Query())->from(TrnInspecting::tableName())
                 ->select('*')

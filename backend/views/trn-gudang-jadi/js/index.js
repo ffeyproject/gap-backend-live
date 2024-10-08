@@ -364,9 +364,11 @@ function openQRWindow(event, id) {
     var param1Value = checkbox1 ? (checkbox1.checked ? 1 : 0) : 0;
     var checkbox2 = document.querySelector('.checkbox-param2#param2-' + id);
     var param2Value = checkbox2 ? (checkbox2.checked ? 1 : 0) : 0;
+    var checkbox3 = document.querySelector('.checkbox-param3#param3-' + id);
+    var param3Value = checkbox3 ? (checkbox3.checked ? 1 : 0) : 0;
 
     // Use id and param2Value as needed
-    var url = baseUrl + 'trn-gudang-jadi/qr&id=' + id + '&param1=' + param1Value + '&param2=' + param2Value;
+    var url = baseUrl + 'trn-gudang-jadi/qr&id=' + id + '&param1=' + param1Value + '&param2=' + param2Value + '&param3=' + param3Value;
 
     // Open the URL in a new window
     window.open(url);

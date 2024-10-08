@@ -88,32 +88,6 @@ if(!empty($searchModel->greige_id)){
                 ]
             ],
             [
-                'header' => 'Made In Indonesia',
-                'class' => CheckboxColumn::class,
-                'checkboxOptions' => function ($data, $key, $index, $column) {
-                    $no_wo = substr($data->wo->no, -1);
-                    $defaultCheck = ($no_wo == 'L' ? true : false);
-                    return [
-                        'class' => 'checkbox-param1',
-                        'id' => 'param1-' . $data->id,
-                        'checked' => $defaultCheck,
-                    ];
-                },
-            ],
-            [
-                'header' => 'Registrasi K3L',
-                'class' => CheckboxColumn::class,
-                'checkboxOptions' => function ($data, $key, $index, $column) {
-                    $no_wo = substr($data->wo->no, -1);
-                    $defaultCheck = ($no_wo == 'L' ? true : false);
-                    return [
-                        'class' => 'checkbox-param2',
-                        'id' => 'param2-' . $data->id,
-                        'checked' => $defaultCheck,
-                    ];
-                },
-            ],
-            [
                 'label' => 'QR',
                 'headerOptions' => ['style' => 'width:50px;'],
                 'format' => 'raw',
@@ -283,6 +257,44 @@ if(!empty($searchModel->greige_id)){
                         'allowClear' => true,
                     ]
                 ],
+            ],
+            [
+                'header' => 'Made In Indonesia',
+                'class' => CheckboxColumn::class,
+                'checkboxOptions' => function ($data, $key, $index, $column) {
+                    $no_wo = substr($data->wo->no, -1);
+                    $defaultCheck = ($no_wo == 'L' ? true : false);
+                    return [
+                        'class' => 'checkbox-param1',
+                        'id' => 'param1-' . $data->id,
+                        'checked' => $defaultCheck,
+                    ];
+                },
+            ],
+            [
+                'header' => 'Registrasi K3L',
+                'class' => CheckboxColumn::class,
+                'checkboxOptions' => function ($data, $key, $index, $column) {
+                    $no_wo = substr($data->wo->no, -1);
+                    $defaultCheck = ($no_wo == 'L' ? true : false);
+                    return [
+                        'class' => 'checkbox-param2',
+                        'id' => 'param2-' . $data->id,
+                        'checked' => $defaultCheck,
+                    ];
+                },
+            ],
+            [
+                'header' => 'Aktifkan Pembulatan Decimal',
+                'class' => CheckboxColumn::class,
+                'checkboxOptions' => function ($data, $key, $index, $column) {
+                    $defaultCheck = true;
+                    return [
+                        'class' => 'checkbox-param3',
+                        'id' => 'param3-' . $data->id,
+                        'checked' => $defaultCheck,
+                    ];
+                },
             ],
             [
                 'contentOptions' => ['style' => 'white-space: nowrap;'],

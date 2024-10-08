@@ -991,7 +991,7 @@ class TrnInspectingController extends Controller
     }
 
     // bagussona
-    public function actionQr($id, $param3, $param4)
+    public function actionQr($id, $param3, $param4, $param5)
     {
         $model = $this->findItem($id);
         $create_qr =  'INS-'.$model->inspecting_id.'-'.$model->id;
@@ -1009,7 +1009,16 @@ class TrnInspectingController extends Controller
         $grade_alias = $query_builder->select('*')->from('wms_grade')->where(['=', 'grade_from', ($model->grade_up <> NULL ? $model->grade_up : $model->grade)])->one();
         // $getGrade = $model->gradeOptions()[($model->grade_up <> NULL ? $model->grade_up : $model->grade)];
         $getGrade = $grade_alias['grade_to'];
-        $getMeter = round($model->qty_sum * 0.9144, 1);
+        $roundUp = true;
+        if($param5 == 0){
+            $roundUp = false;
+        }
+        if($roundUp){
+            $getMeter = round($model->qty_sum * 0.9144,1);
+        }else{
+            $getMeter = round($model->qty_sum * 0.9144,2);
+
+        }
 
         $inspectingItemCount = [];
         $query = InspectingItem::find();
@@ -1208,12 +1217,21 @@ class TrnInspectingController extends Controller
         return $pdf->render();
     }
 
-    public function actionQrAll($id, $param1, $param2)
+    public function actionQrAll($id, $param1, $param2, $param6)
     {
         $model = $this->findModel($id);
         $data = [];
         foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $key => $iI) {
-            $getMeter = round($iI->qty_sum * 0.9144, 1);
+            $roundUp = true;
+            if($param6 == 0){
+                $roundUp = false;
+            }
+            if($roundUp){
+                $getMeter = round($iI->qty_sum * 0.9144, 1);
+            }else{
+                $getMeter = round($iI->qty_sum * 0.9144, 2);
+            }
+            
             $create_qr = 'INS-'.$iI->inspecting->id.'-'.$iI->id;
             if ($iI->is_head == 1) {
                 $countKey = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
