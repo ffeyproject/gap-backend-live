@@ -23,7 +23,7 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
     {
         return [
             [['id', 'customer_id', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['pengirim', 'penerima', 'note', 'dateRange', 'custName'], 'safe'],
+            [['pengirim', 'penerima', 'note', 'dateRange', 'custName','nama_buyer'], 'safe'],
         ];
     }
 
@@ -69,6 +69,11 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
             'desc' => ['trn_kirim_buyer_header.date' => SORT_DESC],
         ];
 
+        $dataProvider->sort->attributes['nama_buyer'] = [
+            'asc' => ['trn_kirim_buyer_header.nama_buyer' => SORT_ASC],
+            'desc' => ['trn_kirim_buyer_header.nama_buyer' => SORT_DESC],
+        ];
+
         $this->load($params);
 
         if (!$this->validate()) {
@@ -103,6 +108,7 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
             ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.penerima', $this->penerima])
             ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.note', $this->note])
             ->andFilterWhere(['ilike', 'mst_customer.name', $this->custName])
+            ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.nama_buyer', $this->nama_buyer])
         ;
 
         return $dataProvider;

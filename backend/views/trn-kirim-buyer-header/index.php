@@ -60,6 +60,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ]
                 ]
             ],
+            'nama_buyer',
             [
                 'attribute' => 'status',
                 'value' => function($data){

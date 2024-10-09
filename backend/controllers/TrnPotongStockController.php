@@ -278,8 +278,8 @@ class TrnPotongStockController extends Controller
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionPosting($id)
-    {
-        $model = $this->findModel($id);
+    {   
+           $model = $this->findModel($id);
         if($model->status != $model::STATUS_DRAFT){
             throw new ForbiddenHttpException('Status tidak valid. Tidak bisa diposting.');
         }
@@ -307,7 +307,8 @@ class TrnPotongStockController extends Controller
             }
 
             $stockGudangJadi->dipotong = true;
-            if(!($flag = $stockGudangJadi->save(false, ['dipotong']))){
+            $stockGudangJadi->status = $stockGudangJadi::STATUS_OUT;
+            if(!($flag = $stockGudangJadi->save(false, ['dipotong', 'status']))){
                 Yii::$app->session->setFlash('error', 'gagal merubah status stock yang akan dipotong, coba lagi.');
                 $transaction->rollBack();
                 return $this->redirect(['view', 'id' => $model->id]);
