@@ -239,6 +239,14 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
         return $this->hasMany(TrnInspecting::className(), ['kartu_process_dyeing_id' => 'id']);
     }
 
+        /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTrnInspectingsDelivered()
+    {
+        return $this->getTrnInspectings()->andWhere(['status' => TrnInspecting::STATUS_DELIVERED]);
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */

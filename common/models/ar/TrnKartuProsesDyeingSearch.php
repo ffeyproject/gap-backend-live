@@ -21,6 +21,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $openDateRange;
     public $marketingName;
     public $dateRangeMasukPacking;
+    public $customerName;
+    public $warna;
 
     /**
      * {@inheritdoc}
@@ -30,7 +32,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName'], 'safe'],
         ];
     }
 
@@ -58,6 +60,10 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             $query->onCondition(['kpd.process_id' => 1]);
         }]);    
         $query->joinWith(['mo.scGreige.sc.marketing as mkt']);
+        $query->joinWith(['sc.cust as cust']);
+        $query->joinWith(['woColor.moColor as moColor']);
+
+
 
         // add conditions that should always apply here
 
@@ -99,6 +105,21 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         $dataProvider->sort->attributes['marketingName'] = [
             'asc' => ['mkt.full_name' => SORT_ASC],
             'desc' => ['mkt.full_name' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['customerName'] = [
+            'asc' => ['cust.name' => SORT_ASC],
+            'desc' => ['cust.name' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['warna'] = [
+            'asc' => ['moColor.color' => SORT_ASC],
+            'desc' => ['cusmoColort.color' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['woNo'] = [
+            'asc' => ['trn_wo.no' => SORT_ASC],
+            'desc' => ['trn_wo.no' => SORT_DESC],
         ];
 
         $this->load($params);
@@ -197,13 +218,18 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ->andFilterWhere(['ilike', 'mkt.full_name', $this->marketingName])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
             ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
-            ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
+            ->andFilterWhere(['ilike', 'cust.name', $this->customerName])
+            ->andFilterWhere(['ilike', 'moColor.color', $this->warna])
         ;
 
         if ($isFiltering) {
             $query->andWhere(['IS NOT', 'kpd.value', null])
             ->orderBy([new Expression("CAST(kpd.value AS jsonb)->>'tanggal' ASC")]);
         }
+
+        $this->to_date = null;
+        $this->from_date = null;
+
         return $dataProvider;
     }
 }

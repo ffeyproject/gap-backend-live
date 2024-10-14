@@ -830,6 +830,21 @@ $moduleId = $controller->module->id;
                             ],*/
                         ]
                     ],
+                    [
+                        'label' => 'REALISASI',
+                        'icon' => 'circle',
+                        'url' => '#',
+                        'items' => [
+                            [
+                                'label' => 'DYEING', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap'
+                            ],
+                            /*[
+                                'label' => 'BELI GREIGE', 'icon' => 'circle-o', 'url' => ['/trn-buy-greige/rekap'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'trn-buy-greige' && $actionId=='rekap'
+                            ],*/
+                        ]
+                    ],
                 ]
             ],
 
