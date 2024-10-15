@@ -75,6 +75,7 @@ use yii\helpers\Html;
                         $jenisProcess = $kirimBuyerModel->wo->mo->process;
                         $kodeDesign = $kirimBuyerModel->wo->mo->design;
                         $noLot  = $pssk->stock->noLot;
+                        $note = $kirimBuyerModel->note;
 
 
                         ####################################### start of new code ver 1 ####################################################
@@ -163,6 +164,7 @@ use yii\helpers\Html;
                                 'jenis_process' => $jenisProcess,
                                 'artikel' => $artikel,
                                 'design' => $kodeDesign,
+                                'note' => $note,
                             ];
                         }
 
@@ -334,9 +336,15 @@ use yii\helpers\Html;
                                         </table>
                                     <?php endforeach; ?>
                                     <?php 
+                                        if($sample > 0){
+                                            echo '<tr>';
+                                                echo '<td colspan="11" style="text-align: center;">' . $sample . ' Yard Sample</td>';
+                                            echo '</tr>';
+                                        }
                                         echo '<tr>';
-                                            echo '<td colspan="11" style="text-align: center;">' . $sample . ' Yard Sample</td>';
+                                            echo '<td colspan="11" style="text-align: center;">' . $colorGroup['note'] . '</td>';
                                         echo '</tr>';
+
                                     ?>
                                 </td>
                             </tr>

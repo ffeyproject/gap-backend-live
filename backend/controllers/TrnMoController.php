@@ -67,8 +67,8 @@ class TrnMoController extends Controller
      */
     public function actionIndexSisa()
     {
-	
-        $searchModel = new TrnMoSearch();
+
+        $searchModel = new TrnMoSearch(['status'=>TrnMo::STATUS_APPROVED]);;
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         $dataProvider->pagination->pageSize = 500;  

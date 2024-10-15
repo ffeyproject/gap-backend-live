@@ -91,7 +91,7 @@ $readonly = (!$model->isNewRecord && $model->status == 2) ? true : false; // sta
                 </div>
             </div>
 
-            <?= $form->field($model, 'note')->textarea(['rows' => 6, 'disabled' => $readonly]) ?>
+            <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
 
             <?php if (!$model->isNewRecord): ?>
                 <div class="row">

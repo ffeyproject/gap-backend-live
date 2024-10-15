@@ -201,7 +201,7 @@ $formatter = Yii::$app->formatter;
                                         ],
                                         [
                                             'label'=>'Keterangan',
-                                            'value'=>$model->status === $model::STATUS_DRAFT ? $kirimBuyerModel->note.' '.
+                                            'value'=> true ? $kirimBuyerModel->note.' '.
                                                 Html::a('<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>',
                                                     ['/trn-kirim-buyer/edit-note', 'id'=>$kirimBuyerModel->id],
                                                     ['onclick' => 'changeNote(event);', 'title' => 'Ganti Keterangan']
