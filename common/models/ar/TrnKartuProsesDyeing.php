@@ -508,7 +508,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
         if($model !== null){
             try {
                 $model = \yii\helpers\Json::decode($model['value']);
-                return $model['panjang_jadi'];
+                return isset($model['panjang_jadi']) ? $model['panjang_jadi'] : null;
             }catch (Throwable $t){
                 return null;
             }
