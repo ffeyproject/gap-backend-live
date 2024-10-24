@@ -13,7 +13,6 @@ $this->title = 'Marketing Order';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="trn-mo-index">
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
@@ -38,17 +37,24 @@ $this->params['breadcrumbs'][] = $this->title;
         ],*/
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
-            [
-                'class' => 'kartik\grid\ActionColumn',
-                'template' => '{view}'
-            ],
+            // [
+            //     'class' => 'kartik\grid\ActionColumn',
+            //     'template' => '{view}'
+            // ],
 
             [
                 'attribute' => 'id',
                 'format' => 'html',
                 'value' => function($data){
-                    // @var $data TrnMo
-                    return Html::a($data->id, ['view', 'id'=>$data->id], ['title'=>'Lihat detail MO']);
+                    return Html::a($data['id'], ['view', 'id'=>$data['id']], ['title'=>'Lihat detail MO']);
+                },
+                'hAlign' => 'center'
+            ],
+            [
+                'attribute' => 'no_urut',
+                'format' => 'html',
+                'value' => function($data){
+                    return Html::a($data['no_urut'], ['view', 'id'=>$data['id']], ['title'=>'Lihat detail MO']);
                 },
                 'hAlign' => 'center'
             ],
@@ -56,8 +62,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'no',
                 'format' => 'html',
                 'value' => function($data){
-                    /* @var $data TrnMo*/
-                    return Html::a($data->no, ['view', 'id'=>$data->id], ['title'=>'Lihat detail MO']);
+                    return Html::a($data['no'], ['view', 'id'=>$data['id']], ['title'=>'Lihat detail MO']);
                 },
                 'hAlign' => 'center'
             ],
@@ -70,32 +75,38 @@ $this->params['breadcrumbs'][] = $this->title;
                 'filterWidgetOptions' => [
                     'convertFormat'=>true,
                     'pluginOptions'=>[
-                        //'timePicker'=>true,
-                        //'timePickerIncrement'=>5,
                         'locale'=>[
-                            //'format'=>'Y-m-d H:i:s',
                             'format'=>'Y-m-d',
                             'separator'=>' to ',
-                        ]
+                        ],
+                        'maxSpan' => [
+                            'days' => 31,
+                        ],
+                    ],
+                    'options' => [
+                        'autocomplete' => 'off'
                     ]
                 ]
-            ],
+            ],            
             [
                 'attribute' => 'nomorSc',
                 'format' => 'html',
                 'value' => function($data){
-                    /* @var $data TrnMo*/
-                    $sc = $data->sc;
-                    return Html::a($sc->no, ['/trn-sc/view', 'id'=>$data->sc_id], ['title'=>'Lihat detail SC']);
+                    $sc = $data['sc'];
+                    return Html::a($sc['no'], ['/trn-sc/view', 'id'=>$data['sc_id']], ['title'=>'Lihat detail SC']);
                 },
             ],
             [
                 'attribute'=>'customerName',
                 'label' => 'NAMA BUYER',
-                'value' => 'scGreige.sc.cust.name',
+                'value' => 'sc.cust.name',
                 'headerOptions' => ['class'=>'text-center', 'style'=>'vertical-align:middle;'],
             ],
-            'marketingName',
+            [
+                'attribute'=>'marketingName',
+                'value' => 'sc.marketing.full_name',
+                'headerOptions' => ['class'=>'text-center', 'style'=>'vertical-align:middle;'],
+            ],
             [
                 'attribute'=>'scGreigeNamaKain',
                 'label'=>'Motif Greige',
@@ -104,8 +115,7 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'process',
                 'value' => function($data){
-                    /* @var $data TrnMo*/
-                    return TrnScGreige::processOptions()[$data->process];
+                    return TrnScGreige::processOptions()[$data['process']];
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
@@ -122,11 +132,15 @@ $this->params['breadcrumbs'][] = $this->title;
             'heat_cut:boolean',
             'jet_black:boolean',
             [
+                'attribute'=>'creatorName',
+                'value' => 'createdBy.full_name',
+                'headerOptions' => ['class'=>'text-center', 'style'=>'vertical-align:middle;'],
+            ],
+            [
                 'label' => '____ Status ____',
                 'attribute' => 'status',
                 'value' => function($data){
-                    /* @var $data TrnMo*/
-                    return TrnMo::statusOptions()[$data->status];
+                    return TrnMo::statusOptions()[$data['status']];
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
@@ -140,28 +154,29 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute'=>'colorQty',
                 'format'=>'decimal',
-                'hAlign'=>'right'
+                'hAlign'=>'right',
+                'value'=> function($data){
+                    return isset($data['color_qty']) ? $data['color_qty'] : 0;
+                }
             ],
             [
                 'attribute'=>'trnWoColorsAktifQty',
                 'label'=>'WO Aktif',
                 'format'=>'decimal',
-                'hAlign'=>'right'
+                'hAlign'=>'right',
+                'value'=> function($data){
+                    return isset($data['wo_color_qty']) ? $data['wo_color_qty'] : 0;
+                }
+
             ],
             [
                 'label'=>'WO Sisa (Batch)',
                 'format'=>'decimal',
-                'hAlign'=>'right',
-                'value' => function($data){
-                    /* @var $data TrnMo*/
-                    return $data->woSisaBatch;
-                }
+                'value'=>function($data){
+                    return isset($data['wo_sisa_batch']) ? $data['wo_sisa_batch'] : 0;
+                },
+                'hAlign'=>'right'
             ],
-            /*[
-                'attribute'=>'created_at',
-                'format'=>['datetime', 'php:Y-m-d H:i:s'],
-                'filter'=>false
-            ],*/
         ],
     ]); ?>
 </div>

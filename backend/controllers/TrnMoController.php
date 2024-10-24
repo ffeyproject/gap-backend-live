@@ -7,7 +7,7 @@ use backend\models\form\TrnMoPrintingForm;
 use common\models\ar\TrnMoColor;
 use common\models\ar\TrnNotif;
 use common\models\ar\TrnScGreige;
-use common\models\ar\TrnMoSisaSearch;
+use common\models\ar\TrnMoSearchArray;
 use kartik\mpdf\Pdf;
 use Yii;
 use common\models\ar\TrnMo;
@@ -67,32 +67,36 @@ class TrnMoController extends Controller
      */
     public function actionIndexSisa()
     {
+        $searchModel2 = new TrnMoSearch(['status'=>TrnMo::STATUS_APPROVED]);
+        $dataProvider2 = $searchModel2->search(Yii::$app->request->queryParams);
 
-        $searchModel = new TrnMoSearch(['status'=>TrnMo::STATUS_APPROVED]);;
+        $searchModel = new TrnMoSearchArray(['status'=>TrnMo::STATUS_APPROVED]);;
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $dataProvider->pagination->pageSize = 500;  
+        // $dataProvider->pagination->pageSize = 500;  
 
-        $filtered_models = [];
-        $filter_models = false; // if you only want to filter if there is some value
+        // $filtered_models = [];
+        // $filter_models = false; // if you only want to filter if there is some value
 
     
-        foreach ($dataProvider->models as $model) {
-            // if ($model->status == 1) // example
-            if ($model->woSisaBatch > 0 ) { // better approach, using virtual attribute $status
-                $filter_models = true;
-                $filtered_models[] = $model;
-            }
-        }
+        // foreach ($dataProvider->models as $model) {
+        //     // if ($model->status == 1) // example
+        //     if ($model->woSisaBatch > 0 ) { // better approach, using virtual attribute $status
+        //         $filter_models = true;
+        //         $filtered_models[] = $model;
+        //     }
+        // }
     
-        if ($filter_models){
-            $dataProvider->setModels($filtered_models);
-        }
+        // if ($filter_models){
+        //     $dataProvider->setModels($filtered_models);
+        // }
 
         
         return $this->render('index-sisa', [    
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'searchModel2' => $searchModel2,
+            'dataProvider2' => $dataProvider2,
         ]);
     }
 
