@@ -15,6 +15,9 @@ use kartik\grid\GridView;
 $this->title = 'Rekap Pengiriman Ke Buyer';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+
+<?= $this->render('_rekap-total', ['searchModel' => $searchModel, 'dataProvider' => $dataProvider,'totalQty' => $totalQty]) ?>
+
 <div class="trn-kirim-buyer-index">
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
@@ -44,7 +47,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 ]
             ],
         ],
-        'showPageSummary'=>true,
+        'showPageSummary'=>false,
         'columns' => [
             //['class' => 'kartik\grid\SerialColumn'],
 

@@ -19,6 +19,7 @@ use yii\web\MethodNotAllowedHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
+use backend\components\Converter;
 
 /**
  * TrnKirimBuyerController implements the CRUD actions for TrnKirimBuyer model.
@@ -49,9 +50,43 @@ class TrnKirimBuyerController extends Controller
         $searchModel = new \backend\models\TrnKirimBuyerSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $dateRange = Yii::$app->request->queryParams['TrnKirimBuyerSearch']['dateRange'] ?? null;
+    
+        $totalQty = 0;
+    
+        if ($dateRange) {
+            $query1 = TrnKirimBuyer::find();
+            $query1->joinWith(['header', 'trnKirimBuyerItems as tkbi']);
+            $query1->select(['SUM(tkbi.qty) as qty_all']);
+            $query1->andFilterWhere(['trn_kirim_buyer.unit' => MstGreigeGroup::UNIT_YARD]);
+
+            $query2 = TrnKirimBuyer::find();
+            $query2->joinWith(['header', 'trnKirimBuyerItems as tkbi']);
+            $query2->select(['SUM(tkbi.qty) as qty_all']);
+            $query2->andFilterWhere(['trn_kirim_buyer.unit' => MstGreigeGroup::UNIT_METER]);
+    
+            $from_date = substr($dateRange, 0, 10);
+            $to_date = substr($dateRange, 14);
+    
+            if ($from_date == $to_date) {
+                $query1->andFilterWhere(['trn_kirim_buyer_header.date' => $from_date]);
+                $query2->andFilterWhere(['trn_kirim_buyer_header.date' => $from_date]);
+
+            } else {
+                $query1->andFilterWhere(['between', 'trn_kirim_buyer_header.date', $from_date, $to_date]);
+                $query2->andFilterWhere(['between', 'trn_kirim_buyer_header.date', $from_date, $to_date]);
+            }
+    
+            $query1 = $query1->asArray()->one();
+            $query2 = $query2->asArray()->one();
+
+            $totalQty = $query1['qty_all'] && $query2['qty_all'] ? $query1['qty_all'] + Converter::meterToYard($query2['qty_all']) : 0;
+        }
+    
         return $this->render('rekap', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'totalQty' => Yii::$app->formatter->asDecimal($totalQty),
         ]);
     }
 
