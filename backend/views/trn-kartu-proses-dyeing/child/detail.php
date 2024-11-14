@@ -41,6 +41,8 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
                 <hr>
 
                 <p>Berat : <?=$model->berat?></p>
+                <p><strong>Tunggu Marketing : </strong><?=$model->tunggu_marketing ? "Ya" : "Tidak"?></p>
+                <p><strong>Toping Matching : </strong><?=$model->toping_matching ? "Ya" : "Tidak"?></p>
             </div>
         </div>
     </div>

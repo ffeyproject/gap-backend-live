@@ -666,4 +666,50 @@ class ProcessingDyeingController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionSetTungguMkt($id){
+        $model = $this->findModel($id);
+
+        $model->tunggu_marketing = !$model->tunggu_marketing;
+
+        try {
+            if(!$model->save(false, ['tunggu_marketing'])){
+                throw new \Exception('Gagal mengubah status tunggu marketing.');
+            }
+
+            if($model->tunggu_marketing){
+                Yii::$app->session->setFlash('success', 'Berhasil diset untuk menunggu marketing.');
+            }else{
+                Yii::$app->session->setFlash('success', 'Berhasil dibatalkan tunggu marketing.');
+            }
+        }catch (\Exception $e){
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    public function actionSetTopingMatching($id){
+        $model = $this->findModel($id);
+
+        $model->toping_matching = !$model->toping_matching;
+
+        $model->date_toping_matching = time();
+
+        try {
+            if(!$model->save(false, ['toping_matching','date_toping_matching'])){
+                throw new \Exception('Gagal mengubah status tunggu marketing.');
+            }
+
+            if($model->toping_matching){
+                Yii::$app->session->setFlash('success', 'Berhasil diset untuk toping matching.');
+            }else{
+                Yii::$app->session->setFlash('success', 'Berhasil dibatalkan toping matching.');
+            }
+        }catch (\Exception $e){
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
 }

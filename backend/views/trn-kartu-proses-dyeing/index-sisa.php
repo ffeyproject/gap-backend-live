@@ -123,16 +123,21 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             [
                 'label'=>'Terakhir Proses',
-                'value'=> function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                   $process_id = $data->latestKartuProcessDyeingProcess['process_id'];
-                   $tanggal = $data->latestKartuProcessDyeingProcess['tanggal'];
-                    if($process_id !== null || $tanggal !== null){
-                        $proses = MstProcessDyeing::find()->where(['id' => $process_id])->one()->nama_proses;
+                'value' => function($data) {
+                    /* @var $data TrnKartuProsesDyeing */
+                    $latestProcess = $data->latestKartuProcessDyeingProcess;
+
+                    if ($latestProcess !== null && isset($latestProcess['process_id'], $latestProcess['tanggal'])) {
+                        $process_id = $latestProcess['process_id'];
+                        $tanggal = $latestProcess['tanggal'];
+
+                        $proses = MstProcessDyeing::find()->where(['id' => $process_id])->one()->nama_proses ?? 'Unknown Process';
                         $tgl = date('j F Y', strtotime($tanggal));
-                        return $proses.' - '.$tgl;
+
+                        return $proses . ' - ' . $tgl;
                     }
-                    return null;
+
+                    return null; // atau pesan default jika diperlukan
                 },
                 'format' => 'raw',
             ],
@@ -163,6 +168,7 @@ $this->params['breadcrumbs'][] = $this->title;
             $currentDate = new \DateTime();
             // Get the tanggalKartuProcessDyeingProcess date
             $tanggalBuka = $model->tanggalKartuProcessDyeingProcess;
+            $tungguMarketing = $model->tunggu_marketing;
             if ($tanggalBuka !== null) {
                 // Add 14 days to the tanggalKartuProcessDyeingProcess date
                 $targetDate = new \DateTime($tanggalBuka);
@@ -175,12 +181,25 @@ $this->params['breadcrumbs'][] = $this->title;
                 // Compare dates
                 if ($currentDate >= $targetDate) {
                     // If current date is greater than or equal to target date, make the row red
-                    return ['style' => 'background-color:red; color:yellow'];
+                    if($tungguMarketing){
+                        return ['style' => 'background-color:#00c0ef; color:white;'];
+                    }else{
+                        return ['style' => 'background-color:#d73925; color:white;'];
+                    }
                 } elseif ($currentDate >= $yellowDate && $currentDate < $targetDate) {
-                    // If current date is within 3 days of the target date, make the row yellow
-                    return ['style' => 'background-color:yellow'];
+                    // If current date is within 3 days of the target date, make the row yellow 
+                    if($tungguMarketing){
+                        return ['style' => 'background-color:#00c0ef; color:white;'];
+                    }else{
+                        return ['style' => 'background-color:#f39c12;'];
+                    }
+                }
+            }else{
+                if($tungguMarketing){
+                    return ['style' => 'background-color:#00c0ef; color:white;'];
                 }
             }
+
     
             // Default row style
             return [];

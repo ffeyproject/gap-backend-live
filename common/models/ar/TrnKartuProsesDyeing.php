@@ -105,8 +105,8 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'default', 'value' => null],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by', 'wo_color_id'], 'integer'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by','date_toping_matching'], 'default', 'value' => null],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by', 'wo_color_id','date_toping_matching'], 'integer'],
             [['note', 'reject_notes', 'memo_pg', 'memo_pg_no', 'nomor_kartu'], 'string'],
             ['berat', 'number'],
             ['no_limit_item', 'default', 'value'=>false],
@@ -123,6 +123,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED, self::STATUS_APPROVED, self::STATUS_INSPECTED, self::STATUS_GANTI_GREIGE, self::STATUS_GANTI_GREIGE_LINKED, self::STATUS_BATAL]],
             [['date'], 'date', 'format'=>'php:Y-m-d'],
+            [['tunggu_marketing', 'toping_matching'], 'boolean'],
         ];
     }
 
@@ -477,10 +478,11 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
     public function getLatestKartuProcessDyeingProcess() {
         $model = $this->getKartuProcessDyeingProcesses()->all();
         $tanggal = [];
-        if($model !== null){
-            foreach($model as $m){
+    
+        if ($model !== null) {
+            foreach ($model as $m) {
                 $dcd = \yii\helpers\Json::decode($m['value']);
-                if(!isset($dcd['tanggal'])){
+                if (!isset($dcd['tanggal'])) {
                     continue;
                 }
                 $tanggal[] = [
@@ -489,12 +491,15 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
                 ];
             }
         }
-        if(count($tanggal) > 1){
+    
+        if (count($tanggal) > 1) {
             array_multisort(array_column($tanggal, 'tanggal'), SORT_ASC, $tanggal);
         }
-
-        return end($tanggal);
+    
+        // Mengembalikan elemen terakhir atau `null` jika `$tanggal` kosong
+        return !empty($tanggal) ? end($tanggal) : null;
     }
+    
     
 
     /**

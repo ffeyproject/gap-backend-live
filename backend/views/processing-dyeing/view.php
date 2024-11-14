@@ -61,8 +61,26 @@ $formatter = Yii::$app->formatter;
         <?=Html::a('Ganti Ke Kartu PFP', ['ganti-ke-pfp', 'id' => $model->id], [
             'class' => 'btn btn-default',
             'onclick' => 'gantiKePfp(event, "Ganti Ke Kartu PFP");',
-            'title' => 'Ganti Ke Kartu PFP'
+            'title' => 'Ganti Ke Kartu PFP' 
         ]);?>
+
+        <?php $label = $model->tunggu_marketing ? 'Batalkan Tunggu Marketing' : 'Set Tunggu Marketing' ?>
+        <?= Html::a($label, ['set-tunggu-mkt', 'id' => $model->id], [
+            'class' => 'btn btn-primary',
+            'data' => [
+                'confirm' => 'Apakah anda yakin?',
+                'method' => 'post',
+            ],
+        ]) ?>
+
+        <?php $labelToping = $model->toping_matching ? 'Batalkan Toping Matching' : 'Set Toping Matching' ?>
+        <?= Html::a($labelToping, ['set-toping-matching', 'id' => $model->id], [
+            'class' => 'btn btn-success',
+            'data' => [
+                'confirm' => 'Apakah anda yakin?',
+                'method' => 'post',
+            ],
+        ]) ?>
     </p>
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/detail', ['model' => $model]);?>
