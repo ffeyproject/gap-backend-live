@@ -165,6 +165,7 @@ use yii\helpers\Html;
                                 'artikel' => $artikel,
                                 'design' => $kodeDesign,
                                 'note' => $note,
+                                'unit' => $unit,
                             ];
                         }
 
@@ -210,7 +211,7 @@ use yii\helpers\Html;
                 //    print("<pre>".print_r($groupedByNoBal ,true)."</pre>");  
                 //     die;
                 $totalSatuan1 = 0;
-                $totalSatuan2 = 0;
+                $totalSatuan2 = [];
             ?>
 
 <?php foreach ($groupedByNoBal as $no_bal => $woGroup): ?>
@@ -256,7 +257,7 @@ use yii\helpers\Html;
                         $recount_qtys = 0; 
                         $recount_subtotal = 0; 
                         $gradeTotalQty = []; 
-                        $mstunit = MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit];
+                        $mstunit = MstGreigeGroup::unitOptions()[$colorGroup['unit']];
                         
                         foreach ($grades['grade'] as $qtys) {
                             foreach ($qtys as $q) {
@@ -285,11 +286,15 @@ use yii\helpers\Html;
                         }, array_keys($gradeTotalQty), $gradeTotalQty));
 
                         $totalSatuan1 += $recount_qtys;
-                        $totalSatuan2 += $recount_subtotal;
+
+                        if (!isset($totalSatuan2[$colorGroup['unit']])) {
+                            $totalSatuan2[$colorGroup['unit']] = 0;
+                        }
+                        $totalSatuan2[$colorGroup['unit']] += $recount_subtotal;
                     ?>
 
                     <td style="text-align: left; padding:0 5px; white-space: nowrap;"><?= $recount_qtys.' PCS <br> '.$output ?></td>
-                    <td style="text-align: left; padding:0 5px; white-space: nowrap;"><?= $recount_subtotal.' '.MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit].' <br>'.$output_total ?></td>
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;"><?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
                     
                     <!-- Batch Table -->
                     <td>
@@ -365,8 +370,16 @@ use yii\helpers\Html;
                 <td></td>
                 <td></td>
                 <td style="text-align: left; padding:0 5px; white-space: nowrap;"><b><?= $totalSatuan1.' PCS <br> '?></b></td>
-                <td style="text-align: left; padding:0 5px; white-space: nowrap;"><b><?= $totalSatuan2.' '.MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit]?></b></td>
-                <td style="text-align: left; padding:0 5px; white-space: nowrap;"><b><?=$model->note?></b></td>
+                <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                    <b>
+                        <?php foreach($totalSatuan2 as $unit => $total): ?>
+                            <?= $total.' '.MstGreigeGroup::unitOptions()[$unit].' <br>'?>
+                        <?php endforeach; ?>
+                    </b>
+                </td>
+                <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                    <b><?= $model->note ?></b>
+                </td>
             </tr>
             </tbody>
         </table>
