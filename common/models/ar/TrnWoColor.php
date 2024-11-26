@@ -50,7 +50,7 @@ class TrnWoColor extends \yii\db\ActiveRecord
         return [
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'greige_id', 'mo_color_id', 'qty', 'note'], 'required'],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'greige_id', 'mo_color_id'], 'default', 'value' => null],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'greige_id', 'mo_color_id'], 'integer'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'greige_id', 'mo_color_id','date_ready_colour'], 'integer'],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
@@ -59,6 +59,7 @@ class TrnWoColor extends \yii\db\ActiveRecord
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::className(), 'targetAttribute' => ['sc_greige_id' => 'id']],
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
+            [['ready_colour'], 'boolean'],
         ];
     }
 

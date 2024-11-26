@@ -109,6 +109,26 @@ $this->params['breadcrumbs'][] = $this->title;
                 'pageSummary' => true,
                 'hAlign' => 'right'
             ],
+            [
+                'label'=>'Matching Colour',
+                'value'=> function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $isReadyColour = $data->woColor->ready_colour ? 'Ya' : 'Tidak';
+                    $dateReadyColour = $data->woColor->date_ready_colour;
+                    return $isReadyColour . ' / ' . ($dateReadyColour !== null ? date('Y-m-d', $dateReadyColour) : '');
+
+                },
+                'hAlign' => 'right'
+            ],
+            [
+                'label'=>'Toping Matching',
+                'value'=> function($data){
+                    $topingMatching = $data->toping_matching ? 'Ya' : 'Tidak';
+                    $dateTopingMatching = $data->date_toping_matching;
+                    return $topingMatching . ' / ' . ($dateTopingMatching !== null ? date('Y-m-d', $dateTopingMatching) : '');
+                },
+                'hAlign' => 'right'
+            ],
             //'created_at:datetime',
             //'created_by',
             //'updated_at:datetime',

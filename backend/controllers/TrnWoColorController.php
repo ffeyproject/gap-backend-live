@@ -213,6 +213,23 @@ class TrnWoColorController extends Controller
         return $this->redirect(['/trn-wo/view', 'id'=>$model->wo_id]);
     }
 
+    public function actionReadyColour($id){
+        if (($model = TrnWoColor::findOne($id)) !== null) {
+            if($model->ready_colour){
+                $model->ready_colour = false;
+            }else{
+                $model->ready_colour = true;
+            }
+            $model->date_ready_colour = time();
+            $model->save(false, ['ready_colour','date_ready_colour']);
+
+            return $this->redirect(['/trn-wo/view', 'id'=>$model->wo_id]);
+        }
+
+        throw new NotFoundHttpException("Colors Dosen't Exist.");
+    }
+
+
     /**
      * Finds the TrnWoColor model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.

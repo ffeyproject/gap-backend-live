@@ -81,11 +81,22 @@ echo GridView::widget([
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
-
+        [
+            'label'=>'Ready Colour',
+            'attribute' => 'ready_colour',
+            'format' => 'boolean',
+            'hAlign' => 'right'
+        ],
+        [
+            'label'=>'Ready Colour Date',
+            'attribute' => 'date_ready_colour',
+            'format' => 'date',
+            'hAlign' => 'right'
+        ],
         [
             'class' => 'kartik\grid\ActionColumn',
             'controller' => 'trn-wo-color',
-            'template' => '{delete} {update} {batal}',
+            'template' => '{delete} {update} {batal} {ready-colour}',
             'buttons' => [
                 'delete' => function($url, $data, $key) use($model){
                     /* @var $data TrnWoColor*/
@@ -114,20 +125,46 @@ echo GridView::widget([
                     }
                     return '';
                 },
-                'batal' => function($url, $data, $key)use($model){
+                // 'batal' => function($url, $data, $key)use($model){
+                //     /* @var $data TrnWoColor*/
+                //     if($model->status == $model::STATUS_APPROVED){
+                //         return Html::a('<i class="glyphicon glyphicon-remove"></i>', $url, [
+                //             'class' => 'btn btn-xs btn-danger',
+                //             'title' => 'Batalkan WO Color: '.$data->moColor->color,
+                //             'data' => [
+                //                 'confirm' => 'Are you sure you want to batal this item?',
+                //                 'method' => 'post',
+                //             ],
+                //         ]);
+                //     }
+                //     return '';
+                // },
+                'ready-colour' => function($url, $data, $key)use($model){
                     /* @var $data TrnWoColor*/
                     if($model->status == $model::STATUS_APPROVED){
-                        return Html::a('<i class="glyphicon glyphicon-remove"></i>', $url, [
-                            'class' => 'btn btn-xs btn-danger',
-                            'title' => 'Batalkan WO Color: '.$data->moColor->color,
-                            'data' => [
-                                'confirm' => 'Are you sure you want to batal this item?',
-                                'method' => 'post',
-                            ],
-                        ]);
+                        if ($data->ready_colour){
+                            return Html::a('<i class="glyphicon glyphicon-remove-sign"></i>', $url, [
+                                'class' => 'btn btn-xs btn-warning',
+                                'title' => 'Mark As Not Ready Colour: '.$data->moColor->color,
+                                'data' => [
+                                    'confirm' => 'Are you sure you want to mark this item?',
+                                    'method' => 'post',
+                                ],
+                            ]);
+                        }else{
+                            return Html::a('<i class="glyphicon glyphicon-ok-sign"></i>', $url, [
+                                'class' => 'btn btn-xs btn-warning',
+                                'title' => 'Mark As Ready Colour: '.$data->moColor->color,
+                                'data' => [
+                                    'confirm' => 'Are you sure you want to mark this item?',
+                                    'method' => 'post',
+                                ],
+                            ]);
+                        }
+
                     }
                     return '';
-                }
+                },
             ]
         ],
     ],
