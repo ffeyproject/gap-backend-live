@@ -111,27 +111,30 @@ class TrnWoController extends Controller
                 $bookedM = $greige->booked_wip;
                 $stockLabel = 'stock WIP';
                 $bookkLabel = 'booked WIP';
+                $avM = $stockM - $bookedM;
                 break;
             case TrnStockGreige::JG_PFP:
                 $stockM = $greige->stock_pfp;
                 $bookedM = $greige->booked_pfp;
                 $stockLabel = 'stock PFP';
                 $bookkLabel = 'booked PFP';
+                $avM = $stockM - $bookedM;
                 break;
             case TrnStockGreige::JG_EX_FINISH:
                 $stockM = $greige->stock_ef;
                 $bookedM = $greige->booked_ef;
                 $stockLabel = 'stock Ex Finish';
                 $bookkLabel = 'booked Ex Finish';
+                $avM = $stockM - $bookedM;
                 break;
             default:
                 $stockM = $greige->stock;
                 $bookedM = $greige->booked;
                 $stockLabel = 'stock';
                 $bookkLabel = 'booked';
+                $avM = $greige->available;
         }
 
-        $avM = $stockM - $bookedM;
 
         return $this->render('view', [
             'model' => $model,

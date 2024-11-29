@@ -53,30 +53,30 @@ $lookupWoColorUrl = Url::to(['/ajax/lookup-wo-color']);
                     ])->label('Nomor Working Order');?>
 
                     <?php
-                    $kp = $model->kartu_proses_id === null ? '' : $model->kartuProses->no;
-                    echo $form->field($model, 'kartu_proses_id')->widget(Select2::class, [
-                        'initValueText' => $kp, // set the initial display text
-                        'options' => ['placeholder' => 'Cari Kartu Proses...'],
-                        'pluginOptions' => [
-                            'allowClear' => true,
-                            'minimumInputLength' => 3,
-                            'language' => [
-                                'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
-                            ],
-                            'ajax' => [
-                                'url' => Url::to(['ajax/lookup-kartu-proses-dyeing']),
-                                'dataType' => 'json',
-                                'data' => new JsExpression('function(params) { return {q:params.term}; }')
-                            ],
-                            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
-                            'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
-                            'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
-                        ],
-                        'pluginEvents' => [
-                            'select2:select' => 'function(e){let lookupWoColorUrl = "'.$lookupWoColorUrl.'"; '.$this->renderFile(Yii::$app->controller->viewPath.'/js/kp-on-select.js').'}',
-                            'select2:unselect' => 'function(e){$("#trnkartuprosesdyeing-wo_color_id").val(null).trigger("change"); $("#trnkartuprosesdyeing-wo_color_id").empty();}'
-                        ]
-                    ])->label('Nomor Kartu Proses');?>
+                    // $kp = $model->kartu_proses_id === null ? '' : $model->kartuProses->no;
+                    // echo $form->field($model, 'kartu_proses_id')->widget(Select2::class, [
+                    //     'initValueText' => $kp, // set the initial display text
+                    //     'options' => ['placeholder' => 'Cari Kartu Proses...'],
+                    //     'pluginOptions' => [
+                    //         'allowClear' => true,
+                    //         'minimumInputLength' => 3,
+                    //         'language' => [
+                    //             'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+                    //         ],
+                    //         'ajax' => [
+                    //             'url' => Url::to(['ajax/lookup-kartu-proses-dyeing']),
+                    //             'dataType' => 'json',
+                    //             'data' => new JsExpression('function(params) { return {q:params.term}; }')
+                    //         ],
+                    //         'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+                    //         'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
+                    //         'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
+                    //     ],
+                    //     'pluginEvents' => [
+                    //         'select2:select' => 'function(e){let lookupWoColorUrl = "'.$lookupWoColorUrl.'"; '.$this->renderFile(Yii::$app->controller->viewPath.'/js/kp-on-select.js').'}',
+                    //         'select2:unselect' => 'function(e){$("#trnkartuprosesdyeing-wo_color_id").val(null).trigger("change"); $("#trnkartuprosesdyeing-wo_color_id").empty();}'
+                    //     ]
+                    // ])->label('Nomor Kartu Proses');?>
 
                     <?php
                     $dataColors = ArrayHelper::map(TrnWoColor::find()->with('moColor')->where(['wo_id'=>$model->wo_id])->asArray()->all(), 'id', function ($data){
@@ -114,6 +114,8 @@ $lookupWoColorUrl = Url::to(['/ajax/lookup-wo-color']);
                     <?= $form->field($model, 'dikerjakan_oleh')->textInput(['maxlength' => true]) ?>
 
                     <?= $form->field($model, 'nomor_kartu')->textInput() ?>
+
+                    <?= $form->field($model, 'is_redyeing')->checkbox(['label' => 'Re-Dyeing', 'value' => true, 'uncheckValue' => false]) ?>
                 </div>
             </div>
         </div>

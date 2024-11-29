@@ -4,6 +4,7 @@ namespace backend\controllers;
 use backend\models\form\CatatanProsesForm;
 use backend\models\form\HasilTesGosokForm;
 use common\models\ar\KartuProcessDyeingProcess;
+use common\models\ar\KartuProcessDyeingProcessSearch;
 use common\models\ar\MstProcessDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnStockGreige;
@@ -711,5 +712,20 @@ class ProcessingDyeingController extends Controller
         }
 
         return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    /**
+     * Lists all TrnKartuProsesDyeing models.
+     * @return mixed
+     */
+    public function actionRekapByProcess()
+    {
+        $searchModel = new KartuProcessDyeingProcessSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('rekap-by-process', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
     }
 }

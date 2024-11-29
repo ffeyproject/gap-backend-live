@@ -24,7 +24,7 @@ use yii\widgets\DetailView;
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">
-            WO Detail - Greige: <?=$model->greige->nama_kain?> (Alias: <?=$model->greige->alias?>) - <?=$stockLabel?>: <?=Yii::$app->formatter->asDecimal($stockM)?>M
+            WO Detail - Greige: <?=$model->greige->nama_kain?> (Alias: <?=$model->greige->alias?>) - <?=$stockLabel?>: <?=Yii::$app->formatter->asDecimal($avM)?>M
 
 
             <?php

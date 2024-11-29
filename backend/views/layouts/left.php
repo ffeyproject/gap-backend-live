@@ -475,6 +475,12 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='rekap'
                             ],
                             [
+                                'label'=>'Rekap Dyeing By Process',
+                                'icon' => 'circle-o',
+                                'url' => ['/processing-dyeing/rekap-by-process'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='rekap-by-process'
+                            ],
+                            [
                                 'label'=>'Laporan Proses PFP',
                                 'icon' => 'circle-o',
                                 'url' => ['processing-pfp/rekap'],

@@ -123,7 +123,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED, self::STATUS_APPROVED, self::STATUS_INSPECTED, self::STATUS_GANTI_GREIGE, self::STATUS_GANTI_GREIGE_LINKED, self::STATUS_BATAL]],
             [['date'], 'date', 'format'=>'php:Y-m-d'],
-            [['tunggu_marketing', 'toping_matching'], 'boolean'],
+            [['tunggu_marketing', 'toping_matching','is_redyeing'], 'boolean'],
         ];
     }
 

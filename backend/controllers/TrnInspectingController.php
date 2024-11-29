@@ -860,7 +860,7 @@ class TrnInspectingController extends Controller
      */
     public function actionKartuProsesDyeing()
     {
-        $searchModel = new TrnKartuProsesDyeingSearch(['status'=>TrnKartuProsesDyeing::STATUS_APPROVED]);
+        $searchModel = new TrnKartuProsesDyeingSearch(['status' => [TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED]]);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('kartu-proses-dyeing', [

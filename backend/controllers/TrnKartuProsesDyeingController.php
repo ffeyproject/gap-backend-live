@@ -500,22 +500,39 @@ class TrnKartuProsesDyeingController extends Controller
                         //ambil nilai original qty per batch greige untuk dasar pemotongan stok
                         $qtyPerBatch = $greige->group->qty_per_batch;
                         $selisih = $totalLength - $qtyPerBatch;
-                        $update = [
-                            'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $totalLength),
-                            'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                        ];
-                        if($selisih < 0){
+                        if($model->is_redyeing){
                             $update = [
-                                'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                'available' => new \yii\db\Expression('available' . ' + ' . abs($selisih)),
                             ];
-                        }elseif ($selisih > 0){
+                            if($selisih < 0){
+                                $update = [
+                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                    'available' => new \yii\db\Expression('available' . ' + ' . (abs($selisih) - $qtyPerBatch)),
+                                ];
+                            }elseif ($selisih > 0){
+                                $update = [
+                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                    'available' => new \yii\db\Expression('available' . ' - ' . ($selisih + $qtyPerBatch)),
+                                ];
+                            }
+                        }else{
                             $update = [
-                                'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
+                                'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $totalLength),
                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                'available' => new \yii\db\Expression('available' . ' - ' . $selisih),
                             ];
+                            if($selisih < 0){
+                                $update = [
+                                    'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
+                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                    'available' => new \yii\db\Expression('available' . ' + ' . abs($selisih)),
+                                ];
+                            }elseif ($selisih > 0){
+                                $update = [
+                                    'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
+                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                    'available' => new \yii\db\Expression('available' . ' - ' . $selisih),
+                                ];
+                            }
                         }
                         Yii::$app->db->createCommand()->update(
                             MstGreige::tableName(),
