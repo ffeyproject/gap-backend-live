@@ -61,21 +61,24 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
             'lusi',
             'pakan',
             //'note:ntext',
-            /*[
+            [
                 'attribute'=>'status',
                 'value'=>function($data){
-                    ///* @var $data KartuProsesDyeing
+                    /* @var $data TrnKartuProsesDyeing*/
                     return $data::statusOptions()[$data->status];
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
-                    'data' => KartuProsesDyeing::statusOptions(),
+                    'data' => [
+                        TrnKartuProsesDyeing::STATUS_APPROVED => TrnKartuProsesDyeing::statusOptions()[TrnKartuProsesDyeing::STATUS_APPROVED],
+                        TrnKartuProsesDyeing::STATUS_INSPECTED => TrnKartuProsesDyeing::statusOptions()[TrnKartuProsesDyeing::STATUS_INSPECTED],
+                    ],
                     'options' => ['placeholder' => '...'],
                     'pluginOptions' => [
                         'allowClear' => true
                     ],
                 ],
-            ],*/
+            ],
             [
                 'attribute' => 'dateRange',
                 'label' => 'TANGGAL',

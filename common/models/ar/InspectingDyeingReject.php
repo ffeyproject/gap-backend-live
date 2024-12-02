@@ -51,7 +51,12 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
                 'skipOnError' => true,
                 'targetClass' => TrnKartuProsesDyeing::className(),
                 'targetAttribute' => ['kartu_proses_id' => 'id'],
-                'filter' => ['status' => TrnKartuProsesDyeing::STATUS_APPROVED]
+                'filter' => [
+                    'status' => [
+                        TrnKartuProsesDyeing::STATUS_APPROVED,
+                        TrnKartuProsesDyeing::STATUS_INSPECTED
+                    ]
+                ]
             ],
         ];
     }

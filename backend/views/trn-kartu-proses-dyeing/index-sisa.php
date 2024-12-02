@@ -146,25 +146,71 @@ $this->params['breadcrumbs'][] = $this->title;
                 },
                 'format' => 'raw',
             ],
-            [
+            [   
+                'attribute'=>'ready_colour',
                 'label'=>'Matching Colour',
                 'value'=> function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    $isReadyColour = $data->woColor->ready_colour ? 'Ya' : 'Tidak';
-                    $dateReadyColour = $data->woColor->date_ready_colour;
-                    return $isReadyColour . ' / ' . ($dateReadyColour !== null ? date('Y-m-d', $dateReadyColour) : '');
+                    $isReadyColour = $data->woColor->ready_colour;
+                    // $dateReadyColour = $data->woColor->date_ready_colour;
+                    // return $isReadyColour . ' / ' . ($dateReadyColour !== null ? date('Y-m-d', $dateReadyColour) : '');
+                    return  $isReadyColour;
 
                 },
-                'hAlign' => 'right'
+                'format' => 'boolean',
+                'hAlign' => 'center'
             ],
             [
+                'attribute' => 'dateRangeReadyColour',
+                'label' => 'Date Matching Colour',
+                'value'=> function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $dateReadyColour = $data->woColor->date_ready_colour;
+                    return  $dateReadyColour !== null ? date('Y-m-d', $dateReadyColour) : null;
+                },
+                'format' => 'date',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'convertFormat'=>true,
+                    'pluginOptions'=>[
+                        'locale'=>[
+                            'format'=>'Y-m-d',
+                            'separator'=>' to ',
+                        ]
+                    ]
+                ],
+            ],
+            [   
+                'attribute'=>'toping_matching',
                 'label'=>'Toping Matching',
                 'value'=> function($data){
-                    $topingMatching = $data->toping_matching ? 'Ya' : 'Tidak';
-                    $dateTopingMatching = $data->date_toping_matching;
-                    return $topingMatching . ' / ' . ($dateTopingMatching !== null ? date('Y-m-d', $dateTopingMatching) : '');
+                    $topingMatching = $data->toping_matching;
+                    // $dateTopingMatching = $data->date_toping_matching;
+                    // return $topingMatching . ' / ' . ($dateTopingMatching !== null ? date('Y-m-d', $dateTopingMatching) : '');
+                    return $topingMatching;
                 },
-                'hAlign' => 'right'
+                'format' => 'boolean',
+                'hAlign' => 'center'
+            ],
+            [
+                'attribute' => 'dateReangeTopingMatching',
+                'label' => 'Date Toping Matching',
+                'value'=> function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $dateTopingMatching = $data->date_toping_matching;
+                    return  $dateTopingMatching !== null ? date('Y-m-d', $dateTopingMatching) : null;
+                },
+                'format' => 'date',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'convertFormat'=>true,
+                    'pluginOptions'=>[
+                        'locale'=>[
+                            'format'=>'Y-m-d',
+                            'separator'=>' to ',
+                        ]
+                    ]
+                ],
             ],
 
             // [

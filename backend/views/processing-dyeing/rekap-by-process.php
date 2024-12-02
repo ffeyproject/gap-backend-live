@@ -105,6 +105,35 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $shiftGroup;
                 },
             ],
+            [   
+                'attribute'=>'panjang',
+                'label' => 'Panjang',
+                'value' => function ($model) { 
+                    $kartuProcess = $model->kartuProcess;
+                    $greige = $kartuProcess->wo->greige;
+                    $greigeGroup = $greige->group;
+                    $panjangTotal = $kartuProcess->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+                    return Yii::$app->formatter->asDecimal($panjangTotal) . ' ' . $greigeGroup->unitName;
+                },
+            ],
+            [   
+                'attribute'=>'jumlah_roll',
+                'label' => 'Jml. Roll',
+                'value' => function ($model) { 
+                    $kartuProcess = $model->kartuProcess;
+                    $jumlahRoll = $kartuProcess->getTrnKartuProsesDyeingItems()->count('id');
+                    $jumlahRoll = $jumlahRoll === null ? 0 : $jumlahRoll;
+                    return $jumlahRoll;
+                },
+            ],
+            [   
+                'attribute'=>'berat',
+                'label' => 'Berat',
+                'value' => function ($model) { 
+                    $kartuProcess = $model->kartuProcess;
+                    return $kartuProcess->berat;
+                },
+            ],
             //'note:ntext',
             //'created_at:datetime',
             //'created_by',

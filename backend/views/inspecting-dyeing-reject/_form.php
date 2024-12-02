@@ -14,7 +14,7 @@ use yii\widgets\ActiveForm;
         <div class="row">
             <div class="col-md-8"><?= $form->field($model, 'untuk_bagian')->textInput(['maxlength' => true]) ?></div>
 
-            <div class="col-md-4"><?= $form->field($model, 'pcs')->textInput(['maxlength' => true]) ?></div>
+            <div class="col-md-4"><?= $form->field($model, 'pcs', ['enableClientValidation' => false])->input('number', ['maxlength' => true]) ?></div>
         </div>
 
         <div class="row">

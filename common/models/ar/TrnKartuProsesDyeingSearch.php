@@ -23,6 +23,9 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $dateRangeMasukPacking;
     public $customerName;
     public $warna;
+    public $ready_colour;
+    public $dateRangeReadyColour;
+    public $dateReangeTopingMatching;
 
     /**
      * {@inheritdoc}
@@ -32,7 +35,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status'], 'safe'],
+            [['toping_matching','ready_colour'], 'boolean'],
         ];
     }
 
@@ -180,7 +184,35 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             // Apply the filter between the two timestamps
             $query->andFilterWhere(['between', 'trn_kartu_proses_dyeing.approved_at', $start_timestamp, $end_timestamp]);
         }
-        
+
+        if ($this->ready_colour !== null) {
+            $query->andFilterWhere(['trn_wo_color.ready_colour' => $this->ready_colour]);
+        }
+
+        if (!empty($this->dateRangeReadyColour)) {
+            // Explode the date range into start and end dates
+            list($start_date, $end_date) = explode(' to ', $this->dateRangeReadyColour);
+    
+            // Convert the dates to UNIX timestamp
+            $start_timestamp = strtotime($start_date);
+            $end_timestamp = strtotime($end_date . ' 23:59:59'); // end of the day
+    
+            // Apply the filter between the two timestamps
+            $query->andFilterWhere(['between', 'trn_wo_color.date_ready_colour', $start_timestamp, $end_timestamp]);
+        }
+
+
+        if (!empty($this->dateReangeTopingMatching)) {
+            // Explode the date range into start and end dates
+            list($start_date, $end_date) = explode(' to ', $this->dateReangeTopingMatching);
+    
+            // Convert the dates to UNIX timestamp
+            $start_timestamp = strtotime($start_date);
+            $end_timestamp = strtotime($end_date . ' 23:59:59'); // end of the day
+    
+            // Apply the filter between the two timestamps
+            $query->andFilterWhere(['between', 'trn_kartu_proses_dyeing.date_toping_matching', $start_timestamp, $end_timestamp]);
+        }
         
         $isFiltering = false;
         if (!empty($this->openDateRange)) {
@@ -206,6 +238,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'trn_kartu_proses_dyeing.created_by' => $this->created_by,
             'trn_kartu_proses_dyeing.updated_at' => $this->updated_at,
             'trn_kartu_proses_dyeing.updated_by' => $this->updated_by,
+            'trn_kartu_proses_dyeing.toping_matching' => $this->toping_matching,
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.no', $this->no])
