@@ -8,7 +8,9 @@ use common\models\ar\MstProcessDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnWo;
+use common\models\ar\TrnWoSearch;
 use common\models\ar\TrnWoColor;
+use common\models\ar\TrnScGreige;
 use Yii;
 use common\models\ar\TrnKartuProsesDyeing;
 use common\models\ar\TrnKartuProsesDyeingSearch;
@@ -54,6 +56,23 @@ class RealisasiDyeingController extends Controller
         $dataProvider->query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
 
         return $this->render('rekap', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+        /**
+     * Lists all TrnKartuProsesDyeing models.
+     * @return mixed
+     */
+    public function actionRekapOutstandingBukaanDyeing()
+    {
+        $searchModel = new TrnWoSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['=', 'trn_wo.status', TrnWo::STATUS_APPROVED]);
+        $dataProvider->query->andWhere(['=', 'trn_sc_greige.process', TrnScGreige::PROCESS_DYEING]);
+
+        return $this->render('rekap-outstanding-bukaan-dyeing', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);

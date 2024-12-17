@@ -540,6 +540,29 @@ class TrnWo extends \yii\db\ActiveRecord
                 return 0;
         }
     }
+    
+    /**
+     * @return int
+     */
+    /*
+     * Jumlah kartu proses dyeing yang belum di close
+     * (bukaan) berdasarkan TrnWo ini.
+     */
+    public function getKartuProsesDyeingBukaan()
+    {
+        $kartuProsesDyeings = $this->getTrnKartuProsesDyeings();
+        $count = 0;
+    
+        foreach ($kartuProsesDyeings->all() as $kartuProses) {
+            $tanggal = $kartuProses->getTanggalKartuProcessDyeingProcess();
+            if ($tanggal !== null) {
+                $count++;
+            }
+        }
+    
+        return $count;
+    }
+    
 
     private function setNoUrut(){
         $scGreige = $this->scGreige;

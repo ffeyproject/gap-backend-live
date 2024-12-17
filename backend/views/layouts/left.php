@@ -845,6 +845,10 @@ $moduleId = $controller->module->id;
                                 'label' => 'DYEING', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap'],
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap'
                             ],
+                            [
+                                'label' => 'Outstanding Bukaan Dyeing', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-outstanding-bukaan-dyeing'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-outstanding-bukaan-dyeing'
+                            ],
                             /*[
                                 'label' => 'BELI GREIGE', 'icon' => 'circle-o', 'url' => ['/trn-buy-greige/rekap'],
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'trn-buy-greige' && $actionId=='rekap'
