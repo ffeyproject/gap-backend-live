@@ -54,6 +54,16 @@ echo GridView::widget([
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
+        [
+            'label'=>'Qty Sisa',
+            'value' => function($data){
+                /* @var $data TrnMoColor */
+                return $data->qty - $data->qtyWoColors;
+            },
+            'format' => 'decimal',
+            'pageSummary' => true,
+            'hAlign' => 'right'
+        ],
 
         [
             'class' => 'kartik\grid\ActionColumn',
