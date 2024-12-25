@@ -265,6 +265,11 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
         return $this->hasMany(TrnKartuProsesPrintingItem::className(), ['kartu_process_id' => 'id']);
     }
 
+    public function getTrnInspectingsDelivered()
+    {
+        return $this->getTrnInspectings()->andWhere(['status' => TrnInspecting::STATUS_DELIVERED]);
+    }
+
     public function setNomor(){
         /*$this->setNoUrut();
 

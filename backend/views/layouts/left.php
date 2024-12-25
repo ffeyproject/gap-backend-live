@@ -846,8 +846,16 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap'
                             ],
                             [
+                                'label' => 'PRINTING', 'icon' => 'circle-o', 'url' => ['/realisasi-printing/rekap'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-printing' && $actionId=='rekap'
+                            ],
+                            [
                                 'label' => 'Outstanding Bukaan Dyeing', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-outstanding-bukaan-dyeing'],
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-outstanding-bukaan-dyeing'
+                            ],
+                            [
+                                'label' => 'Outstanding Bukaan PFP', 'icon' => 'circle-o', 'url' => ['/realisasi-pfp/rekap-outstanding-bukaan-pfp'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-pfp' && $actionId=='rekap-outstanding-bukaan-pfp'
                             ],
                             /*[
                                 'label' => 'BELI GREIGE', 'icon' => 'circle-o', 'url' => ['/trn-buy-greige/rekap'],

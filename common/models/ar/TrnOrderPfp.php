@@ -223,6 +223,8 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
         return $this->hasOne(User::className(), ['id' => 'batal_by']);
     }
 
+    
+
     public function setNomor(){
         $this->setNoUrut();
 
@@ -235,6 +237,13 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
 
         //OPFP/2103/00001
         $this->no = "OPFP/{$yearTwoDigit}{$month}/{$noUrut}";
+    }
+
+
+    public function getQtyKartuProsesPfp()
+    {
+        $qty = $this->getTrnKartuProsesPfps()->count();
+        return $qty === null ? 0 : $qty;
     }
 
     private function setNoUrut(){
@@ -285,5 +294,21 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
             default:
                 return 0;
         }
+    }
+
+
+    public function getKartuProsesPfpBukaan()
+    {
+        $kartuProsesPfps = $this->getTrnKartuProsesPfps();
+        $count = 0;
+    
+        foreach ($kartuProsesPfps->all() as $kartuProses) {
+            $tanggal = $kartuProses->getTanggalKartuProcessPfpProcess();
+            if ($tanggal !== null) {
+                $count++;
+            }
+        }
+    
+        return $count;
     }
 }

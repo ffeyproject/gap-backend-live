@@ -16,6 +16,15 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
     public $dateRange;
     private $from_date;
     private $to_date;
+    public $woDateRange;
+    public $openDateRange;
+    public $marketingName;
+    public $dateRangeMasukPacking;
+    public $customerName;
+    public $dateRangeReadyColour;
+    public $dateReangeTopingMatching;
+    public $motif;
+    public $warna;
 
     /**
      * {@inheritdoc}
@@ -25,6 +34,7 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by'], 'integer'],
             [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'memo_pg', 'memo_pg_no', 'reject_notes', 'nomor_kartu'], 'safe'],
+            [['motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status','warna',], 'safe'],
             [['woNo', 'dateRange', 'moColorColor'], 'safe']
         ];
     }
@@ -48,7 +58,12 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
     public function search($params)
     {
         $query = TrnKartuProsesPrinting::find();
-        $query->joinWith(['wo', 'woColor.moColor']);
+        $query->joinWith(['wo.greige']);    
+        $query->joinWith(['mo.scGreige.sc.marketing as mkt']);
+        $query->joinWith(['sc.cust as cust']);
+        $query->joinWith(['woColor.moColor as moColor']);
+        
+
 
         // add conditions that should always apply here
 
@@ -71,10 +86,31 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
             'desc' => ['trn_wo.no' => SORT_DESC],
         ];
 
+        $dataProvider->sort->attributes['woDateRange'] = [
+            'asc' => ['trn_wo.date' => SORT_ASC],
+            'desc' => ['trn_wo.date' => SORT_DESC],
+        ];
+
         $dataProvider->sort->attributes['moColorColor'] = [
             'asc' => ['trn_mo_color.color' => SORT_ASC],
             'desc' => ['trn_mo_color.color' => SORT_DESC],
         ];
+
+        $dataProvider->sort->attributes['customerName'] = [
+            'asc' => ['cust.name' => SORT_ASC],
+            'desc' => ['cust.name' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['motif'] = [
+            'asc' => ['mst_greige.nama_kain' => SORT_ASC],
+            'desc' => ['mst_greige.nama_kain' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['warna'] = [
+            'asc' => ['moColor.color' => SORT_ASC],
+            'desc' => ['cusmoColort.color' => SORT_DESC],
+        ];
+
 
         $this->load($params);
 
@@ -94,6 +130,19 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
                 $query->andFilterWhere(['between', 'trn_kartu_proses_printing.date', $this->from_date, $this->to_date]);
             }
         }
+
+        if(!empty($this->woDateRange)){
+            $this->from_date = substr($this->woDateRange, 0, 10);
+            $this->to_date = substr($this->woDateRange, 14);
+
+            if($this->from_date == $this->to_date){
+                $query->andFilterWhere(['trn_wo.date' => $this->from_date]);
+            }else{
+                $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date, $this->to_date]);
+            }
+        }
+
+
 
         // grid filtering conditions
         $query->andFilterWhere([
@@ -132,6 +181,9 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
             ->andFilterWhere(['ilike', 'trn_kartu_proses_printing.nomor_kartu', $this->nomor_kartu])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
             ->andFilterWhere(['ilike', 'trn_mo_color.color', $this->moColorColor])
+            ->andFilterWhere(['ilike', 'cust.name', $this->customerName])
+            ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
+            ->andFilterWhere(['ilike', 'moColor.color', $this->warna])
         ;
 
         return $dataProvider;

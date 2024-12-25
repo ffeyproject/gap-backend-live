@@ -339,6 +339,23 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
         return true;
     }
 
+    public function getTanggalKartuProcessPfpProcess(){
+        /* @var $modelProcessItem KartuProcessDyeingProcess*/
+        $model = $this->getKartuProcessPfpProcesses()->andWhere(['process_id'=>1])->one();
+        if($model !== null){
+            try {
+                $model = \yii\helpers\Json::decode($model['value']);
+                if(!isset($model['tanggal'])){
+                    return null;
+                }
+                return $model['tanggal'];
+            }catch (Throwable $t){
+                return null;
+            }
+        }
+        return null;
+    }
+
     public function setNomor(){
         /*$this->setNoUrut();
 
@@ -392,4 +409,5 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             $this->no_urut = 1;
         }
     }
+    
 }
