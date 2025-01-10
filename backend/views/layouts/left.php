@@ -846,6 +846,14 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap'
                             ],
                             [
+                                'label' => 'DYEING FORMATED NK', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-formated'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-formated'
+                            ],
+                            [
+                                'label' => 'DYEING FORMATED', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-formated-no-nk'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-formated-no-nk'
+                            ],
+                            [
                                 'label' => 'PRINTING', 'icon' => 'circle-o', 'url' => ['/realisasi-printing/rekap'],
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-printing' && $actionId=='rekap'
                             ],
