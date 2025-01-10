@@ -82,4 +82,15 @@ class InspectingItem extends \yii\db\ActiveRecord
     {
         return $this->hasOne(TrnInspecting::className(), ['id' => 'inspecting_id']);
     }
+
+    
+    /**
+     * Gets query for [[DefectInspectingItems]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDefectInspectingItems()
+    {
+        return $this->hasMany(DefectInspectingItem::className(), ['inspecting_item_id' => 'id']);
+    }
 }

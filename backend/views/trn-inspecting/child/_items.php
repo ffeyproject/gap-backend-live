@@ -54,6 +54,13 @@ $joinPieces = [
 $no_wo = substr($model->wo->no, -1);
 $defaultCheck = ($no_wo == 'L' ? true : false);
 ?>
+<style>
+.primary {
+    color: #007bff;
+    /* Warna biru (Bootstrap primary) */
+    font-weight: bold;
+}
+</style>
 
 <div class="box">
     <div class="box-header with-border">
@@ -67,36 +74,36 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         </div>
 
         <div class="box-tools pull-right">
-                <span class="label label-info">
-                    <?='<strong>Greige: '.$greige->nama_kain.' - Per Batch: '.Yii::$app->formatter->asDecimal($perBatch).' '.MstGreigeGroup::unitOptions()[$greige->group->unit].'</strong>'?>
-                </span>
+            <span class="label label-info">
+                <?='<strong>Greige: '.$greige->nama_kain.' - Per Batch: '.Yii::$app->formatter->asDecimal($perBatch).' '.MstGreigeGroup::unitOptions()[$greige->group->unit].'</strong>'?>
+            </span>
         </div>
     </div>
     <div class="box-body">
         <table class="table table-bordered table-striped">
             <thead>
-            <tr>
-                <th>No. Packing</th>
-                <th>Grade A</th>
-                <th>Grade B</th>
-                <th>Grade C</th>
-                <th>Piece Kecil</th>
-                <th>Contoh</th>
-                <th>Grade A+</th>
-                <th>Grade A*</th>
-                <th>Lot No</th>
-                <th>Defect</th>
-                <th>Keterangan</th>
-                <th>Qr-Code</th>
-                <th>Qr-Data</th>
-                <th>Qr-Code Print at</th>
-            </tr>
+                <tr>
+                    <th>No. Packing</th>
+                    <th>Grade A</th>
+                    <th>Grade B</th>
+                    <th>Grade C</th>
+                    <th>Piece Kecil</th>
+                    <th>Contoh</th>
+                    <th>Grade A+</th>
+                    <th>Grade A*</th>
+                    <th>Lot No</th>
+                    <th>Defect</th>
+                    <th>Keterangan</th>
+                    <th>Qr-Code</th>
+                    <th>Qr-Data</th>
+                    <th>Qr-Code Print at</th>
+                </tr>
             </thead>
-            <tbody>
-            <?php foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item):?>
+
+            <tbody style="background-color: #e5e5e5;">
+                <?php foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item):?>
                 <?php
                     /* @var $item InspectingItem*/
-
                     if($item['qty'] > 0){
                         // akumulasi hanya berlaku jika qty > 0
                         if ($item['grade_up'] <> NULL) {
@@ -247,7 +254,18 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         ?>
                     </td>
                     <td><?=$item['lot_no']?></td>
-                    <td><?=$item['defect']?></td>
+                    <td>
+                        <?php
+                        foreach ($item->defectInspectingItems as $defectItem) {
+                            echo '<span class="primary">(' . $defectItem->meterage . ')</span>' . 
+                                ' / <span class="primary">' . $defectItem->mstKodeDefect->no_urut . '</span>' . 
+                                ' - <span class="primary">' . $defectItem->mstKodeDefect->nama_defect . '</span>' . 
+                                ' / <span class="primary">(' . $defectItem->point . ')</span>' . 
+                                '<br>';
+                        }
+                        ?>
+                    </td>
+
                     <td><?=$item['note']?></td>
                     <td style="width: 100px;">
                         <?php 
@@ -260,8 +278,8 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <td style="width: 150px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                     <td style="width: 200px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
                 </tr>
-            <?php endforeach;?>
-            </tbody>
+                <?php endforeach;?>
+                </body>
         </table>
     </div>
     <div class="box-footer with-border">
@@ -293,6 +311,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <?= Html::checkbox('param1', $defaultCheck, ['label' => 'Made In Indonesia', 'id' => 'param1Checkbox']); ?>
                     <?= Html::checkbox('param2', $defaultCheck, ['label' => 'Registrasi K3L', 'id' => 'param2Checkbox']); ?>
                     <?= Html::checkbox('param6', $defaultCheck, ['label' => 'Aktifkan Pembulatan Decimal', 'id' => 'param6Checkbox']); ?>
+                    <?= Html::checkbox('param8', $defaultCheck, ['label' => '2 Satuan', 'id' => 'param8Checkbox']); ?>
                     <p class="m-0"><small><b>*checklist untuk menampilkan</b></small></p>
                 </div>
                 <div class="box-tools pull-right">
@@ -302,146 +321,146 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             <div class="box-body">
                 <table class="table table-bordered table-striped">
                     <thead>
-                    <tr>
-                        <th>Total</th>
-                        <th>Total Pieces</th>
-                        <th>Total Roll</th>
-                        <th>Total Ukuran</th>
-                    </tr>
+                        <tr>
+                            <th>Total</th>
+                            <th>Total Pieces</th>
+                            <th>Total Roll</th>
+                            <th>Total Ukuran</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <tr>
-                        <th>Total Grade A+</th>
-                        <td>
-                            <?php
+                        <tr>
+                            <th>Total Grade A+</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade A*</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade A*</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade C</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade C</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_C]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_C]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_C]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Piece Kecil</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Piece Kecil</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_PK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_PK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_PK]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Contoh</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Contoh</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade A</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade A</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade B</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade B</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_B]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_B]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_B]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Grand Total</th>
-                        <th><?=$formatter->asDecimal($totalPieces)?></th>
-                        <th><?=$formatter->asDecimal($totalRoll)?></th>
-                        <th><?=$formatter->asDecimal($totalQty)?></th>
-                    </tr>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Grand Total</th>
+                            <th><?=$formatter->asDecimal($totalPieces)?></th>
+                            <th><?=$formatter->asDecimal($totalRoll)?></th>
+                            <th><?=$formatter->asDecimal($totalQty)?></th>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -457,13 +476,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             <div class="box-body">
                 <table class="table table-bordered table-striped">
                     <thead>
-                    <tr>
-                        <th>Waktu</th>
-                        <th>Pesan</th>
-                    </tr>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Pesan</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <?php
+                        <?php
                     if(!empty($model->delivery_reject_note)){
                         $notes = \yii\helpers\Json::decode($model->delivery_reject_note);
                         foreach ($notes as $note) {
@@ -490,12 +509,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
+        var param8Value = $("#param8Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
 
         // Determine the URL based on checkbox status
         var theView = (param1Value == 0 && param2Value == 0) ? "qr-all-without-attribute" : "qr-all";
 
         // Build the URL with the selected values
-        var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value;
+        var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value + "&param8=" + param8Value;
 
         var replacedUrl = url.replace(/replace/, theView);
 

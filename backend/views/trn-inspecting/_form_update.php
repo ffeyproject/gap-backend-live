@@ -218,32 +218,32 @@ use yii\helpers\Url;
         <div class="box-body">
             <table class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>Lot No</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                </tr>
+                    <tr>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>Lot No</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>
-                        <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
+                    <tr>
+                        <td>
+                            <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
                             'data' => InspectingItem::gradeOptions(),
                             //'options' => ['placeholder' => 'Pilih ...'],
                             'pluginOptions' => [
                                 //'allowClear' => true
                             ],
                         ])->label(false) ?>
-                    </td>
-                    <td><?=$formItem->field($modelItem, 'ukuran')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'keterangan')->textInput()->label(false)?></td>
-                </tr>
+                        </td>
+                        <td><?=$formItem->field($modelItem, 'ukuran')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'keterangan')->textInput()->label(false)?></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -264,18 +264,18 @@ use yii\helpers\Url;
         <div class="box-body">
             <table id="InspectingItemTable" class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>No</th>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>Lot No</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                    <th>QR</th>
-                    <th>Action</th>
-                </tr>
+                    <tr>
+                        <th>ID</th>
+                        <th>No</th>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>Lot No</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                        <th>QR</th>
+                        <th>Action</th>
+                    </tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -288,7 +288,7 @@ use yii\helpers\Url;
 
 
 
-    <!--<table class="table table-bordered">
+<!--<table class="table table-bordered">
         <thead>
         <tr>
             <th>Grade</th>

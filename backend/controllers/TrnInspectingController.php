@@ -1222,7 +1222,7 @@ class TrnInspectingController extends Controller
         return $pdf->render();
     }
 
-    public function actionQrAll($id, $param1, $param2, $param6)
+    public function actionQrAll($id, $param1, $param2, $param6, $param8)
     {
         $model = $this->findModel($id);
         $data = [];
@@ -1259,7 +1259,11 @@ class TrnInspectingController extends Controller
                 $no_wo = $iI->inspecting && $iI->inspecting->wo && $iI->inspecting->wo->no ? $iI->inspecting->wo->no : '-';
                 $color = $iI->inspecting && $iI->inspecting->kombinasi ? $iI->inspecting->kombinasi : '-';
                 $k3l_code = $iI->inspecting && $iI->inspecting->k3l_code ? $iI->inspecting->k3l_code : '-';
-                $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->unit == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->unit == 2 ? 'M' : ($iI->inspecting->unit == 3 ? 'PCS' : 'KG'))));
+                if ($param8 == 1) {
+                    $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->unit == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->unit == 2 ? 'M' : ($iI->inspecting->unit == 3 ? 'PCS' : 'KG'))));
+                } else {
+                    $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->unit == 1 ? 'YDS' : ($iI->inspecting->unit == 2 ? 'M' : ($iI->inspecting->unit == 3 ? 'PCS' : 'KG'))));
+                }
                 $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
                 $qty_count = $countKey.($key+1).'/'.$countItems.count($model->inspectingItems);
                 $grade = $getWidth.'"/'.$getGrade;
