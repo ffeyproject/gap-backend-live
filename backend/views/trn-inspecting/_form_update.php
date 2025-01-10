@@ -156,6 +156,18 @@ use yii\helpers\Url;
                                 ])->label(false) ?>
                             </td>
                         </tr>
+                        <tr>
+                            <th>Jenis Inspeksi</th>
+                            <td>
+                                <?= $formHeader->field($modelHeader, 'jenis_inspek')->widget(Select2::classname(), [
+                                    'data' => TrnInspecting::jenisInspeksiOptions(),
+                                    'options' => ['placeholder' => 'Pilih ...'],
+                                    'pluginOptions' => [
+                                        'allowClear' => true
+                                    ],
+                                ])->label(false) ?>
+                            </td>
+                        </tr>
                     </table>
                 </div>
 

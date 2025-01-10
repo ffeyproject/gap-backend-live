@@ -110,6 +110,20 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
+            [
+                'attribute'=>'jenis_inspek',
+                'value'=>function($data){
+                    return $data::jenisInspeksiOptions()[$data->jenis_inspek];
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => TrnInspecting::jenisInspeksiOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
             //'grade_a_pcs',
             //'grade_b_pcs',
             //'grade_c_pcs',

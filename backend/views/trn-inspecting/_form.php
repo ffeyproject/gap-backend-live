@@ -4,6 +4,7 @@ use backend\models\form\InspectingItemsForm;
 use common\models\ar\InspectingItem;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\MstK3l;
+use common\models\ar\TrnInspecting;
 use kartik\widgets\ActiveForm;
 use kartik\widgets\DatePicker;
 use kartik\widgets\DepDrop;
@@ -188,6 +189,18 @@ use yii\helpers\Url;
                             <th>Lokal/Export</th>
                             <td id="TipeKontrak"></td>
                         </tr>
+                        <tr>
+                            <th>Jenis Inspeksi</th>
+                            <td>
+                                <?= $formHeader->field($modelHeader, 'jenis_inspek')->widget(Select2::classname(), [
+                                    'data' => TrnInspecting::jenisInspeksiOptions(),
+                                    'options' => ['placeholder' => 'Pilih ...'],
+                                    'pluginOptions' => [
+                                        'allowClear' => true
+                                    ],
+                                ])->label(false) ?>
+                            </td>
+                        </tr>
                     </table>
                 </div>
             </div>
@@ -205,32 +218,32 @@ use yii\helpers\Url;
         <div class="box-body">
             <table class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>No Lot</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                </tr>
+                    <tr>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>No Lot</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>
-                        <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
+                    <tr>
+                        <td>
+                            <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
                             'data' => InspectingItem::gradeOptions(),
                             /*'options' => ['placeholder' => 'Pilih ...'],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],*/
                         ])->label(false) ?>
-                    </td>
-                    <td><?=$formItem->field($modelItem, 'ukuran')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'keterangan')->textInput()->label(false)?></td>
-                </tr>
+                        </td>
+                        <td><?=$formItem->field($modelItem, 'ukuran')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'keterangan')->textInput()->label(false)?></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -251,16 +264,16 @@ use yii\helpers\Url;
         <div class="box-body">
             <table id="InspectingItemTable" class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>Lot No</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                    <th>Action</th>
-                </tr>
+                    <tr>
+                        <th>No</th>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>Lot No</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                        <th>Action</th>
+                    </tr>
                 </thead>
                 <tbody></tbody>
             </table>

@@ -117,6 +117,10 @@ use yii\widgets\DetailView;
                             'value'=>TrnInspecting::statusOptions()[$model->status],
                         ],
                         [
+                            'attribute'=>'Jenis Inspek',
+                            'value'=>TrnInspecting::jenisInspeksiOptions()[$model->jenis_inspek],
+                        ],
+                        [
                             'attribute'=>'Kode Defect',
                             'value'=>$model->defect,
                             'format'=>'raw'
@@ -133,5 +137,3 @@ use yii\widgets\DetailView;
         </div>
     </div>
 </div>
-
-

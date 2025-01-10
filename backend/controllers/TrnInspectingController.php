@@ -183,6 +183,7 @@ class TrnInspectingController extends Controller
                 $modelInspecting->tanggal_inspeksi = $modelHeader->tgl_inspeksi;
                 $modelInspecting->date = $modelHeader->tgl_kirim;
                 $modelInspecting->unit = $modelHeader->status;
+                $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
 
                 //throw new ForbiddenHttpException(Json::encode(Yii::$app->request->post()));
 
@@ -485,17 +486,20 @@ class TrnInspectingController extends Controller
             'no_lot' => $model->no_lot,
             'defect' => $model->defect,
             'status' => $model->unit,
+            'jenis_inspek' => $model->jenis_inspek,
 
         ]);
 
         $nomorKartu = '';
         $k3l_code = '';
         $kombinasi = '-';
+        $jenis_inspek = '';
 
         if($model->memo_repair_id !== null){
             $modelHeader->kartu_proses_id = $model->memo_repair_id;
             $nomorKartu = $model->memoRepair->no;
             $k3l_code = $model->k3l_code;
+            $jenis_inspek = $model->jenis_inspek;
             $modelHeader->jenis_order = 'memo_repair';
         }else{
             switch ($model->scGreige->process){
@@ -505,6 +509,7 @@ class TrnInspectingController extends Controller
                     $k3l_code = $model->k3l_code;
                     $modelHeader->jenis_order = 'dyeing';
                     $kombinasi = $model->kartuProcessDyeing->woColor->moColor->color;
+                     
                     break;
                 case TrnScGreige::PROCESS_PRINTING:
                     $modelHeader->kartu_proses_id = $model->kartu_process_printing_id;
@@ -512,6 +517,7 @@ class TrnInspectingController extends Controller
                     $k3l_code = $model->k3l_code;
                     $modelHeader->jenis_order = 'printing';
                     $kombinasi = $model->kartuProcessPrinting->woColor->moColor->color;
+                     
                     break;
             }
         }
@@ -555,6 +561,7 @@ class TrnInspectingController extends Controller
                         $modelInspecting->sc_greige_id = $kp->sc_greige_id;
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
+                         $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
                     case 'printing':
                         $kp = TrnKartuProsesPrinting::findOne($modelHeader->kartu_proses_id);
@@ -571,6 +578,7 @@ class TrnInspectingController extends Controller
                         $modelInspecting->sc_greige_id = $kp->sc_greige_id;
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
+                         $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
                     case 'memo_repair':
                         /* @var $modelMemoRepair TrnMemoRepair*/
@@ -593,6 +601,7 @@ class TrnInspectingController extends Controller
                         $modelInspecting->sc_greige_id = $modelMemoRepair->sc_greige_id;
                         $modelInspecting->sc_id = $modelMemoRepair->sc_id;
                         $modelInspecting->kombinasi = '-';
+                        $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
                     default:
                         throw new HttpException(500, 'Permintaan tidak valid.');
@@ -606,6 +615,7 @@ class TrnInspectingController extends Controller
                 $modelInspecting->tanggal_inspeksi = $modelHeader->tgl_inspeksi;
                 $modelInspecting->date = $modelHeader->tgl_kirim;
                 $modelInspecting->unit = $modelHeader->status;
+                $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
 
                 $transaction = Yii::$app->db->beginTransaction();
                 try {

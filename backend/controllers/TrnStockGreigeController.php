@@ -572,27 +572,62 @@ class TrnStockGreigeController extends Controller
     /**
      * @throws ForbiddenHttpException
      */
+    // public function actionSeluruhStock(){
+    //     if(Yii::$app->request->isAjax){
+    //         Yii::$app->response->format = Response::FORMAT_JSON;
+
+    //         $wjl = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_WJL, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
+    //         $rap = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_RAPIER, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
+    //         $lokal = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_BELI, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
+    //         $import = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_BELI_IMPORT, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
+
+    //         $data = [
+    //             'water_jet_loom' => $wjl > 0 ? $wjl : 0,
+    //             'rapier_loom' => $rap > 0 ? $rap : 0,
+    //             'beli_lokal' => $lokal > 0 ? $lokal : 0,
+    //             'beli_import' => $import > 0 ? $import : 0,
+    //         ];
+
+    //         return $this->renderAjax('seluruh-stock', ['data'=>$data]);
+    //     }
+
+    //     throw new ForbiddenHttpException('Hanya ajajx call yang diizinkan.');
+    // }
+
     public function actionSeluruhStock(){
-        if(Yii::$app->request->isAjax){
-            Yii::$app->response->format = Response::FORMAT_JSON;
+    if(Yii::$app->request->isAjax){
+    Yii::$app->response->format = Response::FORMAT_JSON;
 
-            $wjl = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_WJL, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
-            $rap = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_RAPIER, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
-            $lokal = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_BELI, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
-            $import = TrnStockGreige::find()->where(['asal_greige'=>TrnStockGreige::ASAL_GREIGE_BELI_IMPORT, 'status'=>TrnStockGreige::STATUS_VALID])->sum('panjang_m');
+    $asalGreigeList = [
+        'water_jet_loom' => TrnStockGreige::ASAL_GREIGE_WJL,
+        'rapier_loom' => TrnStockGreige::ASAL_GREIGE_RAPIER,
+        'beli_lokal' => TrnStockGreige::ASAL_GREIGE_BELI,
+        'beli_import' => TrnStockGreige::ASAL_GREIGE_BELI_IMPORT,
+    ];
 
-            $data = [
-                'water_jet_loom' => $wjl > 0 ? $wjl : 0,
-                'rapier_loom' => $rap > 0 ? $rap : 0,
-                'beli_lokal' => $lokal > 0 ? $lokal : 0,
-                'beli_import' => $import > 0 ? $import : 0,
-            ];
+    $data = [];
 
-            return $this->renderAjax('seluruh-stock', ['data'=>$data]);
+    foreach ($asalGreigeList as $key => $asalGreige) {
+        $data[$key] = [];
+
+        foreach (TrnStockGreige::tsdOptions() as $statusKey => $statusName) {
+            $jumlah = TrnStockGreige::find()
+                ->where([
+                    'asal_greige' => $asalGreige,
+                    'status' => TrnStockGreige::STATUS_VALID,
+                    'status_tsd' => $statusKey, // Tambahkan status_tsd
+                ])
+                ->sum('panjang_m');
+
+            if ($jumlah > 0) {
+                $data[$key][$statusName] = $jumlah;
+            }
         }
-
-        throw new ForbiddenHttpException('Hanya ajajx call yang diizinkan.');
     }
+
+    return $this->renderAjax('seluruh-stock', ['data' => $data]);
+}
+}
 
     /**
      * Finds the TrnStockGreige model based on its primary key value.

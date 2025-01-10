@@ -96,6 +96,7 @@ class InspectingItem extends \yii\db\ActiveRecord
     }
 
 
+
     /**
      * Menghitung total point berdasarkan inspecting_id dan join_piece yang sama.
      *

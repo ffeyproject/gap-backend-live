@@ -71,6 +71,13 @@ class TrnInspecting extends \yii\db\ActiveRecord
         return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Approved', self::STATUS_DELIVERED => 'Delivered'];
     }
 
+    const FRESH_INSPEKSI = 1;
+    const RE_INSPEKSI = 2;
+
+    public static function jenisInspeksiOptions(){
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Inspeksi'];
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -100,8 +107,11 @@ class TrnInspecting extends \yii\db\ActiveRecord
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_APPROVED, self::STATUS_DELIVERED]],
 
+            ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
+
             ['unit', 'default', 'value'=>MstGreigeGroup::UNIT_METER],
             ['unit', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
+            
 
             ['jenis_process', 'default', 'value'=>TrnScGreige::PROCESS_DYEING],
             ['jenis_process', 'in', 'range' => [TrnScGreige::PROCESS_DYEING, TrnScGreige::PROCESS_PRINTING, TrnScGreige::PROCESS_PFP]],
@@ -148,6 +158,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             'note' => 'Note',
             'status' => 'Status',
             'unit' => 'Unit',
+            'jenis_inspek' => 'Jenis Inspeksi',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
@@ -158,7 +169,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             'delivered_at' => 'Delivered At',
             'delivered_by' => 'Delivered By',
             'delivery_reject_note' => 'Delivery Reject Note',
-
+            'jenis_inspek' => 'Jenis Inspek',
             'woNo' => 'No. WO',
             'kpdNo' => 'No. KP. Dyeing',
             'kppNo' => 'No. KP. Printing',

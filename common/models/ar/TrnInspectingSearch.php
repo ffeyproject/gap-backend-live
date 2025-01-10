@@ -27,7 +27,7 @@ class TrnInspectingSearch extends TrnInspecting
     public function rules()
     {
         return [
-            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_dyeing_id', 'memo_repair_id', 'jenis_process', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by','unit'], 'integer'],
+            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_dyeing_id', 'memo_repair_id', 'jenis_process', 'no_urut', 'status', 'jenis_inspek', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by','unit'], 'integer'],
             [['no', 'date', 'tanggal_inspeksi', 'no_lot', 'kombinasi', 'note', 'kpdNo', 'kppNo', 'memoRepairNo', 'woNo', 'dateRange', 'color'], 'safe'],
         ];
     }
@@ -131,6 +131,7 @@ class TrnInspectingSearch extends TrnInspecting
             'trn_inspecting.date' => $this->date,
             'trn_inspecting.tanggal_inspeksi' => $this->tanggal_inspeksi,
             'trn_inspecting.status' => $this->status,
+            'trn_inspecting.jenis_inspek' => $this->jenis_inspek,
             'trn_inspecting.created_at' => $this->created_at,
             'trn_inspecting.created_by' => $this->created_by,
             'trn_inspecting.updated_at' => $this->updated_at,
