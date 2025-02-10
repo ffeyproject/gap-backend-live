@@ -46,21 +46,21 @@ use yii\helpers\Html;
 
         <table width="100%" border="1">
             <thead>
-            <tr>
-                <th width="3%" rowspan="2" style="text-align: center;">BAL</th>
-                <th rowspan="2" style="text-align: center;">NO WO</th>
-                <th rowspan="2" style="text-align: center;">DESIGN</th>
-                <th colspan="3" style="text-align: center;">JUMLAH</th>
-                <th rowspan="2" colspan="10" style="text-align: center;">PIECE LENGTH</th>
-            </tr>
-            <tr>
-                <th style="text-align: center;">COLOR</th>
-                <th width="5%" style="text-align: center;">SATUAN 1</th>
-                <th style="text-align: center;">SATUAN 2</th>
-            </tr>
+                <tr>
+                    <th width="3%" rowspan="2" style="text-align: center;">BAL</th>
+                    <th rowspan="2" style="text-align: center;">NO WO</th>
+                    <th rowspan="2" style="text-align: center;">DESIGN</th>
+                    <th colspan="3" style="text-align: center;">JUMLAH</th>
+                    <th rowspan="2" colspan="10" style="text-align: center;">PIECE LENGTH</th>
+                </tr>
+                <tr>
+                    <th style="text-align: center;">COLOR</th>
+                    <th width="5%" style="text-align: center;">SATUAN 1</th>
+                    <th style="text-align: center;">SATUAN 2</th>
+                </tr>
             </thead>
             <tbody>
-            <?php
+                <?php
                 $groupedByNoBal = [];
                 foreach ($dataProviderKirimBuyer->models as $kirimBuyerModel) {
                     foreach ($kirimBuyerModel->trnKirimBuyerItems as $pssk) {
@@ -214,8 +214,8 @@ use yii\helpers\Html;
                 $totalSatuan2 = [];
             ?>
 
-<?php foreach ($groupedByNoBal as $no_bal => $woGroup): ?>
-    <?php
+                <?php foreach ($groupedByNoBal as $no_bal => $woGroup): ?>
+                <?php
         $balRowspan = 0;
         foreach ($woGroup as $no_wo => $colorGroup) {
             foreach ($colorGroup['colors'] as $color => $batches) {
@@ -223,31 +223,32 @@ use yii\helpers\Html;
             }
         }
     ?>
-    <tr>
-        <td rowspan="<?= $balRowspan ?>" style="text-align: center;"><?= $no_bal ?></td>
-        <?php foreach ($woGroup as $no_wo => $colorGroup): ?>
-            <?php
+                <tr>
+                    <td rowspan="<?= $balRowspan ?>" style="text-align: center;"><?= $no_bal ?></td>
+                    <?php foreach ($woGroup as $no_wo => $colorGroup): ?>
+                    <?php
                 $woRowspan = 0;
                 foreach ($colorGroup['colors'] as $color => $batches) {
                     $woRowspan += count($batches['batch']);
                 }
                 $isFirstColorRow = true;
             ?>
-            <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $no_wo ?></td>
+                    <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $no_wo ?></td>
 
-            <!-- design -->
-            <?php if ($jenisProcess == TrnScGreige::PROCESS_PRINTING || $jenisProcess == TrnScGreige::PROCESS_DIGITAL_PRINTING) { ?>
-                <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $colorGroup['artikel'] ?> <br> <?= $colorGroup['design'] ?></td>
-            <?php } else { ?>
-                <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $colorGroup['artikel'] ?></td>
-            <?php } ?>
-            <!-- design -->
+                    <!-- design -->
+                    <?php if ($jenisProcess == TrnScGreige::PROCESS_PRINTING || $jenisProcess == TrnScGreige::PROCESS_DIGITAL_PRINTING) { ?>
+                    <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $colorGroup['artikel'] ?> <br>
+                        <?= $colorGroup['design'] ?></td>
+                    <?php } else { ?>
+                    <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $colorGroup['artikel'] ?></td>
+                    <?php } ?>
+                    <!-- design -->
 
-            <?php foreach ($colorGroup['colors'] as $color => $batches): ?>
-                <?php foreach ($batches['batch'] as $noLot => $grades): ?>
+                    <?php foreach ($colorGroup['colors'] as $color => $batches): ?>
+                    <?php foreach ($batches['batch'] as $noLot => $grades): ?>
 
                     <?php if (!$isFirstColorRow): ?>
-                        <tr>
+                <tr>
                     <?php endif; ?>
                     <td style="text-align: center;"><?= $color ?></td>
 
@@ -293,25 +294,28 @@ use yii\helpers\Html;
                         $totalSatuan2[$colorGroup['unit']] += $recount_subtotal;
                     ?>
 
-                    <td style="text-align: left; padding:0 5px; white-space: nowrap;"><?= $recount_qtys.' PCS <br> '.$output ?></td>
-                    <td style="text-align: left; padding:0 5px; white-space: nowrap;"><?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
-                    
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                        <?= $recount_qtys.' PCS <br> '.$output ?></td>
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                        <?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
+
                     <!-- Batch Table -->
                     <td>
                         <table style="width: 100%; border-collapse: collapse;" border="">
                             <tr>
-                                <td  style="text-align: center; padding:0 5px; white-space: nowrap;"><?= $noLot?></td>
+                                <td style="text-align: center; padding:0 5px; white-space: nowrap;"><?= $noLot?></td>
                                 <td>
                                     <?php $sample = 0;?>
                                     <?php foreach ($grades['grade'] as $gradeID => $qtys): ?>
-                                        <table style="width: 100%; border-collapse: collapse;" border="">
-                                            <tr>
-                                                <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
-                                                    <td  style="text-align: center; padding:0 5px; white-space: nowrap;"><?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
-                                                    <td>
-                                                        <table style="width: 100%; border-collapse: collapse;" border="1">
-                                                                <tr>
-                                                                    <?php
+                                    <table style="width: 100%; border-collapse: collapse;" border="">
+                                        <tr>
+                                            <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
+                                            <td style="text-align: center; padding:0 5px; white-space: nowrap;">
+                                                <?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
+                                            <td>
+                                                <table style="width: 100%; border-collapse: collapse;" border="1">
+                                                    <tr>
+                                                        <?php
                                                                         $count = count($qtys);
                                                                         $itemsPerRow = 10;
                                                                         $totalRows = ceil($count / $itemsPerRow);
@@ -329,16 +333,16 @@ use yii\helpers\Html;
                                                                                 echo '</tr>';
                                                                             }
                                                                     ?>
-                                                                </tr>
-                                                        </table>
-                                                    </td>
-                                                <?php }else{ 
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <?php }else{ 
                                                     foreach ($qtys as $key => $value) {
                                                         $sample += $value['qty'];
                                                     }
                                                 } ?>
-                                            </tr>
-                                        </table>
+                                        </tr>
+                                    </table>
                                     <?php endforeach; ?>
                                     <?php 
                                         if($sample > 0){
@@ -355,34 +359,37 @@ use yii\helpers\Html;
                             </tr>
                         </table>
                     </td>
-                    </tr>
-                    <?php $isFirstColorRow = false; ?>
+                </tr>
+                <?php $isFirstColorRow = false; ?>
                 <?php endforeach; ?>
 
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-    <?php endforeach; ?>
+                <?php endforeach; ?>
+                <?php endforeach; ?>
+                <?php endforeach; ?>
 
 
-            <tr>
-                <td><b>TOTAL</b></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td style="text-align: left; padding:0 5px; white-space: nowrap;"><b><?= $totalSatuan1.' PCS <br> '?></b></td>
-                <td style="text-align: left; padding:0 5px; white-space: nowrap;">
-                    <b>
-                        <?php foreach($totalSatuan2 as $unit => $total): ?>
+                <tr>
+                    <td><b>TOTAL</b></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                        <b><?= $totalSatuan1.' PCS <br> '?></b>
+                    </td>
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                        <b>
+                            <?php foreach($totalSatuan2 as $unit => $total): ?>
                             <?= $total.' '.MstGreigeGroup::unitOptions()[$unit].' <br>'?>
-                        <?php endforeach; ?>
-                    </b>
-                </td>
-                <td style="text-align: left; padding:0 5px; white-space: nowrap;">
-                    <b><?= $model->note ?></b>
-                </td>
-            </tr>
+                            <?php endforeach; ?>
+                        </b>
+                    </td>
+                    <td style="text-align: left; padding:0 5px; white-space: nowrap;">
+                        <b><?= $model->note ?></b>
+                    </td>
+                </tr>
             </tbody>
         </table>
+        <h4 style="text-align: right; margin-right: 10em;">Admin : </h4>
         <p></p>
     </div>
 </div>

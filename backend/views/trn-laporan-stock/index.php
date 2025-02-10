@@ -37,21 +37,21 @@ $this->params['breadcrumbs'][] = $this->title;
                 // $no_wo = Yii::$app->request->get('no_wo', '');
                 $limit = Yii::$app->request->get('limit', 50);
             ?>
-                <div class="form-row">
-                    <div class="form-group col-md-8">
-                        <?php
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <?php
                             echo '<label>Pilih Motif</label>';
                             echo Html::textInput('motif', $motif, ['class' => 'form-control', 'placeholder' => 'Select Motif ...']);
                         ?>
-                    </div>
-                    <div class="form-group col-md-2">
-                        <?php
+                </div>
+                <div class="form-group col-md-2">
+                    <?php
                             echo '<label>Pilih Color</label>';
                             echo Html::textInput('color', $color, ['class' => 'form-control', 'placeholder' => 'Select Color ...']);
                         ?>
-                    </div>
-                    <div class="form-group col-md-2">
-                        <?php
+                </div>
+                <div class="form-group col-md-2">
+                    <?php
                             echo '<label>Limit Data Untuk Ditampilkan</label>';
                             echo Select2::widget([
                                 'name' => 'limit',
@@ -63,9 +63,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'options' => ['multiple' => false, 'placeholder' => 'Select limit ...']
                             ]); 
                         ?>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <?php
+                </div>
+                <div class="form-group col-md-3">
+                    <?php
                             echo '<label>Pilih Status</label>';
                             echo Select2::widget([
                                 'name' => 'status',
@@ -77,9 +77,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'options' => ['multiple' => false, 'placeholder' => 'Select status ...']
                             ]); 
                         ?>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <?php
+                </div>
+                <div class="form-group col-md-3">
+                    <?php
                             echo '<label>Pilih Jenis Gudang</label>';
                             echo Select2::widget([
                                 'name' => 'jenis_gudang',
@@ -91,9 +91,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'options' => ['multiple' => false, 'placeholder' => 'Select Jenis Gudang ...']
                             ]); 
                         ?>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <?php
+                </div>
+                <div class="form-group col-md-3">
+                    <?php
                             echo '<label>Pilih Grade</label>';
                             echo Select2::widget([
                                 'name' => 'grade',
@@ -105,9 +105,9 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'options' => ['multiple' => false, 'placeholder' => 'Select Grade ...']
                             ]); 
                         ?>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <?php
+                </div>
+                <div class="form-group col-md-3">
+                    <?php
                             echo '<label>Pilih Satuan</label>';
                             echo Select2::widget([
                                 'name' => 'unit',
@@ -119,15 +119,15 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'options' => ['multiple' => false, 'placeholder' => 'Select Satuan ...']
                             ]); 
                         ?>
-                    </div>
-                    <div class="form-group col-md-12">
-                        <?php
+                </div>
+                <div class="form-group col-md-12">
+                    <?php
                             echo '<div class="form-group">';
                             echo Html::submitButton('Search', ['class' => 'btn btn-primary btn-block']);
                             echo '</div>';
                         ?>
-                    </div>
                 </div>
+            </div>
             <?php 
                 ActiveForm::end();
             ?>
@@ -283,6 +283,15 @@ $this->params['breadcrumbs'][] = $this->title;
                     },
                     'pageSummary'=>true,
                 ],
+                [
+                    'attribute' => 'grade_putih',
+                    'label' => 'GRADE PUTIH',
+                    'format' => 'decimal',
+                    'value' => function ($model) {
+                        return ($model['grade_putih'] > 0) ? $model['grade_putih'] : '';
+                    },
+                    'pageSummary' => true,
+                ],        
                 [
                     'attribute' => 'total_qty',
                     'label' => 'TOTAL QTY',

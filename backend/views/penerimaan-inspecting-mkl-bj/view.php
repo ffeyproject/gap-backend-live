@@ -32,6 +32,7 @@ $totalQtyGrade = [
     InspectingMklBjItems::GRADE_SAMPLE => 0,
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
+    InspectingMklBjItems::GRADE_PUTIH => 0,
 ];
 $totalPiecesGrade = [
     InspectingMklBjItems::GRADE_A => 0,
@@ -41,6 +42,7 @@ $totalPiecesGrade = [
     InspectingMklBjItems::GRADE_SAMPLE => 0,
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
+    InspectingMklBjItems::GRADE_PUTIH => 0,
 ];
 $totalRollGrade = [
     InspectingMklBjItems::GRADE_A => 0,
@@ -50,6 +52,7 @@ $totalRollGrade = [
     InspectingMklBjItems::GRADE_SAMPLE => 0,
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
+    InspectingMklBjItems::GRADE_PUTIH => 0,
 ];
 $joinPieces = [
     InspectingMklBjItems::GRADE_A => [],
@@ -59,6 +62,7 @@ $joinPieces = [
     InspectingMklBjItems::GRADE_SAMPLE => [],
     InspectingMklBjItems::GRADE_A_PLUS => [],
     InspectingMklBjItems::GRADE_A_ASTERISK => [],
+    InspectingMklBjItems::GRADE_PUTIH => [],
 ];
 ?>
 <div class="inspecting-view">
@@ -139,20 +143,21 @@ $joinPieces = [
         <div class="box-body">
             <table class="table table-bordered table-striped">
                 <thead>
-                <tr>
-                    <th>No. Packing</th>
-                    <th>Grade A</th>
-                    <th>Grade B</th>
-                    <th>Grade C</th>
-                    <th>Piece Kecil</th>
-                    <th>Contoh</th>
-                    <th>Grade A+</th>
-                    <th>Grade A*</th>
-                    <th>Keterangan</th>
-                </tr>
+                    <tr>
+                        <th>No. Packing</th>
+                        <th>Grade A</th>
+                        <th>Grade B</th>
+                        <th>Grade C</th>
+                        <th>Piece Kecil</th>
+                        <th>Contoh</th>
+                        <th>Grade A+</th>
+                        <th>Grade A*</th>
+                        <th>Grade Putih</th>
+                        <th>Keterangan</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($model->items as $index=>$item):?>
+                    <?php foreach ($model->items as $index=>$item):?>
                     <?php
                         if($item['qty'] > 0){
                             // akumulasi hanya berlaku jika qty > 0
@@ -303,18 +308,35 @@ $joinPieces = [
                                 }
                             ?>
                         </td>
+                        <td>
+                            <?php
+                                if ($item['grade_up'] <> NULL) {
+                                    if($item['grade_up'] === InspectingMklBjItems::GRADE_PUTIH){
+                                        echo $formatter->asDecimal($item['qty']);
+                                    }else{
+                                        echo '0';
+                                    }
+                                } else {
+                                    if($item['grade'] === InspectingMklBjItems::GRADE_PUTIH){
+                                        echo $formatter->asDecimal($item['qty']);
+                                    }else{
+                                        echo '0';
+                                    }
+                                }
+                            ?>
+                        </td>
                         <td><?=$item['note']?></td>
                     </tr>
-                <?php endforeach;?>
+                    <?php endforeach;?>
                 </tbody>
             </table>
         </div>
 
         <div class="box-footer with-border">
             <?php
-            $totalPieces = $totalPiecesGrade[InspectingMklBjItems::GRADE_A] + $totalPiecesGrade[InspectingMklBjItems::GRADE_B] + $totalPiecesGrade[InspectingMklBjItems::GRADE_C] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_ASTERISK];
-            $totalQty = $totalQtyGrade[InspectingMklBjItems::GRADE_A] + $totalQtyGrade[InspectingMklBjItems::GRADE_B] + $totalQtyGrade[InspectingMklBjItems::GRADE_C] + $totalQtyGrade[InspectingMklBjItems::GRADE_PK] + $totalQtyGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_ASTERISK];
-            $totalRoll = $totalRollGrade[InspectingMklBjItems::GRADE_A] + $totalRollGrade[InspectingMklBjItems::GRADE_B] + $totalRollGrade[InspectingMklBjItems::GRADE_C] + $totalRollGrade[InspectingMklBjItems::GRADE_PK] + $totalRollGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalRollGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalRollGrade[InspectingMklBjItems::GRADE_A_ASTERISK];
+            $totalPieces = $totalPiecesGrade[InspectingMklBjItems::GRADE_A] + $totalPiecesGrade[InspectingMklBjItems::GRADE_B] + $totalPiecesGrade[InspectingMklBjItems::GRADE_C] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PUTIH];
+            $totalQty = $totalQtyGrade[InspectingMklBjItems::GRADE_A] + $totalQtyGrade[InspectingMklBjItems::GRADE_B] + $totalQtyGrade[InspectingMklBjItems::GRADE_C] + $totalQtyGrade[InspectingMklBjItems::GRADE_PK] + $totalQtyGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingMklBjItems::GRADE_PUTIH];
+            $totalRoll = $totalRollGrade[InspectingMklBjItems::GRADE_A] + $totalRollGrade[InspectingMklBjItems::GRADE_B] + $totalRollGrade[InspectingMklBjItems::GRADE_C] + $totalRollGrade[InspectingMklBjItems::GRADE_PK] + $totalRollGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalRollGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalRollGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalRollGrade[InspectingMklBjItems::GRADE_PUTIH];
 
             if($model->satuan == MstGreigeGroup::UNIT_YARD){
                 $totalM = Converter::yardToMeter($totalQty);
@@ -338,146 +360,164 @@ $joinPieces = [
             <div class="box-body">
                 <table class="table table-bordered table-striped">
                     <thead>
-                    <tr>
-                        <th>Total</th>
-                        <th>Total Pieces</th>
-                        <th>Total Roll</th>
-                        <th>Total Ukuran</th>
-                    </tr>
+                        <tr>
+                            <th>Total</th>
+                            <th>Total Pieces</th>
+                            <th>Total Roll</th>
+                            <th>Total Ukuran</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <tr>
-                        <th>Total Grade A+</th>
-                        <td>
-                            <?php
+                        <tr>
+                            <th>Total Grade A+</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_A_PLUS]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade A*</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade A*</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_A_ASTERISK]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade C</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade C</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_C]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_C]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_C]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Piece Kecil</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Piece Kecil</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_PK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_PK]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_PK]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Contoh</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Contoh</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_SAMPLE]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade A</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade A</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_A]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_A]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_A]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Grade B</th>
-                        <td>
-                            <?php
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade B</th>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_B]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_B]);
                             ?>
-                        </td>
-                        <td>
-                            <?php
+                            </td>
+                            <td>
+                                <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_B]);
                             ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Grand Total</th>
-                        <th><?=$formatter->asDecimal($totalPieces)?></th>
-                        <th><?=$formatter->asDecimal($totalRoll)?></th>
-                        <th><?=$formatter->asDecimal($totalQty)?></th>
-                    </tr>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade Putih</th>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_PUTIH]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_PUTIH]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_PUTIH]);
+                            ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Grand Total</th>
+                            <th><?=$formatter->asDecimal($totalPieces)?></th>
+                            <th><?=$formatter->asDecimal($totalRoll)?></th>
+                            <th><?=$formatter->asDecimal($totalQty)?></th>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -493,13 +533,13 @@ $joinPieces = [
             <div class="box-body">
                 <table class="table table-bordered table-striped">
                     <thead>
-                    <tr>
-                        <th>Waktu</th>
-                        <th>Pesan</th>
-                    </tr>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Pesan</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <?php
+                        <?php
                     if($model->delivery_reject_note !== null){
                         $notes = \yii\helpers\Json::decode($model->delivery_reject_note);
                         foreach ($notes as $note) {

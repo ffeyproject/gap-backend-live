@@ -94,13 +94,13 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         ];
     }
 
-    const GRADE_A = 1;const GRADE_B = 2;const GRADE_C = 3;const GRADE_D = 4;const GRADE_E = 5;const GRADE_NG = 6;const GRADE_A_PLUS = 7;const GRADE_A_ASTERISK = 8;
+    const GRADE_A = 1;const GRADE_B = 2;const GRADE_C = 3;const GRADE_D = 4;const GRADE_E = 5;const GRADE_NG = 6;const GRADE_A_PLUS = 7;const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
     /**
      * @return array
      */
     public static function gradeOptions(){
         return [
-            self::GRADE_A => 'A', self::GRADE_B => 'B', self::GRADE_C => 'C', self::GRADE_D => 'D', self::GRADE_E => 'E', self::GRADE_NG => 'NG', self::GRADE_A_PLUS => 'A+', self::GRADE_A_ASTERISK => 'A*',
+            self::GRADE_A => 'A', self::GRADE_B => 'B', self::GRADE_C => 'C', self::GRADE_D => 'D', self::GRADE_E => 'E', self::GRADE_NG => 'NG', self::GRADE_A_PLUS => 'A+', self::GRADE_A_ASTERISK => 'A*', self::GRADE_PUTIH => 'Putih',
         ];
     }
 
@@ -181,7 +181,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             [['is_hasil_mix', 'is_pemotongan'], 'default', 'value'=>false],
 
             ['grade', 'default', 'value'=>self::GRADE_A],
-            ['grade', 'in', 'range' => [self::GRADE_A, self::GRADE_B, self::GRADE_C, self::GRADE_D, self::GRADE_E, self::GRADE_NG, self::GRADE_A_PLUS, self::GRADE_A_ASTERISK]],
+            ['grade', 'in', 'range' => [self::GRADE_A, self::GRADE_B, self::GRADE_C, self::GRADE_D, self::GRADE_E, self::GRADE_NG, self::GRADE_A_PLUS, self::GRADE_A_ASTERISK, self::GRADE_PUTIH]],
 
             ['status', 'default', 'value'=>self::STATUS_PENDING],
             ['status', 'in', 'range' => [self::STATUS_PENDING, self::STATUS_VALID, self::STATUS_ON_PROCESS_CARD, self::STATUS_ON_PROCESS_CARD, self::STATUS_DIPOTONG, self::STATUS_KELUAR_GUDANG]],

@@ -20,7 +20,7 @@ $moduleId = $controller->module->id;
         <!-- Sidebar user panel -->
         <div class="user-panel">
             <div class="pull-left image">
-                <img src="<?=Url::to('@web/images/icons/awo.png') ?>" class="img-circle" alt="User Image"/>
+                <img src="<?=Url::to('@web/images/icons/awo.png') ?>" class="img-circle" alt="User Image" />
             </div>
             <div class="pull-left info">
                 <p><?=$user->username?></p>
@@ -89,6 +89,25 @@ $moduleId = $controller->module->id;
                     [
                         'label' => 'Handling', 'icon' => 'circle', 'url' => ['/mst-handling/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'mst-handling'
+                    ],
+                    [
+                        'label' => 'Defect',
+                        'icon' => 'th-list',
+                        'url' => '#',
+                        'items' => [
+                            [
+                                'label'=>'Kode Defect',
+                                'icon' => 'circle-o',
+                                'url' => ['/mst-kode-defect/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'mst-kode-defect'
+                            ],
+                            [
+                                'label'=>'Grafik Defect',
+                                'icon' => 'circle-o',
+                                'url' => ['/mst-kode-defect/grafik'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'mst-kode-defect'
+                            ],
+                        ]
                     ],
                     [
                         'label' => 'Processing',

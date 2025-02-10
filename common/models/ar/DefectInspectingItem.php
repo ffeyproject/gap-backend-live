@@ -17,6 +17,7 @@ use Yii;
  *
  * @property InspectingItem $inspectingItem
  * @property MstKodeDefect $mstKodeDefect
+ * @property InspectingMklBjItems $inspectingMklBjItems 
  */
 class DefectInspectingItem extends \yii\db\ActiveRecord
 {
@@ -67,6 +68,11 @@ class DefectInspectingItem extends \yii\db\ActiveRecord
     public function getInspectingItem()
     {
         return $this->hasOne(InspectingItem::className(), ['id' => 'inspecting_item_id']);
+    }
+
+    public function getInspectingMklbjItem() 
+    {
+        return $this->hasOne(InspectingMklBjItems::className(), ['id' => 'inspecting_mklbj_item_id']);
     }
 
     /**

@@ -10,7 +10,7 @@ use yii\helpers\ArrayHelper;
  *
  * @property int $id
  * @property int $inspecting_id
- * @property int $grade 1=Grade A, 2=Grade B, 3=Grade C, 4=Piece Kecil, 5=Sample, 7=Grade A+, 8=Grade A*
+ * @property int $grade 1=Grade A, 2=Grade B, 3=Grade C, 4=Piece Kecil, 5=Sample, 7=Grade A+, 8=Grade A*, 9=Grade Putih
  * @property string|null $join_piece
  * @property float $qty
  * @property string|null $note
@@ -21,7 +21,7 @@ use yii\helpers\ArrayHelper;
  */
 class InspectingMklBjItems extends \yii\db\ActiveRecord
 {
-    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8;
+    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
     /**
      * @return array
      */
@@ -34,6 +34,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             self::GRADE_SAMPLE => 'Sample',
             self::GRADE_A => 'Grade A',
             self::GRADE_B => 'Grade B',
+            self::GRADE_PUTIH => 'Grade Putih',
         ];
     }
 
@@ -70,7 +71,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             [['defect', 'lot_no'], 'safe'],
             ['join_piece', 'match', 'pattern' => '/^[A-Z]{1,2}$/'],
             [['inspecting_id'], 'integer'],
-            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK]],
+            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH]],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['join_piece'], 'string', 'max' => 10],
@@ -123,4 +124,21 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
     {
         return self::gradeOptions()[$this->grade];
     }
+
+     public function getDefectInspectingItems()
+    {
+        return $this->hasMany(DefectInspectingItem::className(), ['inspecting_mklbj_item_id' => 'id']);
+    }
+
+
+    public function getTotalPoints($inspectingId, $joinPiece)
+    {
+        $totalPoint = DefectInspectingItem::find()
+            ->joinWith('inspectingMklbjItem')
+            ->where(['inspecting_mkl_bj_items.inspecting_id' => $inspectingId, 'inspecting_mkl_bj_items.join_piece' => $joinPiece])
+            ->sum('defect_inspecting_items.point');
+
+        return $totalPoint;
+    }
+
 }

@@ -65,6 +65,7 @@ class TrnLaporanStockController extends Controller
             'grade_ng' => new Expression("SUM(CASE WHEN trn_gudang_jadi.grade = '6' THEN trn_gudang_jadi.qty ELSE '0' END)"),
             'grade_a_plus' => new Expression("SUM(CASE WHEN trn_gudang_jadi.grade = '7' THEN trn_gudang_jadi.qty ELSE '0' END)"),
             'grade_a_asterisk' => new Expression("SUM(CASE WHEN trn_gudang_jadi.grade = '8' THEN trn_gudang_jadi.qty ELSE '0' END)"),
+            'grade_putih' => new Expression("SUM(CASE WHEN trn_gudang_jadi.grade = '9' THEN trn_gudang_jadi.qty ELSE '0' END)"),
             'total_qty' => new Expression("SUM(trn_gudang_jadi.qty)"), // New column for total sum of qty
             // 'converted_created_at' => new Expression("TO_TIMESTAMP(trn_gudang_jadi.created_at)::TIMESTAMPTZ AT TIME ZONE 'Asia/Bangkok'"),
         ])

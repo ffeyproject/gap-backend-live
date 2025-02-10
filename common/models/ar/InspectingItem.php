@@ -18,7 +18,7 @@ use Yii;
  */
 class InspectingItem extends \yii\db\ActiveRecord
 {
-    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8;
+    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
     /**
      * @return array
      */
@@ -31,6 +31,7 @@ class InspectingItem extends \yii\db\ActiveRecord
             self::GRADE_SAMPLE => 'Sample',
             self::GRADE_A => 'Grade A',
             self::GRADE_B => 'Grade B',
+            self::GRADE_PUTIH => 'Putih',
         ];
     }
 
@@ -93,4 +94,23 @@ class InspectingItem extends \yii\db\ActiveRecord
     {
         return $this->hasMany(DefectInspectingItem::className(), ['inspecting_item_id' => 'id']);
     }
+
+
+    /**
+     * Menghitung total point berdasarkan inspecting_id dan join_piece yang sama.
+     *
+     * @param int $inspectingId
+     * @param string $joinPiece
+     * @return float
+     */
+    public function getTotalPoints($inspectingId, $joinPiece)
+    {
+        $totalPoint = DefectInspectingItem::find()
+            ->joinWith('inspectingItem')
+            ->where(['inspecting_item.inspecting_id' => $inspectingId, 'inspecting_item.join_piece' => $joinPiece])
+            ->sum('defect_inspecting_items.point');
+
+        return $totalPoint;
+    }
+
 }

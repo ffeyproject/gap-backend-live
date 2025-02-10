@@ -73,7 +73,8 @@ use common\models\ar\InspectingMklBjItems;
                     ]);
                     ?>
 
-                    <p><strong>Motif: </strong> <span id="MotifKain"><?=$model->isNewRecord ? '' : $model->wo->greigeNamaKain?></span></p>
+                    <p><strong>Motif: </strong> <span
+                            id="MotifKain"><?=$model->isNewRecord ? '' : $model->wo->greigeNamaKain?></span></p>
 
                     <?php
                     $colorData = [];
@@ -161,34 +162,35 @@ use common\models\ar\InspectingMklBjItems;
         <div class="box-body">
             <table class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>No Lot</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                    <th>&nbsp;</th>
-                </tr>
+                    <tr>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>No Lot</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                        <th>&nbsp;</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>
-                        <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
+                    <tr>
+                        <td>
+                            <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
                             'data' => \common\models\ar\InspectingMklBjItems::gradeOptions(),
                             /*'options' => ['placeholder' => 'Pilih ...'],
                             'pluginOptions' => [
                                 'allowClear' => true
                             ],*/
                         ])->label(false) ?>
-                    </td>
-                    <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
-                    <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
-                    <td class="text-right"><?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?></td>
-                </tr>
+                        </td>
+                        <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
+                        <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
+                        <td class="text-right">
+                            <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -206,16 +208,16 @@ use common\models\ar\InspectingMklBjItems;
         <div class="box-body">
             <table id="InspectingItemTable" class="table table-bordered">
                 <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Grade</th>
-                    <th>Ukuran</th>
-                    <th>Join Piece</th>
-                    <th>No Lot</th>
-                    <th>Defect</th>
-                    <th>Keterangan</th>
-                    <th>Action</th>
-                </tr>
+                    <tr>
+                        <th>No</th>
+                        <th>Grade</th>
+                        <th>Ukuran</th>
+                        <th>Join Piece</th>
+                        <th>No Lot</th>
+                        <th>Defect</th>
+                        <th>Keterangan</th>
+                        <th>Action</th>
+                    </tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -223,9 +225,9 @@ use common\models\ar\InspectingMklBjItems;
     </div>
 </div>
 
-    <div class="row">
-        <div class="col-md-12 text-right"><button id="BtnSubmitForm" class="btn btn-success">Save</button></div>
-    </div>
+<div class="row">
+    <div class="col-md-12 text-right"><button id="BtnSubmitForm" class="btn btn-success">Save</button></div>
+</div>
 
 <?php
 $this->registerJsVar('inspectingItems', $items);

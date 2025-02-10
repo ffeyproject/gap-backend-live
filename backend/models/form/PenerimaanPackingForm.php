@@ -8,7 +8,7 @@ use yii\base\Model;
 /**
  * This is the model class for table "trn_inspecting".
  *
- * @property int $jenis_gudang 1=Lokal, 2=Export, 3=Grade B
+ * @property int $jenis_gudang 1=Lokal, 2=Export, 3=Grade B, 4=Verpacking
  */
 class PenerimaanPackingForm extends Model
 {
@@ -22,7 +22,7 @@ class PenerimaanPackingForm extends Model
         return [
             ['jenis_gudang', 'required'],
             ['jenis_gudang', 'default', 'value'=>TrnGudangJadi::JENIS_GUDANG_LOKAL],
-            ['jenis_gudang', 'in', 'range' => [TrnGudangJadi::JENIS_GUDANG_LOKAL, TrnGudangJadi::JENIS_GUDANG_EXPORT, TrnGudangJadi::JENIS_GUDANG_GRADE_B]],
+            ['jenis_gudang', 'in', 'range' => [TrnGudangJadi::JENIS_GUDANG_LOKAL, TrnGudangJadi::JENIS_GUDANG_EXPORT, TrnGudangJadi::JENIS_GUDANG_GRADE_B, TrnGudangJadi::JENIS_GUDANG_VERPACKING]],
         ];
     }
 

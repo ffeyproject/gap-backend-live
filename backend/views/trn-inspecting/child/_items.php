@@ -4,6 +4,7 @@ use common\models\ar\InspectingItem;
 use common\models\ar\MstGreige;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnInspecting;
+use common\models\ar\TrnScGreige;
 use yii\helpers\Html;
 
 /* @var $this yii\web\View */
@@ -14,6 +15,8 @@ use yii\helpers\Html;
 $unitName = MstGreigeGroup::unitOptions()[$model->unit];
 $perBatch = $greige->group->qty_per_batch;
 
+$options = TrnScGreige::lebarKainOptions();
+
 $totalQtyGrade = [
     InspectingItem::GRADE_A => 0,
     InspectingItem::GRADE_B => 0,
@@ -22,6 +25,7 @@ $totalQtyGrade = [
     InspectingItem::GRADE_SAMPLE => 0,
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
+    InspectingItem::GRADE_PUTIH => 0,
 ];
 $totalPiecesGrade = [
     InspectingItem::GRADE_A => 0,
@@ -31,6 +35,7 @@ $totalPiecesGrade = [
     InspectingItem::GRADE_SAMPLE => 0,
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
+    InspectingItem::GRADE_PUTIH => 0,
 ];
 $totalRollGrade = [
     InspectingItem::GRADE_A => 0,
@@ -40,6 +45,7 @@ $totalRollGrade = [
     InspectingItem::GRADE_SAMPLE => 0,
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
+    InspectingItem::GRADE_PUTIH => 0,
 ];
 $joinPieces = [
     InspectingItem::GRADE_A => [],
@@ -49,6 +55,7 @@ $joinPieces = [
     InspectingItem::GRADE_SAMPLE => [],
     InspectingItem::GRADE_A_PLUS => [],
     InspectingItem::GRADE_A_ASTERISK => [],
+    InspectingItem::GRADE_PUTIH => [],
 ];
 
 $no_wo = substr($model->wo->no, -1);
@@ -65,7 +72,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
 <div class="box">
     <div class="box-header with-border">
         <div class="box-tools pull-left">
-            <span><strong>Packing List</strong></span><br>
+            <span><strong>Packing List
+                    <?= MstGreigeGroup::unitOptions()[$model->unit] ?>
+                </strong></span><br>
             <small><b>*checklist untuk menampilkan</b></small><br>
             <?= Html::checkbox('param3', $defaultCheck, ['label' => 'Made In Indonesia', 'id' => 'param3Checkbox']); ?>
             <?= Html::checkbox('param4', $defaultCheck, ['label' => 'Registrasi K3L', 'id' => 'param4Checkbox']); ?>
@@ -91,8 +100,10 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Contoh</th>
                     <th>Grade A+</th>
                     <th>Grade A*</th>
+                    <th>Putih</th>
                     <th>Lot No</th>
                     <th>Defect</th>
+                    <th>Nilai Point</th>
                     <th>Keterangan</th>
                     <th>Qr-Code</th>
                     <th>Qr-Data</th>
@@ -253,6 +264,23 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             }
                         ?>
                     </td>
+                    <td>
+                        <?php
+                            if ($item['grade_up'] <> NULL) {
+                                if($item['grade_up'] === InspectingItem::GRADE_PUTIH){
+                                    echo $formatter->asDecimal($item['qty']);
+                                }else{
+                                    echo '0';
+                                }
+                            } else {
+                                if($item['grade'] === InspectingItem::GRADE_PUTIH){
+                                    echo $formatter->asDecimal($item['qty']);
+                                }else{
+                                    echo '0';
+                                }
+                            }
+                        ?>
+                    </td>
                     <td><?=$item['lot_no']?></td>
                     <td>
                         <?php
@@ -266,6 +294,56 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         ?>
                     </td>
 
+                    <td>
+                        <?php 
+                            if ($item['is_head'] == 1) {
+                                $options = $item->inspecting->scGreige->lebar_kain;
+                                switch ($options) {
+                                    case TrnScGreige::LEBAR_KAIN_44:
+                                        $lebarKain = 44;
+                                        break;
+                                    case TrnScGreige::LEBAR_KAIN_58:
+                                        $lebarKain = 58;
+                                        break;
+                                    case TrnScGreige::LEBAR_KAIN_64:
+                                        $lebarKain = 64;
+                                        break;
+                                    case TrnScGreige::LEBAR_KAIN_66:
+                                        $lebarKain = 66;
+                                        break;
+                                    default:
+                                        $lebarKain = 0;
+                                }
+
+                                $totalPoint = 0;
+
+                                $inspectingId = $item->inspecting_id;
+                                $joinPiece = $item->join_piece;
+                                $totalPoint = $item->getTotalPoints($inspectingId, $joinPiece);
+
+                                $qty = $item['qty_sum'];
+                                 $unit = MstGreigeGroup::unitOptions()[$model->unit] ?? '';
+
+                                if ($qty != 0 && $qty != null && $lebarKain != 0) {
+                                    if ($unit == 'Yard') {
+                                        
+                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty);
+                                    } elseif ($unit == 'Meter') {
+                                         $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
+                                    } elseif ($unit == 'Kilogram') {
+                                       $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
+                                    }
+
+                                    echo number_format($result, 2);
+                                } else {
+                                    echo '';
+                                }
+                            } else {
+                                echo '';
+                            }
+                        ?>
+
+                    </td>
                     <td><?=$item['note']?></td>
                     <td style="width: 100px;">
                         <?php 
@@ -284,9 +362,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
     </div>
     <div class="box-footer with-border">
         <?php
-        $totalPieces = $totalPiecesGrade[InspectingItem::GRADE_A] + $totalPiecesGrade[InspectingItem::GRADE_B] + $totalPiecesGrade[InspectingItem::GRADE_C] + $totalPiecesGrade[InspectingItem::GRADE_PK] + $totalPiecesGrade[InspectingItem::GRADE_SAMPLE] + $totalPiecesGrade[InspectingItem::GRADE_A_PLUS] + $totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK];
-        $totalQty = $totalQtyGrade[InspectingItem::GRADE_A] + $totalQtyGrade[InspectingItem::GRADE_B] + $totalQtyGrade[InspectingItem::GRADE_C] + $totalQtyGrade[InspectingItem::GRADE_PK] + $totalQtyGrade[InspectingItem::GRADE_SAMPLE] + $totalQtyGrade[InspectingItem::GRADE_A_PLUS] + $totalQtyGrade[InspectingItem::GRADE_A_ASTERISK];
-        $totalRoll = $totalRollGrade[InspectingItem::GRADE_A] + $totalRollGrade[InspectingItem::GRADE_B] + $totalRollGrade[InspectingItem::GRADE_C] + $totalRollGrade[InspectingItem::GRADE_PK] + $totalRollGrade[InspectingItem::GRADE_SAMPLE] + $totalRollGrade[InspectingItem::GRADE_A_PLUS] + $totalRollGrade[InspectingItem::GRADE_A_ASTERISK];
+        $totalPieces = $totalPiecesGrade[InspectingItem::GRADE_A] + $totalPiecesGrade[InspectingItem::GRADE_B] + $totalPiecesGrade[InspectingItem::GRADE_C] + $totalPiecesGrade[InspectingItem::GRADE_PK] + $totalPiecesGrade[InspectingItem::GRADE_SAMPLE] + $totalPiecesGrade[InspectingItem::GRADE_A_PLUS] + $totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingItem::GRADE_PUTIH];
+        $totalQty = $totalQtyGrade[InspectingItem::GRADE_A] + $totalQtyGrade[InspectingItem::GRADE_B] + $totalQtyGrade[InspectingItem::GRADE_C] + $totalQtyGrade[InspectingItem::GRADE_PK] + $totalQtyGrade[InspectingItem::GRADE_SAMPLE] + $totalQtyGrade[InspectingItem::GRADE_A_PLUS] + $totalQtyGrade[InspectingItem::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingItem::GRADE_PUTIH];
+        $totalRoll = $totalRollGrade[InspectingItem::GRADE_A] + $totalRollGrade[InspectingItem::GRADE_B] + $totalRollGrade[InspectingItem::GRADE_C] + $totalRollGrade[InspectingItem::GRADE_PK] + $totalRollGrade[InspectingItem::GRADE_SAMPLE] + $totalRollGrade[InspectingItem::GRADE_A_PLUS] + $totalRollGrade[InspectingItem::GRADE_A_ASTERISK] + $totalRollGrade[InspectingItem::GRADE_PUTIH];
 
         if($model->unit == MstGreigeGroup::UNIT_YARD){
             $totalM = Converter::yardToMeter($totalQty);
@@ -452,6 +530,24 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             <td>
                                 <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_B]);
+                            ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade Putih</th>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_PUTIH]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_PUTIH]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_PUTIH]);
                             ?>
                             </td>
                         </tr>

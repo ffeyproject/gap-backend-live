@@ -10,7 +10,7 @@ use yii\behaviors\TimestampBehavior;
  * This is the model class for table "trn_gudang_jadi".
  *
  * @property int $id
- * @property int|null $jenis_gudang 1=Lokal, 2=Export, 3=Grade B
+ * @property int|null $jenis_gudang 1=Lokal, 2=Export, 3=Grade B, 4=Verpacking
  * @property int $wo_id
  * @property int $source Asal kain, 1=Packing/Inspecting 2=Makloon Proses 3=Makloon Finish 4=Retur Buyer
  * @property string|null $source_ref Nomor referensi source, misalnya nomor inspecting, no surat terima dari makloon, dll.
@@ -37,12 +37,12 @@ use yii\behaviors\TimestampBehavior;
  */
 class TrnGudangJadi extends \yii\db\ActiveRecord
 {
-    const JENIS_GUDANG_LOKAL = 1; const JENIS_GUDANG_EXPORT = 2; const JENIS_GUDANG_GRADE_B = 3;
+    const JENIS_GUDANG_LOKAL = 1; const JENIS_GUDANG_EXPORT = 2; const JENIS_GUDANG_GRADE_B = 3; const JENIS_GUDANG_VERPACKING = 4;
     /**
      * @return array
      */
     public static function jenisGudangOptions(){
-        return [self::JENIS_GUDANG_LOKAL => 'Lokal', self::JENIS_GUDANG_EXPORT => 'Export', self::JENIS_GUDANG_GRADE_B => 'Grade B'];
+        return [self::JENIS_GUDANG_LOKAL => 'Lokal', self::JENIS_GUDANG_EXPORT => 'Export', self::JENIS_GUDANG_GRADE_B => 'Grade B', self::JENIS_GUDANG_VERPACKING => 'Verpacking'];
     }
 
     const SOURCE_PACKING = 1; const SOURCE_MAKLOON_PROSES = 2; const SOURCE_MAKLOON_FINISH = 3; const SOURCE_RETUR = 4; const SOURCE_BELI_JADI = 5;
@@ -111,7 +111,7 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
             [['hasil_pemotongan', 'dipotong'], 'default', 'value'=>false],
 
             ['grade', 'default', 'value'=>TrnStockGreige::GRADE_NG],
-            ['grade', 'in', 'range' => [TrnStockGreige::GRADE_A, TrnStockGreige::GRADE_B, TrnStockGreige::GRADE_C, TrnStockGreige::GRADE_D, TrnStockGreige::GRADE_E, TrnStockGreige::GRADE_NG, TrnStockGreige::GRADE_A_PLUS, TrnStockGreige::GRADE_A_ASTERISK]],
+            ['grade', 'in', 'range' => [TrnStockGreige::GRADE_A, TrnStockGreige::GRADE_B, TrnStockGreige::GRADE_C, TrnStockGreige::GRADE_D, TrnStockGreige::GRADE_E, TrnStockGreige::GRADE_NG, TrnStockGreige::GRADE_A_PLUS, TrnStockGreige::GRADE_A_ASTERISK, TrnStockGreige::GRADE_PUTIH]],
         ];
     }
 
