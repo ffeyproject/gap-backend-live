@@ -59,7 +59,7 @@ class TrnMoSearchArray extends TrnMo
         ->leftJoin('(SELECT mo_id, SUM(qty) as color_qty FROM trn_mo_color GROUP BY mo_id) as tmc', 'tmc.mo_id = trn_mo.id')
         
         // Subquery untuk `trn_wo_color`, tidak melakukan agregasi
-        ->leftJoin('(SELECT mo_id , SUM(qty) as wo_color_qty FROM trn_wo_color GROUP BY mo_id) as twc', 'twc.mo_id = trn_mo.id');
+        ->leftJoin('(SELECT trn_wo_color.mo_id , SUM(qty) as wo_color_qty FROM trn_wo_color JOIN trn_wo ON trn_wo.id = trn_wo_color.wo_id WHERE trn_wo.status ='.TrnWo::STATUS_APPROVED.' GROUP BY trn_wo_color.mo_id) as twc', 'twc.mo_id = trn_mo.id');
     
         // Memilih kolom yang dibutuhkan
         $query->select([
