@@ -65,7 +65,7 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
         ];
     }
 
-    const LEBAR_KAIN_44 = 1; const LEBAR_KAIN_58 = 2; const LEBAR_KAIN_60 = 3; const LEBAR_KAIN_64 = 4; const LEBAR_KAIN_66 = 5; const LEBAR_KAIN_68 = 6;
+    const LEBAR_KAIN_44 = 1; const LEBAR_KAIN_58 = 2; const LEBAR_KAIN_60 = 3; const LEBAR_KAIN_64 = 4; const LEBAR_KAIN_66 = 5; const LEBAR_KAIN_68 = 6;const LEBAR_KAIN_72 = 7;
     /**
      * @return array
      */
@@ -77,6 +77,7 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_64 => '64"',
             self::LEBAR_KAIN_66 => '66"',
             self::LEBAR_KAIN_68 => '68"',
+            self::LEBAR_KAIN_72 => '72"',
         ];
     }
 

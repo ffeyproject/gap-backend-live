@@ -83,7 +83,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
         ];
     }
 
-    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;
+    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;const LEBAR_KAIN_68 = 5;const LEBAR_KAIN_72 = 6;
     /**
      * @return array
      */
@@ -93,6 +93,8 @@ class TrnScGreige extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_58 => '58',
             self::LEBAR_KAIN_64 => '64',
             self::LEBAR_KAIN_66 => '66',
+            self::LEBAR_KAIN_68 => '68',
+            self::LEBAR_KAIN_72 => '72',
         ];
     }
 
