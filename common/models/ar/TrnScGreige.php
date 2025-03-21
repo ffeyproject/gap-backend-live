@@ -151,7 +151,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
             ['process', 'in', 'range' => [TrnScGreige::PROCESS_DYEING, TrnScGreige::PROCESS_PRINTING, TrnScGreige::PROCESS_PFP]],
 
             ['lebar_kain', 'default', 'value'=>TrnScGreige::LEBAR_KAIN_44],
-            ['lebar_kain', 'in', 'range' => [TrnScGreige::LEBAR_KAIN_44, TrnScGreige::LEBAR_KAIN_58, TrnScGreige::LEBAR_KAIN_64, TrnScGreige::LEBAR_KAIN_66]],
+            ['lebar_kain', 'in', 'range' => [TrnScGreige::LEBAR_KAIN_44, TrnScGreige::LEBAR_KAIN_58, TrnScGreige::LEBAR_KAIN_64, TrnScGreige::LEBAR_KAIN_66, TrnScGreige::LEBAR_KAIN_68, TrnScGreige::LEBAR_KAIN_72]],
 
             ['grade', 'default', 'value'=>TrnScGreige::GRADE_A],
             ['grade', 'in', 'range' => [TrnScGreige::GRADE_A, TrnScGreige::GRADE_B, TrnScGreige::GRADE_C, TrnScGreige::GRADE_ALL]],
