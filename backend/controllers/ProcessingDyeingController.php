@@ -7,11 +7,14 @@ use common\models\ar\KartuProcessDyeingProcess;
 use common\models\ar\KartuProcessDyeingProcessSearch;
 use common\models\ar\MstProcessDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
+use common\models\ar\TrnKartuProsesPfpItem;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnWo;
 use common\models\ar\TrnWoColor;
+use common\models\ar\TrnOrderPfp;
 use Yii;
 use common\models\ar\TrnKartuProsesDyeing;
+use common\models\ar\TrnKartuProsesPfp;
 use common\models\ar\TrnKartuProsesDyeingSearch;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Html;
@@ -727,5 +730,110 @@ class ProcessingDyeingController extends Controller
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
+    }
+
+    /**
+     * Ganti Wo dari kartu proses dyeing ke Pfp.
+     *
+     * @param integer $id id kartu proses dyeing
+     * @return array
+     * @throws ForbiddenHttpException
+     * @throws NotFoundHttpException
+     * @throws \Throwable
+     */
+    public function actionGantiKePfp($id)
+    {
+        if (Yii::$app->request->isAjax){
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $model = $this->findModel($id);
+
+            //$statusValid = $model->status === $model::STATUS_DELIVERED || $model->status === $model::STATUS_INSPECTED;
+            $statusValid = $model->status === $model::STATUS_DELIVERED || $model->status === $model::STATUS_POSTED;
+
+            if(!$statusValid){
+                throw new ForbiddenHttpException('Status Kartu proses tidak valid.');
+            }
+
+            $data = Yii::$app->request->post();
+            $noPfp = $data['no_order_pfp'];
+
+            $orderPfp = TrnOrderPfp::findOne(['no'=>$noPfp]);
+            if ($orderPfp === null){
+                throw new NotFoundHttpException('Order Pfp tidak ditemukan.');
+            }
+
+            $modelKpPfp = new TrnKartuProsesPfp([
+                'greige_group_id' => $orderPfp->greige_group_id,
+                'greige_id' => $orderPfp->greige_id,
+                'order_pfp_id' => $orderPfp->id, // sesuaikan jika ada relasi
+                'no_urut' => $model->no_urut,
+                'no' => $model->no,
+                'asal_greige' => $model->asal_greige,
+                'dikerjakan_oleh' => $model->dikerjakan_oleh,
+                'lusi' => $model->lusi,
+                'pakan' => $model->pakan,
+                'note' => $model->note,
+                'date' => $model->date,
+                'posted_at' => $model->posted_at,
+                'approved_at' => $model->approved_at,
+                'approved_by' => $model->approved_by,
+                'delivered_at' => $model->delivered_at,
+                'delivered_by' => $model->delivered_by,
+                'reject_notes' => $model->reject_notes,
+                'status' => $model->status,
+                'created_at' => $model->created_at,
+                'created_by' => $model->created_by,
+                'updated_at' => $model->updated_at,
+                'updated_by' => $model->updated_by,
+                'berat' => $model->berat,
+                'lebar' => $model->lebar,
+                'k_density_lusi' => $model->k_density_lusi,
+                'k_density_pakan' => $model->k_density_pakan,
+                'lebar_preset' => $model->lebar_preset,
+                'lebar_finish' => $model->lebar_finish,
+                'berat_finish' => $model->berat_finish,
+                't_density_lusi' => $model->t_density_lusi,
+                't_density_pakan' => $model->t_density_pakan,
+                'handling' => $model->handling,
+                'no_limit_item' => $model->no_limit_item,
+                'nomor_kartu' => $model->nomor_kartu,
+            ]);
+            
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if ($modelKpPfp->save(false)){
+                    foreach ($model->trnKartuProsesDyeingItems as $trnKartuProsesDyeingItem) {
+                        Yii::$app->db->createCommand()->insert(TrnKartuProsesPfpItem::tableName(), [
+                            'greige_group_id' => $modelKpPfp->greige_group_id,
+                            'greige_id' => $modelKpPfp->greige_id,
+                            'order_pfp_id' => $modelKpPfp->order_pfp_id,
+                            'kartu_process_id' => $modelKpPfp->id,
+                            'stock_id' => $trnKartuProsesDyeingItem->stock_id,
+                            'panjang_m' => $trnKartuProsesDyeingItem->panjang_m,
+                            'mesin' => $trnKartuProsesDyeingItem->mesin,
+                            'tube' => $trnKartuProsesDyeingItem->tube,
+                            'note' => $trnKartuProsesDyeingItem->note,
+                            'status' => $trnKartuProsesDyeingItem->status,
+                            'date' => $modelKpPfp->date,  
+                            'created_at' => $modelKpPfp->created_at,
+                        ])->execute();
+                    }
+
+                    $model->status = $model::STATUS_GANTI_GREIGE_LINKED;
+                    $model->save(false, ['status']);
+
+                    $transaction->commit();
+
+                    return ['success'=>true, 'data'=>$data];
+                }
+            }catch (\Throwable $t){
+                $transaction->rollBack();
+                throw $t;
+            }
+        }
+
+        throw new ForbiddenHttpException('Not allowed');
     }
 }
