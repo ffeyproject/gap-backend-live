@@ -58,7 +58,7 @@ echo GridView::widget([
             'label'=>'Qty Sisa',
             'value' => function($data){
                 /* @var $data TrnMoColor */
-                return $data->qty - $data->qtyWoColors;
+                return ($data->qty + $data->qtyWoColorsBatal) - $data->qtyWoColors;
             },
             'format' => 'decimal',
             'pageSummary' => true,

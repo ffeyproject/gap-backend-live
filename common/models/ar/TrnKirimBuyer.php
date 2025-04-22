@@ -180,6 +180,8 @@ class TrnKirimBuyer extends \yii\db\ActiveRecord
                 return Converter::yardToMeter($this->qtyKirim);
             case MstGreigeGroup::UNIT_METER:
                 return $this->qtyKirim;
+            case MstGreigeGroup::UNIT_KILOGRAM:
+                return 0;
             default:
                 throw new NotAcceptableHttpException('Unit '.MstGreigeGroup::unitOptions()[$this->scGreige->greigeGroup->unit].' belum didukung');
         }
@@ -195,6 +197,8 @@ class TrnKirimBuyer extends \yii\db\ActiveRecord
                 return $this->qtyKirim;
             case MstGreigeGroup::UNIT_METER:
                 return Converter::meterToYard($this->qtyKirim);
+            case MstGreigeGroup::UNIT_KILOGRAM:
+                return 0;
             default:
                 throw new NotAcceptableHttpException('Unit '.MstGreigeGroup::unitOptions()[$this->scGreige->greigeGroup->unit].' belum didukung');
         }
