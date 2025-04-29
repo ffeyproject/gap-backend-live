@@ -75,7 +75,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
     const RE_INSPEKSI = 2;
 
     public static function jenisInspeksiOptions(){
-        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Inspeksi'];
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing'];
     }
 
     /**
