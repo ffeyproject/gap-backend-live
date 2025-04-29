@@ -146,6 +146,15 @@ use common\models\ar\InspectingMklBjItems;
                             'allowClear' => true
                         ],
                     ])?>
+
+                    <?= $formHeader->field($model, 'jenis_inspek')->widget(Select2::classname(), [
+                        'data' => $model::jenisInspeksiOptions(),
+                        'options' => ['placeholder' => 'Pilih ...'],
+                        'pluginOptions' => [
+                            'allowClear' => true
+                        ],
+                    ])?>
+
                 </div>
             </div>
         </div>

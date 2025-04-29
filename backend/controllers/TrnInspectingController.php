@@ -487,7 +487,6 @@ class TrnInspectingController extends Controller
             'defect' => $model->defect,
             'status' => $model->unit,
             'jenis_inspek' => $model->jenis_inspek,
-
         ]);
 
         $nomorKartu = '';

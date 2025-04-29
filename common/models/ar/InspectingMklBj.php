@@ -69,6 +69,13 @@ class InspectingMklBj extends \yii\db\ActiveRecord
         ];
     }
 
+    const FRESH_INSPEKSI = 1;
+    const RE_INSPEKSI = 2;
+
+    public static function jenisInspeksiOptions(){
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Inspeksi'];
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -94,7 +101,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['wo_id', 'wo_color_id', 'tgl_inspeksi', 'tgl_kirim', 'no_lot', 'jenis', 'satuan', 'k3l_code'], 'required'],
+            [['wo_id', 'wo_color_id', 'tgl_inspeksi', 'tgl_kirim', 'no_lot', 'jenis', 'satuan', 'k3l_code', 'jenis_inspek'], 'required'],
             [['wo_color_id', 'jenis', 'satuan', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
             [['wo_id', 'wo_color_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status', 'delivered_at', 'delivered_by'], 'integer'],
             [['tgl_inspeksi', 'tgl_kirim', 'delivery_reject_note', 'defect'], 'safe'],
@@ -105,6 +112,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED]],
 
             ['jenis', 'in', 'range' => [self::JENIS_MAKLOON_PROSES, self::JENIS_MAKLOON_FIINISH, self::JENIS_BARANG_JADI, self::JENIS_FRESH]],
+            ['jenis_inspek', 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
             ['satuan', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
 
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
@@ -125,6 +133,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             'tgl_kirim' => 'Tgl Kirim',
             'no_lot' => 'No Lot',
             'jenis' => 'Jenis',
+            'jenis_inspek' => 'Jenis Inspeksi',
             'satuan' => 'Satuan',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
@@ -239,6 +248,11 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     public function getJenisName()
     {
         return self::jenisOptions()[$this->jenis];
+    }
+
+    public function getJenisInspeksi()
+    {
+        return self::jenisInspeksiOptions()[$this->jenis_inspek];
     }
 
     /**

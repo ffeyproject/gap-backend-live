@@ -110,6 +110,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
+            
             [
                 'attribute'=>'jenis_inspek',
                 'value'=>function($data){

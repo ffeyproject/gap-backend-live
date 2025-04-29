@@ -117,6 +117,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         'model' => $model,
                         'attributes' => [
                             'jenisName',
+                            'jenisInspeksi',
                             'satuanName',
                             'created_at:datetime',
                             'created_by',

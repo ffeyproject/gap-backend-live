@@ -84,6 +84,7 @@ use yii\widgets\DetailView;
                 ]) ?>
             </div>
 
+
             <div class="col-md-4">
                 <?= DetailView::widget([
                     'model' => $model,

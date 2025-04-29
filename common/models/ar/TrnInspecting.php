@@ -110,6 +110,8 @@ class TrnInspecting extends \yii\db\ActiveRecord
             ['jenis_inspek', 'default', 'value'=>self::FRESH_INSPEKSI],
             ['jenis_inspek', 'required'],
             ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
+            
+            
 
             ['unit', 'default', 'value'=>MstGreigeGroup::UNIT_METER],
             ['unit', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],

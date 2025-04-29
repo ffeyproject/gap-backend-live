@@ -15,7 +15,6 @@ class TrnInspectingSearch extends TrnInspecting
     public $to_date;
     public $dateRange;
     public $color;
-
     public $woNo;
     public $kpdNo;
     public $kppNo;
