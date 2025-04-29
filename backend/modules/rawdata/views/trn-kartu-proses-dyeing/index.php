@@ -43,6 +43,7 @@ $this->params['breadcrumbs'][] = $this->title;
             //'delivered_at',
             //'delivered_by',
             //'reject_notes:ntext',
+            'nomor_kartu',
             'status',
             //'created_at',
             //'created_by',

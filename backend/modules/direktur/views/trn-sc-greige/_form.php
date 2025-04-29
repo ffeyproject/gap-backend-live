@@ -70,6 +70,7 @@ use yii\widgets\ActiveForm;
     <div class="row">
         <div class="col-md-6">
             <?= $form->field($model, 'merek')->textInput(['maxlength' => true]) ?>
+            <?= $form->field($model, 'artikel_sc')->textInput(['maxlength' => true]) ?>
 
             <div class="row">
                 <div class="col-md-6"><?= $form->field($model, 'qty')->textInput(['maxlength' => true]) ?></div>

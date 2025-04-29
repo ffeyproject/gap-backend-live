@@ -34,6 +34,7 @@ use Yii;
  * @property string|null $label
  * @property string|null $folder
  * @property string|null $album
+ * @property string|null $handling
  * @property bool|null $joint
  * @property int|null $joint_qty
  * @property int $packing_method 1=SINGLE ROLL, 2=DOUBLE FOLDED
@@ -97,7 +98,7 @@ class TrnMo extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['sc_id', 'sc_greige_id', 'process', 'date', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'est_produksi', 'est_packing', 'target_shipment', 'status'], 'required'],
+            [['sc_id', 'sc_greige_id', 'process', 'date', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'est_produksi', 'est_packing', 'target_shipment', 'handling', 'status'], 'required'],
             [['sc_id', 'sc_greige_id', 'process', 'approval_id', 'approved_at', 'no_urut', 'border_size', 'block_size', 'joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'jenis_gudang', 'posted_at', 'closed_at', 'closed_by', 'batal_at', 'batal_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['sc_id', 'sc_greige_id', 'process', 'approval_id', 'approved_at', 'no_urut', 'border_size', 'block_size', 'joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'jenis_gudang', 'posted_at', 'closed_at', 'closed_by', 'batal_at', 'batal_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['date', 'est_produksi', 'est_packing', 'target_shipment'], 'safe'],
@@ -147,6 +148,7 @@ class TrnMo extends \yii\db\ActiveRecord
             'label' => 'Label',
             'folder' => 'Folder',
             'album' => 'Album',
+            'handling' => 'Handling',
             'joint' => 'Joint',
             'joint_qty' => 'Joint Qty',
             'packing_method' => 'Packing Method',

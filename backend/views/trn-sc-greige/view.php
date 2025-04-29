@@ -42,6 +42,7 @@ $formatter = Yii::$app->formatter;
                         'attribute'=>'nomorSc',
                         'value'=>$model->sc->no
                     ],
+                    'artikel_sc',
                     [
                         'attribute'=>'process',
                         'value'=>$model::processOptions()[$model->process]

@@ -44,7 +44,7 @@ $bankAccount = $model->bankAcct;
 <table class="table table-bordered small">
     <tr>
         <th class="text-center">Jenis Proses</th>
-        <!-- <th class="text-center">Item</th> -->
+        <th class="text-center">Item</th>
         <th class="text-center">Artikel</th>
         <!-- <th class="text-center">Merek</th> -->
         <th class="text-center">Piece Length</th>
@@ -61,12 +61,12 @@ $bankAccount = $model->bankAcct;
     <tr>
         <td><?=$trnScGreige::processOptions()[$trnScGreige->process]?>
             <?=$trnScGreige::lebarKainOptions()[$trnScGreige->lebar_kain]?>"</td>
-        <!--<td>-->
-        <?//=$trnScGreige->greigeGroup->nama_kain?>
-        <!--</td>-->
+        <td>
+            <?=$trnScGreige->greigeGroup->nama_kain?>
+        </td>
         <td><?php
             if(is_null($trnScGreige->artikel_sc)){
-                echo $trnScGreige->greigeGroup->nama_kain;
+                echo '-';
             }else{
                 echo $trnScGreige->artikel_sc;
             }

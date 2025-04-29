@@ -65,7 +65,7 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
         ];
     }
 
-    const LEBAR_KAIN_44 = 1; const LEBAR_KAIN_58 = 2; const LEBAR_KAIN_60 = 3; const LEBAR_KAIN_64 = 4; const LEBAR_KAIN_66 = 5; const LEBAR_KAIN_68 = 6;const LEBAR_KAIN_72 = 7;
+    const LEBAR_KAIN_44 = 1; const LEBAR_KAIN_58 = 2; const LEBAR_KAIN_60 = 3; const LEBAR_KAIN_64 = 4; const LEBAR_KAIN_66 = 5; const LEBAR_KAIN_68 = 6;const LEBAR_KAIN_72 = 7;const LEBAR_KAIN_69 = 8;const LEBAR_KAIN_70 = 9;const LEBAR_KAIN_71 = 10;
     /**
      * @return array
      */
@@ -77,6 +77,9 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_64 => '64"',
             self::LEBAR_KAIN_66 => '66"',
             self::LEBAR_KAIN_68 => '68"',
+            self::LEBAR_KAIN_69 => '69"',
+            self::LEBAR_KAIN_70 => '70"',
+            self::LEBAR_KAIN_71 => '71"',
             self::LEBAR_KAIN_72 => '72"',
         ];
     }
@@ -118,7 +121,7 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
             ['unit', 'in', 'range' => [self::UNIT_YARD, self::UNIT_METER, self::UNIT_PCS, self::UNIT_KILOGRAM]],
 
             ['lebar_kain', 'default', 'value'=>self::LEBAR_KAIN_44],
-            ['lebar_kain', 'in', 'range' => [self::LEBAR_KAIN_44, self::LEBAR_KAIN_58, self::LEBAR_KAIN_60, self::LEBAR_KAIN_64, self::LEBAR_KAIN_66, self::LEBAR_KAIN_68]],
+            ['lebar_kain', 'in', 'range' => [self::LEBAR_KAIN_44, self::LEBAR_KAIN_58, self::LEBAR_KAIN_60, self::LEBAR_KAIN_64, self::LEBAR_KAIN_66, self::LEBAR_KAIN_68, self::LEBAR_KAIN_69, self::LEBAR_KAIN_70, self::LEBAR_KAIN_71, self::LEBAR_KAIN_72]],
         ];
     }
 

@@ -100,13 +100,15 @@ class TrnInspecting extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['date', 'tanggal_inspeksi', 'jenis_process'], 'required'],
+            [['date', 'tanggal_inspeksi', 'jenis_process', 'jenis_inspek'], 'required'],
 
             [['date', 'tanggal_inspeksi'], 'date', 'format'=>'php:Y-m-d'],
 
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_APPROVED, self::STATUS_DELIVERED]],
 
+            ['jenis_inspek', 'default', 'value'=>self::FRESH_INSPEKSI],
+            ['jenis_inspek', 'required'],
             ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
 
             ['unit', 'default', 'value'=>MstGreigeGroup::UNIT_METER],
@@ -149,6 +151,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             'kartu_process_printing_id' => 'Kartu Process Printing ID',
             'memo_repair_id' => 'Memo Repair ID',
             'jenis_process' => 'Jenis Process',
+            'jenis_inspek' => 'Jenis Inspeksi',
             'no_urut' => 'No Urut',
             'no' => 'No',
             'date' => 'Tanggal Kirim',

@@ -70,6 +70,7 @@ use yii\widgets\ActiveForm;
     <div class="row">
         <div class="col-md-6">
             <?= $form->field($model, 'merek')->textInput(['maxlength' => true]) ?>
+            <?= $form->field($model, 'artikel_sc')->textInput(['maxlength' => true]) ?>
 
             <div class="row">
                 <div class="col-md-6"><?= $form->field($model, 'qty')->textInput(['maxlength' => true]) ?></div>
@@ -103,29 +104,8 @@ use yii\widgets\ActiveForm;
         </div>
 
         <div class="col-md-6">
-            <?=$form->field($model, 'note')->widget(TinyMce::className(), [
-                'options' => ['rows' => 5],
-                'language' => 'id',
-                'clientOptions' => [
-                    'menubar' => false,
-                    'plugins' => [
-                        "lists",
-                    ],
-                    'toolbar' => " bold italic | alignleft aligncenter alignright alignjustify | bullist numlist"
-                ]
-            ])?>
-
-            <?=$form->field($model, 'order_greige_note')->widget(TinyMce::className(), [
-                'options' => ['rows' => 5],
-                'language' => 'id',
-                'clientOptions' => [
-                    'menubar' => false,
-                    'plugins' => [
-                        "lists",
-                    ],
-                    'toolbar' => " bold italic | alignleft aligncenter alignright alignjustify | bullist numlist"
-                ]
-            ])?>
+            <?=$form->field($model, 'note')->textArea(['rows' => 5])?>
+            <?=$form->field($model, 'order_greige_note')->textArea(['rows' => 5])?>
         </div>
     </div>
 

@@ -32,6 +32,8 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'design')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'handling')->textInput(['maxlength' => true]) ?>
+
     <?= $form->field($model, 'article')->textInput(['maxlength' => true]) ?>
 
     <?= $form->field($model, 'strike_off')->textarea(['rows' => 6]) ?>

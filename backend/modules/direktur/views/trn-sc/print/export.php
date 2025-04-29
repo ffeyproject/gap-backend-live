@@ -60,14 +60,29 @@ $bankAccount = $model->bankAcct;
     ?>
 
     <?php foreach ($trnScGreiges as $trnScGreige):?>
-        <tr>
-            <td style="text-align: center"><?=$trnScGreige->greigeGroup->nama_kain?></td>
-            <td style="text-align: center"><?=$trnScGreige::processOptions()[$trnScGreige->process]?> / <?=$trnScGreige::lebarKainOptions()[$trnScGreige->lebar_kain]?>"</td>
-            <td style="text-align: center"><?=$trnScGreige->grade?></td>
-            <td style="text-align: center"><?=$trnScGreige->piece_length?></td>
-            <td style="text-align: center"><?=$formatter->asDecimal($trnScGreige->unit_price, 4)?></td>
-            <td style="text-align: center">
-                <?php
+    <tr>
+        <!-- <td style="text-align: center"> -->
+        <!-- <?=$trnScGreige->greigeGroup->nama_kain?> -->
+        <!-- </td> -->
+        <td style="text-align: center">
+            <?php
+                if(is_null($trnScGreige->artikel_sc)){
+                    echo $trnScGreige->greigeGroup->nama_kain;
+                }else{
+                    echo $trnScGreige->artikel_sc;
+                }
+            ?>
+        </td>
+        <!-- <td style="text-align: center"> -->
+        <!--<?=$trnScGreige->artikel_sc?> -->
+        <!-- </td> -->
+        <td style="text-align: center"><?=$trnScGreige::processOptions()[$trnScGreige->process]?> /
+            <?=$trnScGreige::lebarKainOptions()[$trnScGreige->lebar_kain]?>"</td>
+        <td style="text-align: center"><?=$trnScGreige->grade?></td>
+        <td style="text-align: center"><?=$trnScGreige->piece_length?></td>
+        <td style="text-align: center"><?=$formatter->asDecimal($trnScGreige->unit_price, 4)?></td>
+        <td style="text-align: center">
+            <?php
                 switch ($trnScGreige->price_param){
                     case $trnScGreige::PRICE_PARAM_PER_METER:
                         echo 'Meter';
@@ -82,8 +97,8 @@ $bankAccount = $model->bankAcct;
                         echo '-';
                 }
                 ?>
-            </td>
-        </tr>
+        </td>
+    </tr>
     <?php endforeach;?>
 </table>
 
