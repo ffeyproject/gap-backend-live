@@ -92,6 +92,9 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'wo_color_id')->textInput() ?>
 
+    <?= $form->field($model, 'nomor_kartu')->textInput() ?>
+
+
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
     </div>

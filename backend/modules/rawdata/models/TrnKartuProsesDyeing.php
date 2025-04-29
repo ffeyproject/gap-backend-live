@@ -83,7 +83,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'wo_color_id'], 'integer'],
             [['note', 'reject_notes', 'memo_pg'], 'string'],
             [['date'], 'safe'],
-            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok'], 'string', 'max' => 255],
+            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok','nomor_kartu'], 'string', 'max' => 255],
             ['status', 'default', 'value'=>KpDyeing::STATUS_DRAFT],
             ['status', 'in', 'range'=>[KpDyeing::STATUS_DRAFT, KpDyeing::STATUS_POSTED, KpDyeing::STATUS_DELIVERED, KpDyeing::STATUS_APPROVED, KpDyeing::STATUS_INSPECTED, KpDyeing::STATUS_GANTI_GREIGE, KpDyeing::STATUS_GANTI_GREIGE_LINKED, KpDyeing::STATUS_BATAL]],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
@@ -143,6 +143,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             'handling' => 'Handling',
             'hasil_tes_gosok' => 'Hasil Tes Gosok',
             'wo_color_id' => 'Wo Color ID',
+            'nomor_kartu' => 'Nomor Kartu',
         ];
     }
 
