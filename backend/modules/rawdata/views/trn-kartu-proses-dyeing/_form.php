@@ -26,6 +26,8 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'no')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'nomor_kartu')->textInput(['maxlength' => true]) ?>
+
     <?= $form->field($model, 'asal_greige')->textInput() ?>
 
     <?= $form->field($model, 'dikerjakan_oleh')->textInput(['maxlength' => true]) ?>

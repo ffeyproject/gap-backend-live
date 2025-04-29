@@ -18,7 +18,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     {
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'wo_color_id'], 'integer'],
-            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok'], 'safe'],
+            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'nomor_kartu', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok'], 'safe'],
         ];
     }
 
@@ -67,6 +67,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'no_urut' => $this->no_urut,
             'asal_greige' => $this->asal_greige,
             'date' => $this->date,
+            'nomor_kartu' => $this->nomor_kartu,
             'posted_at' => $this->posted_at,
             'approved_at' => $this->approved_at,
             'approved_by' => $this->approved_by,
@@ -87,6 +88,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ->andFilterWhere(['ilike', 'lusi', $this->lusi])
             ->andFilterWhere(['ilike', 'pakan', $this->pakan])
             ->andFilterWhere(['ilike', 'note', $this->note])
+            ->andFilterWhere(['ilike', 'nomor_kartu', $this->nomor_kartu])
             ->andFilterWhere(['ilike', 'reject_notes', $this->reject_notes])
             ->andFilterWhere(['ilike', 'memo_pg', $this->memo_pg])
             ->andFilterWhere(['ilike', 'memo_pg_no', $this->memo_pg_no])

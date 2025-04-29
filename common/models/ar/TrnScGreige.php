@@ -14,7 +14,7 @@ use yii\web\NotAcceptableHttpException;
  * @property int $sc_id
  * @property int $greige_group_id
  * @property int $process 1=DYEING, 2=PRINTING, 3=PFP
- * @property int $lebar_kain 1=44, 2=58, 3=64
+ * @property int $lebar_kain 1=44, 2=58, 3=64, 4=66, 5=68, 6=72, 7=69, 8=70, 9=71
  * @property string $merek
  * @property int $grade 1=A, 2=B, 3=C, 4=ALL GRADE
  * @property string $piece_length
@@ -35,7 +35,8 @@ use yii\web\NotAcceptableHttpException;
  * @property bool $order_grege_approved_dir
  * @property int|null $order_grege_approved_at_dir
  * @property string|null $order_grege_approval_note_dir
- *
+ * @property string|null $artikel_sc
+ * 
  * @property User $kabagPmc
  * @property TrnInspecting[] $trnInspectings
  * @property TrnKartuProsesDyeing[] $trnKartuProsesDyeings
@@ -141,7 +142,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['sc_id', 'greige_group_id', 'process', 'lebar_kain', 'merek', 'grade', 'piece_length', 'unit_price', 'price_param', 'qty'], 'required'],
+            [['sc_id', 'greige_group_id', 'process', 'lebar_kain', 'merek', 'artikel_sc', 'grade', 'piece_length', 'unit_price', 'price_param', 'qty'], 'required'],
             [['sc_id', 'greige_group_id', 'grade', 'no_urut_order_greige'], 'default', 'value' => null],
             [['sc_id', 'greige_group_id', 'process', 'lebar_kain', 'grade', 'no_urut_order_greige', 'order_grege_approved_at', 'order_grege_approved_by', 'order_grege_approved_at_dir'], 'integer'],
             [['unit_price', 'qty'], 'number'],
@@ -152,6 +153,8 @@ class TrnScGreige extends \yii\db\ActiveRecord
 
             ['process', 'default', 'value'=>TrnScGreige::PROCESS_DYEING],
             ['process', 'in', 'range' => [TrnScGreige::PROCESS_DYEING, TrnScGreige::PROCESS_PRINTING, TrnScGreige::PROCESS_PFP]],
+
+            ['artikel_sc', 'string', 'max' => 255],
 
             ['lebar_kain', 'default', 'value'=>TrnScGreige::LEBAR_KAIN_44],
             ['lebar_kain', 'in', 'range' => [TrnScGreige::LEBAR_KAIN_44, TrnScGreige::LEBAR_KAIN_58, TrnScGreige::LEBAR_KAIN_64, TrnScGreige::LEBAR_KAIN_66, TrnScGreige::LEBAR_KAIN_68, TrnScGreige::LEBAR_KAIN_72, TrnScGreige::LEBAR_KAIN_69, TrnScGreige::LEBAR_KAIN_70, TrnScGreige::LEBAR_KAIN_71]],
@@ -198,7 +201,8 @@ class TrnScGreige extends \yii\db\ActiveRecord
             'order_grege_approved_dir' => 'Order Greige Sudah Disetujui DIR',
             'order_grege_approved_at_dir' => 'Order Greige Disetujui DIR Pada',
             'order_grege_approval_note_dir' => 'Catatan Persetujuan DIR',
-            'lebarKainName' => 'Lebar Kain'
+            'lebarKainName' => 'Lebar Kain',
+            'artikel_sc' => 'Artikel'
         ];
     }
 

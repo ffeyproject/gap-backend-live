@@ -54,6 +54,14 @@ echo GridView::widget([
                 return $greigeGroup->nama_kain.' ('.$greigeGroup::unitOptions()[$greigeGroup->unit].')';
             }
         ],
+        [
+            'label' => 'Artikel',
+            'attribute' => 'artikel_sc',
+            'value' => function($data){
+                /* @var $data TrnScGreige*/
+                return $data->artikel_sc;
+            },
+        ],
         /*[
             'label' => 'Unit',
             'value' => function($data){

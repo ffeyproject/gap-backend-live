@@ -30,7 +30,8 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         ]);?>
     </p>
 
-    <iframe src="<?=Url::to(['/trn-sc/print-sc', 'id'=>$model->id])?>" style="width: 100%; height: 500px;"></iframe>
+    <iframe src="<?=Url::to(['/trn-sc/print-sc-approval', 'id'=>$model->id])?>"
+        style="width: 100%; height: 500px;"></iframe>
 
     <?php echo $this->render('/trn-sc/child/_persetujuan', ['model' => $model]);?>
 

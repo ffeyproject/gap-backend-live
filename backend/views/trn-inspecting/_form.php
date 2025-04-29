@@ -185,10 +185,7 @@ use yii\helpers\Url;
                                 ])->label(false)?>
                             </td>
                         </tr>
-                        <tr>
-                            <th>Lokal/Export</th>
-                            <td id="TipeKontrak"></td>
-                        </tr>
+
                         <tr>
                             <th>Jenis Inspeksi</th>
                             <td>
@@ -200,6 +197,11 @@ use yii\helpers\Url;
                                     ],
                                 ])->label(false) ?>
                             </td>
+                        </tr>
+
+                        <tr>
+                            <th>Lokal/Export</th>
+                            <td id="TipeKontrak"></td>
                         </tr>
                     </table>
                 </div>

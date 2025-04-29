@@ -63,13 +63,13 @@ $bankAccount = $model->bankAcct;
 
     <?php foreach ($trnScGreiges as $trnScGreige):?>
     <tr>
-        <!-- <td style="text-align: center"> -->
-        <!-- <?=$trnScGreige->greigeGroup->nama_kain?> -->
-        <!-- </td> -->
+        <td style="text-align: center">
+            <?=$trnScGreige->greigeGroup->nama_kain?>
+        </td>
         <td style="text-align: center">
             <?php
                 if(is_null($trnScGreige->artikel_sc)){
-                    echo $trnScGreige->greigeGroup->nama_kain;
+                    echo '-';
                 }else{
                     echo $trnScGreige->artikel_sc;
                 }

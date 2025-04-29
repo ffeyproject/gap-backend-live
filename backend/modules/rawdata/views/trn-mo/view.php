@@ -40,6 +40,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'date',
             're_wo',
             'design',
+            'handling',
             'article',
             'strike_off:ntext',
             'heat_cut:boolean',

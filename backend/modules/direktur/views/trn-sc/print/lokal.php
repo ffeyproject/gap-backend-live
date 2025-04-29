@@ -44,8 +44,9 @@ $bankAccount = $model->bankAcct;
 <table class="table table-bordered small">
     <tr>
         <th class="text-center">Jenis Proses</th>
-        <th class="text-center">Item</th>
-        <th class="text-center">Merek</th>
+        <!-- <th class="text-center">Item</th> -->
+        <th class="text-center">Artikel</th>
+        <!-- <th class="text-center">Merek</th> -->
         <th class="text-center">Piece Length</th>
         <th class="text-center">Grade</th>
         <th class="text-center">Jumlah</th>
@@ -57,14 +58,27 @@ $bankAccount = $model->bankAcct;
     ?>
 
     <?php foreach ($trnScGreiges as $trnScGreige):?>
-        <tr>
-            <td><?=$trnScGreige::processOptions()[$trnScGreige->process]?> <?=$trnScGreige::lebarKainOptions()[$trnScGreige->lebar_kain]?>"</td>
-            <td><?=$trnScGreige->greigeGroup->nama_kain?></td>
-            <td><?=$trnScGreige->merek?></td>
-            <td style="text-align: center"><?=$trnScGreige->piece_length?></td>
-            <td style="text-align: center"><?=$trnScGreige::gradeOptions()[$trnScGreige->grade]?></td>
-            <td style="text-align: right">
-                <?php
+    <tr>
+        <td><?=$trnScGreige::processOptions()[$trnScGreige->process]?>
+            <?=$trnScGreige::lebarKainOptions()[$trnScGreige->lebar_kain]?>"</td>
+        <!--<td>-->
+        <?//=$trnScGreige->greigeGroup->nama_kain?>
+        <!--</td>-->
+        <td>
+            <?php
+            if(is_null($trnScGreige->artikel_sc)){
+                echo $trnScGreige->greigeGroup->nama_kain;
+            }else{
+                echo $trnScGreige->artikel_sc;
+            }
+        ?>
+        </td>
+        <!-- <td> -->
+        <!-- <?=$trnScGreige->artikel_sc?> -->
+        <td style="text-align: center"><?=$trnScGreige->piece_length?></td>
+        <td style="text-align: center"><?=$trnScGreige::gradeOptions()[$trnScGreige->grade]?></td>
+        <td style="text-align: right">
+            <?php
                 switch ($trnScGreige->price_param){
                     case $trnScGreige::PRICE_PARAM_PER_YARD:
                         echo $formatter->asDecimal($trnScGreige->qtyFinishToYard);
@@ -73,9 +87,9 @@ $bankAccount = $model->bankAcct;
                         echo $formatter->asDecimal($trnScGreige->qtyFinish);
                 }
                 ?>
-            </td>
-            <td style="text-align: center">
-                <?php
+        </td>
+        <td style="text-align: center">
+            <?php
                 switch ($trnScGreige->price_param){
                     case $trnScGreige::PRICE_PARAM_PER_METER:
                         echo 'Meter';
@@ -90,9 +104,9 @@ $bankAccount = $model->bankAcct;
                         echo '-';
                 }
                 ?>
-            </td>
-            <td style="text-align: right"><?=Yii::$app->formatter->asDecimal($trnScGreige->unit_price)?></td>
-        </tr>
+        </td>
+        <td style="text-align: right"><?=Yii::$app->formatter->asDecimal($trnScGreige->unit_price)?></td>
+    </tr>
     <?php endforeach;?>
 </table>
 
@@ -103,17 +117,20 @@ $bankAccount = $model->bankAcct;
 
 <p>
     <strong>Grade</strong><br>
-    Pabrik setuju memberikan diskon sebesar <?=Yii::$app->formatter->asDecimal($model->disc_grade_b)?>% apabila ada grade B yang dikirimkan kepada pemesan.
+    Pabrik setuju memberikan diskon sebesar <?=Yii::$app->formatter->asDecimal($model->disc_grade_b)?>% apabila ada
+    grade B yang dikirimkan kepada pemesan.
 </p>
 
 <p>
     <strong>Piece Kecil</strong><br>
-    Pabrik setuju memberikan diskon sebesar <?=Yii::$app->formatter->asDecimal($model->disc_piece_kecil)?>% apabila ada piece kecil yang dikirimkan kepada pemesan.
+    Pabrik setuju memberikan diskon sebesar <?=Yii::$app->formatter->asDecimal($model->disc_piece_kecil)?>% apabila ada
+    piece kecil yang dikirimkan kepada pemesan.
 </p>
 
 <p>
     <strong>Pembayaran</strong><br>
-    Pemesan setuju untuk melakukan pembayaran selambat-lambatnya <?=$model->pmt_term?> hari sejak barang titipan diterima.
+    Pemesan setuju untuk melakukan pembayaran selambat-lambatnya <?=$model->pmt_term?> hari sejak barang titipan
+    diterima.
 </p>
 
 <strong>Komplain/ Klaim</strong><br>
@@ -125,7 +142,8 @@ $bankAccount = $model->bankAcct;
 <strong>Pembatalan Kontrak & Denda</strong><br>
 Kontrak dinyatakan <strong>BATAL</strong> :
 <ol>
-    <li>Apabila pemesan tidak menurunkan order / memberikan keputusan mengenai warna, design, handling dan asesoris dalam waktu 30 hari.</li>
+    <li>Apabila pemesan tidak menurunkan order / memberikan keputusan mengenai warna, design, handling dan asesoris
+        dalam waktu 30 hari.</li>
     <li>
         Setiap pembatalan kontrak akan dikenakan DENDA dengan ketentuan :
         <ul>
@@ -143,7 +161,8 @@ Kontrak dinyatakan <strong>BATAL</strong> :
 
 <p>
     <strong>Ketentuan tambahan</strong><br>
-    Kontrak ini harus ditandatangani, apabila tidak ditandatangani maka kontrak ini dinyatakan <strong>TIDAK BERLAKU</strong>.
+    Kontrak ini harus ditandatangani, apabila tidak ditandatangani maka kontrak ini dinyatakan <strong>TIDAK
+        BERLAKU</strong>.
 </p>
 
 <table class="table">

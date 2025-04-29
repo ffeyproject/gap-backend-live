@@ -37,6 +37,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'kartu_proses_id',
             'no_urut',
             'no',
+            'nomor_kartu',
             'asal_greige',
             'dikerjakan_oleh',
             'lusi',
