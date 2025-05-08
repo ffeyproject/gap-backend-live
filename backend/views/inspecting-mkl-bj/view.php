@@ -164,6 +164,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>Grade A*</th>
                         <th>Grade Putih</th>
                         <th>No Lot</th>
+                        <th>Defect Input</th>
                         <th>Defect</th>
                         <th>Nilai Point</th>
                         <th>Keterangan</th>
@@ -341,7 +342,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             ?>
                         </td>
                         <td><?=$item['lot_no']?></td>
-
+                        <td><?=$item['defect']?></td>
                         <td>
                             <?php
                         foreach ($item->defectInspectingItems as $defectItem) {

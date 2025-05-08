@@ -8,9 +8,9 @@ $formatter = Yii::$app->formatter;
 ?>
 
 <table>
-<?php foreach ($model as $m): ?>
-  <tbody>
-    <?php 
+    <?php foreach ($model as $m): ?>
+    <tbody>
+        <?php 
       $completeQrCode = '['.$m['qr_code'].']'.$m['qr_code_desc'];
       QRcode::png($completeQrCode,'qrcode/'.$m['qr_code'].'.png', 'L', 4, 0);
 
@@ -40,20 +40,24 @@ $formatter = Yii::$app->formatter;
         }
       }
     ?>
-      <tr style="width: 100%;">
-        <td style="width: 50%; height: 100%; padding: 1rem 0.5rem 1rem 1rem; text-align: center;" id="<?= mt_rand() ?>">
-          <img class="img-fluid" style="<?= $img_style ?>" src="<?='qrcode/'.$m['qr_code'].'.png'?>" alt="" id="<?= mt_rand() ?>">
-          <?php
+        <tr style="width: 100%;">
+            <td style="width: 50%; height: 100%; padding: 1rem 0.5rem 1rem 1rem; text-align: center;"
+                id="<?= mt_rand() ?>">
+                <img class="img-fluid" style="<?= $img_style ?>" src="<?='qrcode/'.$m['qr_code'].'.png'?>" alt=""
+                    id="<?= mt_rand() ?>">
+                <?php
             if ($m['param1'] == 1) {
               echo '
-                <p style="font-family: Calibri; font-size: 5px;"><b>&nbsp;</b></p>
-                <p style="font-family: Calibri; font-size: 13px;"><b>MADE IN INDONESIA</b></p>
+                <p style="font-family: Calibri; font-size: 3px;"><b>&nbsp;</b></p>
+                <p style="font-family: Calibri; font-size: 11px;"><b>MADE IN INDONESIA</b></p>
               ';
             }
           ?>
-        </td>
-        <td style="width: 50%; height: 100%; padding: 1rem 1rem 1rem 0.5rem;" id="<?= mt_rand() ?>">
-          <?php 
+                <p style="font-family: Calibri; font-size: 3px;"><b>&nbsp;</b></p>
+                <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
+            </td>
+            <td style="width: 50%; height: 100%; padding: 1rem 1rem 1rem 0.5rem;" id="<?= mt_rand() ?>">
+                <?php 
             if ($m['param2'] == 1) {
               echo '
                 <p style="font-family: Calibri; font-size: 10px; color: #000;"><b>REGISTRASI K3L</b><span style="color: #fff">Lorem ipsum dolor sit </span></p>
@@ -61,19 +65,27 @@ $formatter = Yii::$app->formatter;
               ';
             }
           ?>
-          <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['no_wo'] ?></b></p>
-          <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>"><b><?= str_replace(' ', '&nbsp;', rtrim($line1, ' ')) ?></b></p>
-          <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>"><b><?= strlen($line2) > 0 ? str_replace(' ', '&nbsp;', rtrim($line2, ' ')) : '&nbsp;' ?></b></p>
-         
-          <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>"><b><?= $m['no_lot'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['no_wo'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>">
+                    <b><?= str_replace(' ', '&nbsp;', rtrim($line1, ' ')) ?></b>
+                </p>
+                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>">
+                    <b><?= strlen($line2) > 0 ? str_replace(' ', '&nbsp;', rtrim($line2, ' ')) : '&nbsp;' ?></b>
+                </p>
 
-	  <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= str_replace(' ', '&nbsp;', rtrim($line12, ' ')) ?></b></p>
-          <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= strlen($line22) > 0 ? str_replace(' ', '&nbsp;', rtrim($line22, ' ')) : '&nbsp;' ?></b></p>
+                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>"><b><?= $m['no_lot'] ?></b></p>
 
-          <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['length'] ?></b></p>
-          <p style="font-family: Calibri; font-size: 13px;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-  </tbody>
+                <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>">
+                    <b><?= str_replace(' ', '&nbsp;', rtrim($line12, ' ')) ?></b>
+                </p>
+                <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>">
+                    <b><?= strlen($line22) > 0 ? str_replace(' ', '&nbsp;', rtrim($line22, ' ')) : '&nbsp;' ?></b>
+                </p>
+
+                <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['length'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 13px;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </tbody>
 </table>
