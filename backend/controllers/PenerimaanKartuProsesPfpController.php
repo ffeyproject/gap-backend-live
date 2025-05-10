@@ -5,6 +5,7 @@ use common\models\ar\MstGreige;
 use common\models\ar\TrnKartuProsesPfp;
 use common\models\ar\TrnKartuProsesPfpSearch;
 use common\models\ar\TrnStockGreige;
+use common\models\ar\TrnOrderPfp;
 use Yii;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Json;
@@ -241,4 +242,26 @@ class PenerimaanKartuProsesPfpController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionGantiPfp($id)
+    {
+        if (Yii::$app->request->isAjax){
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $model = $this->findModel($id);
+
+            $pfp = TrnOrderPfp::find()->select('id')->where(['no' => Yii::$app->request->post()['no']])->asArray()->one();
+            if(empty($pfp)){
+                throw new NotFoundHttpException('Nomor Pfp tidak ada (tidak valid) - '. Yii::$app->request->post()['no']);
+            }
+
+            $model->order_pfp_id = $pfp['id'];
+            $model->save(false, ['order_pfp_id']);
+
+            return ['success'=>true, 'pfp'=>$pfp];
+        }
+
+        throw new ForbiddenHttpException('Not allowed');
+    }
+
 }

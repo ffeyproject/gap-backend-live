@@ -38,6 +38,12 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     'title' => 'Ganti Kartu Dyeing'
                 ]).' ';
 
+            echo Html::a('Ganti Nomor Pfp', ['ganti-pfp', 'id' => $model->id], [
+                'class' => 'btn btn-primary',
+                'onclick' => 'gantiPfp(event, "Ganti Nomor Pfp");',
+                'title' => 'Ganti Nomor Pfp'
+            ]).' ';
+
             echo Html::a('Selesai Dan Masukan Ke Gudag PFP', ['approve', 'id' => $model->id], [
                 'class' => 'btn btn-warning',
                 'title' => 'Add Items',
@@ -67,6 +73,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
             'onclick' => 'gantiMotif(event, "Ganti Motif");',
             'title' => 'Ganti Motif'
         ])?>
+
     </p>
 
     <?php echo $this->render('/trn-kartu-proses-pfp/child/detail', ['model' => $model]);?>

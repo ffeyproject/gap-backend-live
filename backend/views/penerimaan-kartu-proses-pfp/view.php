@@ -29,17 +29,23 @@ if($handling !== null && $handling->berat_persiapan>0){
 
     <p>
         <?php if($model->status == $model::STATUS_POSTED):?>
-            <?=Html::a('Terima', ['terima', 'id' => $model->id], [
+        <?=Html::a('Terima', ['terima', 'id' => $model->id], [
                 'class' => 'btn btn-success',
                 'onclick' => 'terimaKartuProses(event);',
                 'title' => 'Terima Kartu Proses: '.$model->id
             ]);?>
 
-            <?=Html::a('Tolak', ['tolak', 'id' => $model->id], [
+        <?=Html::a('Tolak', ['tolak', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'onclick' => 'tolakKartuProses(event);',
                 'title' => 'Tolak Kartu Proses: '.$model->id
             ]);?>
+
+        <?=Html::a('Ganti Nomor Pfp', ['ganti-pfp', 'id' => $model->id], [
+            'class' => 'btn btn-warning',
+            'onclick' => 'gantiPfp(event, "Ganti Nomor Pfp");',
+            'title' => 'Ganti Nomor Pfp'
+        ])?>
         <?php endif;?>
     </p>
 
