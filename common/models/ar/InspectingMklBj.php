@@ -20,6 +20,7 @@ use common\models\ar\MstK3l;
  * @property string $tgl_kirim
  * @property string $no_lot
  * @property int $jenis 1=Makloon Proses, 2=Makloon Finish, 3=Barang Jadi
+ * @property int $jenis_inspek 1=Fresh Order, 2=Re-Packing
  * @property int $satuan Mengacu pada MstGreigeGroup::unitOptions()
  * @property int $created_at
  * @property int $created_by
@@ -73,7 +74,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     const RE_INSPEKSI = 2;
 
     public static function jenisInspeksiOptions(){
-        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Inspeksi'];
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing'];
     }
 
     /**

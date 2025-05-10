@@ -112,6 +112,21 @@ if(!empty($searchModel->wo_id)){
                     ],
                 ],
             ],
+
+            [
+                'attribute'=>'jenis_inspek',
+                'value'=>function($data){
+                    return InspectingMklBj::jenisInspeksiOptions()[$data->jenis_inspek];
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => InspectingMklBj::jenisInspeksiOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
             //'created_at',
             //'created_by',
             //'updated_at',
