@@ -223,6 +223,12 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-wo'
                     ],
                     [
+                        'label' => 'Wo Memo', 
+                        'icon' => 'circle', 
+                        'url' => ['/trn-wo-memo/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-wo-memo'
+                    ],
+                    [
                         'label' => 'REKAP',
                         'icon' => 'th-list',
                         'url' => '#',

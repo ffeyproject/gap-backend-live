@@ -49,7 +49,7 @@ $bankAccount = $model->bankAcct;
 
 <table class="table table-bordered small">
     <tr>
-        <th colspan="2" class="text-center">Description</th>
+        <th colspan="3" class="text-center">Description</th>
         <th class="text-center">Grade</th>
         <th class="text-center">Piece Length</th>
         <th class="text-center">Qty</th>

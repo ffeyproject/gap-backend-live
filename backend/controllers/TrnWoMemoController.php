@@ -41,6 +41,10 @@ class TrnWoMemoController extends Controller
         $searchModel = new TrnWoMemoSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $dataProvider->setSort([
+            'defaultOrder' => ['id' => SORT_DESC]
+        ]);
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,

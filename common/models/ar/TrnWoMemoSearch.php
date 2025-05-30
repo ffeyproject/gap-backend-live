@@ -11,6 +11,9 @@ use common\models\ar\TrnWoMemo;
  */
 class TrnWoMemoSearch extends TrnWoMemo
 {
+    public $dateRange;
+
+    
     /**
      * {@inheritdoc}
      */
@@ -18,7 +21,7 @@ class TrnWoMemoSearch extends TrnWoMemo
     {
         return [
             [['id', 'wo_id', 'created_at'], 'integer'],
-            [['memo'], 'safe'],
+            [['memo', 'no_urut', 'no', 'dateRange'], 'safe'],
         ];
     }
 
@@ -42,8 +45,6 @@ class TrnWoMemoSearch extends TrnWoMemo
     {
         $query = TrnWoMemo::find();
 
-        // add conditions that should always apply here
-
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
         ]);
@@ -51,19 +52,28 @@ class TrnWoMemoSearch extends TrnWoMemo
         $this->load($params);
 
         if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
             return $dataProvider;
         }
 
-        // grid filtering conditions
+        if (!empty($this->dateRange) && strpos($this->dateRange, ' to ') !== false) {
+            list($start, $end) = explode(' to ', $this->dateRange);
+
+            // Convert string date (Y-m-d) ke timestamp unix
+            $startTimestamp = strtotime($start . ' 00:00:00');
+            $endTimestamp = strtotime($end . ' 23:59:59');
+
+            $query->andFilterWhere(['between', 'created_at', $startTimestamp, $endTimestamp]);
+        }
+
         $query->andFilterWhere([
             'id' => $this->id,
             'wo_id' => $this->wo_id,
-            'created_at' => $this->created_at,
+            'no_urut' => $this->no_urut,
         ]);
 
-        $query->andFilterWhere(['ilike', 'memo', $this->memo]);
+        $query
+            ->andFilterWhere(['ilike', 'no', $this->no])
+            ->andFilterWhere(['ilike', 'memo', $this->memo]);
 
         return $dataProvider;
     }
