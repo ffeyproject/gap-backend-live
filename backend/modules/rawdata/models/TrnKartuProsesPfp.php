@@ -75,7 +75,7 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             [['greige_group_id', 'greige_id', 'order_pfp_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'integer'],
             [['note', 'reject_notes'], 'string'],
             [['date'], 'safe'],
-            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'gramasi', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling'], 'string', 'max' => 255],
+            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'gramasi', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling','nomor_kartu'], 'string', 'max' => 255],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
             [['greige_group_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreigeGroup::className(), 'targetAttribute' => ['greige_group_id' => 'id']],
             [['order_pfp_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnOrderPfp::className(), 'targetAttribute' => ['order_pfp_id' => 'id']],
@@ -127,6 +127,7 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             't_density_lusi' => 'T Density Lusi',
             't_density_pakan' => 'T Density Pakan',
             'handling' => 'Handling',
+            'nomor_kartu' => 'Nomor Kartu',
         ];
     }
 

@@ -73,7 +73,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id'], 'integer'],
             [['note', 'memo_pg', 'reject_notes'], 'string'],
             [['date'], 'safe'],
-            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'kombinasi'], 'string', 'max' => 255],
+            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'kombinasi','nomor_kartu'], 'string', 'max' => 255],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::className(), 'targetAttribute' => ['sc_id' => 'id']],
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::className(), 'targetAttribute' => ['sc_greige_id' => 'id']],
@@ -122,6 +122,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             'reject_notes' => 'Reject Notes',
             'wo_color_id' => 'Wo Color ID',
             'kombinasi' => 'Kombinasi',
+            'nomor_kartu' => 'Nomor Kartu',
         ];
     }
 

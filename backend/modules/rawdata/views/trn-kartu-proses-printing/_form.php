@@ -74,6 +74,8 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'kombinasi')->textInput(['maxlength' => true]) ?>
 
+    <?= $form->field($model, 'nomor_kartu')->textInput() ?>
+    
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
     </div>

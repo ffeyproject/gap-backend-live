@@ -144,6 +144,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             'handling' => 'Handling',
             'hasil_tes_gosok' => 'Hasil Tes Gosok',
             'wo_color_id' => 'Wo Color ID',
+            'nomor_kartu' => 'Nomor Kartu',
         ];
     }
 
