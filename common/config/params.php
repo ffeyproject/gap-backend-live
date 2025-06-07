@@ -1,7 +1,7 @@
 <?php
 return [
     'pmcEmail' => 'pmc1gap@gmail.com',
-    'adminEmail' => 'software@gajahtex.com',
+    'adminEmail' => 'it@gajahtex.com',
     'supportEmail' => 'software@gajahtex.com',
     'senderEmail' => 'software@gajahtex.com',
     'senderName' => 'software@gajahtex.com',

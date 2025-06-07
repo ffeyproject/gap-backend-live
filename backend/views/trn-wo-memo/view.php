@@ -42,7 +42,10 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]) ?>
 
-    <?= $this->render('_memo-perubahan', ['model' => $model->wo]); ?>
+    <?= $this->render('_memo-perubahan', [
+    'model' => $model->wo,
+    'users' => $users,
+    ]); ?>
 
     <iframe src="<?=Url::to(['/trn-wo-memo/print', 'id'=>$model->id])?>" style="width: 100%; height: 500px;"></iframe>
 

@@ -59,8 +59,14 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['status', 'default', 'value' => self::STATUS_INACTIVE],
-            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_INACTIVE, self::STATUS_DELETED]],
+            [['username', 'email', 'created_at', 'updated_at'], 'required'],
+            [['status', 'created_at', 'updated_at'], 'default', 'value' => null],
+            [['status', 'created_at', 'updated_at'], 'integer'],
+            [['username', 'email', 'full_name', 'signature'], 'string', 'max' => 255],
+            [['auth_key'], 'string', 'max' => 32],
+            [['email'], 'unique'],
+            [['username'], 'unique'],
+            [['status_notif_email'], 'boolean'],
         ];
     }
 
@@ -81,6 +87,11 @@ class User extends ActiveRecord implements IdentityInterface
         throw new NotSupportedException('"findIdentityByAccessToken" is not implemented.');
     }
 
+    public function getNotificationStatus()
+    {
+        return $this->status_notif_email ? 'Aktif' : 'Tidak Aktif';
+    }
+
     /**
      * Finds user by username
      *
@@ -98,9 +109,14 @@ class User extends ActiveRecord implements IdentityInterface
      * @param string $email
      * @return static|null
      */
+    // public static function findByEmail($email)
+    // {
+    //     return static::findOne(['email' => $email, 'status' => self::STATUS_ACTIVE]);
+    // }
+
     public static function findByEmail($email)
     {
-        return static::findOne(['email' => $email, 'status' => self::STATUS_ACTIVE]);
+        return static::findOne(['email' => $email]);
     }
 
     /**
@@ -245,10 +261,15 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function getSignatureUrl()
     {
-        if($this->signature === null){
-            return Yii::$app->urlManager->getBaseUrl().'/images/no_image.png';
+        if (Yii::$app instanceof \yii\console\Application) {
+            // Gunakan path file sistem atau kosong
+            return null;
         }
-
-        return Yii::$app->urlManager->getBaseUrl().'/uploads/signature/'.$this->signature;
+    
+        if ($this->signature === null) {
+            return Yii::$app->urlManager->getBaseUrl() . '/images/no_image.png';
+        }
+    
+        return Yii::$app->urlManager->getBaseUrl() . '/uploads/signature/' . $this->signature;
     }
 }

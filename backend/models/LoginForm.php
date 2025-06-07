@@ -39,11 +39,26 @@ class LoginForm extends Model
      * @param string $attribute the attribute currently being validated
      * @param array $params the additional name-value pairs given in the rule
      */
+    // public function validatePassword($attribute, $params)
+    // {
+    //     if (!$this->hasErrors()) {
+    //         $user = $this->getUser();
+    //         if (!$user || !$user->validatePassword($this->password)) {
+    //             $this->addError($attribute, 'Incorrect username or password.');
+    //         }
+    //     }
+    // }
+
     public function validatePassword($attribute, $params)
     {
         if (!$this->hasErrors()) {
             $user = $this->getUser();
-            if (!$user || !$user->validatePassword($this->password)) {
+
+            if (!$user) {
+                $this->addError($attribute, 'Incorrect username or password.');
+            } elseif ($user->status == User::STATUS_INACTIVE) {
+                $this->addError($attribute, 'Akun Anda tidak aktif. Silahkan hubungi administrator.');
+            } elseif (!$user->validatePassword($this->password)) {
                 $this->addError($attribute, 'Incorrect username or password.');
             }
         }

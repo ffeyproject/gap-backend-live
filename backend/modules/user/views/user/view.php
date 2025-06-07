@@ -57,6 +57,10 @@ $animateIcon = ' <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate
                             'label'=>'Status',
                             'value'=>\backend\modules\user\models\User::getStatusOptions()[$model->status]
                         ],
+                        [
+                            'label'=>'Status Notif Email',
+                            'value'=>$model->getNotificationStatus()
+                        ],
                         'created_at:datetime',
                         'updated_at:datetime',
                         //'verification_token',
@@ -68,6 +72,40 @@ $animateIcon = ' <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate
                             'label'=>'Reset Password Link',
                             'value'=>$model->password_reset_token !== null ? Yii::$app->urlManager->createAbsoluteUrl(['/site/reset-password', 'token'=>$model->password_reset_token]) : '-'
                         ],
+                        [
+                            'label' => 'Get Email Notification?',
+                            'format' => 'raw',
+                            'value' => function($model) {
+                                $isActive = (bool) $model->status_notif_email;
+                                return Html::a(
+                                    $isActive ? 'Aktif' : 'Tidak Aktif',
+                                    ['change-status', 'id' => $model->id],
+                                    [
+                                        'class' => 'btn btn-' . ($isActive ? 'success' : 'warning'),
+                                        'data' => ['method' => 'post'],
+                                    ]
+                                );
+                            },
+                        ],
+
+                        [
+                            'label' => 'Change Status',
+                            'format' => 'raw',
+                            'value' => function($model) {
+                                $newStatus = $model->status == $model::STATUS_ACTIVE ? $model::STATUS_INACTIVE : $model::STATUS_ACTIVE;
+                                $buttonLabel = $newStatus == $model::STATUS_ACTIVE ? 'Activate' : 'Deactivate';
+                                return Html::a(
+                                    $buttonLabel,
+                                    ['change-status-aktif', 'id' => $model->id, 'newStatus' => $newStatus],
+                                    [
+                                        'class' => 'btn btn-' . ($newStatus == $model::STATUS_ACTIVE ? 'success' : 'warning'),
+                                        'data' => ['method' => 'post'],
+                                    ]
+                                );
+                            },
+                        ],
+
+
                     ],
                 ]) ?>
             </div>

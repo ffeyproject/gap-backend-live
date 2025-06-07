@@ -11,6 +11,16 @@ return [
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
+
+        'queue' => [
+        'class' => \yii\queue\db\Queue::class,
+        'db' => 'db',
+        'tableName' => '{{%queue}}',
+        'channel' => 'default',
+        'mutex' => \yii\mutex\PgsqlMutex::class,
+        ],
+
+        
         'mailer' => [
             'class' => \yii\swiftmailer\Mailer::className(),
             'viewPath' => '@common/mail',
@@ -24,6 +34,8 @@ return [
                 'encryption' => 'tls',
             ]
         ],
+
+        
         'mailer_pmc' => [
             'class' => \yii\swiftmailer\Mailer::className(),
             'viewPath' => '@common/mail',

@@ -8,9 +8,9 @@ $params = array_merge(
 
 return [
     'id' => 'app-backend',
-    'name' => 'GAP V2 BACKEND',
+    'name' => 'GAP V2 BACKEND ERP',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', 'queue'],
     'controllerNamespace' => 'backend\controllers',
     'modules' => [
         'admin' => [
@@ -78,6 +78,36 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
+
+        'queue' => [
+        'class' => \yii\queue\db\Queue::class,
+        'db' => 'db',
+        'tableName' => '{{%queue}}',
+        'channel' => 'default',
+        'mutex' => \yii\mutex\PgsqlMutex::class,
+        ],
+
+        'urlManager' => [
+        'class' => 'yii\web\UrlManager',
+        'hostInfo' => 'http://live.produksionline.xyz', // ganti sesuai domain
+        'baseUrl' => (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] . '://' : 'http://') . $_SERVER['SERVER_NAME'] . (($_SERVER['SERVER_PORT'] !== '80') ? ':' . $_SERVER['SERVER_PORT'] : ''),
+        'enablePrettyUrl' => true,
+        'showScriptName' => false,
+        ],
+
+        'mailer' => [
+        'class' => 'yii\swiftmailer\Mailer',
+        'viewPath' => '@common/mail',
+        'useFileTransport' => false,
+        'transport' => [
+            'class' => 'Swift_SmtpTransport',
+            'host' => 'smtp.gmail.com',
+            'username' => 'infogajahapp@gmail.com',
+            'password' => 'antoiweirmindnhm',
+            'port' => '587',
+            'encryption' => 'tls',
+            ],
+        ],
         // 'urlManager' => [
         //     'enablePrettyUrl' => true,
         //     'showScriptName' => false,
@@ -105,4 +135,6 @@ return [
             // otherwise you may not even take a first step.
         ]
     ],
+
+    
 ];

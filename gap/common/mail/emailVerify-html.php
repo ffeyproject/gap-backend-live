@@ -9,7 +9,10 @@ $verifyLink = Yii::$app->urlManager->createAbsoluteUrl(['site/verify-email', 'to
 <div class="verify-email">
     <p>Hello <?= Html::encode($user->username) ?>,</p>
 
-    <p>Anda diundang untuk menjadi admin di software gajahtex, silahkan klik link berikut ini untuk mengaktifkan akun anda:</p>
+    <p>Kami telah menerima pendaftaran akun anda. Silakan klik link berikut untuk mengaktifkan akun dan melengkapi data
+        diri
+        (nama lengkap dan password):
+    </p>
 
     <p><?= Html::a(Html::encode($verifyLink), $verifyLink) ?></p>
 </div>

@@ -9,7 +9,7 @@ $params = array_merge(
 return [
     'id' => 'app-console',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', 'queue'],
     'controllerNamespace' => 'console\controllers',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -32,6 +32,27 @@ return [
         ],
         'authManager' => [
             'class' => 'yii\rbac\DbManager', // or use 'yii\rbac\PhpManager'
+        ],
+        'mailer' => [
+        'class' => 'yii\swiftmailer\Mailer',
+        'viewPath' => '@common/mail',
+        'useFileTransport' => false,
+        'transport' => [
+            'class' => 'Swift_SmtpTransport',
+            'host' => 'smtp.gmail.com',
+            'username' => 'infogajahapp@gmail.com',
+            'password' => 'antoiweirmindnhm',
+            'port' => '587',
+            'encryption' => 'tls',
+            ],
+        ],
+        
+        'queue' => [
+            'class' => \yii\queue\db\Queue::class,
+            'db' => 'db', // harus sama seperti nama komponen 'db' (biasanya sudah ada di common/config/main-local.php)
+            'tableName' => '{{%queue}}',
+            'channel' => 'default',
+            'mutex' => \yii\mutex\PgsqlMutex::class, // pakai PgsqlMutex jika pakai PostgreSQL
         ],
     ],
     'params' => $params,

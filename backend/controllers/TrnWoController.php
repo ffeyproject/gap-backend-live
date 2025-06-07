@@ -13,7 +13,7 @@ use kartik\mpdf\Pdf;
 use Yii;
 use common\models\ar\TrnWo;
 use common\models\ar\TrnWoSearch;
-use yii\db\Expression;
+use common\models\ar\User;
 use yii\db\Query;
 use yii\web\Controller;
 use yii\web\ForbiddenHttpException;
@@ -101,6 +101,11 @@ class TrnWoController extends Controller
     public function actionView($id)
     {
         $model = $this->findModel($id);
+        $users = User::find()
+            ->where(['status_notif_email' => true])
+            ->andWhere(['status' => 10])
+            ->orderBy(['full_name' => SORT_ASC])
+            ->all();
 
         $mo = $model->mo;
         $greige = $model->greige;
@@ -142,6 +147,7 @@ class TrnWoController extends Controller
             'bookedM' => $bookedM,
             'stockLabel' => $stockLabel,
             'bookkLabel' => $bookkLabel,
+            'users' => $users,
             'avM' => $avM
         ]);
     }

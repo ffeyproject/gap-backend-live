@@ -11,6 +11,7 @@ use yii\web\Controller;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use common\models\ar\User;
 
 /**
  * TrnWoMemoController implements the CRUD actions for TrnWoMemo model.
@@ -59,8 +60,15 @@ class TrnWoMemoController extends Controller
      */
     public function actionView($id)
     {
+        $users = User::find()
+            ->where(['status_notif_email' => true])
+            ->andWhere(['status' => 10])
+            ->orderBy(['full_name' => SORT_ASC])
+            ->all();
+
         return $this->render('view', [
             'model' => $this->findModel($id),
+            'users' => $users,
         ]);
     }
 
@@ -157,8 +165,17 @@ class TrnWoMemoController extends Controller
      * @throws NotFoundHttpException
      */
     public function actionDisplay($id){
+
+        $users = User::find()
+        ->where(['status_notif_email' => true])
+        ->andWhere(['status' => 10])
+        ->orderBy(['full_name' => SORT_ASC])
+        ->all();
+
+        
         return $this->renderPartial('display', [
             'model' => $this->findModel($id),
+            'users' => $users
         ]);
     }
 

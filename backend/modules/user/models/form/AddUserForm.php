@@ -66,6 +66,16 @@ class AddUserForm extends Model
                 ->setTo($this->user->email)
                 ->setSubject('Account registration at ' . Yii::$app->name)
                 ->send();*/
+                $mailSent = Yii::$app
+                ->mailer
+                ->compose(
+                    ['html' => 'emailVerify-html', 'text' => 'emailVerify-text'],
+                    ['user' => $this->user]
+                )
+                ->setFrom([Yii::$app->params['adminEmail'] => Yii::$app->name])
+                ->setTo($this->user->email)
+                ->setSubject('Account registration at ' . Yii::$app->name)
+                ->send();
             $mailSent = true;
 
             if($mailSent){

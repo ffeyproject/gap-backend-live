@@ -24,7 +24,8 @@ use yii\widgets\DetailView;
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">
-            WO Detail - Greige: <?=$model->greige->nama_kain?> (Alias: <?=$model->greige->alias?>) - <?=$stockLabel?>: <?=Yii::$app->formatter->asDecimal($stockM)?>M
+            WO Detail - Greige: <?=$model->greige->nama_kain?> (Alias: <?=$model->greige->alias?>) - <?=$stockLabel?>:
+            <?=Yii::$app->formatter->asDecimal($stockM)?>M
 
 
             <?php
@@ -38,19 +39,19 @@ use yii\widgets\DetailView;
 
             <table class="table table-bordered table-striped">
                 <thead>
-                <tr>
-                    <th>GREIGE</th>
-                    <th>STOCK</th>
-                    <th>BOOKED BY WO</th>
-                    <th>AVAILABLE</th>
-                </tr>
+                    <tr>
+                        <th>GREIGE</th>
+                        <th>STOCK</th>
+                        <th>BOOKED BY WO</th>
+                        <th>AVAILABLE</th>
+                    </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td><?=$model->greige->nama_kain?></td>
-                    <td><?=Yii::$app->formatter->asDecimal($model->greige->stock)?></td>
-                    <td>
-                        <?php
+                    <tr>
+                        <td><?=$model->greige->nama_kain?></td>
+                        <td><?=Yii::$app->formatter->asDecimal($model->greige->stock)?></td>
+                        <td>
+                            <?php
                         $woItems = TrnWo::find()->select('no')->where(['greige_id'=>$model->greige_id, 'status'=>TrnWo::STATUS_APPROVED])->asArray()->all();
                         foreach ($woItems as $i=>$woItem) {
                             if($i > 0){
@@ -60,9 +61,9 @@ use yii\widgets\DetailView;
                             echo $woItem['no'];
                         }
                         ?>
-                    </td>
-                    <td><?=Yii::$app->formatter->asDecimal($model->greige->available)?></td>
-                </tr>
+                        </td>
+                        <td><?=Yii::$app->formatter->asDecimal($model->greige->available)?></td>
+                    </tr>
                 </tbody>
             </table>
 

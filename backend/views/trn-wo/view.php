@@ -12,6 +12,7 @@ use yii\widgets\DetailView;
 /* @var $stockLabel string */
 /* @var $bookkLabel string */
 /* @var $avM string */
+/* @var $users array */
 
 $this->title = 'Work Order - '.$model->id;
 $this->params['breadcrumbs'][] = ['label' => 'Work Order', 'url' => ['index']];
@@ -57,6 +58,8 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         }
         ?>
     </p>
+
+
 
     <?=$this->render('_mo-info', ['mo' => $model->mo, 'sc'=>$model->sc, 'scGreige'=>$model->scGreige])?>
 
@@ -108,6 +111,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         }
         echo '</p>';
     }
+    
     ?>
     <?=$this->render('_detail', [
         'model'=>$model,
@@ -118,6 +122,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         'bookedM' => $bookedM,
         'stockLabel' => $stockLabel,
         'bookkLabel' => $bookkLabel,
+        'users' => $users,
         'avM' => $avM
     ])?>
 

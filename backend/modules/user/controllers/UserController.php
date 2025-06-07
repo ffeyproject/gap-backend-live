@@ -28,6 +28,8 @@ class UserController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'change-status' => ['POST'],
+                    'change-status-aktif' => ['POST'],
                 ],
             ],
         ];
@@ -120,6 +122,44 @@ class UserController extends Controller
             ]);
         }
     }
+
+    public function actionChangeStatusAktif($id, $newStatus)
+    {
+        $model = $this->findModel($id);
+
+        if (!in_array($newStatus, [User::STATUS_ACTIVE, User::STATUS_INACTIVE])) {
+            throw new \yii\web\BadRequestHttpException('Status tidak valid.');
+        }
+
+        $model->status = $newStatus;
+
+        if ($model->save(false, ['status'])) {
+            Yii::$app->session->setFlash('success', 'Status pengguna berhasil diperbarui.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Gagal memperbarui status pengguna.');
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+
+
+    public function actionChangeStatus($id)
+    {
+        $model = $this->findModel($id);
+
+        // Toggle status notifikasi email
+        $model->status_notif_email = $model->status_notif_email ? 0 : 1;
+
+        if ($model->save(false, ['status_notif_email'])) {
+            Yii::$app->session->setFlash('success', 'Status email notifikasi berhasil diperbarui.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Gagal memperbarui status email notifikasi.');
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
 
     /**
      * Deletes an existing User model.
