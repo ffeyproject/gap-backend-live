@@ -49,6 +49,10 @@ class AddUserForm extends Model
             $user->generateAuthKey();
             $user->generateEmailVerificationToken();
 
+            $user->created_at = time();
+	        $user->updated_at = time();
+
+
             $this->user = $user;
 
             if(!$this->user->validate()){

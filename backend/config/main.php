@@ -108,6 +108,31 @@ return [
             'encryption' => 'tls',
             ],
         ],
+
+        //Setting Jika VPS Menggunakan IPV6
+        
+        // 'mailer' => [
+        // 'class' => 'yii\swiftmailer\Mailer',
+        // 'viewPath' => '@common/mail',
+        // 'useFileTransport' => false,
+        // 'transport' => [
+        //     'class' => 'Swift_SmtpTransport',
+        //     'host' => '142.251.10.109',
+        //     'username' => 'infogajahapp@gmail.com',
+        //     'password' => 'xqrruhqtucxioqxl',
+        //     'port' => '587',
+        //     'encryption' => 'tls',
+	    //    'streamOptions' => [
+        //        'ssl' => [
+        //        'verify_peer' => false,
+        //        'verify_peer_name' => false,
+        //        'allow_self_signed' => true,
+        //       ],
+        //      ],
+        //     ],
+        // ],
+
+
         // 'urlManager' => [
         //     'enablePrettyUrl' => true,
         //     'showScriptName' => false,
