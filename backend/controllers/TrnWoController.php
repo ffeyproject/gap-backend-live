@@ -23,6 +23,7 @@ use yii\web\NotAcceptableHttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
+use yii\db\Expression;
 
 /**
  * TrnWoController implements the CRUD actions for TrnWo model.
