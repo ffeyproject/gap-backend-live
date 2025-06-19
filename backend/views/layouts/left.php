@@ -1199,6 +1199,14 @@ $moduleId = $controller->module->id;
                                 'label' => 'Stock', 'icon' => 'circle', 'url' => ['/rawdata/trn-gudang-jadi/index'],
                                 'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
                             ],
+                            [
+                                'label' => 'Kirim Buyer Bal', 'icon' => 'circle', 'url' => ['/rawdata/trn-kirim-buyer-bal/index'],
+                                'active' => $moduleId == 'rawdata' && $controllerId == 'trn-kirim-buyer-bal' && $actionId == 'index'
+                            ],
+                            [
+                                'label' => 'Kirim Item Bal', 'icon' => 'circle', 'url' => ['/rawdata/trn-kirim-buyer-item/index'],
+                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-kirim-buyer-item' && $actionId == 'index'
+                            ],
                         ],
                     ],
                 ],
