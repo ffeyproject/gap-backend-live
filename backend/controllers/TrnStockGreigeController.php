@@ -14,6 +14,9 @@ use common\models\rekap\LaporanStockSearch;
 use Yii;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnStockGreigeSearch;
+use common\models\ar\TrnGudangInspect;
+use common\models\ar\TrnGudangInspectItem;
+use common\models\ar\TrnGudangInspectSearch;
 use yii\db\Expression;
 use yii\db\Query;
 use yii\helpers\BaseVarDumper;
@@ -628,6 +631,156 @@ class TrnStockGreigeController extends Controller
     return $this->renderAjax('seluruh-stock', ['data' => $data]);
 }
 }
+
+    public function actionIndexGudangInspect(){
+        $searchModel = new TrnGudangInspectSearch(['jenis_gudang'=>TrnGudangInspect::JG_FRESH,'status' => TrnGudangInspect::STATUS_POSTED]);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['or',
+            ['status' => TrnGudangInspect::STATUS_POSTED],
+            ['status' => TrnGudangInspect::STATUS_OUT]
+        ]);
+
+        return $this->render('index-gudang-inspect', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    public function actionViewGudangInspect($id){
+        $model = TrnGudangInspect::findOne($id);
+        if(Yii::$app->request->isAjax){
+            return $this->asJson($model->toArray());
+        }else{
+            return $this->render('view-gudang-inspect', [
+                'model' => $model,
+            ]);
+        }
+    }
+
+
+    public function actionTransferToGreige($id)
+    {   
+        $model = TrnGudangInspect::findOne($id);
+        $selectedItemIds = Yii::$app->request->post('selected_items', []);
+    
+        if ($model->status != $model::STATUS_POSTED) {
+            Yii::$app->session->setFlash('error', 'Status tidak valid untuk transfer ke Gudang Greige.');
+            return $this->redirect(['view-gudang-inspect', 'id' => $model->id]);
+        }
+    
+        if (empty($selectedItemIds)) {
+            Yii::$app->session->setFlash('warning', 'Tidak ada item yang dipilih.');
+            return $this->redirect(['view-gudang-inspect', 'id' => $id]);
+        }
+    
+        $modelSelectedItems = TrnGudangInspectItem::findAll(['id' => $selectedItemIds]);
+    
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $greyQty = 0;
+            $date = date('Y-m-d');
+            $greige = MstGreige::findOne($model->greige_id);
+    
+            if (!$greige) {
+                throw new \Exception('Greige tidak ditemukan.');
+            }
+    
+            foreach ($modelSelectedItems as $modelSelectedItem) {
+                // Tandai item sebagai keluar
+                $modelSelectedItem->is_out = true;
+                if (!$modelSelectedItem->save(false)) {
+                    throw new \Exception('Gagal menyimpan status item.');
+                }
+    
+                // Buat stock baru untuk tiap item
+                $modelStock = new TrnStockGreige();
+                $modelStock->greige_id = $model->greige_id;
+                $modelStock->greige_group_id = $greige->group_id;
+                $modelStock->asal_greige = $model->asal_greige;
+                $modelStock->no_lapak = $model->no_lapak;
+                $modelStock->lot_lusi = $model->lot_lusi;
+                $modelStock->lot_pakan = $model->lot_pakan;
+                $modelStock->status_tsd = $model->status_tsd;
+                $modelStock->no_document = $model->no_document;
+                $modelStock->pengirim = $model->pengirim;
+                $modelStock->mengetahui = Yii::$app->user->identity->id;
+                $modelStock->note = $model->note;
+                $modelStock->date = $date;
+                $modelStock->status = TrnStockGreige::STATUS_VALID;
+                $modelStock->jenis_gudang = TrnStockGreige::JG_FRESH;
+                $modelStock->panjang_m = $modelSelectedItem->panjang_m;
+                $modelStock->grade = $modelSelectedItem->grade;
+                $modelStock->no_set_lusi = $modelSelectedItem->no_set_lusi;
+    
+                if (!$modelStock->save(false)) {
+                    throw new \Exception('Gagal menyimpan stock item.');
+                }
+    
+                $greyQty += $modelSelectedItem->panjang_m;
+            }
+
+            //cek apakah masih ada item yang is_outnya = false
+            if(TrnGudangInspectItem::find()->where(['trn_gudang_inspect_id'=>$model->id, 'is_out'=>false])->count() == 0){
+                $model->status = TrnGudangInspect::STATUS_OUT;
+                $model->save(false);
+            }
+
+            Yii::$app->db->createCommand()
+            ->update(
+                MstGreige::tableName(),
+                [
+                    'stock' => new Expression("mst_greige.stock + {$greyQty}"),
+                    'available' => new Expression("mst_greige.available + {$greyQty}")
+                ],
+                ['id'=>$model->greige_id]
+            )->execute();
+    
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Berhasil kirim ke Gudang Greige.');
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal memproses: ' . $e->getMessage());
+        }
+    
+        return $this->redirect(['view-gudang-inspect', 'id' => $id]);
+    }
+
+
+    public function actionSeluruhStockGudangInspect(){
+        if(Yii::$app->request->isAjax){
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $asalGreigeList = [
+                'water_jet_loom' => TrnGudangInspect::ASAL_GREIGE_WJL,
+                'rapier_loom' => TrnGudangInspect::ASAL_GREIGE_RAPIER,
+                'beli_lokal' => TrnGudangInspect::ASAL_GREIGE_BELI,
+                'beli_import' => TrnGudangInspect::ASAL_GREIGE_BELI_IMPORT,
+            ];
+
+            $data = [];
+
+            foreach ($asalGreigeList as $key => $asalGreige) {
+                $data[$key] = [];
+                foreach (TrnGudangInspect::tsdOptions() as $statusKey => $statusName) {
+                    $jumlah = TrnGudangInspect::find()
+                        ->joinWith('trnGudangInspectItems')
+                        ->where([
+                            'trn_gudang_inspect.asal_greige' => $asalGreige,
+                            'trn_gudang_inspect.status' => TrnGudangInspect::STATUS_POSTED, 
+                            'trn_gudang_inspect.status_tsd' => $statusKey,
+                        ])
+                        ->sum('trn_gudang_inspect_item.panjang_m');
+
+                    if ($jumlah > 0) {
+                        $data[$key][$statusName] = $jumlah;
+                    }
+                }
+            }
+
+            return $this->renderAjax('seluruh-stock', ['data' => $data]);
+        }
+
+    }
 
     /**
      * Finds the TrnStockGreige model based on its primary key value.

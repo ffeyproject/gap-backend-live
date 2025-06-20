@@ -149,6 +149,29 @@ class MstGreige extends \yii\db\ActiveRecord
         return TrnStockGreige::getStockPerGrade($this->id);
     }
 
+    public function getTrnGudangInspect()
+    {
+        return $this->hasMany(TrnGudangInspect::className(), ['greige_id' => 'id']);
+    }
+
+    public function getTrnGudangInspectPosted()
+    {
+        return $this->hasMany(TrnGudangInspect::className(), ['greige_id' => 'id'])->where(['status' => TrnGudangInspect::STATUS_POSTED]);
+    }
+
+
+    public function getTotalPanjangMGudangInspect()
+    {
+        $total = 0;
+        foreach ($this->trnGudangInspectPosted as $inspect) {
+            foreach ($inspect->trnGudangInspectItemsNotOut as $item) {
+                $total += $item->panjang_m;
+            }
+        }
+        return $total;
+    }
+
+
     /**
      * @return float
      * tidak dipakai lagi, sudah digantikan oleh kolom tambahan "available"

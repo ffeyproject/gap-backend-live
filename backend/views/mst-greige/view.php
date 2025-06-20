@@ -51,6 +51,10 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                 'aktif:boolean',
                 'stock:decimal',
                 'available:decimal',
+                [
+                    'value' => $model->getTotalPanjangMGudangInspect(),
+                    'label' => 'Stock Gudang Inspect'
+                ],
                 'booked_wo:decimal',
                 'booked_opfp:decimal',
                 'booked:decimal',

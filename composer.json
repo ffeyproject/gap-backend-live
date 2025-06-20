@@ -27,7 +27,8 @@
         "mdmsoft/yii2-admin": "~2.0",
         "2amigos/yii2-tinymce-widget": "~1.1",
         "beaten-sect0r/yii2-db-manager": "*",
-        "wandersonwhcr/romans": "^1.0"
+        "wandersonwhcr/romans": "^1.0",
+        "yiisoft/yii2-queue": "^2.3"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

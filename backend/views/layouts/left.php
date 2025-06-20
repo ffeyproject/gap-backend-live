@@ -308,6 +308,10 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-greige-keluar'
                     ],
                     [
+                        'label' => 'Stock Gudang Inspect', 'icon' => 'circle', 'url' => ['/trn-stock-greige/index-gudang-inspect'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-greige' && $actionId=='index-gudang-inspect'
+                    ],
+                    [
                         'label' => 'Riwayat Mix Quality', 'icon' => 'circle', 'url' => ['/trn-mixed-greige-item/riwayat'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-mixed-greige-item' && $actionId=='riwayat'
                     ],
@@ -337,6 +341,17 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId=='app-backend' && $controllerId == 'trn-greige-keluar' && $actionId=='rekap'
                             ],
                         ]
+                    ],
+                ],
+            ],
+            [
+                'label' => 'GUDANG INSPECT',
+                'icon' => 'bars',
+                'url' => '#',
+                'items' => [
+                    [
+                        'label' => 'Stock Gudang Inspect', 'icon' => 'circle', 'url' => ['/trn-gudang-inspect/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-inspect' && $actionId=='index'
                     ],
                 ],
             ],
