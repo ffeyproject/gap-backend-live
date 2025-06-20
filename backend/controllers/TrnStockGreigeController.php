@@ -212,6 +212,7 @@ class TrnStockGreigeController extends Controller
         ]);
     }
 
+
     /**
      * @param $noDoc
      * @return \yii\web\Response
@@ -780,6 +781,21 @@ class TrnStockGreigeController extends Controller
             return $this->renderAjax('seluruh-stock', ['data' => $data]);
         }
 
+    }
+
+    public function actionEditNoDocument($id)
+    {
+        $model = TrnGudangInspect::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException('Data Gudang Inspect tidak ditemukan.');
+        }
+
+        if ($model->load(Yii::$app->request->post()) && $model->save(false)) {
+            Yii::$app->session->setFlash('success', 'No Document berhasil diperbarui.');
+        }
+
+        return $this->redirect(['view-gudang-inspect', 'id' => $model->id]);
     }
 
     /**
