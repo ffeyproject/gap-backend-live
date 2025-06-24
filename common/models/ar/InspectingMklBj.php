@@ -19,7 +19,7 @@ use common\models\ar\MstK3l;
  * @property string $tgl_inspeksi
  * @property string $tgl_kirim
  * @property string $no_lot
- * @property int $jenis 1=Makloon Proses, 2=Makloon Finish, 3=Barang Jadi
+ * @property int $jenis 1=Makloon Proses, 2=Makloon Finish, 3=Barang Jadi , 4=Fresh
  * @property int $jenis_inspek 1=Fresh Order, 2=Re-Packing
  * @property int $satuan Mengacu pada MstGreigeGroup::unitOptions()
  * @property int $created_at
@@ -151,7 +151,8 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             'woNo' => 'Wo No',
             'designName' => 'No. Design',
             'articleName' => 'Artikel',
-            'greigeName' => 'Motif'
+            'greigeName' => 'Motif',
+            'defect'=> 'Defect'
         ];
     }
 

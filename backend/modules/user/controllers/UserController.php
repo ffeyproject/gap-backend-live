@@ -55,6 +55,7 @@ class UserController extends Controller
         ]);
     }
 
+    
     /**
      * Displays a single User model.
      * @param integer $id

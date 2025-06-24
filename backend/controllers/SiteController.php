@@ -19,6 +19,7 @@ use Dompdf\Options;
 use yii\web\NotAcceptableHttpException;
 use kartik\mpdf\Pdf;
 use common\jobs\EmailWoJob;
+use yii\web\UploadedFile;
 
 /**
  * Site controller
@@ -393,4 +394,61 @@ public function actionKirimEmail()
             'model' => $model,
         ]);
     }
+
+    public function actionProfile()
+    {
+        // ambil user yang sedang login
+        $model = User::findOne(Yii::$app->user->id);
+
+        if (!$model) {
+            throw new NotFoundHttpException('User tidak ditemukan.');
+        }
+        
+
+        // handle POST
+        if ($model->load(Yii::$app->request->post())) {
+
+            // handle upload foto
+            $file = UploadedFile::getInstance($model, 'foto');
+            if ($file) {
+                // path folder upload
+                $uploadPath = Yii::getAlias('@webroot/uploads/avatar/');
+                
+                // path file lama
+                $oldFilePath = $uploadPath . $model->foto;
+
+                // kalau file lama ada, hapus dulu
+                if ($model->foto && file_exists($oldFilePath)) {
+                    @unlink($oldFilePath);
+                }
+
+                // buat nama file baru
+                $fileName = 'avatar_' . Yii::$app->user->id . '.' . $file->extension;
+                $filePath = $uploadPath . $fileName;
+
+                if ($file->saveAs($filePath)) {
+                    $model->foto = $fileName;
+                }
+            }
+
+
+
+            // kalau password diisi, hash password baru
+            if (!empty($model->password)) {
+                $model->setPassword($model->password);
+            }
+
+
+            // simpan model
+            if ($model->save()) { // false untuk skip validation tertentu
+                Yii::$app->session->setFlash('success', 'Profile berhasil diperbarui.');
+                return $this->redirect(['profile']);
+            }
+        }
+
+        return $this->render('profile', [
+            'model' => $model,
+        ]);
+    }
+
 }

@@ -30,14 +30,13 @@ use yii\helpers\Url;
 
                 <li class="dropdown user user-menu">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <img src="<?=Url::to('@web/images/icons/awo.png') ?>" class="user-image" alt="User Image"/>
+                        <img src="<?= $user->getAvatarUrl() ?>" class="user-image" alt="User Image" />
                         <span class="hidden-xs"><?=$user->username?></span>
                     </a>
                     <ul class="dropdown-menu">
                         <!-- User image -->
                         <li class="user-header">
-                            <img src="<?=Url::to('@web/images/icons/awo.png') ?>" class="img-circle"
-                                 alt="User Image"/>
+                            <img src="<?= $user->getAvatarUrl() ?>" class="img-circle" alt="User Image" />
 
                             <p><?=$user->username?>
                                 <small>Member Since <?=Yii::$app->formatter->asDatetime($user->created_at)?></small>
@@ -66,7 +65,12 @@ use yii\helpers\Url;
                         <!-- Menu Footer-->
                         <li class="user-footer">
                             <div class="pull-left">
-                                <a href="#" class="btn btn-default btn-flat">Profile</a>
+                                <?= Html::a(
+                                    'Profile',
+                                    ['/site/profile'],
+                                    ['class' => 'btn btn-default btn-flat']
+                                ) ?>
+
                             </div>
                             <div class="pull-right">
                                 <?= Html::a(

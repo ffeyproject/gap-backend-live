@@ -34,6 +34,9 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_INACTIVE = 9;
     const STATUS_ACTIVE = 10;
 
+    public $password;
+    public $password_repeat;
+
 
     /**
      * {@inheritdoc}
@@ -67,6 +70,10 @@ class User extends ActiveRecord implements IdentityInterface
             [['email'], 'unique'],
             [['username'], 'unique'],
             [['status_notif_email'], 'boolean'],
+
+            [['password', 'password_repeat'], 'string', 'min' => 6],
+            [['password_repeat'], 'compare', 'compareAttribute' => 'password'],
+            [['foto'], 'file', 'extensions' => 'png, jpg, jpeg, JPG, JPEG', 'maxSize' => 1024*1024] // 1MB
         ];
     }
 
@@ -272,4 +279,25 @@ class User extends ActiveRecord implements IdentityInterface
     
         return Yii::$app->urlManager->getBaseUrl() . '/uploads/signature/' . $this->signature;
     }
+
+    public function getAvatarUrl()
+    {
+        if ($this->foto && file_exists(Yii::getAlias('@webroot/uploads/avatar/' . $this->foto))) {
+            return Yii::getAlias('@web/uploads/avatar/' . $this->foto);
+        }
+        return Yii::getAlias('@web/images/icons/awo.png');
+    }
+
+    public function beforeSave($insert)
+    {
+        if (parent::beforeSave($insert)) {
+            // jika password diisi, hash-kan
+            if (!empty($this->password)) {
+                $this->setPassword($this->password);
+            }
+            return true;
+        }
+        return false;
+    }
+
 }

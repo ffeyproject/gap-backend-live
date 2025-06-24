@@ -20,10 +20,11 @@ $moduleId = $controller->module->id;
         <!-- Sidebar user panel -->
         <div class="user-panel">
             <div class="pull-left image">
-                <img src="<?=Url::to('@web/images/icons/awo.png') ?>" class="img-circle" alt="User Image" />
+                <img src="<?= $user->getAvatarUrl() ?>" class="img-circle" alt="User Image"
+                    style="width: 80px; height: 50px !important;" />
             </div>
             <div class="pull-left info">
-                <p><?=$user->username?></p>
+                <p><?=$user->full_name?></p>
                 <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
             </div>
         </div>

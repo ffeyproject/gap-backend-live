@@ -9,7 +9,7 @@ use Yii;
  *
  * @property int $id
  * @property int $inspecting_id
- * @property int $grade 1=Grade A, 2=Grade B, 3=Grade C, 4=Piece Kecil, 5=Sample
+ * @property int $grade 1=Grade A, 2=Grade B, 3=Grade C, 4=Piece Kecil, 5=Sample, 7=Grade A+, 8=Grade A*, 9=Putih
  * @property string|null $join_piece
  * @property float $qty
  * @property string|null $note

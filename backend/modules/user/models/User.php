@@ -14,6 +14,9 @@ use yii\web\UrlManager;
  */
 class User extends \common\models\User
 {
+    public $password;
+public $password_repeat;
+
     /**
      * {@inheritdoc}
      */
@@ -41,6 +44,11 @@ class User extends \common\models\User
             [['email'], 'unique'],
             [['password_reset_token'], 'unique'],
             [['username'], 'unique'],
+
+            [['password', 'password_repeat'], 'string', 'min' => 6],
+            [['password_repeat'], 'compare', 'compareAttribute' => 'password'],
+
+            
         ];
 
         return ArrayHelper::merge($rules, $newRules);
@@ -65,6 +73,7 @@ class User extends \common\models\User
             'signature' => 'Signature'
         ];
     }
+
 
     /**
      * Get all available and assigned roles/permission
@@ -179,4 +188,31 @@ class User extends \common\models\User
         $data = $command->queryAll();
         return ArrayHelper::map($data, 'id', 'text');
     }
+
+    public function getAvatarUrl()
+    {
+        if ($this->foto && file_exists(Yii::getAlias('@webroot/uploads/avatar/' . $this->foto))) {
+            return Yii::getAlias('@web/uploads/avatar/' . $this->foto);
+        }
+        return Yii::getAlias('@web/images/icons/awo.png');
+    }
+
+
+    public function setPassword($password)
+    {
+        $this->password_hash = Yii::$app->security->generatePasswordHash($password);
+    }
+
+    public function beforeSave($insert)
+    {
+        if (parent::beforeSave($insert)) {
+            // jika password diisi, hash-kan
+            if (!empty($this->password)) {
+                $this->setPassword($this->password);
+            }
+            return true;
+        }
+        return false;
+    }
+    
 }
