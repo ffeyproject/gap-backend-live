@@ -42,6 +42,7 @@ class TrnGudangInspectItem extends ActiveRecord
         return [
             [['trn_gudang_inspect_id', 'no_set_lusi', 'grade'], 'required'],
             [['trn_gudang_inspect_id'], 'integer'],
+            [['ket_defect'], 'string', 'max' => 100],
             [['panjang_m'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['no_set_lusi'], 'string', 'max' => 50],
@@ -58,6 +59,7 @@ class TrnGudangInspectItem extends ActiveRecord
             'panjang_m' => 'Panjang (m)',
             'no_set_lusi' => 'No Set Lusi',
             'grade' => 'Grade',
+            'ket_defect' => 'Ket Defect',
             'created_at' => 'Dibuat pada',
             'updated_at' => 'Diperbarui pada',
         ];

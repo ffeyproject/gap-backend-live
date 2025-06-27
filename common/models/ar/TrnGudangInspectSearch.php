@@ -24,7 +24,7 @@ class TrnGudangInspectSearch extends TrnGudangInspect
         return [
             [['id', 'greige_group_id', 'greige_id', 'asal_greige', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang'], 'integer'],
             [['is_hasil_mix', 'is_pemotongan'], 'boolean'],
-            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'pengirim', 'mengetahui', 'note', 'date', 'nomor_wo', 'color', 'greigeNamaKain', 'dateRange'], 'safe'],
+            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'operator', 'mengetahui', 'note', 'date', 'nomor_wo', 'color', 'greigeNamaKain', 'dateRange'], 'safe'],
         ];
     }
 
@@ -112,7 +112,7 @@ class TrnGudangInspectSearch extends TrnGudangInspect
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.lot_lusi', $this->lot_lusi])
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.lot_pakan', $this->lot_pakan])
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.no_document', $this->no_document])
-            ->andFilterWhere(['ilike', 'trn_gudang_inspect.pengirim', $this->pengirim])
+            ->andFilterWhere(['ilike', 'trn_gudang_inspect.operator', $this->operator])
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.nomor_wo', $this->nomor_wo])
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.note', $this->note])
             ->andFilterWhere(['ilike', 'trn_gudang_inspect.color', $this->color])

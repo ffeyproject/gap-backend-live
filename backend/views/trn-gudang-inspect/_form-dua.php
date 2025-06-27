@@ -29,6 +29,9 @@ use backend\models\form\StockGreigeForm;
             <div class="box">
                 <div class="box-body">
                     <div class="row">
+                        <div class="col-md-3">
+                            <?= $form->field($model, 'lot_lusi')->textInput(['maxlength' => true]) ?>
+                        </div>
                         <div class="col-md-8">
                             <?php
                             $ajaxUrl = Url::to(['ajax/lookup-greige']);
@@ -54,18 +57,18 @@ use backend\models\form\StockGreigeForm;
                             ]);?>
                         </div>
 
-                        <div class="col-md-4">
-                            <?= $form->field($model, 'no_lapak')->textInput(['maxlength' => true]) ?>
-                        </div>
+
                     </div>
 
                     <div class="row">
-                        <div class="col-md-3">
-                            <?= $form->field($model, 'lot_lusi')->textInput(['maxlength' => true]) ?>
-                        </div>
+
 
                         <div class="col-md-3">
                             <?= $form->field($model, 'lot_pakan')->textInput(['maxlength' => true]) ?>
+                        </div>
+
+                        <div class="col-md-3">
+                            <?= $form->field($model, 'no_lapak')->textInput(['maxlength' => true]) ?>
                         </div>
 
                         <div class="col-md-6">
@@ -81,7 +84,7 @@ use backend\models\form\StockGreigeForm;
 
                     <div class="row">
                         <div class="col-md-6">
-                            <?= $form->field($model, 'pengirim')->textInput(['maxlength' => true]) ?>
+                            <?= $form->field($model, 'operator')->textInput(['maxlength' => true]) ?>
                         </div>
 
                         <div class="col-md-6">
@@ -107,7 +110,8 @@ use backend\models\form\StockGreigeForm;
                             ?>
                         </div>
 
-                        <div class="col-md-6"><?= $form->field($model, 'no_document')->textInput(['maxlength' => true]) ?></div>
+                        <div class="col-md-6">
+                            <?= $form->field($model, 'no_document')->textInput(['maxlength' => true]) ?></div>
                     </div>
 
                     <?= $form->field($model, 'note')->textInput() ?>
@@ -142,64 +146,72 @@ use backend\models\form\StockGreigeForm;
                     ?>
                     <table class="table table-bordered">
                         <thead>
-                        <tr>
-                            <th>NO</th>
-                            <th>Grade</th>
-                            <th>No. MC Weaving</th>
-                            <th>Qty</th>
-                            <th><button type="button" class="pull-right add-item btn btn-success btn-xs"><i class="fa fa-plus"></i></button></th>
-                        </tr>
+                            <tr>
+                                <th>NO</th>
+                                <th>Grade</th>
+                                <th>No. MC Weaving</th>
+                                <th>Qty</th>
+                                <th>Ket Defect</th>
+                                <th><button type="button" class="pull-right add-item btn btn-success btn-xs"><i
+                                            class="fa fa-plus"></i></button></th>
+                            </tr>
                         </thead>
                         <tbody class="container-items">
-                        <?php
+                            <?php
                         $grdOptsA = [''=>'--'];
                         $grdOptsB = StockGreige::gradeOptions();
                         $grdOpts = ArrayHelper::merge($grdOptsA, $grdOptsB);
-                        ?>  
-                        <?php 
+                        ?>
+                            <?php 
                         $i = 1;
                         ?>
                             <?php foreach ($modelsStock as $index => $modelStock): ?>
-                                <?php if (!$modelStock->is_out): ?>
-                                    <tr class="item">
-                                        <td class="panel-title-address"><?= $i++ ?></td>
-                                        
-                                        <!-- Tambahkan hidden input untuk id -->
-                                        <?php
+                            <?php if (!$modelStock->is_out): ?>
+                            <tr class="item">
+                                <td class="panel-title-address"><?= $i++ ?></td>
+
+                                <!-- Tambahkan hidden input untuk id -->
+                                <?php
                                             if (! $modelStock->isNewRecord) {
                                                 echo Html::activeHiddenInput($modelStock, "[{$index}]id");
                                             }
                                         ?>
-                                        <td>
-                                            <?= $form->field($modelStock, "[{$index}]grade")->dropDownList($grdOpts)->label(false) ?>
-                                        </td>
+                                <td>
+                                    <?= $form->field($modelStock, "[{$index}]grade")->dropDownList($grdOpts)->label(false) ?>
+                                </td>
 
-                                        <td>
-                                            <?= $form->field($modelStock, "[{$index}]no_set_lusi")->textInput()->label(false) ?>
-                                        </td>
+                                <td>
+                                    <?= $form->field($modelStock, "[{$index}]no_set_lusi")->textInput()->label(false) ?>
+                                </td>
 
-                                        <td>
-                                            <?= $form->field($modelStock, "[{$index}]panjang_m")->textInput(['class'=>'form-control panjang_unit'])->label(false) ?>
-                                        </td>
+                                <td>
+                                    <?= $form->field($modelStock, "[{$index}]panjang_m")->textInput(['class'=>'form-control panjang_unit'])->label(false) ?>
+                                </td>
 
-                                        <td>
-                                            <button type="button" class="pull-right remove-item btn btn-danger btn-xs">
-                                                <i class="fa fa-minus"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
+                                <td>
+                                    <?= $form->field($modelStock, "[{$index}]ket_defect")->textInput()->label(false) ?>
+                                </td>
+
+                                <td>
+                                    <button type="button" class="pull-right remove-item btn btn-danger btn-xs">
+                                        <i class="fa fa-minus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
                             <?php endforeach; ?>
 
                         </tbody>
                         <tfoot>
-                        <tr>
-                            <th>NO</th>
-                            <th>Grade</th>
-                            <th>No. MC Weaving</th>
-                            <th>Qty</th>
-                            <th><button type="button" class="pull-right add-item btn btn-success btn-xs"><i class="fa fa-plus"></i></button></th>
-                        </tr>
+                            <tr>
+                                <th>NO</th>
+                                <th>Grade</th>
+                                <th>No. MC Weaving</th>
+                                <th>Qty</th>
+                                <th>Ket Defect</th>
+                                <th><button type="button" class="pull-right add-item btn btn-success btn-xs"><i
+                                            class="fa fa-plus"></i></button></th>
+                            </tr>
                         </tfoot>
                     </table>
                     <?php DynamicFormWidget::end();?>

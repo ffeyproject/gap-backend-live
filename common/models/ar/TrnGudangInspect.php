@@ -19,7 +19,7 @@ use yii\behaviors\TimestampBehavior;
  * @property string $lot_pakan
  * @property int $status_tsd
  * @property string $no_document
- * @property string $pengirim
+ * @property string $operator
  * @property string|null $note
  * @property int $status
  * @property string $date
@@ -156,13 +156,13 @@ class TrnGudangInspect extends ActiveRecord
     public function rules()
     {
         return [
-            [['greige_id', 'asal_greige', 'no_lapak', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'pengirim', 'date', 'created_at', 'created_by'], 'required'],
+            [['greige_id', 'asal_greige', 'no_lapak', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'operator', 'date', 'created_at', 'created_by'], 'required'],
             [['greige_group_id', 'greige_id', 'asal_greige', 'status_tsd', 'status', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang', 'created_at', 'created_by', 'updated_at', 'updated_by','jenis_beli'], 'integer'],
             [['note'], 'string'],
             [['date'], 'safe'],
             ['status', 'default', 'value' => self::STATUS_DRAFT],
             [['is_pemotongan', 'is_hasil_mix'], 'boolean'],
-            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'pengirim', 'nomor_wo', 'color'], 'string', 'max' => 255],
+            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'operator', 'nomor_wo', 'color'], 'string', 'max' => 255],
         ];
     }
 
@@ -178,7 +178,7 @@ class TrnGudangInspect extends ActiveRecord
             'lot_pakan' => 'Lot Pakan',
             'status_tsd' => 'Status TSD',
             'no_document' => 'No Document',
-            'pengirim' => 'Pengirim',
+            'operator' => 'Operator',
             'note' => 'Catatan',
             'status' => 'Status',
             'date' => 'Tanggal',

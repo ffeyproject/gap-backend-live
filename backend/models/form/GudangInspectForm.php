@@ -14,7 +14,7 @@ use yii\base\Model;
  * @property string $lot_pakan
  * @property int $status_tsd 1=sm(salur muda),2=st(salur tua),3=sa(salur abnormal
  * @property string $no_document
- * @property string $pengirim
+ * @property string $operator
  * @property string $mengetahui
  * @property string|null $note
  */
@@ -27,7 +27,7 @@ class GudangInspectForm extends Model
     public $lot_pakan;
     public $status_tsd;
     public $no_document;
-    public $pengirim;
+    public $operator;
     public $note;
     public $jenis_beli;
 
@@ -37,12 +37,12 @@ class GudangInspectForm extends Model
     public function rules()
     {
         return [
-            [['greige_id', 'asal_greige', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'pengirim'], 'required'],
+            [['greige_id', 'asal_greige', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'operator'], 'required'],
             [['greige_id', 'status_tsd'], 'default', 'value' => null],
             [['greige_id', 'status_tsd','jenis_beli'], 'integer'],
             [['note'], 'string'],
             ['no_lapak', 'default', 'value'=>'-'],
-            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'pengirim'], 'string', 'max' => 255],
+            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'operator'], 'string', 'max' => 255],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
         ];
     }
@@ -60,7 +60,7 @@ class GudangInspectForm extends Model
             'lot_pakan' => 'Lot Pakan',
             'status_tsd' => 'Ket. Weaving',
             'no_document' => 'No Document',
-            'pengirim' => 'Pengirim',
+            'operator' => 'Operator',
             'note' => 'Note',
             'jenis_beli' => 'Jenis Beli',
         ];

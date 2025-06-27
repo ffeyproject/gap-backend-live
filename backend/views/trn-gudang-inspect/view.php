@@ -19,15 +19,15 @@ $unit = $model->greigeGroup->unitName;
 
     <p>
         <?php if ($model->status == $model::STATUS_DRAFT):?>
-            <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-            <?= Html::a('Delete', ['delete', 'id' => $model->id], [
+        <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'data' => [
                     'confirm' => 'Are you sure you want to delete this item?',
                     'method' => 'post',
                 ],
             ]) ?>
-            <?= Html::a('Posting', ['posting', 'id' => $model->id], [
+        <?= Html::a('Posting', ['posting', 'id' => $model->id], [
                 'class' => 'btn btn-warning',
                 'data' => [
                     'confirm' => 'Are you sure you want to posting this item?',
@@ -36,7 +36,7 @@ $unit = $model->greigeGroup->unitName;
             ]) ?>
         <?php endif;?>
         <?php if ($model->status == $model::STATUS_POSTED):?>
-            <?= Html::a('Batal Posting', ['batal-posting', 'id' => $model->id], [
+        <?= Html::a('Batal Posting', ['batal-posting', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'data' => [
                     'confirm' => 'Are you sure you want to posting this item?',
@@ -57,6 +57,7 @@ $unit = $model->greigeGroup->unitName;
                         'date:date',
                         'no_document',
                         'no_lapak',
+                        'operator',
                         [
                             'attribute'=>'status_tsd',
                             'value'=>function($data){
@@ -144,27 +145,33 @@ $unit = $model->greigeGroup->unitName;
                 <div class="box-body">
                     <table class="table table-bordered">
                         <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Qty (<?= $unit ?>)</th>
-                            <th>Grade</th>
-                            <th>No Mesin</th>
-                        </tr>
+                            <tr>
+                                <th>No</th>
+                                <th>Qty (<?= $unit ?>)</th>
+                                <th>Grade</th>
+                                <th>No Mesin</th>
+                                <th>Ket Defect</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        <?php $totalQty = 0; foreach ($modelsItem as $index => $modelItem): ?>
+                            <?php $totalQty = 0; foreach ($modelsItem as $index => $modelItem): ?>
                             <?php $totalQty += $modelItem->panjang_m; ?>
                             <tr>
                                 <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>"><?= ($index + 1) ?></td>
-                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>"><?= Yii::$app->formatter->asDecimal($modelItem->panjang_m) ?></td>
-                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>"><?= $modelItem::gradeOptions()[$modelItem->grade] ?? 'Unknown' ?></td>
-                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>"><?= $modelItem->no_set_lusi ?></td>
+                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>">
+                                    <?= Yii::$app->formatter->asDecimal($modelItem->panjang_m) ?></td>
+                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>">
+                                    <?= $modelItem::gradeOptions()[$modelItem->grade] ?? 'Unknown' ?></td>
+                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>">
+                                    <?= $modelItem->no_set_lusi ?></td>
+                                <td class="<?php if($modelItem->is_out) echo 'text-danger'; ?>">
+                                    <?= $modelItem->ket_defect ?></td>
                             </tr>
-                        <?php endforeach; ?>
-                        <tr>
-                            <td colspan="2"><strong>TOTAL (<?= $unit ?>)</strong></td>
-                            <td><strong><?= Yii::$app->formatter->asDecimal($totalQty) ?></strong></td>
-                        </tr>
+                            <?php endforeach; ?>
+                            <tr>
+                                <td colspan="2"><strong>TOTAL (<?= $unit ?>)</strong></td>
+                                <td><strong><?= Yii::$app->formatter->asDecimal($totalQty) ?></strong></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

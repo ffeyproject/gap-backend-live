@@ -18,7 +18,7 @@ class GudangInspect extends TrnGudangInspect
             [['note'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
-            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'pengirim', 'mengetahui'], 'string', 'max' => 255],
+            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'operator', 'mengetahui'], 'string', 'max' => 255],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
             [['greige_group_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreigeGroup::className(), 'targetAttribute' => ['greige_group_id' => 'id']],
         ];
