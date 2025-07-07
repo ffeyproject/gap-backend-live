@@ -149,7 +149,7 @@ echo Html::hiddenInput('id', '', ['id' => 'wa-memo-id-hidden']);
         <select multiple size="12" id="availableWaUsers" style="min-width: 300px;">
             <?php foreach ($userWa as $user): ?>
             <option value="<?= $user->phone_number ?>">
-                <?= htmlspecialchars($user->full_name) ?> (<?= $user->phone_number ?>)
+                <?= htmlspecialchars($user->full_name) ?>
             </option>
             <?php endforeach; ?>
         </select>

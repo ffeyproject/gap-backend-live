@@ -11,7 +11,7 @@ use common\models\ar\TrnWoMemo;
 
 class KirimWaMemoJob extends BaseObject implements JobInterface
 {
-    public $modelId;       // <-- properti disamakan dengan di action
+    public $modelId;
     public $numbers = [];
 
     public function execute($queue)
@@ -22,48 +22,25 @@ class KirimWaMemoJob extends BaseObject implements JobInterface
             return false;
         }
 
-
         $wo = $model->wo;
 
-        // Buat konten HTML-nya
-        $content = '
-        <table>
-            <tr>
-                <td><strong>PT. GAJAH ANGKASA PERKASA</strong></td>
-                <td></td>
-                <td class="text-right"><strong>NO: ' . $model->no . '</strong></td>
-            </tr>
-        </table>
-        <br><br>
-        <div class="text-center"><strong>MEMO PEMBERITAHUAN</strong></div>
-        <br><br>';
+        // Render content via view file
+        $view = new \yii\web\View();
+        $content = $view->renderFile('@backend/views/trn-wo-memo/_print.php', [
+            'model' => $model,
+            'wo'    => $wo,
+        ]);
 
-        foreach ($wo->trnWoMemos as $memo) {
-            $content .= '<p>' . $memo->memo . '</p>';
-        }
+        // Simpan debug content HTML (optional)
+        // file_put_contents('/tmp/memo_debug.html', $content);
 
-        $content .= '
-        <br><br>
-        <table class="signature">
-            <tr>
-                <td>Marketing</td>
-                <td>Mengetahui</td>
-                <td>Bandung, ' . Yii::$app->formatter->asDate($model->created_at) . '<br>Mengetahui</td>
-            </tr>
-            <tr>
-                <td>' . $wo->marketingName . '</td>
-                <td>' . $wo->mengetahuiName . '</td>
-                <td>' . $wo->mengetahuiName . '</td>
-            </tr>
-        </table>';
-
-        // Folder uploads/memo
-        $memoFolder = Yii::getAlias('@frontend/web/uploads/memo');
+        // Pastikan folder uploads/memo ada
+        $memoFolder = Yii::getAlias('@backend/web/uploads/memo');
         if (!file_exists($memoFolder)) {
             mkdir($memoFolder, 0777, true);
         }
 
-        // Buat nama file PDF-nya
+        // Generate nama file PDF
         $safeWoNo = preg_replace('/[^A-Za-z0-9_\-]/', '_', $model->no);
         $pdfFilename = 'memo_' . $safeWoNo . '_' . time() . '.pdf';
         $pdfPath = $memoFolder . '/' . $pdfFilename;
@@ -75,26 +52,21 @@ class KirimWaMemoJob extends BaseObject implements JobInterface
             'orientation' => Pdf::ORIENT_PORTRAIT,
             'destination' => Pdf::DEST_FILE,
             'content' => $content,
-            'cssInline' => '
-                body { font-size: 11pt; font-family: Arial, sans-serif; }
-                table { width: 100%; border-collapse: collapse; }
-                .text-center { text-align: center; }
-                .text-right { text-align: right; }
-                .signature td { text-align: center; padding-top: 50px; vertical-align: top; }
-            ',
             'filename' => $pdfPath,
         ]);
         $pdf->render();
 
-        // Tunggu file terbuat (maks 10x 0.2 detik = 2 detik)
+        // Tunggu file terbentuk dengan ukuran minimal 10KB
         $waitCount = 0;
         while ((!file_exists($pdfPath) || filesize($pdfPath) < 10240) && $waitCount < 10) {
             usleep(200000);
             $waitCount++;
         }
 
-        // URL file untuk WA
+
+        // URL public file untuk WA
         $fileUrl = 'http://live.produksionline.xyz/uploads/memo/' . $pdfFilename;
+        Yii::info("Link Memo: {$fileUrl}", 'application');
 
         // Kirim ke semua nomor WA
         foreach ($this->numbers as $number) {

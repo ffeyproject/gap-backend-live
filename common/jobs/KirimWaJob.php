@@ -32,6 +32,7 @@ class KirimWaJob extends BaseObject implements JobInterface
             'scGreige' => $scGreige,
         ]);
 
+        // file_put_contents('/tmp/debug_content.html', $content); // untuk debug kalau perlu
 
         // Pastikan folder uploads/order ada
         $orderFolder = Yii::getAlias('@backend/web/uploads/order');
