@@ -24,18 +24,14 @@ class KirimWaJob extends BaseObject implements JobInterface
         $mo = $model->mo;
         $scGreige = $model->scGreige;
 
-        // Render content PDF
-        // $content = Yii::$app->controller->renderPartial('@backend/views/trn-wo/print/print', [
-        //     'model' => $model,
-        //     'mo' => $mo,
-        //     'scGreige' => $scGreige
-        // ]);
-
-        $content = Yii::$app->view->render('@backend/views/trn-wo/print/print', [
+        // Render content tanpa layout
+        $view = new \yii\web\View();
+        $content = $view->renderFile('@backend/views/trn-wo/print/print.php', [
             'model' => $model,
             'mo' => $mo,
-            'scGreige' => $scGreige
+            'scGreige' => $scGreige,
         ]);
+
 
         // Pastikan folder uploads/order ada
         $orderFolder = Yii::getAlias('@backend/web/uploads/order');
@@ -43,7 +39,7 @@ class KirimWaJob extends BaseObject implements JobInterface
             mkdir($orderFolder, 0777, true);
         }
 
-        // Sanitize no WO untuk filename agar aman
+        // Generate filename PDF
         $safeNo = preg_replace('/[^A-Za-z0-9_\-]/', '_', $model->no);
         $pdfFilename = $safeNo . '_' . time() . '.pdf';
         $pdfPath = $orderFolder . '/' . $pdfFilename;
@@ -60,10 +56,17 @@ class KirimWaJob extends BaseObject implements JobInterface
         ]);
         $pdf->render();
 
-        // URL manual ke file — tanpa urlManager
-        $fileUrl = 'http://live.produksionline.xyz/backend/web/uploads/order/' . $pdfFilename;
+        // Tunggu file benar-benar dibuat
+        $waitCount = 0;
+        while ((!file_exists($pdfPath) || filesize($pdfPath) < 10240) && $waitCount < 10) {
+            usleep(200000);
+            $waitCount++;
+        }
 
-        // Kirim ke semua nomor
+        // URL file public frontend
+        $fileUrl = 'http://live.produksionline.xyz/uploads/order/' . $pdfFilename;
+
+        // Kirim WA ke nomor
         foreach ($this->numbers as $number) {
             $wa = new WhacenterService;
             $result = $wa->to($number)
@@ -71,11 +74,6 @@ class KirimWaJob extends BaseObject implements JobInterface
                          ->sendFile($fileUrl);
 
             Yii::info("Kirim ke {$number} => " . json_encode($result), 'application');
-        }
-
-        // Hapus file setelah selesai kirim
-        if (file_exists($pdfPath)) {
-            unlink($pdfPath);
         }
 
         return true;

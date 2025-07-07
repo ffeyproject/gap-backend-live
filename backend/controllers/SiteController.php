@@ -71,7 +71,7 @@ class SiteController extends Controller
 //     $mo = $model->mo;
 //     $scGreige = $model->scGreige;
 
-//     // ✅ Gunakan switch tanpa PROCESS_OPTIONS agar lebih aman
+//     // âœ… Gunakan switch tanpa PROCESS_OPTIONS agar lebih aman
 //     switch ($scGreige->process) {
 //         case $scGreige::PROCESS_DYEING:
 //             $content = $this->renderPartial('@backend/views/trn-wo/print/print', [
@@ -94,7 +94,7 @@ class SiteController extends Controller
 //             throw new NotAcceptableHttpException("Mohon maaf, untuk sementara proses \"{$procName}\" belum didukung.");
 //     }
 
-//     // ✅ Generate PDF sebagai string (DEST_STRING lebih cepat)
+//     // âœ… Generate PDF sebagai string (DEST_STRING lebih cepat)
 //     $pdf = new Pdf([
 //         'mode' => Pdf::MODE_BLANK,
 //         'format' => Pdf::FORMAT_FOLIO,
@@ -383,7 +383,31 @@ class SiteController extends Controller
     return $this->redirect(['trn-wo/view', 'id' => $id]);
 }
 
+public function actionTestPdf()
+{
+    $content = 'Hello World';
+    $orderFolder = Yii::getAlias('@backend/web/uploads/order');
+    echo "Folder path: $orderFolder<br>";
 
+    if (!file_exists($orderFolder)) {
+        mkdir($orderFolder, 0777, true);
+    }
+
+    $pdfPath = $orderFolder . '/test.pdf';
+    echo "PDF Path: $pdfPath<br>";
+
+    $pdf = new Pdf([
+        'mode' => Pdf::MODE_BLANK,
+        'format' => Pdf::FORMAT_FOLIO,
+        'orientation' => Pdf::ORIENT_PORTRAIT,
+        'destination' => Pdf::DEST_FILE,
+        'content' => $content,
+        'filename' => $pdfPath,
+    ]);
+    $pdf->render();
+
+    echo file_exists($pdfPath) ? 'Berhasil' : 'Gagal';
+}
 
 
 }

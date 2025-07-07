@@ -266,18 +266,28 @@ class User extends ActiveRecord implements IdentityInterface
      * @return string
      * @throws \yii\base\InvalidConfigException
      */
-    public function getSignatureUrl()
+        public function getSignatureUrl()
+        {
+            if (Yii::$app instanceof \yii\console\Application) {
+                if ($this->signature === null) {
+                    return 'http://live.produksionline.xyz/images/no_image.png';
+                }
+                return 'http://live.produksionline.xyz/uploads/signature/' . $this->signature;
+            }
+
+            if ($this->signature === null) {
+                return Yii::$app->urlManager->getBaseUrl() . '/images/no_image.png';
+            }
+
+            return Yii::$app->urlManager->getBaseUrl() . '/uploads/signature/' . $this->signature;
+        }
+
+    public function getSignaturePath()
     {
-        if (Yii::$app instanceof \yii\console\Application) {
-            // Gunakan path file sistem atau kosong
-            return null;
+        if ($this->signature && file_exists(Yii::getAlias('@webroot/uploads/signature/' . $this->signature))) {
+            return Yii::getAlias('@webroot/uploads/signature/' . $this->signature);
         }
-    
-        if ($this->signature === null) {
-            return Yii::$app->urlManager->getBaseUrl() . '/images/no_image.png';
-        }
-    
-        return Yii::$app->urlManager->getBaseUrl() . '/uploads/signature/' . $this->signature;
+        return Yii::getAlias('@webroot/images/no_image.png');
     }
 
     public function getAvatarUrl()
