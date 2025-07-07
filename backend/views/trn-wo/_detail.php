@@ -159,7 +159,7 @@ Modal::begin([
                         <?php foreach ($userWa as $user): ?>
                         <?php if (!empty($user->phone_number)): ?>
                         <option value="<?= $user->phone_number ?>">
-                            <?= htmlspecialchars($user->full_name) ?> (<?= $user->phone_number ?>)
+                            <?= htmlspecialchars($user->full_name) ?>
                         </option>
                         <?php endif; ?>
                         <?php endforeach; ?>
