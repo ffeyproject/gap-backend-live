@@ -50,4 +50,6 @@ return [
         'mo' => 'GAP-FRM-MKT-06',
         'pfp' => 'GAP-FRM-PMC-05',
     ],
+
+    'whacenterDeviceId' => '96f3f20e5d0fdea57c012453fef4c686',
 ];

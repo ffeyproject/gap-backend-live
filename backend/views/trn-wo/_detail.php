@@ -133,6 +133,60 @@ use yii\widgets\ActiveForm;
             <?php Modal::end(); ?>
             <?php endif; ?>
 
+            <?php
+Modal::begin([
+    'header' => '<h2>Kirim WhatsApp</h2>',
+    'toggleButton' => [
+        'label' => '<span class="glyphicon glyphicon-phone" aria-hidden="true"></span> Kirim WA',
+        'class' => 'btn btn-success btn-xs'
+    ],
+    'size' => 'modal-lg',
+]);
+            ?>
+
+            <?php $form = ActiveForm::begin([
+                'method' => 'post',
+                'action' => ['site/kirim-wa'],
+            ]); ?>
+
+            <?= Html::hiddenInput('id', $model->id) ?>
+
+            <div style="display: flex; gap: 20px;">
+                <!-- Kolom Kiri -->
+                <div>
+                    <label><strong>Daftar User</strong></label><br>
+                    <select multiple size="12" id="availableNumbers" style="min-width: 300px;">
+                        <?php foreach ($userWa as $user): ?>
+                        <?php if (!empty($user->phone_number)): ?>
+                        <option value="<?= $user->phone_number ?>">
+                            <?= htmlspecialchars($user->full_name) ?> (<?= $user->phone_number ?>)
+                        </option>
+                        <?php endif; ?>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Tombol Pindah -->
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px;">
+                    <button type="button" onclick="moveSelected('availableNumbers', 'selectedNumbers')">>></button>
+                    <button type="button" onclick="moveSelected('selectedNumbers', 'availableNumbers')">
+                        <<< /button>
+                </div>
+
+                <!-- Kolom Kanan -->
+                <div>
+                    <label><strong>Nomor yang Akan Dikirimi WA</strong></label><br>
+                    <select multiple name="selectedNumbers[]" id="selectedNumbers" size="15"
+                        style="min-width: 300px;"></select>
+                </div>
+            </div>
+
+            <br>
+            <?= Html::submitButton('Kirim WA', ['class' => 'btn btn-primary']) ?>
+
+            <?php ActiveForm::end(); ?>
+            <?php Modal::end(); ?>
+
             <script>
             function moveSelected(fromId, toId) {
                 const from = document.getElementById(fromId);

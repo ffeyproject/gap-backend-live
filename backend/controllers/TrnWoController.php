@@ -108,6 +108,12 @@ class TrnWoController extends Controller
             ->orderBy(['full_name' => SORT_ASC])
             ->all();
 
+            $userWa = User::find()
+            ->where(['IS NOT', 'phone_number', null])
+            ->andWhere(['status' => 10])
+            ->orderBy(['full_name' => SORT_ASC])
+            ->all();    
+
         $mo = $model->mo;
         $greige = $model->greige;
 
@@ -149,6 +155,7 @@ class TrnWoController extends Controller
             'stockLabel' => $stockLabel,
             'bookkLabel' => $bookkLabel,
             'users' => $users,
+            'userWa' => $userWa,
             'avM' => $avM
         ]);
     }

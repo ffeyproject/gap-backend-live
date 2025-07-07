@@ -123,6 +123,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         'stockLabel' => $stockLabel,
         'bookkLabel' => $bookkLabel,
         'users' => $users,
+        'userWa' => $userWa,
         'avM' => $avM
     ])?>
 

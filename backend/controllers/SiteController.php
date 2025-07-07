@@ -12,6 +12,7 @@ use yii\web\Controller;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
 use backend\models\LoginForm;
+use common\components\WhacenterService;
 use common\models\ar\TrnWo;
 use common\models\ar\User;
 use Dompdf\Dompdf;
@@ -63,114 +64,7 @@ class SiteController extends Controller
         return $this->render('index');
     }
 
-    
 
-// public function actionKirimEmail()
-// {
-//     $id = Yii::$app->request->post('id');
-//     $emails = Yii::$app->request->post('selectedEmails', []);
-
-//     if (!$id) {
-//         throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
-//     }
-
-//     if (empty($emails)) {
-//         Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
-//         return $this->redirect(['trn-wo/view', 'id' => $id]);
-//     }
-
-//     $model = \common\models\ar\TrnWo::findOne($id);
-
-//     if (!$model) {
-//         throw new \yii\web\NotFoundHttpException('Data WO tidak ditemukan.');
-//         }
-
-//     // Ambil data lain seperti mo, sc, greige
-//     $mo = $model->mo;
-//     $scGreige = $model->scGreige;
-
-//     // Generate PDF
-//     $content = $this->renderPartial('@backend/views/trn-wo/print/print', [
-//         'model' => $model,
-//         'mo' => $mo,
-//         'scGreige' => $scGreige
-//     ]);
-
-
-    
-//     $pdfPath = Yii::getAlias('@runtime/wo_' . $model->id . '.pdf');
-//     $pdf = new \kartik\mpdf\Pdf([
-//         'mode' => \kartik\mpdf\Pdf::MODE_BLANK,
-//         'format' => \kartik\mpdf\Pdf::FORMAT_FOLIO,
-//         'orientation' => \kartik\mpdf\Pdf::ORIENT_PORTRAIT,
-//         'destination' => \kartik\mpdf\Pdf::DEST_FILE,
-//         'content' => $content,
-//         'cssInline' => 'body { font-size: 10px; }',
-//         'filename' => $pdfPath,
-//     ]);
-//     $pdf->render();
-
-//     // Kirim email ke semua penerima
-//     Yii::$app->mailer->compose()
-//         ->setFrom('infogajahapp@examplegmail.com')
-//         ->setTo($emails) // ✅ langsung array
-//         ->setSubject('Working Order No. ' . $model->no)
-//         ->setTextBody('Silakan lihat lampiran Working Order dalam bentuk PDF.')
-//         ->attach($pdfPath)
-//         ->send();
-
-//     Yii::$app->session->setFlash('success', 'Email berhasil dikirim ke: ' . implode(', ', $emails));
-//     return $this->redirect(['trn-wo/view', 'id' => $model->id]);
-// }
-
-
-
-// public function actionKirimEmail()
-// {
-//     $id = Yii::$app->request->post('id');
-//     $emails = Yii::$app->request->post('selectedEmails', []);
-
-//     if (!$id) {
-//         throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
-//     }
-
-//     if (empty($emails)) {
-//         Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
-//         return $this->redirect(['trn-wo/view', 'id' => $id]);
-//     }
-
-//     // ✅ Gunakan eager loading untuk menghindari lazy loading di view
-//     $model = \common\models\ar\TrnWo::find()
-//         ->where(['id' => $id])
-//         ->with(['mo', 'scGreige'])
-//         ->one();
-
-//     if (!$model) {
-//         throw new \yii\web\NotFoundHttpException('Data WO tidak ditemukan.');
-//     }
-
-//     // ✅ Generate PDF sebagai string (lebih efisien)
-//     $pdfContent = $this->generatePdfContent($model);
-
-//     // ✅ Simpan ke file sementara
-//     $pdfPath = Yii::getAlias('@runtime/wo_' . $model->id . '_' . time() . '.pdf');
-//     file_put_contents($pdfPath, $pdfContent);
-
-//     // ✅ Kirim email
-//     Yii::$app->mailer->compose()
-//         ->setFrom('infogajahapp@gmail.com') // Ganti dengan email Anda yang valid
-//         ->setTo($emails)
-//         ->setSubject('Working Order No. ' . $model->no)
-//         ->setTextBody('Silakan lihat lampiran Working Order dalam bentuk PDF.')
-//         ->attach($pdfPath)
-//         ->send();
-
-//     // ✅ Hapus file PDF setelah dikirim
-//     @unlink($pdfPath);
-
-//     Yii::$app->session->setFlash('success', 'Email berhasil dikirim ke: ' . implode(', ', $emails));
-//     return $this->redirect(['trn-wo/view', 'id' => $model->id]);
-// }
 
 // protected function generatePdfContent($model)
 // {
@@ -223,29 +117,29 @@ class SiteController extends Controller
 //     return $pdf->render();
 // }
 
-public function actionKirimEmail()
-{
-    $id = Yii::$app->request->post('id');
-    $emails = Yii::$app->request->post('selectedEmails', []);
+    public function actionKirimEmail()
+    {
+        $id = Yii::$app->request->post('id');
+        $emails = Yii::$app->request->post('selectedEmails', []);
 
-    if (!$id) {
-        throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
-    }
+        if (!$id) {
+            throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
+        }
 
-    if (empty($emails)) {
-        Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
+        if (empty($emails)) {
+            Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
+            return $this->redirect(['trn-wo/view', 'id' => $id]);
+        }
+
+        // Kirim ke queue
+        Yii::$app->queue->push(new \common\jobs\KirimEmailJob([
+            'modelId' => $id,
+            'emails' => $emails,
+        ]));
+
+        Yii::$app->session->setFlash('success', 'Permintaan pengiriman email telah dijadwalkan.');
         return $this->redirect(['trn-wo/view', 'id' => $id]);
     }
-
-    // Kirim ke queue
-    Yii::$app->queue->push(new \common\jobs\KirimEmailJob([
-        'modelId' => $id,
-        'emails' => $emails,
-    ]));
-
-    Yii::$app->session->setFlash('success', 'Permintaan pengiriman email telah dijadwalkan.');
-    return $this->redirect(['trn-wo/view', 'id' => $id]);
-}
 
     /**
      * Login action.
@@ -272,29 +166,29 @@ public function actionKirimEmail()
         }
     }
 
-    public function actionKirimEmailMemo()
-{
-    $id = Yii::$app->request->post('id');
-    $emails = Yii::$app->request->post('selectedEmails', []);
+        public function actionKirimEmailMemo()
+    {
+        $id = Yii::$app->request->post('id');
+        $emails = Yii::$app->request->post('selectedEmails', []);
 
-    if (!$id) {
-        throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
-    }
+        if (!$id) {
+            throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
+        }
 
-    if (empty($emails)) {
-        Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
+        if (empty($emails)) {
+            Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu penerima email.');
+            return $this->redirect(['trn-wo-memo/view', 'id' => $id]);
+        }
+
+        // Kirim ke queue
+        Yii::$app->queue->push(new \common\jobs\KirimEmailMemo([
+            'modelId' => $id,
+            'emails' => $emails,
+        ]));
+
+        Yii::$app->session->setFlash('success', 'Permintaan pengiriman email telah dijadwalkan.');
         return $this->redirect(['trn-wo-memo/view', 'id' => $id]);
     }
-
-    // Kirim ke queue
-    Yii::$app->queue->push(new \common\jobs\KirimEmailMemo([
-        'modelId' => $id,
-        'emails' => $emails,
-    ]));
-
-    Yii::$app->session->setFlash('success', 'Permintaan pengiriman email telah dijadwalkan.');
-    return $this->redirect(['trn-wo-memo/view', 'id' => $id]);
-}
 
     /**
      * Logout action.
@@ -450,5 +344,46 @@ public function actionKirimEmail()
             'model' => $model,
         ]);
     }
+
+
+    // public function actionKirimWa()
+    // {
+    //     $wa = new WhacenterService();
+    //     $result = $wa->to('6285841443253')
+    //         ->line('Halo, ini tes kirim WA dari Yii2')
+    //         ->send();
+
+    //     echo "<pre>";
+    //     print_r($result);
+    //     echo "</pre>";
+    // }
+
+
+    public function actionKirimWa()
+{
+    $id = Yii::$app->request->post('id');
+    $nomorWa = Yii::$app->request->post('selectedNumbers', []);
+
+    if (!$id) {
+        throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
+    }
+
+    if (empty($nomorWa)) {
+        Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu nomor WhatsApp.');
+        return $this->redirect(['trn-wo/view', 'id' => $id]);
+    }
+
+    // Kirim ke queue
+    Yii::$app->queue->push(new \common\jobs\KirimWaJob([
+        'modelId' => $id,
+        'numbers' => $nomorWa,
+    ]));
+
+    Yii::$app->session->setFlash('success', 'Permintaan pengiriman WhatsApp telah dijadwalkan.');
+    return $this->redirect(['trn-wo/view', 'id' => $id]);
+}
+
+
+
 
 }
