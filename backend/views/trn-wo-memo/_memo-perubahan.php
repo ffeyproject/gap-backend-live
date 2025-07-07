@@ -52,7 +52,7 @@ echo GridView::widget([
         [
             'class' => 'kartik\grid\ActionColumn',
             'controller' => 'trn-wo-memo',
-            'template' => '{email}',
+            'template' => '{email} {wa}',
             'buttons' => [
                 'email' => function($url, $model, $key){
                     return Html::a('<i class="glyphicon glyphicon-envelope"></i>', '#', [
@@ -63,6 +63,16 @@ echo GridView::widget([
                         'data-id' => $model->id,
                     ]);
                 },
+
+                'wa' => function($url, $model, $key){
+            return Html::a('<i class="glyphicon glyphicon-phone"></i>', '#', [
+                'class' => 'btn btn-xs btn-success',
+                'title' => 'Kirim WhatsApp Memo Perubahan',
+                'data-toggle' => 'modal',
+                'data-target' => '#waModal',
+                'data-id' => $model->id,
+            ]);
+        },
             ]
         ],
     ],
@@ -117,7 +127,55 @@ echo Html::hiddenInput('id', '', ['id' => 'memo-id-hidden']);
 <?php ActiveForm::end(); ?>
 <?php Modal::end(); ?>
 
+
 <?php
+Modal::begin([
+    'id' => 'waModal',
+    'header' => '<h4>Kirim WhatsApp Memo Perubahan</h4>',
+]);
+
+$form = ActiveForm::begin([
+    'method' => 'post',
+    'action' => ['site/kirim-wa-memo'],
+]);
+
+echo Html::hiddenInput('id', '', ['id' => 'wa-memo-id-hidden']);
+?>
+
+<div style="display: flex; gap: 20px;">
+    <!-- Kolom Kiri -->
+    <div>
+        <label><strong>Daftar User (No. WA)</strong></label><br>
+        <select multiple size="12" id="availableWaUsers" style="min-width: 300px;">
+            <?php foreach ($userWa as $user): ?>
+            <option value="<?= $user->phone_number ?>">
+                <?= htmlspecialchars($user->full_name) ?> (<?= $user->phone_number ?>)
+            </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+
+    <!-- Tombol Pindah -->
+    <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px;">
+        <button type="button" onclick="moveSelected('availableWaUsers', 'selectedWaUsers')">>></button>
+        <button type="button" onclick="moveSelected('selectedWaUsers', 'availableWaUsers')">
+            << </div>
+
+                <!-- Kolom Kanan -->
+                <div>
+                    <label><strong>User yang Akan Dikirimi WhatsApp</strong></label><br>
+                    <select multiple name="selectedPhones[]" id="selectedWaUsers" size="15"
+                        style="min-width: 300px;"></select>
+                </div>
+    </div>
+
+    <br>
+    <?= Html::submitButton('Kirim WhatsApp', ['class' => 'btn btn-success']) ?>
+
+    <?php ActiveForm::end(); ?>
+    <?php Modal::end(); ?>
+
+    <?php
 // === JavaScript untuk handle modal ===
 $this->registerJs("
     $('#emailModal').on('show.bs.modal', function (event) {
@@ -140,6 +198,27 @@ $this->registerJs("
     // Ini yang ditambahkan:
     $('form').on('submit', function () {
         $('#selectedUsers option').prop('selected', true);
+    });
+
+    $('#waModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var memoId = button.data('id');
+        $('#wa-memo-id-hidden').val(memoId);
+    });
+
+    window.moveSelected = function(fromId, toId) {
+        $('#' + fromId + ' option:selected').each(function() {
+            $('#' + toId).append($(this).clone());
+            $(this).remove();
+        });
+    };
+
+    $('#waModal').on('show.bs.modal', function () {
+        $(this).find('.modal-dialog').addClass('modal-lg');
+    });
+
+    $('form').on('submit', function () {
+        $('#selectedWaUsers option').prop('selected', true);
     });
 ");
 ?>

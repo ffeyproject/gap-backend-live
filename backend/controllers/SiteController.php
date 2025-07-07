@@ -383,6 +383,33 @@ class SiteController extends Controller
     return $this->redirect(['trn-wo/view', 'id' => $id]);
 }
 
+public function actionKirimWaMemo()
+{
+    $request = Yii::$app->request;
+    $memoId = $request->post('id');
+    $phones = $request->post('selectedPhones', []);
+
+    if (!$memoId) {
+        throw new \yii\web\BadRequestHttpException('Parameter "id" tidak ditemukan.');
+    }
+
+    if (empty($phones)) {
+        Yii::$app->session->setFlash('error', 'Silakan pilih setidaknya satu nomor WhatsApp.');
+        return $this->redirect(Yii::$app->request->referrer);
+    }
+
+    // Kirim ke queue job
+    Yii::$app->queue->push(new \common\jobs\KirimWaMemoJob([
+        'modelId' => $memoId,  // <-- gunakan 'modelId' sesuai di job class
+        'numbers' => $phones,
+    ]));
+
+    Yii::$app->session->setFlash('success', 'Permintaan pengiriman WhatsApp Memo telah dijadwalkan.');
+    return $this->redirect(Yii::$app->request->referrer);
+}
+
+
+
 public function actionTestPdf()
 {
     $content = 'Hello World';

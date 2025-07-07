@@ -65,10 +65,17 @@ class TrnWoMemoController extends Controller
             ->andWhere(['status' => 10])
             ->orderBy(['full_name' => SORT_ASC])
             ->all();
+            
+            $userWa = User::find()
+            ->where(['IS NOT', 'phone_number', null])
+            ->andWhere(['status' => 10])
+            ->orderBy(['full_name' => SORT_ASC])
+            ->all();    
 
         return $this->render('view', [
             'model' => $this->findModel($id),
             'users' => $users,
+            'userWa' => $userWa,
         ]);
     }
 
