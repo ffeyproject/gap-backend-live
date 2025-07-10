@@ -24,28 +24,25 @@ class KirimWaMemoJob extends BaseObject implements JobInterface
 
         $wo = $model->wo;
 
-        // Render content via view file
         $view = new \yii\web\View();
         $content = $view->renderFile('@backend/views/trn-wo-memo/_print.php', [
             'model' => $model,
             'wo'    => $wo,
         ]);
 
-        // Simpan debug content HTML (optional)
-        // file_put_contents('/tmp/memo_debug.html', $content);
+        // Debug content (optional)
+        file_put_contents('/tmp/memo_debug_' . $this->modelId . '.html', $content);
 
-        // Pastikan folder uploads/memo ada
         $memoFolder = Yii::getAlias('@backend/web/uploads/memo');
         if (!file_exists($memoFolder)) {
             mkdir($memoFolder, 0777, true);
         }
 
-        // Generate nama file PDF
+        // Generate nama file unik
         $safeWoNo = preg_replace('/[^A-Za-z0-9_\-]/', '_', $model->no);
-        $pdfFilename = 'memo_' . $safeWoNo . '_' . time() . '.pdf';
+        $pdfFilename = 'memo_' . $safeWoNo . '_' . uniqid() . '.pdf';
         $pdfPath = $memoFolder . '/' . $pdfFilename;
 
-        // Generate PDF
         $pdf = new Pdf([
             'mode' => Pdf::MODE_BLANK,
             'format' => Pdf::FORMAT_FOLIO,
@@ -56,26 +53,23 @@ class KirimWaMemoJob extends BaseObject implements JobInterface
         ]);
         $pdf->render();
 
-        // Tunggu file terbentuk dengan ukuran minimal 10KB
+        // Cek file minimal 1KB
         $waitCount = 0;
-        while ((!file_exists($pdfPath) || filesize($pdfPath) < 10240) && $waitCount < 10) {
+        while ((!file_exists($pdfPath) || filesize($pdfPath) < 1024) && $waitCount < 10) {
             usleep(200000);
             $waitCount++;
         }
 
-
-        // URL public file untuk WA
         $fileUrl = 'http://live.produksionline.xyz/uploads/memo/' . $pdfFilename;
-        Yii::info("Link Memo: {$fileUrl}", 'application');
+        Yii::info("Link Memo ID {$this->modelId}: {$fileUrl}", 'application');
 
-        // Kirim ke semua nomor WA
         foreach ($this->numbers as $number) {
             $wa = new WhacenterService;
             $result = $wa->to($number)
                 ->line("Memo WO No. {$model->no}, silakan lihat file PDF berikut.")
                 ->sendFile($fileUrl);
 
-            Yii::info("Kirim Memo ke {$number} => " . json_encode($result), 'application');
+            Yii::info("Kirim Memo ID {$this->modelId} ke {$number} => " . json_encode($result), 'application');
         }
 
         return true;

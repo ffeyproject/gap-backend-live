@@ -18,7 +18,7 @@ $mo = $wo->mo;
 
     <div class="col-xs-4">&nbsp;</div>
 
-    <div class="col-xs-4 text-right">
+    <div class="col-xs-4" style="text-align: right;">
         <strong>NO: <?=$model->no?></strong>
     </div>
 </div>
@@ -33,9 +33,7 @@ $mo = $wo->mo;
 
 <br>
 
-<?php foreach ($wo->trnWoMemos as $memo):?>
-<p><?=$memo->memo?></p>
-<?php endforeach; ?>
+<p><?=$model->memo?></p>
 
 <br>
 

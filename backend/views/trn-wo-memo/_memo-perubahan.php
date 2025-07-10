@@ -47,6 +47,7 @@ echo GridView::widget([
         ['class' => 'kartik\grid\SerialColumn'],
 
         'no',
+        'id',
         'memo:html',
         'created_at:datetime',
         [
@@ -201,24 +202,27 @@ $this->registerJs("
     });
 
     $('#waModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget);
-        var memoId = button.data('id');
-        $('#wa-memo-id-hidden').val(memoId);
-    });
+    var button = $(event.relatedTarget);
+    var memoId = button.data('id');
+    console.log('Memo ID yang dipilih:', memoId);
+    $('#wa-memo-id-hidden').val(memoId);
+});
 
-    window.moveSelected = function(fromId, toId) {
-        $('#' + fromId + ' option:selected').each(function() {
-            $('#' + toId).append($(this).clone());
-            $(this).remove();
-        });
-    };
-
-    $('#waModal').on('show.bs.modal', function () {
-        $(this).find('.modal-dialog').addClass('modal-lg');
+window.moveSelected = function(fromId, toId) {
+    $('#' + fromId + ' option:selected').each(function() {
+        $('#' + toId).append($(this).clone());
+        $(this).remove();
     });
+};
 
-    $('form').on('submit', function () {
-        $('#selectedWaUsers option').prop('selected', true);
-    });
+// pastikan modal size
+$('#waModal').on('show.bs.modal', function () {
+    $(this).find('.modal-dialog').addClass('modal-lg');
+});
+
+// Binding hanya ke form WA modal saja
+$('#waModal form').on('submit', function () {
+    $('#selectedWaUsers option').prop('selected', true);
+});
 ");
 ?>
