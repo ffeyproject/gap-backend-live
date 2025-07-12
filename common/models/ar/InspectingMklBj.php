@@ -30,6 +30,7 @@ use common\models\ar\MstK3l;
  * @property int|null $delivered_at
  * @property int|null $delivered_by
  * @property string|null $delivery_reject_note
+ * @property string|null $no_memo
  *
  * @property TrnMo $mo
  * @property TrnWo $wo
@@ -109,6 +110,8 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             [['no_lot', 'defect'], 'string', 'max' => 255],
             [['k3l_code'], 'exist', 'skipOnError' => true, 'targetClass' => MstK3l::className(), 'targetAttribute' => ['k3l_code' => 'k3l_code']],
 
+            [['no_memo'], 'string', 'max' => 255, 'null' => true],
+
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED]],
 
@@ -135,6 +138,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             'no_lot' => 'No Lot',
             'jenis' => 'Jenis',
             'jenis_inspek' => 'Jenis Inspeksi',
+            'no_memo' => 'No Memo',
             'satuan' => 'Satuan',
             'created_at' => 'Created At',
             'created_by' => 'Created By',

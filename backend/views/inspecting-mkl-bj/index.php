@@ -127,6 +127,7 @@ if(!empty($searchModel->wo_id)){
                     ],
                 ],
             ],
+            'no_memo',
             //'created_at',
             //'created_by',
             //'updated_at',

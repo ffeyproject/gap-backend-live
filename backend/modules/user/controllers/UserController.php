@@ -228,4 +228,23 @@ class UserController extends Controller
             throw new NotFoundHttpException('The requested page does not exist.');
         }
     }
+
+    public function actionUpdatePhoneNumber()
+    {
+        $id = Yii::$app->request->post('id');
+        $phone = Yii::$app->request->post('phone_number');
+
+        if (($model = User::findOne($id)) !== null) {
+            $model->phone_number = $phone;
+            if ($model->save(false)) {
+                Yii::$app->session->setFlash('success', 'Phone number updated.');
+            } else {
+                Yii::$app->session->setFlash('error', 'Failed to update.');
+            }
+        } else {
+            Yii::$app->session->setFlash('error', 'User not found.');
+        }
+
+        return $this->redirect(['view', 'id' => $id]);
+    }
 }

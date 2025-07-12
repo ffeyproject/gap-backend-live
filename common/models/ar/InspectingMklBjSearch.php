@@ -23,7 +23,7 @@ class InspectingMklBjSearch extends InspectingMklBj
     {
         return [
             [['id', 'wo_id', 'wo_color_id', 'jenis', 'satuan', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'], 'integer'],
-            [['tgl_inspeksi', 'tgl_kirim', 'no_lot', 'no', 'colorName', 'designName', 'articleName', 'greigeName', 'jenis_inspek'], 'safe'],
+            [['tgl_inspeksi', 'tgl_kirim', 'no_lot', 'no', 'colorName', 'designName', 'articleName', 'greigeName', 'jenis_inspek', 'no_memo'], 'safe'],
         ];
     }
 
@@ -91,6 +91,7 @@ class InspectingMklBjSearch extends InspectingMklBj
             'inspecting_mkl_bj.tgl_kirim' => $this->tgl_kirim,
             'inspecting_mkl_bj.jenis' => $this->jenis,
             'inspecting_mkl_bj.jenis_inspek' => $this->jenis_inspek,
+            'inspecting_mkl_bj.no_memo' => $this->no_memo,
             'inspecting_mkl_bj.satuan' => $this->satuan,
             'inspecting_mkl_bj.created_at' => $this->created_at,
             'inspecting_mkl_bj.created_by' => $this->created_by,

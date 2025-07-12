@@ -30,7 +30,8 @@ class TrnKirimBuyerBal extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['trn_kirim_buyer_id', 'no_bal', 'header_id'], 'required'],
+            [['no_bal', 'header_id'], 'required'],
+            [['trn_kirim_buyer_id'], 'default', 'value' => null],
             [['trn_kirim_buyer_id', 'header_id'], 'integer'],
             [['no_bal'], 'string', 'max' => 45],
             [['no_bal', 'header_id'], 'unique', 'targetAttribute' => ['no_bal', 'header_id']],

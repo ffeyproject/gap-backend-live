@@ -69,6 +69,11 @@ use yii\widgets\DetailView;
                             'attribute'=>'k3l_code',
                             'value'=>$model->k3l_code,
                             'format'=>'raw'
+                        ],
+                        [
+                            'attribute'=>'no_memo',
+                            'value'=>$model->no_memo,
+                            'format'=>'raw'
                         ]
                         /*[
                             'label'=>'Design',

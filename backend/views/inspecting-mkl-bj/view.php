@@ -107,7 +107,8 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             'tgl_inspeksi:date',
                             'tgl_kirim:date',
                             'no_lot',
-                            'k3l_code'
+                            'k3l_code',
+                            'no_memo',
                         ],
                     ]) ?>
                 </div>

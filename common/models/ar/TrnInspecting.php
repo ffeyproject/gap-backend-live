@@ -26,6 +26,7 @@ use yii\helpers\BaseVarDumper;
  * @property string|null $no_lot
  * @property string|null $kombinasi
  * @property string|null $note
+ * @property string|null $no_memo
  * @property int $status 1=draft, 2=posted, 3=approved, 4=delivered
  * @property int $unit 1=Meter, 2=Yard, 3=Kilogram
  * @property int $created_at
@@ -111,6 +112,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             ['jenis_inspek', 'required'],
             ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
             
+            [['no_memo'], 'string', 'max' => 255, 'null' => true],
             
 
             ['unit', 'default', 'value'=>MstGreigeGroup::UNIT_METER],
@@ -154,6 +156,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             'memo_repair_id' => 'Memo Repair ID',
             'jenis_process' => 'Jenis Process',
             'jenis_inspek' => 'Jenis Inspeksi',
+            'no_memo' => 'No Memo',
             'no_urut' => 'No Urut',
             'no' => 'No',
             'date' => 'Tanggal Kirim',

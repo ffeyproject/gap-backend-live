@@ -45,6 +45,8 @@ public $password_repeat;
             [['password_reset_token'], 'unique'],
             [['username'], 'unique'],
 
+            ['phone_number', 'string', 'max' => 50, 'nullable' => true],
+
             [['password', 'password_repeat'], 'string', 'min' => 6],
             [['password_repeat'], 'compare', 'compareAttribute' => 'password'],
 
@@ -70,7 +72,8 @@ public $password_repeat;
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
             'verification_token' => 'Verification Token',
-            'signature' => 'Signature'
+            'signature' => 'Signature',
+            'phone_number' => 'Phone Number',
         ];
     }
 

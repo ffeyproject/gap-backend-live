@@ -54,6 +54,22 @@ $animateIcon = ' <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate
                         //'password_reset_token',
                         'email:email',
                         [
+                            'label' => 'Phone Number',
+                            'format' => 'raw',
+                            
+                            'value' => function($model) {
+                            return $model->phone_number . ' ' .
+                                Html::button('<i class="glyphicon glyphicon-edit"></i>', [
+                                    'class' => 'btn btn-xs btn-primary',
+                                    'data-toggle' => 'modal',
+                                    'data-target' => '#modal-phone-number',
+                                    'data-id' => $model->id, // PENTING pastikan disini $model->id ada
+                                    'data-phone' => $model->phone_number,
+                                    'title' => 'Edit Phone Number'
+                                ]);
+                            },
+                        ],
+                        [
                             'label'=>'Status',
                             'value'=>\backend\modules\user\models\User::getStatusOptions()[$model->status]
                         ],
@@ -170,3 +186,45 @@ $animateIcon = ' <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate
         </div>
     </div>
 </div>
+
+<?php \yii\bootstrap\Modal::begin([
+    'id' => 'modal-phone-number',
+    'header' => '<h4>Edit Phone Number</h4>',
+]); ?>
+
+<div id="modalContent">
+    <?php $form = ActiveForm::begin([
+        'id' => 'form-phone-number',
+        'action' => ['update-phone-number'],
+        'method' => 'post',
+    ]); ?>
+
+    <?= Html::hiddenInput('id', '', ['id' => 'user-id']) ?>
+
+    <div class="form-group">
+        <label>Phone Number</label>
+        <?= Html::textInput('phone_number', '', ['class' => 'form-control', 'id' => 'user-phone-number']) ?>
+    </div>
+
+    <div class="form-group">
+        <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
+    </div>
+
+    <?php ActiveForm::end(); ?>
+</div>
+
+<?php \yii\bootstrap\Modal::end(); ?>
+
+<?php
+$this->registerJs("
+    $('#modal-phone-number').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var id = button.data('id');
+        var phone = button.data('phone');
+
+        var modal = $(this);
+        modal.find('#user-id').val(id);
+        modal.find('#user-phone-number').val(phone);
+    });
+");
+?>
