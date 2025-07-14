@@ -110,7 +110,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             [['no_lot', 'defect'], 'string', 'max' => 255],
             [['k3l_code'], 'exist', 'skipOnError' => true, 'targetClass' => MstK3l::className(), 'targetAttribute' => ['k3l_code' => 'k3l_code']],
 
-            [['no_memo'], 'string', 'max' => 255, 'null' => true],
+            [['no_memo'], 'string', 'max' => 255],
 
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED]],

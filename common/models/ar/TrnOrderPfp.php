@@ -56,7 +56,7 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
         ];
     }
 
-    const PROSES_SAMPAI_PRESET = 1;const PROSES_SAMPAI_SETTING = 2;
+    const PROSES_SAMPAI_PRESET = 1;const PROSES_SAMPAI_SETTING = 2;const PROSES_SAMPAI_FINISH = 3;
     /**
      * @return array
      */
@@ -64,6 +64,7 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
         return [
             self::PROSES_SAMPAI_PRESET => 'Sampai Preset',
             self::PROSES_SAMPAI_SETTING => 'Sampai Setting',
+            self::PROSES_SAMPAI_FINISH => 'Sampai Finish',
         ];
     }
 
@@ -100,7 +101,7 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
             ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_PROCESSED, self::STATUS_BATAL]],
 
             ['proses_sampai', 'default', 'value'=>null],
-            ['proses_sampai', 'in', 'range' => [self::PROSES_SAMPAI_PRESET, self::PROSES_SAMPAI_SETTING]],
+            ['proses_sampai', 'in', 'range' => [self::PROSES_SAMPAI_PRESET, self::PROSES_SAMPAI_SETTING, self::PROSES_SAMPAI_FINISH]],
 
             [['no', 'dasar_warna'], 'string', 'max' => 255],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
