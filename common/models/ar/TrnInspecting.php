@@ -111,7 +111,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
 
             ['jenis_inspek', 'default', 'value'=>self::FRESH_INSPEKSI],
             ['jenis_inspek', 'required'],
-            ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI, self::HASIL_PERBAIKAN]],
+            ['jenis_inspek', 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI, self::HASIL_PERBAIKAN]],
 
             [['note', 'approval_reject_note', 'delivery_reject_note'], 'string', 'max' => 1000, 'null' => true],
             [['no'], 'string', 'max' => 50, 'null' => true],

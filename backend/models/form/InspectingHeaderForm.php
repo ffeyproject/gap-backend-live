@@ -34,7 +34,7 @@ class InspectingHeaderForm extends Model
             [['tgl_kirim', 'tgl_inspeksi'], 'date', 'format'=>'php:Y-m-d'],
             [['no_lot', 'defect'], 'string', 'max' => 255],
             ['jenis_order', 'in', 'range' => ['dyeing', 'printing', 'memo_repair']],
-            ['jenis_inspek', 'in', 'range' => [TrnInspecting::FRESH_INSPEKSI, TrnInspecting::RE_INSPEKSI]],
+            ['jenis_inspek', 'in', 'range' => [TrnInspecting::FRESH_INSPEKSI, TrnInspecting::RE_INSPEKSI, TrnInspecting::HASIL_PERBAIKAN]],
             
         ];
     }
