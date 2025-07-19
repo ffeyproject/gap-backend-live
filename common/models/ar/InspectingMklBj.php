@@ -73,9 +73,10 @@ class InspectingMklBj extends \yii\db\ActiveRecord
 
     const FRESH_INSPEKSI = 1;
     const RE_INSPEKSI = 2;
+    const HASIL_PERBAIKAN = 3;
 
     public static function jenisInspeksiOptions(){
-        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing'];
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing', self::HASIL_PERBAIKAN => 'Hasil Perbaikan'];
     }
 
     /**
@@ -116,7 +117,11 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED]],
 
             ['jenis', 'in', 'range' => [self::JENIS_MAKLOON_PROSES, self::JENIS_MAKLOON_FIINISH, self::JENIS_BARANG_JADI, self::JENIS_FRESH]],
-            ['jenis_inspek', 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
+            ['jenis_inspek', 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI, self::HASIL_PERBAIKAN]],
+
+            ['no_urut', 'default', 'value' => null],
+            ['no_urut', 'integer'],
+            ['no_urut', 'unique', 'targetAttribute' => ['no_urut', 'jenis'], 'message' => 'No urut sudah ada untuk jenis ini.'],
             ['satuan', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
 
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],

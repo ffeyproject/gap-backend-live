@@ -74,9 +74,10 @@ class TrnInspecting extends \yii\db\ActiveRecord
 
     const FRESH_INSPEKSI = 1;
     const RE_INSPEKSI = 2;
+    const HASIL_PERBAIKAN = 3;
 
     public static function jenisInspeksiOptions(){
-        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing'];
+        return [self::FRESH_INSPEKSI => 'Fresh Order', self::RE_INSPEKSI => 'Re-Packing', self::HASIL_PERBAIKAN => 'Hasil Perbaikan'];
     }
 
     /**
@@ -110,7 +111,12 @@ class TrnInspecting extends \yii\db\ActiveRecord
 
             ['jenis_inspek', 'default', 'value'=>self::FRESH_INSPEKSI],
             ['jenis_inspek', 'required'],
-            ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI]],
+            ['jenis_inspek'. 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI, self::HASIL_PERBAIKAN]],
+
+            [['note', 'approval_reject_note', 'delivery_reject_note'], 'string', 'max' => 1000, 'null' => true],
+            [['no'], 'string', 'max' => 50, 'null' => true],
+            [['kombinasi'], 'string', 'max' => 100, 'null' => true],
+            [['no_lot'], 'string', 'max' => 50, 'null' => true],
             
             [['no_memo'], 'string', 'max' => 255, 'null' => true],
             
