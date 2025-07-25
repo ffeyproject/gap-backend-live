@@ -71,6 +71,8 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             [['defect', 'lot_no'], 'safe'],
             ['join_piece', 'match', 'pattern' => '/^[A-Z]{1,2}$/'],
             [['inspecting_id'], 'integer'],
+            [['no_urut'], 'default', 'value' => null],
+            [['no_urut'], 'integer'],
             ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH]],
             [['qty'], 'number'],
             [['note'], 'string'],

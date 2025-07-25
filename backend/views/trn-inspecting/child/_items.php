@@ -93,6 +93,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             <thead>
                 <tr>
                     <th>No. Packing</th>
+                    <th>No Urut</th>
                     <th>Grade A</th>
                     <th>Grade B</th>
                     <th>Grade C</th>
@@ -113,7 +114,20 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             </thead>
 
             <tbody style="background-color: #e5e5e5;">
-                <?php foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item):?>
+                <?php
+                    $itemsQuery = $model->getInspectingItems();
+                    $inspectingId = $model->id;
+
+                    $hasNoUrut = \common\models\ar\InspectingItem::find()
+                        ->where(['inspecting_id' => $inspectingId])
+                        ->andWhere(['IS NOT', 'no_urut', null])
+                        ->exists();
+
+                    $items = $itemsQuery
+                        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+                        ->all();
+                ?>
+                <?php foreach ($items as $index => $item): ?>
                 <?php
                     /* @var $item InspectingItem*/
                     if($item['qty'] > 0){
@@ -146,6 +160,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                 ?>
                 <tr>
                     <td><?=($index+1).$item['join_piece']?></td>
+                    <td><?=$item['no_urut']?></td>
                     <td>
                         <?php
                             if ($item['grade_up'] <> NULL) {

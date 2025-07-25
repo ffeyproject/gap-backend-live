@@ -1005,90 +1005,234 @@ class TrnInspectingController extends Controller
     }
 
     // bagussona
+    // public function actionQr($id, $param3, $param4, $param5)
+    // {
+    //     $model = $this->findItem($id);
+    //     $create_qr =  'INS-'.$model->inspecting_id.'-'.$model->id;
+
+    //     $is_design_or_article = NULL;
+    //     if ($model->inspecting->jenis_process == 1) { //1 == dyeing
+    //         $is_design_or_article = $model->inspecting->wo->mo->article;
+    //     } else { //2 == printing && //3 == pfp
+    //         $articleIsNotNull = $model->inspecting->wo->mo->article ? '/' : '';
+    //         $is_design_or_article = $model->inspecting->wo->mo->article.$articleIsNotNull.$model->inspecting->wo->mo->design;
+    //     }
+
+    //     $getWidth = $model->inspecting->wo && $model->inspecting->wo->scGreige && $model->inspecting->wo->scGreige->lebar_kain ? TrnScGreige::lebarKainOptions()[$model->inspecting->wo->scGreige->lebar_kain] : '-';
+    //     $query_builder = new Query;
+    //     $grade_alias = $query_builder->select('*')->from('wms_grade')->where(['=', 'grade_from', ($model->grade_up <> NULL ? $model->grade_up : $model->grade)])->one();
+    //     // $getGrade = $model->gradeOptions()[($model->grade_up <> NULL ? $model->grade_up : $model->grade)];
+    //     $getGrade = $grade_alias['grade_to'];
+    //     $roundUp = true;
+    //     if($param5 == 0){
+    //         $roundUp = false;
+    //     }
+    //     if($roundUp){
+    //         $getMeter = round($model->qty_sum * 0.9144,1);
+    //     }else{
+    //         $getMeter = round($model->qty_sum * 0.9144,2);
+
+    //     }
+
+    //     $inspectingItemCount = [];
+    //     $query = InspectingItem::find();
+    //     $getItemBasedOnInspectingId = $query->where(['=', 'inspecting_id', $model->inspecting_id])->orderBy('id ASC')->all();
+    //     foreach ($getItemBasedOnInspectingId as $gIBOII) {
+    //         array_push($inspectingItemCount, $gIBOII->id);
+    //     }
+    //     $key = array_search ($model->id, $inspectingItemCount);
+    //     $data = [];
+    //     $data['qr_code'] = $model->qr_code ? $model->qr_code : $create_qr;
+    //     $data['no_wo'] = $model->inspecting && $model->inspecting->wo && $model->inspecting->wo->no ? $model->inspecting->wo->no : '-';
+    //     $data['k3l_code'] = $model->inspecting && $model->inspecting->k3l_code ? $model->inspecting->k3l_code : '-';
+    //     $data['color'] = $model->inspecting && $model->inspecting->kombinasi ? $model->inspecting->kombinasi : '-';
+    //     $data['is_design_or_artikel'] = $is_design_or_article ? $is_design_or_article : '-';
+    //     $data['length'] = str_replace(' ', '', $model->qty_sum.' '.($model->inspecting->unit == 1 ? 'YDS / '.$getMeter.' M' : ($model->inspecting->unit == 2 ? 'M' : ($model->inspecting->unit == 3 ? 'PCS' : 'KG'))));
+    //     $data['no_lot'] = $model->inspecting && $model->inspecting->no_lot ? $model->inspecting->no_lot.'/'.($key+1) : '-';
+    //     $data['qty_count'] = strlen($model->qty_count) == 1 ? '00' : (strlen($model->qty_count) == 2 ? '0' : '').$model->qty_count;
+    //     $data['grade'] = $getWidth.'"/'.$getGrade;
+    //     // $data['motif_greige'] = $model->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
+    //     $data['defect'] = str_replace(',', '|', $model->defect);
+    //     $data['param3'] = $param3;
+    //     $data['param4'] = $param4;
+
+    //     $production = $param3 == 1 ? 'MADE IN INDONESIA' : '';
+    //     $regisk3l = $param4 == 1 ? 'REGISTRASI K3L!'.$data['k3l_code'] : '';
+
+    //     $qr_code_desc = $regisk3l.
+    //                     '!'.$data['no_wo'].
+    //                     '!'.$data['is_design_or_artikel'].
+    //                     '!'.$data['color'].
+    //                     '!'.$data['no_lot'].
+    //                     '!'.$data['length'].
+    //                     '!'.$data['grade'].
+    //                     // '!'.$data['motif_greige'].
+    //                     '!'.$data['defect'].
+    //                     '!'.$production;
+    //     $data['qr_code_desc'] = $model->qr_code_desc ? ($qr_code_desc == $model->qr_code_desc ? $model->qr_code_desc : $qr_code_desc) : $qr_code_desc;
+
+    //     $transaction = Yii::$app->db->beginTransaction();
+    //     try {
+    //         $query = $this->findItem($id);
+    //         $query['qr_code'] = $query->qr_code ? $query->qr_code : $create_qr;
+    //         $query['qr_code_desc'] = $query->qr_code_desc ? ($qr_code_desc == $query->qr_code_desc ? $query->qr_code_desc : $qr_code_desc) : $qr_code_desc;
+    //         $query['qr_print_at'] = $query->qr_print_at ? $query->qr_print_at : date('Y-m-d H:i:s');
+    //         $query->save();
+    //         $transaction->commit();
+    //     }catch (\Throwable $t){
+    //         $transaction->rollBack();
+    //         throw $t;
+    //     }
+
+    //     $content = $this->renderPartial('qr', ['model' => $data]);
+    //     // setup kartik\mpdf\Pdf component
+    //     $pdf = new Pdf([
+    //         'mode' => Pdf::MODE_BLANK,
+    //         'format' => [100,50], //THERMAL 100mm x 50mm
+    //         'orientation' => Pdf::ORIENT_PORTRAIT,
+    //         'destination' => Pdf::DEST_BROWSER,
+    //         'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
+    //         'cssInline' => '
+    //             table {
+    //                 width: 100%;
+    //                 font-size:10px;
+    //                 border-spacing: 0;
+    //                 letter-spacing: 0px;
+    //             } 
+    //             th, td {
+    //                 padding: 0.1em 0em;
+    //                 vertical-align: top;
+    //             }
+    //             table.bordered th, table.bordered td, td.bordered, th.bordered {
+    //                 border: 0.1px solid black;
+    //                 padding: 0.1em 0.1em;
+    //                 vertical-align: middle;
+    //             }
+    //         ',
+    //         'methods' => [
+    //             'SetTitle'=>$data['qr_code'],
+    //         ],
+    //         // 'options' => [
+    //         //     'setAutoTopMargin' => 'stretch'
+    //         // ],
+    //         // 'marginHeader' => 0,
+    //         // 'marginFooter' => 0,
+    //         'marginTop' => 0,
+    //         'marginRight' => 0,
+    //         'marginBottom' => 0,
+    //         'marginLeft' => 0,
+    //         'content' => $content,
+    //     ]);
+
+    //     return $pdf->render();
+    // }
+
     public function actionQr($id, $param3, $param4, $param5)
     {
         $model = $this->findItem($id);
-        $create_qr =  'INS-'.$model->inspecting_id.'-'.$model->id;
+        $create_qr = 'INS-' . $model->inspecting_id . '-' . $model->id;
 
-        $is_design_or_article = NULL;
-        if ($model->inspecting->jenis_process == 1) { //1 == dyeing
+        // Penentuan design / article
+        $is_design_or_article = null;
+        if ($model->inspecting->jenis_process == 1) {
             $is_design_or_article = $model->inspecting->wo->mo->article;
-        } else { //2 == printing && //3 == pfp
+        } else {
             $articleIsNotNull = $model->inspecting->wo->mo->article ? '/' : '';
-            $is_design_or_article = $model->inspecting->wo->mo->article.$articleIsNotNull.$model->inspecting->wo->mo->design;
+            $is_design_or_article = $model->inspecting->wo->mo->article . $articleIsNotNull . $model->inspecting->wo->mo->design;
         }
 
-        $getWidth = $model->inspecting->wo && $model->inspecting->wo->scGreige && $model->inspecting->wo->scGreige->lebar_kain ? TrnScGreige::lebarKainOptions()[$model->inspecting->wo->scGreige->lebar_kain] : '-';
-        $query_builder = new Query;
-        $grade_alias = $query_builder->select('*')->from('wms_grade')->where(['=', 'grade_from', ($model->grade_up <> NULL ? $model->grade_up : $model->grade)])->one();
-        // $getGrade = $model->gradeOptions()[($model->grade_up <> NULL ? $model->grade_up : $model->grade)];
-        $getGrade = $grade_alias['grade_to'];
-        $roundUp = true;
-        if($param5 == 0){
-            $roundUp = false;
-        }
-        if($roundUp){
-            $getMeter = round($model->qty_sum * 0.9144,1);
-        }else{
-            $getMeter = round($model->qty_sum * 0.9144,2);
+        // Ambil lebar kain
+        $getWidth = ($model->inspecting->wo && $model->inspecting->wo->scGreige && $model->inspecting->wo->scGreige->lebar_kain)
+            ? TrnScGreige::lebarKainOptions()[$model->inspecting->wo->scGreige->lebar_kain]
+            : '-';
 
-        }
+        // Ambil grade
+        $query_builder = new \yii\db\Query;
+        $grade_alias = $query_builder->select('*')
+            ->from('wms_grade')
+            ->where(['=', 'grade_from', ($model->grade_up !== null ? $model->grade_up : $model->grade)])
+            ->one();
+        $getGrade = $grade_alias['grade_to'] ?? '-';
 
-        $inspectingItemCount = [];
-        $query = InspectingItem::find();
-        $getItemBasedOnInspectingId = $query->where(['=', 'inspecting_id', $model->inspecting_id])->orderBy('id ASC')->all();
-        foreach ($getItemBasedOnInspectingId as $gIBOII) {
-            array_push($inspectingItemCount, $gIBOII->id);
+        // Konversi meter
+        $roundUp = $param5 != 0;
+        $getMeter = round($model->qty_sum * 0.9144, $roundUp ? 1 : 2);
+
+        // === CEK urutan: pakai no_urut jika tersedia ===
+        $inspectingId = $model->inspecting_id;
+        $query = InspectingItem::find()->where(['inspecting_id' => $inspectingId]);
+
+        $hasNoUrut = clone $query;
+        $hasNoUrut = $hasNoUrut->andWhere(['IS NOT', 'no_urut', null])->exists();
+
+        $items = $query
+            ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+            ->all();
+
+        // Cari posisi (index) dari current item
+        $itemIds = [];
+        foreach ($items as $item) {
+            $itemIds[] = $item->id;
         }
-        $key = array_search ($model->id, $inspectingItemCount);
+        $key = array_search($model->id, $itemIds);
+
+        // === SIAPKAN DATA QR ===
         $data = [];
-        $data['qr_code'] = $model->qr_code ? $model->qr_code : $create_qr;
-        $data['no_wo'] = $model->inspecting && $model->inspecting->wo && $model->inspecting->wo->no ? $model->inspecting->wo->no : '-';
-        $data['k3l_code'] = $model->inspecting && $model->inspecting->k3l_code ? $model->inspecting->k3l_code : '-';
-        $data['color'] = $model->inspecting && $model->inspecting->kombinasi ? $model->inspecting->kombinasi : '-';
-        $data['is_design_or_artikel'] = $is_design_or_article ? $is_design_or_article : '-';
-        $data['length'] = str_replace(' ', '', $model->qty_sum.' '.($model->inspecting->unit == 1 ? 'YDS / '.$getMeter.' M' : ($model->inspecting->unit == 2 ? 'M' : ($model->inspecting->unit == 3 ? 'PCS' : 'KG'))));
-        $data['no_lot'] = $model->inspecting && $model->inspecting->no_lot ? $model->inspecting->no_lot.'/'.($key+1) : '-';
-        $data['qty_count'] = strlen($model->qty_count) == 1 ? '00' : (strlen($model->qty_count) == 2 ? '0' : '').$model->qty_count;
-        $data['grade'] = $getWidth.'"/'.$getGrade;
-        // $data['motif_greige'] = $model->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
+        $data['qr_code'] = $model->qr_code ?: $create_qr;
+        $data['no_wo'] = $model->inspecting->wo->no ?? '-';
+        $data['k3l_code'] = $model->inspecting->k3l_code ?? '-';
+        $data['color'] = $model->inspecting->kombinasi ?? '-';
+        $data['is_design_or_artikel'] = $is_design_or_article ?: '-';
+        $data['length'] = str_replace(' ', '', $model->qty_sum . ' ' . (
+            $model->inspecting->unit == 1 ? 'YDS / ' . $getMeter . ' M' :
+            ($model->inspecting->unit == 2 ? 'M' :
+            ($model->inspecting->unit == 3 ? 'PCS' : 'KG'))
+        ));
+        $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
+        $data['qty_count'] = strlen($model->qty_count) == 1 ? '00' : (strlen($model->qty_count) == 2 ? '0' : '') . $model->qty_count;
+        $data['grade'] = $getWidth . '"/' . $getGrade;
         $data['defect'] = str_replace(',', '|', $model->defect);
         $data['param3'] = $param3;
         $data['param4'] = $param4;
 
+        // Tambahan teks
         $production = $param3 == 1 ? 'MADE IN INDONESIA' : '';
-        $regisk3l = $param4 == 1 ? 'REGISTRASI K3L!'.$data['k3l_code'] : '';
+        $regisk3l = $param4 == 1 ? 'REGISTRASI K3L!' . $data['k3l_code'] : '';
 
-        $qr_code_desc = $regisk3l.
-                        '!'.$data['no_wo'].
-                        '!'.$data['is_design_or_artikel'].
-                        '!'.$data['color'].
-                        '!'.$data['no_lot'].
-                        '!'.$data['length'].
-                        '!'.$data['grade'].
-                        // '!'.$data['motif_greige'].
-                        '!'.$data['defect'].
-                        '!'.$production;
-        $data['qr_code_desc'] = $model->qr_code_desc ? ($qr_code_desc == $model->qr_code_desc ? $model->qr_code_desc : $qr_code_desc) : $qr_code_desc;
+        // Final QR description
+        $qr_code_desc = $regisk3l .
+            '!' . $data['no_wo'] .
+            '!' . $data['is_design_or_artikel'] .
+            '!' . $data['color'] .
+            '!' . $data['no_lot'] .
+            '!' . $data['length'] .
+            '!' . $data['grade'] .
+            '!' . $data['defect'] .
+            '!' . $production;
 
+        $data['qr_code_desc'] = $model->qr_code_desc && $model->qr_code_desc == $qr_code_desc
+            ? $model->qr_code_desc
+            : $qr_code_desc;
+
+        // === SIMPAN DATA QR KE DATABASE ===
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            $query = $this->findItem($id);
-            $query['qr_code'] = $query->qr_code ? $query->qr_code : $create_qr;
-            $query['qr_code_desc'] = $query->qr_code_desc ? ($qr_code_desc == $query->qr_code_desc ? $query->qr_code_desc : $qr_code_desc) : $qr_code_desc;
-            $query['qr_print_at'] = $query->qr_print_at ? $query->qr_print_at : date('Y-m-d H:i:s');
-            $query->save();
+            $model->qr_code = $model->qr_code ?: $create_qr;
+            $model->qr_code_desc = $model->qr_code_desc == $qr_code_desc ? $model->qr_code_desc : $qr_code_desc;
+            $model->qr_print_at = $model->qr_print_at ?: date('Y-m-d H:i:s');
+            $model->save();
             $transaction->commit();
-        }catch (\Throwable $t){
+        } catch (\Throwable $t) {
             $transaction->rollBack();
             throw $t;
         }
 
+        // === CETAK PDF ===
         $content = $this->renderPartial('qr', ['model' => $data]);
-        // setup kartik\mpdf\Pdf component
+
         $pdf = new Pdf([
             'mode' => Pdf::MODE_BLANK,
-            'format' => [100,50], //THERMAL 100mm x 50mm
+            'format' => [100, 50],
             'orientation' => Pdf::ORIENT_PORTRAIT,
             'destination' => Pdf::DEST_BROWSER,
             'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
@@ -1110,13 +1254,8 @@ class TrnInspectingController extends Controller
                 }
             ',
             'methods' => [
-                'SetTitle'=>$data['qr_code'],
+                'SetTitle' => $data['qr_code'],
             ],
-            // 'options' => [
-            //     'setAutoTopMargin' => 'stretch'
-            // ],
-            // 'marginHeader' => 0,
-            // 'marginFooter' => 0,
             'marginTop' => 0,
             'marginRight' => 0,
             'marginBottom' => 0,
@@ -1127,11 +1266,25 @@ class TrnInspectingController extends Controller
         return $pdf->render();
     }
 
+
     public function actionQrAllWithoutAttribute($id, $param1, $param2)
     {
         $model = $this->findModel($id);
         $data = [];
-        foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $key => $iI) {
+
+        // CEK apakah ada no_urut
+        $inspectingId = $model->id;
+        $hasNoUrut = \common\models\ar\InspectingItem::find()
+            ->where(['inspecting_id' => $inspectingId])
+            ->andWhere(['IS NOT', 'no_urut', null])
+            ->exists();
+
+        // Ambil item dengan urutan no_urut atau id
+        $items = $model->getInspectingItems()
+            ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+            ->all();
+        
+         foreach ($items as $key => $iI) {
             $getMeter = round($iI->qty_sum * 0.9144, 1);
             $create_qr = 'INS-'.$iI->inspecting->id.'-'.$iI->id;
             if ($iI->is_head == 1) {
@@ -1235,7 +1388,20 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
         $data = [];
-        foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $key => $iI) {
+
+        // CEK apakah ada no_urut
+        $inspectingId = $model->id;
+        $hasNoUrut = \common\models\ar\InspectingItem::find()
+            ->where(['inspecting_id' => $inspectingId])
+            ->andWhere(['IS NOT', 'no_urut', null])
+            ->exists();
+
+        // Ambil item dengan urutan no_urut atau id
+        $items = $model->getInspectingItems()
+            ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+            ->all();
+        
+         foreach ($items as $key => $iI) {
             $roundUp = true;
             if($param6 == 0){
                 $roundUp = false;

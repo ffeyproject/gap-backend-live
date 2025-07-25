@@ -51,7 +51,8 @@ class InspectingItem extends \yii\db\ActiveRecord
         return [
             [['inspecting_id', 'grade', 'qty'], 'required'],
             [['inspecting_id', 'grade', 'join_piece'], 'default', 'value' => null],
-            [['inspecting_id', 'grade'], 'integer'],
+            [['inspecting_id', 'grade', 'no_urut'], 'integer'],
+            [['no_urut'], 'default', 'value' => null],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['join_piece'], 'string', 'max' => 10],
