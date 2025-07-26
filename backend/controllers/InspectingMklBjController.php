@@ -167,7 +167,10 @@ class InspectingMklBjController extends Controller
     {
         $model = $this->findModel($id);
         $modelItem = new InspectingMklBjItems();
-        $items = ArrayHelper::toArray($model->getItems()->orderBy('id ASC')->all());
+        // $items = ArrayHelper::toArray($model->getItems()->orderBy('id ASC')->all());
+        $items = ArrayHelper::toArray(
+            $model->getItems()->orderBy(['no_urut' => SORT_ASC])->all()
+        );
 
         if (Yii::$app->request->isAjax){
             Yii::$app->response->format = Response::FORMAT_JSON;
@@ -292,7 +295,7 @@ class InspectingMklBjController extends Controller
         $modelItem = new InspectingMklBjItems();
 
         $items = [];
-        foreach ($model->getItems()->orderBy('id')->all() as $inspectingMklbjItem) {
+        foreach ($model->getItems()->orderBy(['no_urut' => SORT_ASC])->all() as $inspectingMklbjItem) {
             $items[] = [
                 'id' => $inspectingMklbjItem->id,
                 'grade' => $inspectingMklbjItem->grade,

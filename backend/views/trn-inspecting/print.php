@@ -77,7 +77,9 @@ $joinPieces = [
     InspectingItem::GRADE_PUTIH => [],
 ];
 
-$inspectingItems = $model->getInspectingItems()->orderBy('id ASC')->all();
+$inspectingItems = $model->getInspectingItems()
+    ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
+    ->all();
 $indexLimit = round(count($inspectingItems) / 2);
 ?>
 

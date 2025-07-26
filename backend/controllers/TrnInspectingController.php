@@ -304,7 +304,16 @@ class TrnInspectingController extends Controller
         $modelItem = new InspectingItemsForm();
 
         $items = [];
-        foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $inspectingItem) {
+        $inspectingId = $model->id;
+        $hasNoUrut = \common\models\ar\InspectingItem::find()
+        ->where(['inspecting_id' => $inspectingId])
+        ->andWhere(['IS NOT', 'no_urut', null])
+        ->exists();
+
+        $inspectItems = $model->getInspectingItems()
+        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+        ->all();
+        foreach ($inspectItems as $inspectingItem) {
             $items[] = [
                 'id' => $inspectingItem->id,
                 'grade' => $inspectingItem->grade,
@@ -524,7 +533,16 @@ class TrnInspectingController extends Controller
         $modelItem = new InspectingItemsForm();
 
         $items = [];
-        foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $inspectingItem) {
+        $inspectingId = $model->id;
+        $hasNoUrut = \common\models\ar\InspectingItem::find()
+        ->where(['inspecting_id' => $inspectingId])
+        ->andWhere(['IS NOT', 'no_urut', null])
+        ->exists();
+
+        $inspectItems = $model->getInspectingItems()
+        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+        ->all();
+        foreach ($inspectItems as $inspectingItem) {
             $items[] = [
                 'item_id' => $inspectingItem->id,
                 'grade' => $inspectingItem->grade,
