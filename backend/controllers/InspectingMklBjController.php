@@ -168,8 +168,14 @@ class InspectingMklBjController extends Controller
         $model = $this->findModel($id);
         $modelItem = new InspectingMklBjItems();
         // $items = ArrayHelper::toArray($model->getItems()->orderBy('id ASC')->all());
-        $items = ArrayHelper::toArray(
-            $model->getItems()->orderBy(['no_urut' => SORT_ASC])->all()
+       $items = ArrayHelper::toArray(
+            $model->getItems()
+                ->orderBy([
+                    new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'), // NULL terakhir
+                    'no_urut' => SORT_ASC,
+                    'id' => SORT_ASC
+                ])
+                ->all()
         );
 
         if (Yii::$app->request->isAjax){

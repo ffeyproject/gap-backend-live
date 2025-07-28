@@ -83,7 +83,14 @@ $joinPieces = [
     InspectingItem::GRADE_A_ASTERISK => [],
 ];
 
-$inspectingItems = $model->getItems()->orderBy(['no_urut' => SORT_ASC])->all();
+$inspectingItems = $model->getItems()
+    ->orderBy([
+        new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'), // Prioritaskan yg punya no_urut
+        'no_urut' => SORT_ASC,
+        'id' => SORT_ASC
+    ])
+    ->all();
+    
 $indexLimit = round(count($inspectingItems) / 2);
 ?>
 
