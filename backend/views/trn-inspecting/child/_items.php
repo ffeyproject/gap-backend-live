@@ -301,14 +301,18 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <td><?=$item['defect']?></td>
                     <td>
                         <?php
-                        foreach ($item->defectInspectingItems as $defectItem) {
-                            echo '<span class="primary">(' . $defectItem->meterage . ')</span>' . 
-                                ' / <span class="primary">' . $defectItem->mstKodeDefect->no_urut . '</span>' . 
-                                ' - <span class="primary">' . $defectItem->mstKodeDefect->nama_defect . '</span>' . 
-                                ' / <span class="primary">(' . $defectItem->point . ')</span>' . 
-                                '<br>';
-                        }
-                        ?>
+                            foreach ($item->defectInspectingItems as $defectItem) {
+                                $defect = $defectItem->mstKodeDefect;
+                                echo '<span class="primary">(' . $defectItem->meterage . ')</span>';
+                                if ($defect) {
+                                    echo ' / <span class="primary">' . $defect->no_urut . '</span>' . 
+                                        ' - <span class="primary">' . $defect->nama_defect . '</span>';
+                                } else {
+                                    echo ' / <span class="text-danger">Kode defect tidak ditemukan</span>';
+                                }
+                                echo ' / <span class="primary">(' . $defectItem->point . ')</span><br>';
+                            }
+                          ?>
                     </td>
 
                     <td>
