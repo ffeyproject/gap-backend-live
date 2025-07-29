@@ -84,7 +84,20 @@ $joinPieces = [
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item):?>
+                <?php
+                    $itemsQuery = $model->getInspectingItems();
+                    $inspectingId = $model->id;
+
+                    $hasNoUrut = \common\models\ar\InspectingItem::find()
+                        ->where(['inspecting_id' => $inspectingId])
+                        ->andWhere(['IS NOT', 'no_urut', null])
+                        ->exists();
+
+                    $items = $itemsQuery
+                        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+                        ->all();
+                ?>
+                <?php foreach ($items as $index => $item): ?>
                 <?php
                 /* @var $item InspectingItem*/
 

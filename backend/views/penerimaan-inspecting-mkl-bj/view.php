@@ -157,7 +157,20 @@ $joinPieces = [
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($model->items as $index=>$item):?>
+                    <?php
+                            $itemsQuery = $model->getItems();
+                            $inspectingId = $model->id;
+
+                            $hasNoUrut = \common\models\ar\InspectingMklBjItems::find()
+                                ->where(['inspecting_id' => $inspectingId])
+                                ->andWhere(['IS NOT', 'no_urut', null])
+                                ->exists();
+
+                            $items = $itemsQuery
+                                ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+                                ->all();
+                        ?>
+                    <?php foreach ($items as $index => $item): ?>
                     <?php
                         if($item['qty'] > 0){
                             // akumulasi hanya berlaku jika qty > 0
