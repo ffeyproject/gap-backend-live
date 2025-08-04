@@ -86,7 +86,8 @@ use yii\widgets\DetailView;
                 ],
                 'est_produksi:date',
                 'est_packing:date',
-                'target_shipment:date'
+                'target_shipment:date',
+                'no_po',
             ],
         ]) ?>
     </div>

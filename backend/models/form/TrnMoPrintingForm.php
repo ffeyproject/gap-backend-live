@@ -19,7 +19,9 @@ class TrnMoPrintingForm extends TrnMo
             [['date', 'est_produksi', 'est_packing', 'target_shipment'], 'date', 'format'=>'php:Y-m-d'],
             [['heat_cut', 'foil', 'joint', 'jet_black'], 'boolean'],
             [['sc_id','sc_greige_id','process','approval_id','joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang'], 'integer'],
-            [['strike_off', 'face_stamping', 'note'], 'string'],
+            [['strike_off', 'face_stamping', 'note', 'no_po'], 'string'],
+            [['no_po'], 'default', 'value' => null],
+
 
             ['jenis_gudang', 'default', 'value'=>TrnStockGreige::JG_PFP],
 

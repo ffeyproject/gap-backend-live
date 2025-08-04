@@ -37,8 +37,8 @@ $this->params['breadcrumbs'][] = $this->title;
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
 
-            //'id',
-	    ['class' => 'kartik\grid\ActionColumn', 'template'=>'{view}'],
+            ['class' => 'kartik\grid\ActionColumn', 'template'=>'{view}'],
+            'id',
             'no',
             [
                 'attribute'=>'jenis_process',

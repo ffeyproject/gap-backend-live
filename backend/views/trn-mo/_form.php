@@ -21,7 +21,7 @@ use yii\web\View;
 
 <div class="trn-mo-form">
     <?=$form->errorSummary($model)?>
-    
+
     <div class="box">
         <div class="box-body">
             <div class="row">
@@ -120,6 +120,8 @@ use yii\web\View;
                     <?= $form->field($model, 'article')->textInput() ?>
 
                     <?= $form->field($model, 'hanger')->textInput(['maxlength' => true]) ?>
+
+                    <?= $form->field($model, 'no_po')->textInput(['maxlength' => true]) ?>
 
                     <?= $form->field($model, 'label')->textInput(['maxlength' => true]) ?>
 

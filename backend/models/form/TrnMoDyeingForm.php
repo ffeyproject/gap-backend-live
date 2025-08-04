@@ -19,10 +19,12 @@ class TrnMoDyeingForm extends TrnMo
             [['sc_id','sc_greige_id','process','approval_id','joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['face_stamping', 're_wo', 'note'], 'string'],
             [['joint','jet_black','heat_cut'], 'boolean'],
-            [['no_lab_dip', 'handling', 'article','sulam_pinggir','selvedge_stamping','selvedge_continues','side_band','tag','hanger','label','folder','album','arsip','piece_length'], 'string', 'max' => 255],
+            [['no_lab_dip', 'handling', 'article','sulam_pinggir','selvedge_stamping','selvedge_continues','side_band','tag','hanger','label','folder','album','arsip','piece_length', 'no_po'], 'string', 'max' => 255],
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::class, 'targetAttribute' => ['sc_greige_id' => 'id']],
             [['approval_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['approval_id' => 'id']],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::class, 'targetAttribute' => ['sc_id' => 'id']],
+            [['no_po'], 'default', 'value' => null],
+
 
             ['packing_method', 'in', 'range' => [self::PACKING_METHOD_SINGLE_ROLL, self::PACKING_METHOD_DOUBLE_FOLDED]],
             ['shipping_method', 'in', 'range' => [self::SHIPPING_METHOD_BALE, self::SHIPPING_METHOD_CARTOON, self::SHIPPING_METHOD_LOSE]],

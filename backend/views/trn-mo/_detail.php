@@ -33,20 +33,14 @@ use yii\widgets\DetailView;
                         'est_produksi:date',
                         'est_packing:date',
                         'target_shipment:date',
+                        'no_po',
                         [
                             'label' => 'Piece Length',
                             'value' => $model->piece_length
                         ],
                         'jet_black:boolean',
                         'heat_cut:boolean',
-                        /* Call Persentase Grading*/
-                        [
-                            'label' => 'Persen Grading Pengkartuan Greige A/B',
-                            'attribute' => 'persen_grading',
-                            'value' => function ($model) {
-                                return Yii::$app->formatter->asPercent($model->persen_grading / 100);
-                            },
-                        ],
+                        
                     ],
                 ]) ?>
             </div>
@@ -74,6 +68,14 @@ use yii\widgets\DetailView;
                         'selvedge_continues',
                         'side_band',
                         'tag',
+                        /* Call Persentase Grading*/
+                        [
+                            'label' => 'Persen Grading Pengkartuan Greige A/B',
+                            'attribute' => 'persen_grading',
+                            'value' => function ($model) {
+                                return Yii::$app->formatter->asPercent($model->persen_grading / 100);
+                            },
+                        ],
                     ],
                 ]) ?>
             </div>

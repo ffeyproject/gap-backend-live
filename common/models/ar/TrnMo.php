@@ -48,6 +48,7 @@ use yii\web\NotAcceptableHttpException;
  * @property string|null $arsip
  * @property bool|null $jet_black
  * @property string|null $piece_length
+ * @property string|null $no_po
  * @property string $est_produksi
  * @property string $est_packing
  * @property string $target_shipment
@@ -210,13 +211,13 @@ class TrnMo extends \yii\db\ActiveRecord
     {
         return [
             [['sc_id', 'sc_greige_id', 'date', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'est_produksi', 'est_packing', 'target_shipment', 'status','persentase_grading'], 'required'],
-            [['sc_id', 'sc_greige_id', 'approval_id', 'approved_at', 'no_urut', 'border_size', 'block_size', 'joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'posted_at', 'closed_at', 'closed_by', 'batal_at', 'batal_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
+            [['sc_id', 'sc_greige_id', 'approval_id', 'approved_at', 'no_urut', 'border_size', 'block_size', 'joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'posted_at', 'closed_at', 'closed_by', 'batal_at', 'batal_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_po'], 'default', 'value' => null],
             [['sc_id', 'sc_greige_id', 'process', 'approval_id', 'approved_at', 'no_urut', 'border_size', 'block_size', 'joint_qty', 'packing_method', 'shipping_method', 'shipping_sorting', 'plastic', 'posted_at', 'closed_at', 'closed_by', 'batal_at', 'batal_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang'], 'integer'],
             [['date', 'est_produksi', 'est_packing', 'target_shipment'], 'date', 'format'=>'php:Y-m-d'],
             [['strike_off', 'face_stamping', 'closed_note', 'reject_notes', 'batal_note', 'note'], 'string'],
             [['heat_cut', 'foil', 'joint', 'jet_black'], 'boolean'],
             ['jenis_gudang', 'default', 'value'=>TrnStockGreige::JG_FRESH],
-            [['no_lab_dip', 'handling', 'no', 're_wo', 'design', 'article', 'sulam_pinggir', 'selvedge_stamping', 'selvedge_continues', 'side_band', 'tag', 'hanger', 'label', 'folder', 'album', 'arsip', 'piece_length'], 'string', 'max' => 255],
+            [['no_lab_dip', 'handling', 'no', 're_wo', 'design', 'article', 'sulam_pinggir', 'selvedge_stamping', 'selvedge_continues', 'side_band', 'tag', 'hanger', 'label', 'folder', 'album', 'arsip', 'piece_length', 'no_po'], 'string', 'max' => 255],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::className(), 'targetAttribute' => ['sc_id' => 'id']],
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::className(), 'targetAttribute' => ['sc_greige_id' => 'id']],
             [['approval_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['approval_id' => 'id']],
@@ -242,6 +243,7 @@ class TrnMo extends \yii\db\ActiveRecord
             'no_urut' => 'No Urut',
             'no' => 'No',
             'date' => 'Date',
+            'no_po' => 'No PO',
             're_wo' => 'Re Wo',
             'design' => 'Design',
             'article' => 'Article',

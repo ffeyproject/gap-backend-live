@@ -81,6 +81,7 @@ use yii\widgets\DetailView;
                 'est_produksi:date',
                 'est_packing:date',
                 'target_shipment:date',
+                'no_po',
                 /* Call Persentase Grading*/
                 [
                     'label' => 'Persen Grading Pengkartuan Greige A/B',
