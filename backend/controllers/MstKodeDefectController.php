@@ -115,24 +115,33 @@ class MstKodeDefectController extends Controller
      * @return mixed
      */
     public function actionCreate()
-    {
-        $model = new MstKodeDefect();
+{
+    $model = new MstKodeDefect();
 
-        // Menentukan nomor urut berdasarkan data terakhir
-        $lastNoUrut = MstKodeDefect::find()->select(['no_urut'])->orderBy(['no_urut' => SORT_DESC])->limit(1)->one();
-        $nextNoUrut = $lastNoUrut ? $lastNoUrut->no_urut + 1 : 1;
+    // Cari no_urut terakhir
+    $lastNoUrut = MstKodeDefect::find()
+        ->select(['no_urut'])
+        ->orderBy(['no_urut' => SORT_DESC])
+        ->limit(1)
+        ->one();
 
-        $model->no_urut = $nextNoUrut;
+    $nextNoUrut = $lastNoUrut ? $lastNoUrut->no_urut + 1 : 1;
+    $model->no_urut = $nextNoUrut;
 
-        // Proses penyimpanan model
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            // Jika berhasil disimpan, bisa diarahkan ke halaman lain jika perlu
+    if ($model->load(Yii::$app->request->post())) {
+        // Buat kode otomatis: AsalDefect + NoUrut
+        $model->kode = $model->asal_defect . $model->no_urut;
+
+        if ($model->save()) {
+            Yii::$app->session->setFlash('success', 'Data berhasil disimpan.');
+            return $this->redirect(['view', 'id' => $model->id]);
         }
-
-        return $this->render('create', [
-            'model' => $model,
-        ]);
     }
+
+    return $this->render('create', [
+        'model' => $model,
+    ]);
+}
 
     /**
      * Updates an existing MstKodeDefect model.

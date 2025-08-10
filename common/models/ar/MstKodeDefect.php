@@ -3,6 +3,7 @@
 namespace common\models\ar;
 
 use Yii;
+use yii\behaviors\TimestampBehavior;
 
 /**
  * This is the model class for table "mst_kode_defect".
@@ -19,6 +20,21 @@ use Yii;
  */
 class MstKodeDefect extends \yii\db\ActiveRecord
 {
+    const ASAL_DEFECT_PR      = 'PR';
+    const ASAL_DEFECT_PC      = 'PC';
+    const ASAL_DEFECT_MKL     = 'MKL';
+    const ASAL_DEFECT_DIGITAL = 'DIGITAL';
+    const ASAL_DEFECT_WEAVING = 'W';
+
+    public static $asalDefectList = [
+        self::ASAL_DEFECT_PR      => 'PR',
+        self::ASAL_DEFECT_PC      => 'PC',
+        self::ASAL_DEFECT_MKL     => 'MKL',
+        self::ASAL_DEFECT_DIGITAL => 'DIGITAL',
+        self::ASAL_DEFECT_WEAVING => 'W',
+    ];
+
+    
     /**
      * @inheritdoc
      */
@@ -26,6 +42,16 @@ class MstKodeDefect extends \yii\db\ActiveRecord
     {
         return 'mst_kode_defect';
     }
+
+    public function behaviors()
+    {
+        return [
+            TimestampBehavior::class,
+            BlameableBehavior::class
+        ];
+    }
+
+
 
     /**
      * @inheritdoc
@@ -37,6 +63,7 @@ class MstKodeDefect extends \yii\db\ActiveRecord
             [['no_urut'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['kode', 'nama_defect', 'asal_defect'], 'string', 'max' => 255],
+            ['asal_defect', 'in', 'range' => array_keys(self::$asalDefectList)],
         ];
     }
 
