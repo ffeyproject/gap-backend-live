@@ -4,6 +4,7 @@ namespace common\models\ar;
 
 use Yii;
 use yii\behaviors\TimestampBehavior;
+use yii\db\Expression;
 
 /**
  * This is the model class for table "mst_kode_defect".
@@ -46,8 +47,12 @@ class MstKodeDefect extends \yii\db\ActiveRecord
     public function behaviors()
     {
         return [
-            TimestampBehavior::class,
-            BlameableBehavior::class
+            [
+                'class' => TimestampBehavior::class,
+                'createdAtAttribute' => 'created_at',
+                'updatedAtAttribute' => 'updated_at',
+                'value' => new Expression('NOW()'),
+            ],
         ];
     }
 
