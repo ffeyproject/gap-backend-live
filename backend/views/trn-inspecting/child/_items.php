@@ -105,7 +105,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Lot No</th>
                     <th>Defect Input</th>
                     <th>Defect</th>
-                    <th>Nilai Point</th>
+                    <!-- <th>Nilai Point</th> -->
                     <th>Keterangan</th>
                     <th>Qr-Code</th>
                     <th>Qr-Data</th>
@@ -315,7 +315,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                           ?>
                     </td>
 
-                    <td>
+                    <!-- <td>
                         <?php 
                             if ($item['is_head'] == 1) {
                                 $options = $item->inspecting->scGreige->lebar_kain;
@@ -364,7 +364,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             }
                         ?>
 
-                    </td>
+                    </td> -->
                     <td><?=$item['note']?></td>
                     <td style="width: 100px;">
                         <?php 

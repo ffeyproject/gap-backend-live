@@ -167,7 +167,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>No Lot</th>
                         <th>Defect Input</th>
                         <th>Defect</th>
-                        <th>Nilai Point</th>
+                        <!-- <th>Nilai Point</th> -->
                         <th>Keterangan</th>
                         <th>QR Code</th>
                         <th>QR Code ID</th>
@@ -369,55 +369,55 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         }
                         ?>
                         </td>
-                        <td>
+                        <!-- <td>
                             <?php 
-                            if ($item['is_head'] == 1) {
-                                $options = $item->inspecting->wo->scGreige->lebar_kain;
-                                switch ($options) {
-                                    case TrnScGreige::LEBAR_KAIN_44:
-                                        $lebarKain = 44;
-                                        break;
-                                    case TrnScGreige::LEBAR_KAIN_58:
-                                        $lebarKain = 58;
-                                        break;
-                                    case TrnScGreige::LEBAR_KAIN_64:
-                                        $lebarKain = 64;
-                                        break;
-                                    case TrnScGreige::LEBAR_KAIN_66:
-                                        $lebarKain = 66;
-                                        break;
-                                    default:
-                                        $lebarKain = 0;
-                                }
-
-                                $totalPoint = 0;
-
-                                $inspectingId = $item->inspecting_id;
-                                $joinPiece = $item->join_piece;
-                                $totalPoint = $item->getTotalPoints($inspectingId, $joinPiece);
-
-                                $qty = $item['qty_sum'];
-                                 $satuan = MstGreigeGroup::unitOptions()[$model->satuan] ?? '';
-
-                                if ($qty != 0 && $qty != null && $lebarKain != 0) {
-                                    if ($satuan == 'Yard') {
-                                        
-                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty);
-                                    } elseif ($satuan == 'Meter') {
-                                         $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
-                                    } elseif ($satuan == 'Kilogram') {
-                                       $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
+                                if ($item['is_head'] == 1) {
+                                    $options = $item->inspecting->wo->scGreige->lebar_kain;
+                                    switch ($options) {
+                                        case TrnScGreige::LEBAR_KAIN_44:
+                                            $lebarKain = 44;
+                                            break;
+                                        case TrnScGreige::LEBAR_KAIN_58:
+                                            $lebarKain = 58;
+                                            break;
+                                        case TrnScGreige::LEBAR_KAIN_64:
+                                            $lebarKain = 64;
+                                            break;
+                                        case TrnScGreige::LEBAR_KAIN_66:
+                                            $lebarKain = 66;
+                                            break;
+                                        default:
+                                            $lebarKain = 0;
                                     }
 
-                                    echo number_format($result, 2);
+                                    $totalPoint = 0;
+
+                                    $inspectingId = $item->inspecting_id;
+                                    $joinPiece = $item->join_piece;
+                                    $totalPoint = $item->getTotalPoints($inspectingId, $joinPiece);
+
+                                    $qty = $item['qty_sum'];
+                                    $satuan = MstGreigeGroup::unitOptions()[$model->satuan] ?? '';
+
+                                    if ($qty != 0 && $qty != null && $lebarKain != 0) {
+                                        if ($satuan == 'Yard') {
+                                            
+                                            $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty);
+                                        } elseif ($satuan == 'Meter') {
+                                            $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
+                                        } elseif ($satuan == 'Kilogram') {
+                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
+                                        }
+
+                                        echo number_format($result, 2);
+                                    } else {
+                                        echo '';
+                                    }
                                 } else {
                                     echo '';
                                 }
-                            } else {
-                                echo '';
-                            }
-                        ?>
-                        </td>
+                            ?>
+                        </td> -->
 
                         <td><?=$item['note']?></td>
                         <td style="width: 100px;">
