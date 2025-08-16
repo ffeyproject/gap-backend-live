@@ -74,4 +74,39 @@ class MstCustomer extends \yii\db\ActiveRecord
     {
         return $this->hasMany(TrnSc::className(), ['cust_id' => 'id']);
     }
+
+    public static function generateCustNo($name)
+{
+    // daftar prefix yang harus diabaikan
+    $ignore = ['PT', 'PT.', 'CV', 'CV.', 'UD', 'UD.', 'PD', 'PD.', 'Pt.', 'Pt.', 'Cv.', 'Cv.', 'Ud.', 'Ud.', 'Pd.', 'Pd.', 'KOP', 'KOP.'];
+
+    // pecah nama jadi array
+    $parts = preg_split('/\s+/', strtoupper($name));
+
+    // cek jika kata pertama ada di daftar ignore
+    if (in_array($parts[0], $ignore)) {
+        array_shift($parts); // buang kata pertama
+    }
+
+    // ambil 3 huruf pertama dari nama buyer setelah ignore
+    $prefix = strtoupper(substr($parts[0], 0, 3));
+
+    // cari cust_no terakhir di database dengan prefix ini
+    $last = self::find()
+        ->where(['like', 'cust_no', $prefix])
+        ->orderBy(['cust_no' => SORT_DESC])
+        ->one();
+
+    if ($last) {
+        // ambil angka di belakang prefix, default 0
+        $lastNumber = (int) substr($last->cust_no, 3);
+        $newNumber = $lastNumber + 1;
+    } else {
+        $newNumber = 1;
+    }
+
+    // format nomor 3 digit
+    return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+}
+
 }

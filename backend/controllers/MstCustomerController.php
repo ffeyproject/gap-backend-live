@@ -63,17 +63,23 @@ class MstCustomerController extends Controller
      * @return mixed
      */
     public function actionCreate()
-    {
-        $model = new MstCustomer();
+{
+    $model = new MstCustomer();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+    if ($model->load(Yii::$app->request->post())) {
+        if (empty($model->cust_no)) {
+            $model->cust_no = MstCustomer::generateCustNo($model->name);
         }
 
-        return $this->render('create', [
-            'model' => $model,
-        ]);
+        if ($model->save()) {
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
     }
+
+    return $this->render('create', [
+        'model' => $model,
+    ]);
+}
 
     /**
      * Updates an existing MstCustomer model.
@@ -124,4 +130,11 @@ class MstCustomerController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionGenerateCustNo($name)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        return ['cust_no' => MstCustomer::generateCustNo($name)];
+    }
+
 }
