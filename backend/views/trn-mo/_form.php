@@ -104,9 +104,8 @@ use yii\web\View;
 
                         <div class="col-md-4">
                             <?= $form->field($model, 'jet_black')->dropDownList(
-                                [ 1 => 'Ya', 0 => 'Tidak'],
-                                ['prompt' => 'Pilih ...']
-                            ) ?>
+                            [ 1 => 'Ya', 0 => 'Tidak']
+                        ) ?>
                         </div>
 
                         <div class="col-md-4">
@@ -121,7 +120,9 @@ use yii\web\View;
 
                     <?= $form->field($model, 'hanger')->textInput(['maxlength' => true]) ?>
 
-                    <?= $form->field($model, 'no_po')->textInput(['maxlength' => true]) ?>
+                    <?= $form->field($model, 'no_po')->textInput([
+                        'maxlength' => true
+                    ]) ?>
 
                     <?= $form->field($model, 'label')->textInput(['maxlength' => true]) ?>
 

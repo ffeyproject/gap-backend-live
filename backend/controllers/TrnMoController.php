@@ -132,6 +132,8 @@ class TrnMoController extends Controller
                 $model = new TrnMoPrintingForm([
                     'sc_greige_id'=>$scGreige->id,
                     'date'=>$date,
+                    'no_po' => $scGreige->sc->no_po,
+                    'jet_black' => $scGreige->sc->jet_black,
                     /*'est_produksi'=>$date,
                     'est_packing'=>$date,
                     'target_shipment'=>$date,
@@ -169,6 +171,8 @@ class TrnMoController extends Controller
                 $model = new TrnMoDyeingForm([
                     'sc_greige_id'=>$scGreige->id,
                     'date'=>$date,
+                    'no_po' => $scGreige->sc->no_po,
+                    'jet_black' => $scGreige->sc->jet_black,
                     /*'est_produksi'=>$date,
                     'est_packing'=>$date,
                     'target_shipment'=>$date,
