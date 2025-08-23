@@ -121,7 +121,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
 
             ['no_urut', 'default', 'value' => null],
             ['no_urut', 'integer'],
-            ['no_urut', 'unique', 'targetAttribute' => ['no_urut', 'jenis'], 'message' => 'No urut sudah ada untuk jenis ini.'],
+            // ['no_urut', 'unique', 'targetAttribute' => ['no_urut', 'jenis'], 'message' => 'No urut sudah ada untuk jenis ini.'],
             ['satuan', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
 
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
