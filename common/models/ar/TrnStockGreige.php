@@ -333,4 +333,11 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         return $stockPerGrade;
     }
 
+
+    public function rollbackToValid()
+    {
+        $this->status = self::STATUS_VALID;
+        return $this->save(false, ['status']);
+    }
+
 }

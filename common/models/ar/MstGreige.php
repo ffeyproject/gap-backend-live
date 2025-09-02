@@ -107,15 +107,13 @@ class MstGreige extends \yii\db\ActiveRecord
      */
     public function beforeSave($insert)
     {
-        if(parent::beforeSave($insert)){
-            if($insert){
-                //jumlah available harus sama dengan jumlah stock
+        if (parent::beforeSave($insert)) {
+            if ($insert) {
+                // Saat pertama kali dibuat, available = stock
                 $this->available = $this->stock;
             }
-
             return true;
         }
-
         return false;
     }
 
@@ -171,6 +169,13 @@ class MstGreige extends \yii\db\ActiveRecord
         return $total;
     }
 
+    public function addBackToStock($jumlah)
+    {
+        $this->stock = (float)$this->stock + (float)$jumlah;
+        $this->available = (float)$this->available + (float)$jumlah;
+
+        return $this->save(false, ['stock', 'available']);
+    }
 
     /**
      * @return float

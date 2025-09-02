@@ -24,20 +24,20 @@ $formatter = Yii::$app->formatter;
 <div class="kartu-proses-dyeing-view">
     <p>
         <?php if($model->status == $model::STATUS_DELIVERED):?>
-            <?= Html::a('Buat Memo Penggantian Greige', ['ganti-greige', 'id' => $model->id], [
+        <?= Html::a('Buat Memo Penggantian Greige', ['ganti-greige', 'id' => $model->id], [
                 'class' => 'btn btn-success',
                 'onclick' => 'memoPg(event, "Memo Penggantian Greige");',
                 'title' => 'Buat Memo Penggantian Greige'
             ]) ?>
 
-            <?= Html::a('Setujui Dan Teruskan Ke Inspecting', ['approve', 'id' => $model->id], [
+        <?= Html::a('Setujui Dan Teruskan Ke Inspecting', ['approve', 'id' => $model->id], [
                 'class' => 'btn btn-warning',
                 'data' => [
                     'confirm' => 'Are you sure you want to approve this item?',
                     'method' => 'post',
                 ],
             ]) ?>
-            <?= Html::a('Batalkan Kartu Proses', ['batal', 'id' => $model->id], [
+        <?= Html::a('Batalkan Kartu Proses', ['batal', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'data' => [
                     'confirm' => 'Are you sure you want to batalkan this item?',
@@ -45,13 +45,13 @@ $formatter = Yii::$app->formatter;
                 ],
             ]) ?>
 
-            <?=Html::a('Ganti WO', ['ganti-wo', 'id' => $model->id], [
+        <?=Html::a('Ganti WO', ['ganti-wo', 'id' => $model->id], [
                 'class' => 'btn btn-warning',
                 'onclick' => 'gantiWo(event);',
                 'title' => 'Ganti WO Kartu Proses: '.$model->id
             ]);?>
 
-            <?=Html::a('Ganti Warna', ['ganti-warna', 'id' => $model->id], [
+        <?=Html::a('Ganti Warna', ['ganti-warna', 'id' => $model->id], [
                 'class' => 'btn btn-info',
                 'onclick' => 'gantiWarna(event);',
                 'title' => 'Ganti Warna Kartu Proses: '.$model->id
@@ -81,6 +81,18 @@ $formatter = Yii::$app->formatter;
                 'method' => 'post',
             ],
         ]) ?>
+
+        <?= Html::a('Kembalikan Stock Ke Gudang Greige', 
+    ['kembali-stock', 'id' => $model->id], 
+    [
+        'class' => 'btn btn-danger',
+        'data' => [
+            'confirm' => 'Yakin ingin mengembalikan stock ke Gudang Greige?',
+            'method' => 'post',
+        ],
+    ]
+) ?>
+
     </p>
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/detail', ['model' => $model]);?>

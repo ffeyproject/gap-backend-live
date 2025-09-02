@@ -836,4 +836,46 @@ class ProcessingDyeingController extends Controller
 
         throw new ForbiddenHttpException('Not allowed');
     }
+
+    public function actionKembaliStock($id)
+    {
+        $model = $this->findModel($id);
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // update status kartu proses jadi BATAL
+            $model->status = $model::STATUS_BATAL;
+            $model->save(false, ['status']);
+
+            // rollback stok greige
+            $totalLength = 0;
+            foreach ($model->trnKartuProsesDyeingItems as $item) {
+                $stock = $item->stock;
+                if ($stock) {
+                    // panggil rollback, tanpa blokir "sudah proses"
+                    $stock->rollbackToValid();
+
+                    // update note
+                    $stock->note = 'dikembalikan processing dari NK : ' . $model->nomor_kartu;
+                    $stock->save(false, ['note']);
+                    
+                    $totalLength += $stock->panjang_m;
+                }
+            }
+
+            // update mst greige (stock & available)
+            $mstGreige = $model->wo->greige;
+            if ($mstGreige) {
+                $mstGreige->addBackToStock($totalLength);
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Kartu proses berhasil dibatalkan. Stok greige sudah dikembalikan.');
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal membatalkan kartu proses: '.$e->getMessage());
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
 }
