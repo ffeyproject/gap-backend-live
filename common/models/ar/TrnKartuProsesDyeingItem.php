@@ -78,7 +78,8 @@ class TrnKartuProsesDyeingItem extends \yii\db\ActiveRecord
         return [
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'tube', 'date'], 'required'],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'tube', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'panjang_m', 'tube', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'tube', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['panjang_m'], 'number'],
             [['note'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
             ['stock_id', 'unique', 'targetAttribute' => ['stock_id', 'kartu_process_id']],
@@ -184,4 +185,16 @@ class TrnKartuProsesDyeingItem extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::className(), ['id' => 'updated_by']);
     }
+
+    public function getKartuProses()
+{
+    return $this->hasOne(TrnKartuProsesDyeing::class, ['id' => 'trn_kartu_proses_dyeing_id']);
+}
+
+public function getMstGreige()
+{
+    return $this->hasOne(MstGreige::class, ['id' => 'greige_id']);
+}
+
+
 }

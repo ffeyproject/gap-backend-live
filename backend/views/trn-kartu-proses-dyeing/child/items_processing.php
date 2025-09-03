@@ -73,15 +73,49 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         //'process_id',
                         'date:date',
                         //'mesin',
+                        // [
+                        //     'attribute'=>'panjang_m',
+                        //     'label'=>'Qty',
+                        //     'format'=>'decimal',
+                        //     'pageSummary' => true,
+                        //     //'hAlign' => 'right'
+                        // ],
                         [
-                            'attribute'=>'panjang_m',
-                            'label'=>'Qty',
-                            'format'=>'decimal',
+                            'attribute' => 'panjang_m',
+                            'label' => 'Qty',
+                            'format' => ['decimal', 2],
+                            'hAlign' => 'right',
                             'pageSummary' => true,
-                            //'hAlign' => 'right'
+                            'pageSummaryFunc' => \kartik\grid\GridView::F_SUM,
+                            'content' => function($data){
+                                return Html::a(
+                                    Yii::$app->formatter->asDecimal($data->panjang_m, 2),
+                                    ['/trn-kartu-proses-dyeing-item/edit-qty', 'id' => $data->id],
+                                    [
+                                        'data-toggle' => "modal",
+                                        'data-target' => "#kartuProsesDyeingModal",
+                                        'data-title' => 'Edit Qty Roll ID: '.$data->id,
+                                        'title' => 'Klik untuk edit Qty',
+                                    ]
+                                );
+                            },
                         ],
+
                         [
-                            'attribute'=>'mesin'
+                            'attribute' => 'mesin',
+                            'label' => 'Mesin',
+                            'content' => function($data){
+                                return Html::a(
+                                    $data->mesin,
+                                    ['/trn-kartu-proses-dyeing-item/edit-mesin', 'id' => $data->id],
+                                    [
+                                        'data-toggle' => "modal",
+                                        'data-target' => "#kartuProsesDyeingModal",
+                                        'data-title' => 'Edit Mesin Roll ID: '.$data->id,
+                                        'title' => 'Klik untuk edit Mesin',
+                                    ]
+                                );
+                            }
                         ],
                         [
                             'label'=>'Unit',
@@ -167,15 +201,48 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         //'process_id',
                         'date:date',
                         //'mesin',
+                        // [
+                        //     'attribute'=>'panjang_m',
+                        //     'label'=>'Qty',
+                        //     'format'=>'decimal',
+                        //     'pageSummary' => true,
+                        //     'hAlign' => 'right'
+                        // ],
                         [
-                            'attribute'=>'panjang_m',
-                            'label'=>'Qty',
-                            'format'=>'decimal',
+                            'attribute' => 'panjang_m',
+                            'label' => 'Qty',
+                            'format' => ['decimal', 2],
+                            'hAlign' => 'right',
                             'pageSummary' => true,
-                            'hAlign' => 'right'
+                            'pageSummaryFunc' => \kartik\grid\GridView::F_SUM,
+                            'content' => function($data){
+                                return Html::a(
+                                    Yii::$app->formatter->asDecimal($data->panjang_m, 2),
+                                    ['/trn-kartu-proses-dyeing-item/edit-qty', 'id' => $data->id],
+                                    [
+                                        'data-toggle' => "modal",
+                                        'data-target' => "#kartuProsesDyeingModal",
+                                        'data-title' => 'Edit Qty Roll ID: '.$data->id,
+                                        'title' => 'Klik untuk edit Qty',
+                                    ]
+                                );
+                            },
                         ],
                         [
-                            'attribute'=>'mesin'
+                            'attribute' => 'mesin',
+                            'label' => 'Mesin',
+                            'content' => function($data){
+                                return Html::a(
+                                    $data->mesin,
+                                    ['/trn-kartu-proses-dyeing-item/edit-mesin', 'id' => $data->id],
+                                    [
+                                        'data-toggle' => "modal",
+                                        'data-target' => "#kartuProsesDyeingModal",
+                                        'data-title' => 'Edit Mesin Roll ID: '.$data->id,
+                                        'title' => 'Klik untuk edit Mesin',
+                                    ]
+                                );
+                            }
                         ],
                         [
                             'label'=>'Unit',

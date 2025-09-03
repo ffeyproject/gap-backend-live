@@ -7,6 +7,7 @@ use common\models\ar\TrnStockGreige;
 use Yii;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnKartuProsesDyeingItemSearch;
+use common\models\search\TrnStockGreigeSearch;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\web\Controller;
@@ -15,6 +16,7 @@ use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
+use yii\data\ActiveDataProvider;
 
 /**
  * TrnKartuProsesDyeingItemController implements the CRUD actions for TrnKartuProsesDyeingItem model.
@@ -244,4 +246,250 @@ class TrnKartuProsesDyeingItemController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    /**
+     * Edit Qty via modal form
+     */
+//   public function actionEditQty($id)
+// {
+//     $model = $this->findModel($id);
+//     $oldStockId = $model->stock_id; // simpan stock lama
+
+//     if ($model->load(Yii::$app->request->post())) {
+//         if ($model->save(false)) {
+
+//             // Jika ada stock lama dan berbeda → ubah jadi VALID
+//             if ($oldStockId && $oldStockId != $model->stock_id) {
+//                 $oldStock = \common\models\ar\TrnStockGreige::findOne($oldStockId);
+//                 if ($oldStock) {
+//                     $oldStock->status = \common\models\ar\TrnStockGreige::STATUS_VALID;
+//                     $oldStock->save(false);
+//                 }
+//             }
+
+//             // Ubah stock baru jadi ON_PROCESS_CARD
+//             if ($model->stock_id) {
+//                 $newStock = \common\models\ar\TrnStockGreige::findOne($model->stock_id);
+//                 if ($newStock) {
+//                     $newStock->status = \common\models\ar\TrnStockGreige::STATUS_ON_PROCESS_CARD;
+//                     $newStock->save(false);
+//                 }
+//             }
+
+//             Yii::$app->session->setFlash('success', 'Qty & Stock berhasil diperbarui.');
+
+//             return $this->redirect([
+//                 '/processing-dyeing/view',
+//                 'id' => $model->kartu_process_id,
+//             ]);
+//         }
+//     }
+
+//     $stocks = new \yii\data\ActiveDataProvider([
+//         'query' => \common\models\ar\TrnStockGreige::find()
+//             ->where(['status' => \common\models\ar\TrnStockGreige::STATUS_VALID]),
+//         'pagination' => ['pageSize' => 10],
+//     ]);
+
+//     return $this->renderAjax('@app/views/trn-kartu-proses-dyeing/child/_form_edit_qty', [
+//         'model' => $model,
+//         'stocks' => $stocks,
+//     ]);
+// }
+
+    // public function actionEditQty($id)
+    // {
+    //     $model = $this->findModel($id);
+
+    //     $oldStockId = $model->stock_id;
+    //     $oldPanjang = $model->panjang_m;
+
+    //     if ($model->load(Yii::$app->request->post())) {
+
+    //         $transaction = Yii::$app->db->beginTransaction();
+    //         try {
+    //             if ($model->save(false)) {
+
+    //                 // ================================
+    //                 // 1. Update stock lama → VALID
+    //                 // ================================
+    //                 if ($oldStockId && $oldStockId != $model->stock_id) {
+    //                     $oldStock = \common\models\ar\TrnStockGreige::findOne($oldStockId);
+    //                     if ($oldStock) {
+    //                         $oldStock->status = \common\models\ar\TrnStockGreige::STATUS_VALID;
+    //                         $oldStock->save(false);
+    //                     }
+    //                 }
+
+    //                 // ================================
+    //                 // 2. Update stock baru → ON_PROCESS_CARD
+    //                 // ================================
+    //                 if ($model->stock_id) {
+    //                     $newStock = \common\models\ar\TrnStockGreige::findOne($model->stock_id);
+    //                     if ($newStock) {
+    //                         $newStock->status = \common\models\ar\TrnStockGreige::STATUS_ON_PROCESS_CARD;
+    //                         $newStock->save(false);
+    //                     }
+    //                 }
+
+    //                 // ================================
+    //                 // 3. Update MstGreige stock & available
+    //                 // ================================
+    //                 $greige = $model->stock ? $model->stock->greige : null;
+
+    //                 if ($greige) {
+    //                     $selisih = $model->panjang_m - $oldPanjang;
+
+    //                     if ($selisih > 0) {
+    //                         // Panjang baru lebih besar → kurangi stock & available
+    //                         $greige->stock -= $selisih;
+    //                         $greige->available -= $selisih;
+    //                     } elseif ($selisih < 0) {
+    //                         // Panjang baru lebih kecil → tambahkan stock & available
+    //                         $greige->stock += abs($selisih);
+    //                         $greige->available += abs($selisih);
+    //                     }
+
+    //                     if (!$greige->save(false, ['stock','available'])) {
+    //                         throw new \Exception("Gagal update stock MstGreige: " . json_encode($greige->getErrors()));
+    //                     }
+    //                 } else {
+    //                     throw new \Exception("Relasi greige tidak ditemukan untuk stock ini.");
+    //                 }
+
+    //                 $transaction->commit();
+
+    //                 Yii::$app->session->setFlash('success', 'Qty & Stock berhasil diperbarui.');
+    //                 return $this->redirect(['/processing-dyeing/view', 'id' => $model->kartu_process_id]);
+    //             }
+    //         } catch (\Exception $e) {
+    //             $transaction->rollBack();
+    //             Yii::$app->session->setFlash('error', 'Update gagal: ' . $e->getMessage());
+    //         }
+    //     }
+
+    //     // ================================
+    //     // 4. Data provider stocks VALID
+    //     // ================================
+    //     $stocks = new \yii\data\ActiveDataProvider([
+    //         'query' => \common\models\ar\TrnStockGreige::find()
+    //             ->where(['status' => \common\models\ar\TrnStockGreige::STATUS_VALID]),
+    //         'pagination' => ['pageSize' => 10],
+    //     ]);
+
+    //      // ================================
+    //     // 5. Filter stock sesuai greige kartu proses
+    //     // ================================
+    //     $greigeId = $model->stock ? $model->stock->greige_id : null;
+
+    //     $searchModel = new \common\models\search\TrnStockGreigeSearch();
+    //     $stocks = $searchModel->search(Yii::$app->request->queryParams);
+        
+    //     if ($greigeId) {
+    //         $stocks->query->andWhere(['greige_id' => $greigeId]);
+    //     }
+
+    //     // ================================
+    //     // Data provider & search model untuk GridView stock
+    //     // ================================
+    //     $searchModel = new TrnStockGreigeSearch();
+    //     $stocks = $searchModel->search(Yii::$app->request->queryParams);
+
+    //         return $this->renderAjax('@app/views/trn-kartu-proses-dyeing/child/_form_edit_qty', [
+    //             'model'  => $model,
+    //             'stocks' => $stocks,
+    //             'searchModel' => $searchModel,
+    //         ]);
+    // }
+
+    public function actionEditQty($id)
+{
+    $model = $this->findModel($id);
+    $oldStockId = $model->stock_id;
+    $oldPanjang = $model->panjang_m;
+
+    if ($model->load(Yii::$app->request->post())) {
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            if ($model->save(false)) {
+                // Update stock lama
+                if ($oldStockId && $oldStockId != $model->stock_id) {
+                    $oldStock = \common\models\ar\TrnStockGreige::findOne($oldStockId);
+                    if ($oldStock) {
+                        $oldStock->status = \common\models\ar\TrnStockGreige::STATUS_VALID;
+                        $oldStock->save(false);
+                    }
+                }
+
+                // Update stock baru
+                if ($model->stock_id) {
+                    $newStock = \common\models\ar\TrnStockGreige::findOne($model->stock_id);
+                    if ($newStock) {
+                        $newStock->status = \common\models\ar\TrnStockGreige::STATUS_ON_PROCESS_CARD;
+                        $newStock->save(false);
+                    }
+                }
+
+                // Update greige stock & available
+                $greige = $model->stock ? $model->stock->greige : null;
+                if ($greige) {
+                    $selisih = $model->panjang_m - $oldPanjang;
+                    $greige->stock -= max($selisih, 0);
+                    $greige->available -= max($selisih, 0);
+                    $greige->stock += max(-$selisih, 0);
+                    $greige->available += max(-$selisih, 0);
+
+                    if (!$greige->save(false, ['stock','available'])) {
+                        throw new \Exception("Gagal update stock MstGreige: " . json_encode($greige->getErrors()));
+                    }
+                } else {
+                    throw new \Exception("Relasi greige tidak ditemukan untuk stock ini.");
+                }
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Qty & Stock berhasil diperbarui.');
+                return $this->redirect(['/processing-dyeing/view', 'id' => $model->kartu_process_id]);
+            }
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Update gagal: ' . $e->getMessage());
+        }
+    }
+
+    // ================================
+    // Data provider & search model untuk GridView stock
+    // ================================
+    $searchModel = new \common\models\search\TrnStockGreigeSearch();
+    $stocks = $searchModel->search(Yii::$app->request->queryParams);
+
+    // Filter stock sesuai greige kartu proses
+    $greigeId = $model->stock ? $model->stock->greige_id : null;
+    if ($greigeId) {
+        $stocks->query->andWhere(['greige_id' => $greigeId]);
+    }
+
+    return $this->renderAjax('@app/views/trn-kartu-proses-dyeing/child/_form_edit_qty', [
+        'model' => $model,
+        'stocks' => $stocks,
+        'searchModel' => $searchModel,
+    ]);
+}
+
+public function actionEditMesin($id)
+{
+    $model = $this->findModel($id);
+
+    if ($model->load(Yii::$app->request->post()) && $model->save()) {
+       Yii::$app->session->setFlash('success', 'Data mesin berhasil diperbarui.');
+        return $this->redirect(['/processing-dyeing/view', 'id' => $model->kartu_process_id]);
+    }
+
+    return $this->renderAjax('@app/views/trn-kartu-proses-dyeing/child/_form_edit_mesin', [
+        'model' => $model,
+    ]);
+}
+
+
+
 }

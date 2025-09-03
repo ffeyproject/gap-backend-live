@@ -97,7 +97,7 @@ $formatter = Yii::$app->formatter;
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/detail', ['model' => $model]);?>
 
-    <?php echo $this->render('/trn-kartu-proses-dyeing/child/items', ['model' => $model]);?>
+    <?php echo $this->render('/trn-kartu-proses-dyeing/child/items_processing', ['model' => $model]);?>
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/persetujuan', ['model' => $model]);?>
 
