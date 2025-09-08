@@ -55,7 +55,7 @@ foreach ($words2 as $word2) {
             ?>
                 <p style="font-family: Calibri; font-size: 3px;"><b>&nbsp;</b></p>
                 <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
-                <p style="font-family: Calibri; font-size: 10px;"><b><?= $m['qr_code'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 10px;"><b><?= $model['qr_code'] ?></b></p>
             </td>
             <td style="width: 50%; height: 100%; padding: 1rem 0.5rem 1rem 1rem;">
                 <p
