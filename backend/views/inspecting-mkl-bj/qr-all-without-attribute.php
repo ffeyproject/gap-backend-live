@@ -43,6 +43,8 @@ $formatter = Yii::$app->formatter;
                 id="<?= mt_rand() ?>">
                 <img class="img-fluid" style="height: 150px; width: 150px; margin: 0px;"
                     src="<?='qrcode/'.$m['qr_code'].'.png'?>" alt="" id="<?= mt_rand() ?>">
+                <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
+                <p style="font-family: Calibri; font-size: 10px;"><b><?= $m['qr_code'] ?></b></p>
             </td>
             <td style="width: 50%; height: 100%; padding: 1rem 1rem 1rem 0.5rem;" id="<?= mt_rand() ?>">
                 <p style="font-family: Calibri; font-size: 3px; color: #fff;" id="<?= mt_rand() ?>">
@@ -68,7 +70,7 @@ $formatter = Yii::$app->formatter;
 
                 <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['length'] ?></b></p>
                 <p style="font-family: Calibri; font-size: 13px;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
-                <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
+
             </td>
         </tr>
         <?php endforeach; ?>

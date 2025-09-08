@@ -247,7 +247,8 @@ class InspectingMklBjController extends Controller
                                 $qty_sum = $query2->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $model->id])->sum('qty');
                                 $gIBOII['qty_sum'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? NULL : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? $gIBOII['qty'] : $qty_sum);
                                 $gIBOII['is_head'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : 1;
-                                $gIBOII['qr_code'] = ($gIBOII['qr_code'] <> NULL || $gIBOII['qr_code']) ? $gIBOII['qr_code'] : 'MKL-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
+                                // $gIBOII['qr_code'] = ($gIBOII['qr_code'] <> NULL || $gIBOII['qr_code']) ? $gIBOII['qr_code'] : 'MKL-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
+                                $gIBOII->qr_code = $gIBOII->qr_code ?: 'MKL-'.$gIBOII->inspecting_id.'-'.$gIBOII->id;
                                 $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
                                 $gIBOII->save();
                                 $transaction->commit();
