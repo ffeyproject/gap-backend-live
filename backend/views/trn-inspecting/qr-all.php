@@ -48,13 +48,14 @@ $formatter = Yii::$app->formatter;
                 <?php
             if ($m['param1'] == 1) {
               echo '
-                <p style="font-family: Calibri; font-size: 5px;"><b>&nbsp;</b></p>
-                <p style="font-family: Calibri; font-size: 13px;"><b>MADE IN INDONESIA</b></p>
+                <p style="font-family: Calibri; font-size: 3px;"><b>&nbsp;</b></p>
+                <p style="font-family: Calibri; font-size: 11px;"><b>MADE IN INDONESIA</b></p>
               ';
             }
           ?>
                 <p style="font-family: Calibri; font-size: 3px;"><b>&nbsp;</b></p>
                 <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
+                <p style="font-family: Calibri; font-size: 10px;"><b><?= $m['qr_code'] ?></b></p>
             </td>
             <td style="width: 50%; height: 100%; padding: 1rem 1rem 1rem 0.5rem;" id="<?= mt_rand() ?>">
                 <?php 
@@ -84,7 +85,6 @@ $formatter = Yii::$app->formatter;
 
                 <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>"><b><?= $m['length'] ?></b></p>
                 <p style="font-family: Calibri; font-size: 13px;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
-                <p style="font-family: Calibri; font-size: 13px;"><b>NO CLAIM AFTER CUTTING</b></p>
             </td>
         </tr>
         <?php endforeach; ?>
