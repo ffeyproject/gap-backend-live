@@ -587,4 +587,57 @@ class TrnKartuProsesDyeingController extends Controller
     }
 
 
+   public function actionEditNomorKartu($id)
+    {
+        $model = $this->findModel($id);
+
+        if (!in_array($model->status, [
+            $model::STATUS_DRAFT,
+            $model::STATUS_POSTED,
+            $model::STATUS_DELIVERED
+        ])) {
+            return $this->asJson(['error' => 'Hanya status DRAFT, POSTED, dan DELIVERED yang bisa diubah.']);
+        }
+
+        if (Yii::$app->request->isPost) {
+            if ($model->load(Yii::$app->request->post())) {
+
+                // === Tambahkan validasi nomor_kartu + motif di sini ===
+                // pastikan relasi wo() ada di model TrnKartuProsesDyeing
+                $greigeId = $model->wo->greige_id ?? null;
+
+                if ($greigeId !== null) {
+                    $exists = \common\models\ar\TrnKartuProsesDyeing::find()
+                        ->joinWith('wo')
+                        ->where([
+                            \common\models\ar\TrnWo::tableName().'.greige_id' => $greigeId,
+                            \common\models\ar\TrnKartuProsesDyeing::tableName().'.nomor_kartu' => $model->nomor_kartu,
+                        ])
+                        ->andWhere(['<>', \common\models\ar\TrnKartuProsesDyeing::tableName().'.id', $model->id])
+                        ->exists();
+
+                    if ($exists) {
+                        $model->addError('nomor_kartu', 'Nomor kartu ini sudah digunakan untuk motif yang sama.');
+                        // render kembali form AJAX supaya error muncul di modal
+                        return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+                    }
+                }
+                // === end validasi ===
+
+                // Sukses simpan → kirim JSON success
+                if ($model->save()) {
+                    Yii::$app->session->setFlash('success', 'Nomor kartu berhasil diupdate');
+                    return $this->asJson(['success' => true]);
+                }
+
+                // Kalau gagal save → kirim balik form dengan error
+                return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+            }
+        }
+
+        return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+    }
+
+
+
 }

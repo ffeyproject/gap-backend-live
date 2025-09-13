@@ -450,4 +450,56 @@ class TrnKartuProsesPfpController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+
+    public function actionEditNomorKartu($id)
+    {
+        $model = $this->findModel($id);
+
+        // cek status dulu
+        if (!in_array($model->status, [
+            $model::STATUS_DRAFT,
+            $model::STATUS_POSTED,
+            $model::STATUS_DELIVERED,
+        ])) {
+            Yii::$app->session->setFlash('error', 'Status tidak valid.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        // Jika submit POST
+        if ($model->load(Yii::$app->request->post())) {
+
+            // validasi nomor_kartu + greige_id tidak duplikat
+            $qExists = (new \yii\db\Query())
+                ->from(\common\models\ar\TrnKartuProsesPfp::tableName())
+                ->select(new \yii\db\Expression('1'))
+                ->where([
+                    'greige_id'   => $model->greige_id,
+                    'nomor_kartu' => $model->nomor_kartu,
+                ])
+                ->andWhere(['<>', 'id', $model->id])
+                ->exists();
+
+            if ($qExists) {
+                $model->addError('nomor_kartu', 'Nomor kartu dan motif sudah dipakai.');
+            }
+
+            if ($model->hasErrors()) {
+                // kirim balik form dengan error (HTML)
+                return $this->asJson([
+                    'success' => false,
+                    'html' => $this->renderAjax('_form_nomor_kartu', ['model' => $model]),
+                ]);
+            }
+
+            // simpan
+            $model->save(false, ['nomor_kartu']);
+            Yii::$app->session->setFlash('success', 'Nomor kartu berhasil diupdate.');
+            return $this->asJson(['success' => true]);
+        }
+
+        // pertama kali buka modal → kembalikan partial
+        return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+    }
+
 }

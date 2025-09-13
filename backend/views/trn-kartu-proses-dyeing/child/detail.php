@@ -33,7 +33,8 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
                 <hr>
 
                 <div class="row">
-                    <div class="col-md-9">Panjang: <?=Yii::$app->formatter->asDecimal($panjangTotal)?><?=$greigeGroup->unitName?></div>
+                    <div class="col-md-9">Panjang:
+                        <?=Yii::$app->formatter->asDecimal($panjangTotal)?><?=$greigeGroup->unitName?></div>
 
                     <div class="col-md-3"><?=Yii::$app->formatter->asDecimal($jumlahRoll)?> PCS</div>
                 </div>
@@ -187,6 +188,7 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
                     'attributes' => [
                         'id',
                         //'wo_id',
+                        'nomor_kartu',
                         [
                             'label'=>'Nomor WO',
                             'value'=>Html::a($model->wo->no, ['/trn-wo/view', 'id'=>$model->wo_id], ['title'=>'Detail WO', 'target'=>'blank']),
