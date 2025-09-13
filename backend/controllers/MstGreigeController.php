@@ -124,4 +124,52 @@ class MstGreigeController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+
+    /**
+ * Update status_weaving via modal.
+ * @param integer $id
+ * @return mixed
+ * @throws NotFoundHttpException
+ */
+ // Action AJAX modal untuk update status_weaving
+public function actionUpdateWeaving($id)
+{
+    $model = $this->findModel($id);
+
+    // Tangani POST AJAX
+    if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post())) {
+        if ($model->save()) {
+            if (Yii::$app->request->isAjax) {
+                // Mengembalikan plain text 'success' untuk JS
+                Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+                return 'success';
+            }
+            // Jika bukan AJAX, redirect ke view
+            return $this->redirect(['view', 'id' => $model->id]);
+        } else {
+            // Jika gagal validasi, kirim error AJAX untuk ActiveForm
+            if (Yii::$app->request->isAjax) {
+                Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                return \yii\widgets\ActiveForm::validate($model);
+            }
+        }
+    }
+
+    // Render modal via AJAX
+    if (Yii::$app->request->isAjax) {
+        return $this->renderAjax('_updateWeaving', [
+            'model' => $model,
+        ]);
+    }
+
+    // Render normal jika bukan AJAX
+    return $this->render('_updateWeaving', [
+        'model' => $model,
+    ]);
+}
+
+
+
+
 }

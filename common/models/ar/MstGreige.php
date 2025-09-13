@@ -62,7 +62,7 @@ class MstGreige extends \yii\db\ActiveRecord
             [['group_id', 'nama_kain'], 'required'],
             [['group_id', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['group_id', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp'], 'number'],
+            [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp', 'status_weaving'], 'number'],
             [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp'], 'default', 'value' => 0],
             [['aktif'], 'boolean'],
             [['nama_kain', 'alias', 'no_dok_referensi'], 'string', 'max' => 255],
@@ -99,6 +99,7 @@ class MstGreige extends \yii\db\ActiveRecord
             'booked_ef' => 'Booked Ex Finish',
             'booked_opfp' => 'Booked Order PFP',
             'available_pfp' => 'Available PFP',
+            'status_weaving' => 'Status Weaving',
         ];
     }
 
@@ -185,4 +186,27 @@ class MstGreige extends \yii\db\ActiveRecord
     {
         return (float)$this->stock - (float)$this->booked;
     }*/
+
+        /**
+     * Daftar status weaving
+     * @return array
+     */
+    public static function getStatusWeavingList()
+    {
+        return [
+            1 => 'Non Moving',
+            2 => 'Slow Moving',
+            3 => 'Fast Moving',
+        ];
+    }
+
+    /**
+     * Ambil label status weaving
+     * @return string|null
+     */
+    public function getStatusWeavingLabel()
+    {
+        $list = self::getStatusWeavingList();
+        return $list[$this->status_weaving] ?? null;
+    }
 }
