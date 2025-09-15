@@ -258,6 +258,7 @@ if(!empty($searchModel->greige_id)){
                     ]
                 ],
             ],
+            'source_ref',
             [
                 'header' => 'Made In Indonesia',
                 'class' => CheckboxColumn::class,
@@ -313,7 +314,7 @@ if(!empty($searchModel->greige_id)){
                     ]
                 ],
             ],
-            'source_ref',
+            
             
             [
                 'contentOptions' => ['style' => 'white-space: nowrap;'],

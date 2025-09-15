@@ -2,27 +2,21 @@
 
 use common\models\ar\MstGreige;
 use kartik\widgets\Alert;
-use yii\bootstrap\Collapse;
 use yii\helpers\Html;
 use kartik\grid\GridView;
-
-/* @var $this yii\web\View */
-/* @var $searchModel common\models\ar\MstGreigeSearch */
-/* @var $dataProvider yii\data\ActiveDataProvider */
+use yii\bootstrap\Modal;
+use yii\widgets\Pjax;
 
 $this->title = 'Greiges';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="mst-greige-index">
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
-    <?=Alert::widget([
-        'options' => [
-            //'class' => 'alert-info',
-        ],
+    <?= Alert::widget([
         'body' => $this->render('ilustrasi/pergerakan_stock'),
-    ])?>
+    ]) ?>
 
+    <?php Pjax::begin(['id' => 'mst-greige-pjax']); ?>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
@@ -36,54 +30,89 @@ $this->params['breadcrumbs'][] = $this->title;
                 Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']),
                 ['class'=>'btn-group', 'role'=>'group']
             ),
-            //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
-            //'footer'=>false
         ],
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
-            //['class' => 'kartik\grid\ActionColumn', 'template'=>'{view}'],
-            //'id',
             [
                 'attribute' => 'groupNamaKain',
                 'label' => 'Greige Group',
                 'value' => function($data){
-                    /* @var $data MstGreige*/
-                    return Html::a($data->group->nama_kain, ['/mst-greige-group/view', 'id'=>$data->group_id], ['target'=>'blank', 'title'=>'Detail Greige Group']);
+                    return Html::a($data->group->nama_kain, ['/mst-greige-group/view', 'id'=>$data->group_id], ['target'=>'blank']);
                 },
                 'format'=>'raw'
             ],
             [
                 'attribute' => 'nama_kain',
                 'value' => function($data){
-                    /* @var $data MstGreige*/
-                    return Html::a($data->nama_kain, ['view', 'id'=>$data->id], ['title'=>'Detail Greige']);
+                    return Html::a($data->nama_kain, ['view', 'id'=>$data->id]);
                 },
                 'format'=>'raw'
             ],
             'alias',
             'no_dok_referensi',
             'gap:decimal',
-            //'created_at',
-            //'created_by',
-            //'updated_at',
-            //'updated_by',
             'aktif:boolean',
             'stock:decimal',
-            // 'available',
             [
                 'attribute' => 'available',
                 'value' => function($data){
-                    /* @var $data MstGreige*/
-                    return Html::a($data->available, ['view', 'id'=>$data->id], ['target'=>'blank', 'title'=>'Detail Greige Group']);
+                    return $data->available;
                 },
-                'format'=>'raw'
+                'format'=>'decimal'
             ],
             'booked_wo',
             'booked_opfp',
             'booked:decimal',
             'stock_pfp:decimal',
             'available_pfp:decimal',
-            'booked_pfp:decimal'
+            'booked_pfp:decimal',
+            [
+                'attribute' => 'status_weaving',
+                'label' => 'Status Weaving',
+                'value' => function($data) {
+                    return $data->getStatusWeavingLabel();
+                },
+                'filter' => MstGreige::getStatusWeavingList(),
+                'format' => 'raw',
+            ],
+            [
+                'class' => 'kartik\grid\ActionColumn',
+                'template' => '{update-weaving}',
+                'buttons' => [
+                    'update-weaving' => function($url, $model, $key){
+                        return Html::a('<i class="glyphicon glyphicon-move"></i>', '#', [
+                            'class' => 'btn btn-xs btn-primary',
+                            'title' => 'Edit Status Weaving',
+                            'onclick' => "
+                                $('#modal-weaving').modal('show')
+                                    .find('#modalContent')
+                                    .load('".\yii\helpers\Url::to(['update-weaving', 'id' => $model->id])."');
+                                return false;
+                            ",
+                        ]);
+                    },
+                ],
+            ],
         ],
     ]); ?>
+
+    <?php Pjax::end(); ?>
+
 </div>
+
+<?php
+// Modal untuk edit status_weaving
+Modal::begin([
+    'id' => 'modal-weaving',
+    'size' => 'modal-md',
+]);
+
+echo "<div class='modal-header'>
+        <button type='button' class='close' data-dismiss='modal'>&times;</button>
+        <h4 class='modal-title'>Edit Status Weaving</h4>
+      </div>";
+
+echo "<div id='modalContent'></div>";
+
+Modal::end();
+?>

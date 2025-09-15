@@ -25,14 +25,14 @@ $formatter = Yii::$app->formatter;
         <?= Html::a('Buat Baru', ['create'], ['class' => 'btn btn-default']) ?>
 
         <?php if($model->status == $model::STATUS_DRAFT):?>
-            <?= Html::a('Delete', ['delete', 'id' => $model->id], [
+        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'data' => [
                     'confirm' => 'Are you sure you want to delete this item?',
                     'method' => 'post',
                 ],
             ]) ?>
-            <?= Html::a('Posting', ['posting', 'id' => $model->id], [
+        <?= Html::a('Posting', ['posting', 'id' => $model->id], [
                 'class' => 'btn btn-info',
                 'data' => [
                     'confirm' => 'Anda yakin akan memposting item ini?',
@@ -40,7 +40,7 @@ $formatter = Yii::$app->formatter;
                 ],
             ]) ?>
 
-            <?php
+        <?php
             if (!$model->no_limit_item){
                 echo Html::a('Set No Limit Item', ['set-unlimit-item', 'id' => $model->id], [
                     'class' => 'btn btn-warning',
@@ -60,6 +60,29 @@ $formatter = Yii::$app->formatter;
             }
             ?>
         <?php endif;?>
+
+        <?php if(in_array($model->status, [$model::STATUS_DRAFT, $model::STATUS_POSTED, $model::STATUS_DELIVERED])):?>
+        <?= Html::a('Edit Nomor Kartu',
+        ['trn-kartu-proses-pfp/edit-nomor-kartu', 'id'=>$model->id],
+        [
+            'class'=>'btn btn-primary',
+            'data-toggle'=>'ajaxModal',
+            'data-target'=>'#kartuProsesPfpModalNomor'
+        ]) ?>
+
+    <div class="modal fade" id="kartuProsesPfpModalNomor" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Edit Nomor Kartu</h4>
+                    <button type="button" class="close" data-dismiss="modal"
+                        aria-label="Close"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">Loading...</div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
     </p>
 
     <?php echo $this->render('child/detail', ['model' => $model]);?>
@@ -87,3 +110,24 @@ echo AjaxModal::widget([
     'size' => 'modal-lg',
     'header' => '<h4 class="modal-title">...</h4>',
 ]);
+
+?>
+
+<?php
+$js = <<<JS
+$(document).on('click', '[data-toggle="ajaxModal"]', function (e) {
+    e.preventDefault();
+    var target = $(this).data('target');
+    var url = $(this).attr('href');
+    var modal = $(target);
+
+    modal.find('.modal-body').html('<div class="p-3">Loading...</div>');
+    modal.modal('show');
+
+    $.get(url, function (data) {
+        modal.find('.modal-body').html(data);
+    });
+});
+JS;
+$this->registerJs($js);
+?>
