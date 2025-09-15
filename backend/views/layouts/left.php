@@ -346,6 +346,25 @@ $moduleId = $controller->module->id;
                 ],
             ],
             [
+                'label' => 'GUDANG STOCK OPNAME',
+                'icon' => 'bars',
+                'url' => '#',
+                'items' => [
+                    [
+                        'label' => 'Record Stock Opname', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && $actionId=='index'
+                    ],
+                    [
+                        'label' => 'Stock Opname Keseluruhan', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/stock-keseluruhan'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && $actionId=='get-stock-keseluruhan'
+                    ],
+                    [
+                        'label' => 'Stock Opname Keluar', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/stock-keluar'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && $actionId=='get-stock-keluar'
+                    ],
+                ],
+            ],
+            [
                 'label' => 'GUDANG INSPECT',
                 'icon' => 'bars',
                 'url' => '#',

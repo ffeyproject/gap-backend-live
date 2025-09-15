@@ -169,6 +169,23 @@ class MstGreige extends \yii\db\ActiveRecord
         return $total;
     }
 
+    public function getTrnGudangStockOpnamePosted()
+    {
+        return $this->hasMany(TrnGudangStockOpname::className(), ['greige_id' => 'id'])->where(['status' => TrnGudangStockOpname::STATUS_POSTED]);
+    }
+
+
+    public function getTotalPanjangMGudangStockOpname()
+    {
+        $total = 0;
+        foreach ($this->trnGudangStockOpnamePosted as $tso) {
+            foreach ($tso->trnGudangStockOpnameItemsNotOut as $item) {
+                $total += $item->panjang_m;
+            }
+        }
+        return $total;
+    }
+
     public function addBackToStock($jumlah)
     {
         $this->stock = (float)$this->stock + (float)$jumlah;
