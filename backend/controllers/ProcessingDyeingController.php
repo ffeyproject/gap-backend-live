@@ -5,6 +5,7 @@ use backend\models\form\CatatanProsesForm;
 use backend\models\form\HasilTesGosokForm;
 use common\models\ar\KartuProcessDyeingProcess;
 use common\models\ar\KartuProcessDyeingProcessSearch;
+use common\models\ar\MstGreige;
 use common\models\ar\MstProcessDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnKartuProsesPfpItem;
@@ -16,6 +17,7 @@ use Yii;
 use common\models\ar\TrnKartuProsesDyeing;
 use common\models\ar\TrnKartuProsesPfp;
 use common\models\ar\TrnKartuProsesDyeingSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Html;
 use yii\helpers\Json;
@@ -86,12 +88,12 @@ class ProcessingDyeingController extends Controller
      */
     public function actionView($id)
     {
-        /*Yii::$app->session->setFlash('info',
-            '<ul>
-<li>Pembatalan hanya diizinkan jika belum ada proses yang dimulai.</li>
-<li>Jika dibatalkan, Semua roll dikembalikan statusnya menjadi valid agar bisa digunakan lagi oleh kartu proses yang lain.</li>
-</ul>'
-        );*/
+                /*Yii::$app->session->setFlash('info',
+                    '<ul>
+        <li>Pembatalan hanya diizinkan jika belum ada proses yang dimulai.</li>
+        <li>Jika dibatalkan, Semua roll dikembalikan statusnya menjadi valid agar bisa digunakan lagi oleh kartu proses yang lain.</li>
+        </ul>'
+                );*/
 
         $model = $this->findModel($id);
 
@@ -837,45 +839,192 @@ class ProcessingDyeingController extends Controller
         throw new ForbiddenHttpException('Not allowed');
     }
 
+    // public function actionKembaliStock($id)
+    // {
+    //     $model = $this->findModel($id);
+
+    //     $transaction = Yii::$app->db->beginTransaction();
+    //     try {
+    //         // update status kartu proses jadi BATAL
+    //         $model->status = $model::STATUS_BATAL;
+    //         $model->save(false, ['status']);
+
+    //         // rollback stok greige
+    //         $totalLength = 0;
+    //         foreach ($model->trnKartuProsesDyeingItems as $item) {
+    //             $stock = $item->stock;
+    //             if ($stock) {
+    //                 // panggil rollback, tanpa blokir "sudah proses"
+    //                 $stock->rollbackToValid();
+
+    //                 // update note
+    //                 $stock->note = 'dikembalikan processing dari NK : ' . $model->nomor_kartu;
+    //                 $stock->save(false, ['note']);
+                    
+    //                 $totalLength += $stock->panjang_m;
+    //             }
+    //         }
+
+    //         // update mst greige (stock & available)
+    //         $mstGreige = $model->wo->greige;
+    //         if ($mstGreige) {
+    //             $mstGreige->addBackToStock($totalLength);
+    //         }
+
+    //         $transaction->commit();
+    //         Yii::$app->session->setFlash('success', 'Kartu proses berhasil dibatalkan. Stok greige sudah dikembalikan.');
+    //     } catch (\Throwable $e) {
+    //         $transaction->rollBack();
+    //         Yii::$app->session->setFlash('error', 'Gagal membatalkan kartu proses: '.$e->getMessage());
+    //     }
+
+    //     return $this->redirect(['view', 'id' => $model->id]);
+    // }
+
     public function actionKembaliStock($id)
     {
         $model = $this->findModel($id);
 
+        // Cek apakah sudah ada proses "Buka Greige"
+        $sudahBukaGreige = KartuProcessDyeingProcess::find()
+            ->where(['kartu_process_id' => $model->id, 'process_id' => 1])
+            ->exists();
+
+        if ($sudahBukaGreige) {
+            Yii::$app->session->setFlash('error', 'Maaf, Kartu Proses ini sudah di Buka Greige.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            // update status kartu proses jadi BATAL
+            // 1. Update status kartu proses menjadi BATAL
             $model->status = $model::STATUS_BATAL;
             $model->save(false, ['status']);
 
-            // rollback stok greige
-            $totalLength = 0;
-            foreach ($model->trnKartuProsesDyeingItems as $item) {
-                $stock = $item->stock;
-                if ($stock) {
-                    // panggil rollback, tanpa blokir "sudah proses"
-                    $stock->rollbackToValid();
+            $trnStockGreigeIds = [];
 
-                    // update note
-                    $stock->note = 'dikembalikan processing dari NK : ' . $model->nomor_kartu;
-                    $stock->save(false, ['note']);
-                    
-                    $totalLength += $stock->panjang_m;
+            // 2. Loop semua item kartu proses
+            foreach ($model->trnKartuProsesDyeingItems as $item) {
+                $stockItem = $item->stock; // relasi (bisa TrnStockGreigeOpname, TrnStockGreige, atau null)
+
+                // Tentukan greige_id
+                $greigeId = $stockItem->greige_id ?? $item->greige_id ?? null;
+                if ($greigeId === null) {
+                    continue;
+                }
+
+                $mstGreige = MstGreige::findOne($greigeId);
+                if ($mstGreige === null) {
+                    continue;
+                }
+
+                // === LOGIKA PEMBEDAAN ===
+                if ($stockItem instanceof \common\models\ar\TrnStockGreigeOpname) {
+                    // ✅ Sudah ada di opname
+                    $mstGreige->addBackToStockOpname($stockItem->panjang_m);
+
+                    // update status + note opname
+                    $stockItem->status = TrnStockGreigeOpname::STATUS_VALID;
+                    $stockItem->note   = 'Dikembalikan processing dari NK : ' . $model->nomor_kartu;
+                    $stockItem->save(false, ['status','note']);
+
+                    // ambil FK ke TrnStockGreige
+                    if ($stockItem->stock_greige_id) {
+                        $trnStockGreigeIds[] = $stockItem->stock_greige_id;
+                    }
+
+                } elseif ($stockItem instanceof \common\models\ar\TrnStockGreige) {
+                    // ✅ Hanya ada di stock greige biasa
+                    $mstGreige->addBackToStock($item->panjang_m);
+
+                    // update note di stock
+                    $stockItem->note = 'Dikembalikan processing dari NK : ' . $model->nomor_kartu;
+                    $stockItem->save(false, ['note']);
+
+                    $trnStockGreigeIds[] = $stockItem->id;
+
+                } else {
+                    // ✅ Benar-benar tidak ada relasi (stockItem null)
+                    $mstGreige->addBackToStock($item->panjang_m);
                 }
             }
 
-            // update mst greige (stock & available)
-            $mstGreige = $model->wo->greige;
-            if ($mstGreige) {
-                $mstGreige->addBackToStock($totalLength);
+            // 3. Update status semua TrnStockGreige yang dikembalikan
+            if (!empty($trnStockGreigeIds)) {
+                TrnStockGreige::updateAll(
+                    [
+                        'status' => TrnStockGreige::STATUS_VALID,
+                        'note'   => 'Dikembalikan dari NK : ' . $model->nomor_kartu,
+                    ],
+                    ['id' => $trnStockGreigeIds]
+                );
             }
 
             $transaction->commit();
             Yii::$app->session->setFlash('success', 'Kartu proses berhasil dibatalkan. Stok greige sudah dikembalikan.');
         } catch (\Throwable $e) {
             $transaction->rollBack();
-            Yii::$app->session->setFlash('error', 'Gagal membatalkan kartu proses: '.$e->getMessage());
+            Yii::$app->session->setFlash('error', 'Gagal membatalkan kartu proses: ' . $e->getMessage());
         }
 
         return $this->redirect(['view', 'id' => $model->id]);
     }
+
+
+
+
+
+
+    public function actionDuplicateBulk()
+    {
+        $ids = Yii::$app->request->post('ids', []);
+        if (empty($ids)) {
+            Yii::$app->session->setFlash('error', 'Tidak ada data yang dipilih.');
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+        }
+
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+        try {
+            $count = 0;
+            $targetColumns = array_keys(TrnStockGreige::getTableSchema()->columns);
+            $exclude = ['id', 'created_at', 'updated_at', 'updated_by'];
+
+            foreach ($ids as $id) {
+                $opname = TrnStockGreigeOpname::findOne($id);
+                if (!$opname) continue;
+
+                $data = array_intersect_key($opname->attributes, array_flip($targetColumns));
+                foreach ($exclude as $ex) {
+                    unset($data[$ex]);
+                }
+                $data['created_at'] = time();
+                $data['created_by'] = Yii::$app->user->id ?? null;
+
+                $new = new TrnStockGreige();
+                $new->setAttributes($data, false);
+                if (!$new->save(false)) {
+                    throw new \Exception('Gagal menyimpan data untuk opname id: ' . $id);
+                }
+                $count++;
+            }
+
+            $transaction->commit();
+
+            // ✅ gunakan setFlash dengan format seperti contohmu
+            Yii::$app->session->setFlash('success', "$count data berhasil diduplikasi ke TrnStockGreige.");
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::error("Error duplicate-bulk: " . $e->getMessage(), __METHOD__);
+
+            Yii::$app->session->setFlash(
+                'error',
+                'Terjadi error saat proses duplikasi: ' . $e->getMessage()
+            );
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+        }
+    }
+
 }

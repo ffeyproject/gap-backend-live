@@ -156,9 +156,12 @@ class TrnKartuProsesPfpController extends Controller
              * Periksa berapa banyak Order PFP yang sudah dibuat kartu prosesnya
              * kalau sudah mencukupi, jangan ijinkan pembuatan ini
             */
-            $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()->count('id');
-            if($jumlahKartuProses >= $orderPfp->qty){
-                $model->addError('order_pfp_id', 'Order PFP ini sudah tercukupi kartu proses nya, sudah dibuat sebanyak '.$jumlahKartuProses.' kartu proses.');
+            $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()
+                ->andWhere(['!=', 'status', TrnKartuProsesPfp::STATUS_GAGAL_PROSES])
+                ->count('id');
+
+            if ($jumlahKartuProses >= $orderPfp->qty) {
+                $model->addError('order_pfp_id', 'Order PFP ini sudah tercukupi kartu prosesnya, sudah dibuat sebanyak '.$jumlahKartuProses.' kartu proses.');
                 return $this->render('create', ['model' => $model]);
             }
 
@@ -491,6 +494,14 @@ class TrnKartuProsesPfpController extends Controller
                     'html' => $this->renderAjax('_form_nomor_kartu', ['model' => $model]),
                 ]);
             }
+
+            // ==== update field no ====
+        $namaMotif = $model->greige->nama_kain ?? ''; // atau relasi lain sesuai model kamu
+        $model->no = $namaMotif . '/' . $model->nomor_kartu;
+        // ==== end update field no ====
+
+        // simpan field nomor_kartu dan no sekaligus
+        $model->save(false, ['nomor_kartu','no']);
 
             // simpan
             $model->save(false, ['nomor_kartu']);

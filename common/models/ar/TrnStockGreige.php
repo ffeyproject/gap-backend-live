@@ -19,7 +19,7 @@ use yii\behaviors\TimestampBehavior;
  * @property string $lot_pakan
  * @property string $no_set_lusi
  * @property float $panjang_m kuantiti sesuai degan satuan pada greige group (meter, yard, kg, pcs, dll..)
- * @property int $status_tsd 1=sm(salur muda),2=st(salur tua),3=sa(salur abnormal)
+ * @property int $status_tsd 1=sm(salur muda),2=st(salur tua),3=sa(salur abnormal),7=Putih
  * @property string $no_document
  * @property string $pengirim
  * @property string $mengetahui
@@ -104,7 +104,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         ];
     }
 
-    const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;
+    const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;const STATUS_TSD_PUTIH = 7;
     /**
      * @return array
      */
@@ -115,8 +115,10 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             self::STATUS_TSD_SA => 'Salur Abnormal',
             self::STATUS_TSD_NORMAL => 'Normal',
             self::STATUS_TSD_LAIN_LAIN => 'Lain-lain',
-            self::STATUS_TSD_TSD=>'TSD'
+            self::STATUS_TSD_TSD=>'TSD',
+            self::STATUS_TSD_PUTIH => 'Putih'
         ];
+        
     }
 
     const STATUS_PENDING = 1;
@@ -192,7 +194,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             ['pfp_jenis_gudang', 'in', 'range' => [self::PFP_JG_ONE, self::PFP_JG_TWO]],
 
             ['status_tsd', 'default', 'value'=>self::STATUS_TSD_SM],
-            ['status_tsd', 'in', 'range' => [self::STATUS_TSD_SM, self::STATUS_TSD_ST, self::STATUS_TSD_SA, self::STATUS_TSD_NORMAL, self::STATUS_TSD_LAIN_LAIN, self::STATUS_TSD_TSD]],
+            ['status_tsd', 'in', 'range' => [self::STATUS_TSD_SM, self::STATUS_TSD_ST, self::STATUS_TSD_SA, self::STATUS_TSD_NORMAL, self::STATUS_TSD_LAIN_LAIN, self::STATUS_TSD_TSD, self::STATUS_TSD_PUTIH]],
 
             ['keputusan_qc', 'in', 'range' => [TrnReturBuyer::QC_DRAFT, TrnReturBuyer::QC_GOOD, TrnReturBuyer::QC_REPAIR, TrnReturBuyer::QC_REJECT]],
 
@@ -338,6 +340,16 @@ class TrnStockGreige extends \yii\db\ActiveRecord
     {
         $this->status = self::STATUS_VALID;
         return $this->save(false, ['status']);
+    }
+
+    public function getOpname()
+    {
+        return $this->hasOne(TrnStockGreigeOpname::class, ['stock_greige_id' => 'id']);
+    }
+
+    public function getIsDuplicated()
+    {
+        return $this->getOpname()->exists();
     }
 
 }

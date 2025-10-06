@@ -62,7 +62,7 @@ class MstGreige extends \yii\db\ActiveRecord
             [['group_id', 'nama_kain'], 'required'],
             [['group_id', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['group_id', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp', 'status_weaving'], 'number'],
+            [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp', 'status_weaving', 'stock_opname'], 'number'],
             [['gap', 'stock', 'available', 'booked_wo', 'stock_pfp', 'stock_wip', 'stock_ef', 'booked', 'booked_pfp', 'booked_wip', 'booked_ef','booked_opfp','available_pfp'], 'default', 'value' => 0],
             [['aktif'], 'boolean'],
             [['nama_kain', 'alias', 'no_dok_referensi'], 'string', 'max' => 255],
@@ -100,6 +100,7 @@ class MstGreige extends \yii\db\ActiveRecord
             'booked_opfp' => 'Booked Order PFP',
             'available_pfp' => 'Available PFP',
             'status_weaving' => 'Status Weaving',
+            'stock_opname' => 'Stock Opname',
         ];
     }
 
@@ -193,6 +194,15 @@ class MstGreige extends \yii\db\ActiveRecord
         $this->available = (float)$this->available + (float)$jumlah;
 
         return $this->save(false, ['stock', 'available']);
+    }
+
+    public function addBackToStockOpname($jumlah)
+    {
+        $this->stock = (float)$this->stock + (float)$jumlah;
+        $this->available = (float)$this->available + (float)$jumlah;
+        $this->stock_opname = (float)$this->stock_opname + (float)$jumlah;
+
+        return $this->save(false, ['stock', 'available', 'stock_opname']);
     }
 
     /**

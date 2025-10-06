@@ -17,9 +17,9 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
 
 <div class="trn-order-pfp-view">
     <?= $this->render('_view-header', ['model'=>$model])?>
-    
+
     <?php if($model->status == $model::STATUS_APPROVED):?>
-            <?=     
+    <?=     
                 Html::a('Batalkan', ['batal', 'id' => $model->id], [
                         'class' => 'btn btn-warning',
                         'title' => 'Batalkan Order PFP: '.$model->id,
@@ -27,6 +27,16 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     ])
                 ;
             ?>
+    <?= Html::a(
+        'Pilih Handling',
+        ['trn-order-pfp/select-handling', 'id' => $model->id],
+        [
+            'class' => 'btn btn-primary ajaxModal',
+            'title' => 'Pilih Handling untuk Order PFP: '.$model->id,
+            'data-target' => '#trnOrderPfpModal',
+            'data-toggle' => 'modal',
+        ]
+    ) ?>
     <?php endif;?>
 
     <?php
@@ -40,14 +50,15 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         echo '</p>';
     }
     ?>
-    
+
     <?= $this->render('_view-content', ['model'=>$model])?>
+
 </div>
 
 <?php
 echo AjaxModal::widget([
     'id' => 'trnOrderPfpModal',
     'size' => 'modal-lg',
-    'header' => '<h4 class="modal-title">...</h4>',
+    'header' => '<h4 class="modal-title">Update</h4>',
 ]);
 $this->registerJs($this->renderFile(__DIR__.'/js/view.js'), View::POS_END);

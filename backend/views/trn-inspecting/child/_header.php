@@ -20,6 +20,7 @@ use yii\widgets\DetailView;
                     'attributes' => [
                         'no',
                         'date:date',
+                        'tanggal_inspeksi:date',
                         [
                             'label'=>'No. WO',
                             'value'=>Html::a($model->wo->no, ['trn-wo/view', 'id'=>$model->wo->id], ['title'=>'Detail WO', 'target'=>'_blank']).
@@ -53,7 +54,15 @@ use yii\widgets\DetailView;
                 <?= DetailView::widget([
                     'model' => $model,
                     'attributes' => [
-                        'tanggal_inspeksi:date',
+                        [
+                            'attribute'=>'kombinasi',
+                            'value'=>$model->kombinasi. ' '. Html::a(' ganti', ['ganti-warna', 'id' => $model->id], [
+                                'class' => 'label label-default',
+                                'onclick' => 'gantiWarna(event);',
+                                'title' => 'Ganti Warna Kartu Proses: '.$model->id
+                            ]),
+                            'format'=>'raw'
+                        ],
                         'no_lot',
                         [
                             'label'=>'Motif',
@@ -94,15 +103,7 @@ use yii\widgets\DetailView;
                 <?= DetailView::widget([
                     'model' => $model,
                     'attributes' => [
-                        [
-                            'attribute'=>'kombinasi',
-                            'value'=>$model->kombinasi. ' '. Html::a(' ganti', ['ganti-warna', 'id' => $model->id], [
-                                'class' => 'label label-default',
-                                'onclick' => 'gantiWarna(event);',
-                                'title' => 'Ganti Warna Kartu Proses: '.$model->id
-                            ]),
-                            'format'=>'raw'
-                        ],
+                        
                         /*[
                             'label'=>'Stamping',
                             'value'=>Html::a($mo->face_stamping, ['trn-mo/view', 'id'=>$cust->id], ['title'=>'Detail MO', 'target'=>'_blank']),
@@ -123,10 +124,6 @@ use yii\widgets\DetailView;
                             'value'=>TrnInspecting::statusOptions()[$model->status],
                         ],
                         [
-                            'attribute'=>'Jenis Inspek',
-                            'value'=>TrnInspecting::jenisInspeksiOptions()[$model->jenis_inspek],
-                        ],
-                        [
                             'attribute'=>'Kode Defect',
                             'value'=>$model->defect,
                             'format'=>'raw'
@@ -135,6 +132,12 @@ use yii\widgets\DetailView;
                         [
                             'label'=>'Created By',
                             'value'=>$model->createdBy->full_name,
+                            'format'=>'raw'
+                        ],
+                        'updated_at:datetime',
+                        [
+                            'label'=>'Updated By',
+                            'value'=>$model->updatedBy->full_name,
                             'format'=>'raw'
                         ],
                     ],

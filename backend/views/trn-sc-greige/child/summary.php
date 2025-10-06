@@ -15,18 +15,19 @@ use common\models\ar\TrnKirimBuyerHeader;
     <div class="box-body">
         <table class="table table-bordered table-striped table-hover">
             <thead>
-            <tr>
-                <th>#</th>
-                <th>NOMOR MO</th>
-                <th>TANGGAL MO</th>
-                <th>QTY BATCH</th>
-                <th>QTY UNIT</th>
-                <th>QTY FINISH</th>
-                <th>QTY FINISH (Y)</th>
-            </tr>
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>NOMOR MO</th>
+                    <th>TANGGAL MO</th>
+                    <th>QTY BATCH</th>
+                    <th>QTY UNIT</th>
+                    <th>QTY FINISH</th>
+                    <th>QTY FINISH (Y)</th>
+                </tr>
             </thead>
             <tbody>
-            <?php
+                <?php
             $moColorQty = 0;
             $moColorQtyBatchToUnit = 0;
             $moColorQtyFinish = 0;
@@ -34,7 +35,9 @@ use common\models\ar\TrnKirimBuyerHeader;
             foreach ($model->trnMosAktif as $i=>$mo):?>
                 <tr>
                     <td><?=$i+1?></td>
-                    <td><?=$mo->no?></td>
+                    <td><?=$mo->id?></td>
+                    <td><?=$mo->no?>
+                    </td>
                     <td><?=$formatter->asDate($mo->date)?></td>
                     <td>
                         <?php
@@ -65,7 +68,7 @@ use common\models\ar\TrnKirimBuyerHeader;
                         ?>
                     </td>
                 </tr>
-            <?php endforeach;?>
+                <?php endforeach;?>
             </tbody>
         </table>
     </div>
@@ -78,19 +81,19 @@ use common\models\ar\TrnKirimBuyerHeader;
     <div class="box-body">
         <table class="table table-bordered table-striped table-hover">
             <thead>
-            <tr>
-                <th>#</th>
-                <th>NOMOR MO</th>
-                <th>NOMOR WO</th>
-                <th>TANGGAL WO</th>
-                <th>QTY BATCH</th>
-                <th>QTY UNIT</th>
-                <th>QTY FINISH</th>
-                <th>QTY FINISH (Y)</th>
-            </tr>
+                <tr>
+                    <th>#</th>
+                    <th>ID MO</th>
+                    <th>NOMOR WO</th>
+                    <th>TANGGAL WO</th>
+                    <th>QTY BATCH</th>
+                    <th>QTY UNIT</th>
+                    <th>QTY FINISH</th>
+                    <th>QTY FINISH (Y)</th>
+                </tr>
             </thead>
             <tbody>
-            <?php
+                <?php
             $woColorQty = 0;
             $woColorQtyBatchToUnit = 0;
             $woColorQtyFinish = 0;
@@ -98,7 +101,7 @@ use common\models\ar\TrnKirimBuyerHeader;
             foreach ($model->trnWos as $i=>$wo):?>
                 <tr>
                     <td><?=$i+1?></td>
-                    <td><?=$wo->mo->no?></td>
+                    <td><?=$wo->mo->id?></td>
                     <td><?=$wo->no?></td>
                     <td><?=$formatter->asDate($wo->date)?></td>
                     <td>
@@ -130,7 +133,7 @@ use common\models\ar\TrnKirimBuyerHeader;
                         ?>
                     </td>
                 </tr>
-            <?php endforeach;?>
+                <?php endforeach;?>
             </tbody>
         </table>
     </div>
@@ -143,17 +146,17 @@ use common\models\ar\TrnKirimBuyerHeader;
     <div class="box-body">
         <table class="table table-bordered table-striped table-hover">
             <thead>
-            <tr>
-                <th>#</th>
-                <th>NOMOR PENGIRIMAN</th>
-                <th>TANGGAL PENGIRIMAN</th>
-                <th>QTY</th>
-                <th>QTY (M)</th>
-                <th>QTY (Y)</th>
-            </tr>
+                <tr>
+                    <th>#</th>
+                    <th>NOMOR PENGIRIMAN</th>
+                    <th>TANGGAL PENGIRIMAN</th>
+                    <th>QTY</th>
+                    <th>QTY (M)</th>
+                    <th>QTY (Y)</th>
+                </tr>
             </thead>
             <tbody>
-            <?php
+                <?php
             $qtyKirim = 0;
             $qtyKirimToMeter = 0;
             $qtyKirimToYard = 0;
@@ -185,7 +188,7 @@ use common\models\ar\TrnKirimBuyerHeader;
                         ?>
                     </td>
                 </tr>
-            <?php endforeach;?>
+                <?php endforeach;?>
             </tbody>
         </table>
     </div>
@@ -193,40 +196,40 @@ use common\models\ar\TrnKirimBuyerHeader;
 
 <table class="table table-bordered table-striped table-hover">
     <thead>
-    <tr>
-        <th colspan="4">MO</th>
-        <th colspan="4">WO</th>
-        <th colspan="3">KIRIM</th>
-    </tr>
-    <tr>
-        <th>BATCH</th>
-        <th>GREIGE</th>
-        <th>FINISH</th>
-        <th>FINISH (Y)</th>
-        <th>BATCH</th>
-        <th>GREIGE</th>
-        <th>FINISH</th>
-        <th>FINISH (Y)</th>
-        <th>GREIGE</th>
-        <th>GREIGE (M)</th>
-        <th>GREIGE (Y)</th>
-    </tr>
+        <tr>
+            <th colspan="4">MO</th>
+            <th colspan="4">WO</th>
+            <th colspan="3">KIRIM</th>
+        </tr>
+        <tr>
+            <th>BATCH</th>
+            <th>GREIGE</th>
+            <th>FINISH</th>
+            <th>FINISH (Y)</th>
+            <th>BATCH</th>
+            <th>GREIGE</th>
+            <th>FINISH</th>
+            <th>FINISH (Y)</th>
+            <th>GREIGE</th>
+            <th>GREIGE (M)</th>
+            <th>GREIGE (Y)</th>
+        </tr>
     </thead>
     <tbody>
-    <tr>
-        <td><?=$formatter->asDecimal($moColorQty)?></td>
-        <td><?=$formatter->asDecimal($moColorQtyBatchToUnit)?></td>
-        <td><?=$formatter->asDecimal($moColorQtyFinish)?></td>
-        <td><?=$formatter->asDecimal($moColorQtyFinishToYard)?></td>
+        <tr>
+            <td><?=$formatter->asDecimal($moColorQty)?></td>
+            <td><?=$formatter->asDecimal($moColorQtyBatchToUnit)?></td>
+            <td><?=$formatter->asDecimal($moColorQtyFinish)?></td>
+            <td><?=$formatter->asDecimal($moColorQtyFinishToYard)?></td>
 
-        <td><?=$formatter->asDecimal($woColorQty)?></td>
-        <td><?=$formatter->asDecimal($woColorQtyBatchToUnit)?></td>
-        <td><?=$formatter->asDecimal($woColorQtyFinish)?></td>
-        <td><?=$formatter->asDecimal($woColorQtyFinishToYard)?></td>
+            <td><?=$formatter->asDecimal($woColorQty)?></td>
+            <td><?=$formatter->asDecimal($woColorQtyBatchToUnit)?></td>
+            <td><?=$formatter->asDecimal($woColorQtyFinish)?></td>
+            <td><?=$formatter->asDecimal($woColorQtyFinishToYard)?></td>
 
-        <td><?=$formatter->asDecimal($qtyKirim)?></td>
-        <td><?=$formatter->asDecimal($qtyKirimToMeter)?></td>
-        <td><?=$formatter->asDecimal($qtyKirimToYard)?></td>
-    </tr>
+            <td><?=$formatter->asDecimal($qtyKirim)?></td>
+            <td><?=$formatter->asDecimal($qtyKirimToMeter)?></td>
+            <td><?=$formatter->asDecimal($qtyKirimToYard)?></td>
+        </tr>
     </tbody>
 </table>

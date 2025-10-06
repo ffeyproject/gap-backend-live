@@ -7,6 +7,7 @@ use common\models\ar\TrnStockGreige;
 use Yii;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnKartuProsesDyeingItemSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use common\models\search\TrnStockGreigeSearch;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
@@ -215,21 +216,78 @@ class TrnKartuProsesDyeingItemController extends Controller
      * @throws \Throwable
      * @throws \yii\db\StaleObjectException
      */
+    // public function actionDelete($id)
+    // {
+    //     $model = $this->findModel($id);
+
+    //     $kartuProses = $model->kartuProcess;
+    //     if($kartuProses->status != $kartuProses::STATUS_DRAFT){
+    //         Yii::$app->session->setFlash('error', 'Status Kartu Proses ini tidak valid untuk dihapus.');
+    //         return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id'=>$kartuProses->id]);
+    //     }
+
+    //     $model->delete();
+
+    //     Yii::$app->session->setFlash('success', 'Item berhasil dihapus.');
+    //     return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id'=>$kartuProses->id]);
+    // }
+
+
     public function actionDelete($id)
     {
-        $model = $this->findModel($id);
-
+        $model = $this->findModel($id); // TrnKartuProsesDyeingItem
         $kartuProses = $model->kartuProcess;
-        if($kartuProses->status != $kartuProses::STATUS_DRAFT){
+
+        if ($kartuProses->status != $kartuProses::STATUS_DRAFT) {
             Yii::$app->session->setFlash('error', 'Status Kartu Proses ini tidak valid untuk dihapus.');
-            return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id'=>$kartuProses->id]);
+            return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id' => $kartuProses->id]);
         }
 
-        $model->delete();
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            /** @var \common\models\ar\TrnStockGreige $stockItem */
+            $stockItem = $model->stock;
 
-        Yii::$app->session->setFlash('success', 'Item berhasil dihapus.');
-        return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id'=>$kartuProses->id]);
+            if ($stockItem !== null) {
+                // kembalikan status stock greige (sesuaikan konstanta jika beda)
+                $stockItem->status = $stockItem::STATUS_VALID;
+                if (!$stockItem->save(false, ['status'])) {
+                    throw new \Exception('Gagal mengubah status stock greige (ID: ' . $stockItem->id . ').');
+                }
+
+                // tambahkan kembali stock_opname di mst_greige
+                /** @var \common\models\ar\MstGreige $mstGreige */
+                $mstGreige = \common\models\ar\MstGreige::findOne($stockItem->greige_id);
+                if ($mstGreige !== null) {
+                    $newStockOpname = (float)$mstGreige->stock_opname + (float)$stockItem->panjang_m;
+                    Yii::$app->db->createCommand()->update(
+                        \common\models\ar\MstGreige::tableName(),
+                        ['stock_opname' => $newStockOpname],
+                        ['id' => $mstGreige->id]
+                    )->execute();
+                }
+
+                // ubah status TrnStockGreigeOpname yang terkait (sesuaikan konstanta jika berbeda)
+                \common\models\ar\TrnStockGreigeOpname::updateAll(
+                    ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_VALID],
+                    ['stock_greige_id' => $stockItem->id]
+                );
+            }
+
+            if ($model->delete() === false) {
+                throw new \Exception('Gagal menghapus item kartu proses.');
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Item berhasil dihapus dan stok dikembalikan.');
+            return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id' => $kartuProses->id]);
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', $e->getMessage());
+            return $this->redirect(['/trn-kartu-proses-dyeing/view', 'id' => $kartuProses->id]);
+        }
     }
+
 
     /**
      * Finds the TrnKartuProsesDyeingItem model based on its primary key value.
@@ -415,32 +473,71 @@ class TrnKartuProsesDyeingItemController extends Controller
             if ($model->save(false)) {
                 // Update stock lama
                 if ($oldStockId && $oldStockId != $model->stock_id) {
-                    $oldStock = \common\models\ar\TrnStockGreige::findOne($oldStockId);
+                    $oldStock = TrnStockGreige::findOne($oldStockId);
                     if ($oldStock) {
-                        $oldStock->status = \common\models\ar\TrnStockGreige::STATUS_VALID;
+                        $oldStock->status = TrnStockGreige::STATUS_VALID;
                         $oldStock->save(false);
+
+                        // Ubah juga status TrnStockGreigeOpname yang terkait menjadi VALID
+                        TrnStockGreigeOpname::updateAll(
+                            ['status' => TrnStockGreigeOpname::STATUS_VALID],
+                            ['stock_greige_id' => $oldStock->id]
+                        );
                     }
                 }
 
                 // Update stock baru
                 if ($model->stock_id) {
-                    $newStock = \common\models\ar\TrnStockGreige::findOne($model->stock_id);
+                    $newStock = TrnStockGreige::findOne($model->stock_id);
                     if ($newStock) {
-                        $newStock->status = \common\models\ar\TrnStockGreige::STATUS_ON_PROCESS_CARD;
+                        $newStock->status = TrnStockGreige::STATUS_ON_PROCESS_CARD;
                         $newStock->save(false);
+
+                         TrnStockGreigeOpname::updateAll(
+                            ['status' => TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+                            ['stock_greige_id' => $newStock->id] 
+                        );
                     }
                 }
 
-                // Update greige stock & available
+                // Update greige stock , available & Stock Opname
+                // $greige = $model->stock ? $model->stock->greige : null;
+                // if ($greige) {
+                //     $selisih = $model->panjang_m - $oldPanjang;
+                //     $greige->stock -= max($selisih, 0);
+                //     $greige->available -= max($selisih, 0);
+                //     $greige->stock_opname -= max($selisih, 0);
+                //     $greige->stock += max(-$selisih, 0);
+                //     $greige->available += max(-$selisih, 0);
+                //     $greige->stock_opname += max(-$selisih, 0);
+                    
+
+                //     if (!$greige->save(false, ['stock','available','stock_opname'])) {
+                //         throw new \Exception("Gagal update stock MstGreige: " . json_encode($greige->getErrors()));
+                //     }
+                // } else {
+                //     throw new \Exception("Relasi greige tidak ditemukan untuk stock ini.");
+                // }
+
+                // Update greige stock, available & stock_opname jika ada opname
                 $greige = $model->stock ? $model->stock->greige : null;
                 if ($greige) {
                     $selisih = $model->panjang_m - $oldPanjang;
-                    $greige->stock -= max($selisih, 0);
+
+                    // update stock & available (selalu jalan)
+                    $greige->stock     -= max($selisih, 0);
                     $greige->available -= max($selisih, 0);
-                    $greige->stock += max(-$selisih, 0);
+                    $greige->stock     += max(-$selisih, 0);
                     $greige->available += max(-$selisih, 0);
 
-                    if (!$greige->save(false, ['stock','available'])) {
+                    // cek opname via helper di model
+                    if (TrnStockGreigeOpname::adaOpnameUntuk($model->stock_id)) {
+                        // baru update stock_opname
+                        $greige->stock_opname -= max($selisih, 0);
+                        $greige->stock_opname += max(-$selisih, 0);
+                    }
+
+                    if (!$greige->save(false, ['stock','available','stock_opname'])) {
                         throw new \Exception("Gagal update stock MstGreige: " . json_encode($greige->getErrors()));
                     }
                 } else {

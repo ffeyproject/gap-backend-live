@@ -38,12 +38,18 @@ echo AjaxModal::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'id' => 'StockGreigeGrid',
+        'rowOptions' => function($model) {
+        /* @var $model \common\models\ar\TrnStockGreige */
+        return $model->isDuplicated 
+            ? ['style' => 'background-color:#fff3cd;']
+            : [];
+        },
         'responsiveWrap' => false,
         'pjax' => true,
         'panel' => [
-            'type' => 'default',
-            'before'=>Html::tag(
-                'div',
+        'type' => 'default',
+        'before'=>Html::tag(
+        'div',
                 Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).
                 Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']).
                 Html::a('<i class="glyphicon glyphicon-plus"></i> Bulk', ['create-dua'], ['class' => 'btn btn-info']).
@@ -56,11 +62,15 @@ echo AjaxModal::widget([
                     'class' => 'btn btn-default',
                     'onclick' => 'changeKetWeaving(event);',
                     'title' => 'Change Ket. Weaving Selected Items'
+                ]).
+                Html::a('<i class="glyphicon glyphicon-duplicate"></i> Duplikat Stock ke Stock Opname', ['duplicate-bulk'], [
+                    'class' => 'btn btn-primary',
+                    'onclick' => 'duplicateStock(event);',
+                    'title' => 'Duplikat Stock ke Stock Opname'
                 ]),
                 ['class'=>'btn-group', 'role'=>'group']
             ),
             'after'=>false,
-            //'footer'=>false
         ],
         'showPageSummary'=>true,
         'columns' => [
@@ -175,16 +185,13 @@ echo AjaxModal::widget([
             [
                 'attribute'=>'status',
                 'value'=>function($data){
-                    /* @var $data TrnStockGreige*/
-                    return $data::statusOptions()[$data->status];
+                    return $data::statusOptions()[$data->status] ?? $data->status;
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
-                    'data' => TrnStockGreige::statusOptions(),
+                    'data' => \common\models\ar\TrnStockGreige::statusOptions(),
                     'options' => ['placeholder' => '...'],
-                    'pluginOptions' => [
-                        'allowClear' => true
-                    ],
+                    'pluginOptions' => ['allowClear' => true],
                 ],
             ],
             [

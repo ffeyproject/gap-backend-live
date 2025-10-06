@@ -944,128 +944,252 @@ class AjaxController extends Controller
      * @return array
      * @throws NotFoundHttpException
      */
-    public function actionLookupKartuProsesStock($processId, $kartuProsesId, $greigeId, $asalGreige, $jenisGudang, $q){
+    // public function actionLookupKartuProsesStock($processId, $kartuProsesId, $greigeId, $asalGreige, $jenisGudang, $q){
+    //     Yii::$app->response->format = Response::FORMAT_JSON;
+
+    //     $dataPencarian = explode('*', $q);
+    //     $noDocument = isset($dataPencarian[0]) ? $dataPencarian[0] : null;
+    //     $qty = isset($dataPencarian[1]) ? $dataPencarian[1] : null;
+    //     $grade = isset($dataPencarian[2]) ? $dataPencarian[2] : null;
+    //     $lotLusi = isset($dataPencarian[3]) ? $dataPencarian[3] : null;
+    //     $lotPakan = isset($dataPencarian[4]) ? $dataPencarian[4] : null;
+    //     $ketWeaving = isset($dataPencarian[5]) ? $dataPencarian[5] : null;
+
+    //     $qStockOptionList = TrnStockGreige::find()
+    //         ->with('greige')
+    //         ->where(['status'=>TrnStockGreige::STATUS_VALID])
+    //         ->andWhere(['greige_id'=>$greigeId])
+    //         ->andWhere(['asal_greige'=>$asalGreige])
+    //         ->andWhere(['jenis_gudang'=>$jenisGudang])
+    //         ->andFilterWhere(['ilike', 'no_document', $noDocument])
+    //         ->andFilterWhere(['lot_lusi'=>$lotLusi])
+    //         ->andFilterWhere(['lot_pakan'=>$lotPakan])
+    //         ->andFilterWhere(['status_tsd'=>$ketWeaving])
+    //     ;
+
+    //     switch ($processId){
+    //         case TrnScGreige::PROCESS_DYEING:
+    //             $selectedItems = TrnKartuProsesDyeingItem::find()
+    //                 ->select(['id', 'stock_id'])
+    //                 ->where(['kartu_process_id'=>$kartuProsesId])
+    //                 ->asArray()
+    //                 ->all();
+    //             $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
+    //             if(!empty($selectedItemsIds)){
+    //                 $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+    //             }
+    //             break;
+    //         case TrnScGreige::PROCESS_PRINTING:
+    //             $selectedItems = TrnKartuProsesPrintingItem::find()
+    //                 ->select(['id', 'stock_id'])
+    //                 ->where(['kartu_process_id'=>$kartuProsesId])
+    //                 ->asArray()
+    //                 ->all();
+    //             $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
+    //             if(!empty($selectedItemsIds)){
+    //                 $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+    //             }
+    //             break;
+    //         case TrnScGreige::PROCESS_PFP:
+    //             $selectedItems = TrnKartuProsesPfpItem::find()
+    //                 ->select(['id', 'stock_id'])
+    //                 ->where(['kartu_process_id'=>$kartuProsesId])
+    //                 ->asArray()
+    //                 ->all();
+    //             $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
+    //             if(!empty($selectedItemsIds)){
+    //                 $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+    //             }
+    //             break;
+    //     }
+
+    //     if($qty > 0){
+    //         $qStockOptionList->andWhere(['panjang_m'=>$qty]);
+    //     }
+
+    //     switch ($grade){
+    //         case 'a':
+    //         case 'A':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_A]);
+    //             break;
+    //         case 'b':
+    //         case 'B':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_B]);
+    //             break;
+    //         case 'c':
+    //         case 'C':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_C]);
+    //             break;
+    //         case 'd':
+    //         case 'D':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_D]);
+    //             break;
+    //         case 'e':
+    //         case 'E':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_E]);
+    //             break;
+    //         case 'ng':
+    //         case 'NG':
+    //             $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_NG]);
+    //             break;
+    //         default:
+    //     }
+
+    //     $qStockOptionList->limit(20);
+
+    //     //$out = ['results' => ['id' => '', 'text' => '']];
+    //     $out = ['results'=>[]];
+    //     foreach ($qStockOptionList->asArray()->all() as $item) {
+    //         $panjang = Yii::$app->formatter->asDecimal($item['panjang_m']);
+
+    //         switch ($item['status_tsd']) {
+    //             case TrnStockGreige::STATUS_TSD_SM:
+    //             case TrnStockGreige::STATUS_TSD_SA:
+    //             case TrnStockGreige::STATUS_TSD_ST:
+    //                 $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9940;';
+    //                 break;
+    //             case TrnStockGreige::STATUS_TSD_TSD:
+    //                 $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9851;';
+    //                 break;
+    //             default:
+    //                 $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9737;';
+    //         }
+    //         $text = 'Greige: '.$item['greige']['nama_kain'].
+    //             ' | Grade: '.TrnStockGreige::gradeOptions()[$item['grade']].
+    //             ' | Lapak: '.$item['no_lapak'].
+    //             ' | Panjang: '.$panjang.'M | No Doc.: '.$item['no_document'].
+    //             ' | No. MC.: '.$item['no_set_lusi'].
+    //             ' | Lot Lusi: '.$item['lot_lusi'].
+    //             ' | Lot Pakan: '.$item['lot_pakan'].
+    //             $ketWv
+    //         ;
+    //         $out['results'][] = ['id'=>$item['id'], 'text'=>$text, 'data'=>$item];
+    //     }
+
+    //     return $out;
+    // }
+
+    public function actionLookupKartuProsesStock($processId, $kartuProsesId, $greigeId, $asalGreige, $jenisGudang, $q)
+    {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $dataPencarian = explode('*', $q);
-        $noDocument = isset($dataPencarian[0]) ? $dataPencarian[0] : null;
-        $qty = isset($dataPencarian[1]) ? $dataPencarian[1] : null;
-        $grade = isset($dataPencarian[2]) ? $dataPencarian[2] : null;
-        $lotLusi = isset($dataPencarian[3]) ? $dataPencarian[3] : null;
-        $lotPakan = isset($dataPencarian[4]) ? $dataPencarian[4] : null;
-        $ketWeaving = isset($dataPencarian[5]) ? $dataPencarian[5] : null;
+        $noDocument = $dataPencarian[0] ?? null;
+        $qty        = $dataPencarian[1] ?? null;
+        $grade      = $dataPencarian[2] ?? null;
+        $lotLusi    = $dataPencarian[3] ?? null;
+        $lotPakan   = $dataPencarian[4] ?? null;
+        $ketWeaving = $dataPencarian[5] ?? null;
 
         $qStockOptionList = TrnStockGreige::find()
             ->with('greige')
-            ->where(['status'=>TrnStockGreige::STATUS_VALID])
-            ->andWhere(['greige_id'=>$greigeId])
-            ->andWhere(['asal_greige'=>$asalGreige])
-            ->andWhere(['jenis_gudang'=>$jenisGudang])
+            ->where(['status' => TrnStockGreige::STATUS_VALID])
+            ->andWhere(['greige_id' => $greigeId])
+            ->andWhere(['asal_greige' => $asalGreige])
+            ->andWhere(['jenis_gudang' => $jenisGudang])
             ->andFilterWhere(['ilike', 'no_document', $noDocument])
-            ->andFilterWhere(['lot_lusi'=>$lotLusi])
-            ->andFilterWhere(['lot_pakan'=>$lotPakan])
-            ->andFilterWhere(['status_tsd'=>$ketWeaving])
-        ;
+            ->andFilterWhere(['lot_lusi' => $lotLusi])
+            ->andFilterWhere(['lot_pakan' => $lotPakan])
+            ->andFilterWhere(['status_tsd' => $ketWeaving]);
 
-        switch ($processId){
+        // Exclude stock yg sudah dipakai
+        switch ($processId) {
             case TrnScGreige::PROCESS_DYEING:
                 $selectedItems = TrnKartuProsesDyeingItem::find()
-                    ->select(['id', 'stock_id'])
-                    ->where(['kartu_process_id'=>$kartuProsesId])
-                    ->asArray()
-                    ->all();
-                $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
-                if(!empty($selectedItemsIds)){
-                    $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+                    ->select(['stock_id'])
+                    ->where(['kartu_process_id' => $kartuProsesId])
+                    ->column();
+                if (!empty($selectedItems)) {
+                    $qStockOptionList->andWhere(['not in', 'id', $selectedItems]);
                 }
                 break;
+
             case TrnScGreige::PROCESS_PRINTING:
                 $selectedItems = TrnKartuProsesPrintingItem::find()
-                    ->select(['id', 'stock_id'])
-                    ->where(['kartu_process_id'=>$kartuProsesId])
-                    ->asArray()
-                    ->all();
-                $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
-                if(!empty($selectedItemsIds)){
-                    $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+                    ->select(['stock_id'])
+                    ->where(['kartu_process_id' => $kartuProsesId])
+                    ->column();
+                if (!empty($selectedItems)) {
+                    $qStockOptionList->andWhere(['not in', 'id', $selectedItems]);
                 }
                 break;
+
             case TrnScGreige::PROCESS_PFP:
                 $selectedItems = TrnKartuProsesPfpItem::find()
-                    ->select(['id', 'stock_id'])
-                    ->where(['kartu_process_id'=>$kartuProsesId])
-                    ->asArray()
-                    ->all();
-                $selectedItemsIds = ArrayHelper::getColumn($selectedItems, 'stock_id');
-                if(!empty($selectedItemsIds)){
-                    $qStockOptionList->andWhere(['not in', 'id', $selectedItemsIds]);
+                    ->select(['stock_id'])
+                    ->where(['kartu_process_id' => $kartuProsesId])
+                    ->column();
+                if (!empty($selectedItems)) {
+                    $qStockOptionList->andWhere(['not in', 'id', $selectedItems]);
                 }
                 break;
         }
 
-        if($qty > 0){
-            $qStockOptionList->andWhere(['panjang_m'=>$qty]);
+        if ($qty > 0) {
+            $qStockOptionList->andWhere(['panjang_m' => $qty]);
         }
 
-        switch ($grade){
-            case 'a':
-            case 'A':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_A]);
-                break;
-            case 'b':
-            case 'B':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_B]);
-                break;
-            case 'c':
-            case 'C':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_C]);
-                break;
-            case 'd':
-            case 'D':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_D]);
-                break;
-            case 'e':
-            case 'E':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_E]);
-                break;
-            case 'ng':
-            case 'NG':
-                $qStockOptionList->andWhere(['grade'=>TrnStockGreige::GRADE_NG]);
-                break;
-            default:
+        // Filter grade
+        switch (strtolower($grade)) {
+            case 'a': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_A]); break;
+            case 'b': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_B]); break;
+            case 'c': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_C]); break;
+            case 'd': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_D]); break;
+            case 'e': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_E]); break;
+            case 'ng': $qStockOptionList->andWhere(['grade' => TrnStockGreige::GRADE_NG]); break;
+            default: // tidak filter grade
         }
 
         $qStockOptionList->limit(20);
 
-        //$out = ['results' => ['id' => '', 'text' => '']];
-        $out = ['results'=>[]];
+        $out = ['results' => []];
         foreach ($qStockOptionList->asArray()->all() as $item) {
             $panjang = Yii::$app->formatter->asDecimal($item['panjang_m']);
 
-            switch ($item['status_tsd']) {
-                case TrnStockGreige::STATUS_TSD_SM:
-                case TrnStockGreige::STATUS_TSD_SA:
-                case TrnStockGreige::STATUS_TSD_ST:
-                    $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9940;';
-                    break;
-                case TrnStockGreige::STATUS_TSD_TSD:
-                    $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9851;';
-                    break;
-                default:
-                    $ketWv = ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']].' &#9737;';
-            }
+            // Build full text
             $text = 'Greige: '.$item['greige']['nama_kain'].
                 ' | Grade: '.TrnStockGreige::gradeOptions()[$item['grade']].
                 ' | Lapak: '.$item['no_lapak'].
-                ' | Panjang: '.$panjang.'M | No Doc.: '.$item['no_document'].
+                ' | Panjang: '.$panjang.'M'.
+                ' | No Doc.: '.$item['no_document'].
                 ' | No. MC.: '.$item['no_set_lusi'].
                 ' | Lot Lusi: '.$item['lot_lusi'].
                 ' | Lot Pakan: '.$item['lot_pakan'].
-                $ketWv
-            ;
-            $out['results'][] = ['id'=>$item['id'], 'text'=>$text, 'data'=>$item];
+                ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']];
+
+            // Tambah warna untuk seluruh baris
+            switch ($item['status_tsd']) {
+                case TrnStockGreige::STATUS_TSD_SM:
+                    $text = '<span style="color:red;font-weight:bold;">'.$text.' &#9940;</span>';
+                    break;
+                case TrnStockGreige::STATUS_TSD_SA:
+                    $text = '<span style="color:red;font-weight:bold;">'.$text.' &#9940;</span>';
+                    break;
+                case TrnStockGreige::STATUS_TSD_ST:
+                    $text = '<span style="color:red;font-weight:bold;">'.$text.' &#9940;</span>';
+                    break;
+                case TrnStockGreige::STATUS_TSD_TSD:
+                    $text = '<span style="color:brown;font-weight:bold;">'.$text.' &#9851;</span>';
+                    break;
+                case TrnStockGreige::STATUS_TSD_LAIN_LAIN:
+                    $text = '<span style="color:brown;font-weight:bold;">'.$text.' &#8635;</span>';
+                    break;
+                case TrnStockGreige::STATUS_TSD_PUTIH:
+                    $text = '<span style="color:green;font-weight:bold;">'.$text.' &#9851;</span>';
+                    break;
+                default:
+                    $text = '<span style="color:black;">'.$text.' &#9737;</span>';
+            }
+
+            $out['results'][] = [
+                'id'   => $item['id'],
+                'text' => $text,
+                'data' => $item,
+            ];
         }
 
         return $out;
     }
+
+
 }

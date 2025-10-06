@@ -3,47 +3,48 @@
 namespace common\models\ar;
 
 use Yii;
-use yii\db\ActiveRecord;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 
 /**
- * This is the model class for table "trn_gudang_stock_opname".
+ * Model untuk table trn_stock_greige_opname
  *
  * @property int $id
- * @property int|null $greige_group_id
+ * @property int $stock_greige_id
  * @property int $greige_id
+ * @property int $greige_group_id
  * @property int $asal_greige
  * @property string $no_lapak
+ * @property int $grade
  * @property string $lot_lusi
  * @property string $lot_pakan
+ * @property string $no_set_lusi
+ * @property float $panjang_m
  * @property int $status_tsd 1=sm(salur muda),2=st(salur tua),3=sa(salur abnormal),7=Putih
  * @property string $no_document
- * @property string $operator
+ * @property string $pengirim
+ * @property string $mengetahui
  * @property string|null $note
  * @property int $status
  * @property string $date
  * @property int $jenis_gudang
- * @property string|null $nomor_wo
- * @property int|null $keputusan_qc
- * @property string|null $color
- * @property int|null $pfp_jenis_gudang
  * @property int $created_at
  * @property int $created_by
  * @property int|null $updated_at
  * @property int|null $updated_by
- * @property bool $is_pemotongan
- * @property bool $is_hasil_mix
  *
- * @property TrnGudangStockOpnameItem[] $trnGudangStockOpnameItems
- * @property MstGreige $greige
+ * @property TrnStockGreige $stockGreige
  * @property MstGreigeGroup $greigeGroup
  */
-class TrnGudangStockOpname extends ActiveRecord
-{   
+class TrnStockGreigeOpname extends \yii\db\ActiveRecord
+{
+    public static function tableName()
+    {
+        return 'trn_stock_greige_opname';
+    }
 
     public function getJenisGudangName()
-    {   
+    {
         return self::jenisGudangOptions()[$this->jenis_gudang];
     }
 
@@ -80,18 +81,16 @@ class TrnGudangStockOpname extends ActiveRecord
             self::ASAL_GREIGE_MAKLOON => 'Hasil Makloon'
         ];
     }
-
-    const GRADE_A = 1;const GRADE_B = 2;const GRADE_C = 3;const GRADE_D = 4;const GRADE_E = 5;const GRADE_NG = 6;const GRADE_A_PLUS = 7;const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
-    /**
-     * @return array
-     */
-    public static function gradeOptions(){
+    
+    
+      const GRADE_A = 1;const GRADE_B = 2;const GRADE_C = 3;const GRADE_D = 4;const GRADE_E = 5;const GRADE_NG = 6;const GRADE_A_PLUS = 7;const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
+     public static function gradeOptions(){
         return [
             self::GRADE_A => 'A', self::GRADE_B => 'B', self::GRADE_C => 'C', self::GRADE_D => 'D', self::GRADE_E => 'E', self::GRADE_NG => 'NG', self::GRADE_A_PLUS => 'A+', self::GRADE_A_ASTERISK => 'A*', self::GRADE_PUTIH => 'Putih',
         ];
     }
 
-    const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;const STATUS_TSD_PUTIH = 7;
+     const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;const STATUS_TSD_PUTIH = 7;
     /**
      * @return array
      */
@@ -106,14 +105,18 @@ class TrnGudangStockOpname extends ActiveRecord
             self::STATUS_TSD_PUTIH => 'Putih'
         ];
     }
-    const STATUS_DRAFT = 1;
-    const STATUS_POSTED = 2;
-    const STATUS_OUT = 3;
+
+    const STATUS_PENDING = 1;
+    const STATUS_VALID = 2;
+    const STATUS_ON_PROCESS_CARD = 3; //diinput ke kartu proses
+    const STATUS_DIPOTONG = 4;
+    const STATUS_KELUAR_GUDANG = 5;
+    const STATUS_MIXED = 6;
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Masuk', self::STATUS_OUT => 'All Out'];
+        return [self::STATUS_PENDING => 'Pending', self::STATUS_VALID => 'Valid', self::STATUS_ON_PROCESS_CARD => 'Masuk Kartu Proses', self::STATUS_DIPOTONG => 'Dipotong', self::STATUS_KELUAR_GUDANG => 'Dikeluarkan Dari Gudang', self::STATUS_MIXED => 'Di Mix'];
     }
 
     const JG_FRESH = 1;const JG_WIP = 2;const JG_PFP = 3; const JG_EX_FINISH = 4;
@@ -130,40 +133,29 @@ class TrnGudangStockOpname extends ActiveRecord
      */
     public static function pfpJenisGudangOptions(){
         return [self::PFP_JG_ONE => 'Gudang 1', self::PFP_JG_TWO => 'Gudang 2'];
-    }   
-
-
-    const JENIS_BELI_LOKAL = 1;const JENIS_BELI_IMPORT = 2;
-    /**
-     * @return array
-     */
-    public static function jenisBeliOptions(){
-        return [self::JENIS_BELI_LOKAL => 'Beli Lokal', self::JENIS_BELI_IMPORT => 'Beli Import'];
     }
 
-    public static function tableName()
-    {
-        return 'trn_gudang_stock_opname';
-    }
+    
 
     public function behaviors()
     {
         return [
             TimestampBehavior::class,
-            BlameableBehavior::class
+            BlameableBehavior::class,
         ];
     }
 
     public function rules()
     {
         return [
-            [['greige_id', 'asal_greige', 'no_lapak', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'operator', 'date', 'created_at', 'created_by'], 'required'],
-            [['greige_group_id', 'greige_id', 'asal_greige', 'status_tsd', 'status', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang', 'created_at', 'created_by', 'updated_at', 'updated_by','jenis_beli'], 'integer'],
+            [['stock_greige_id', 'greige_id', 'greige_group_id', 'asal_greige', 'no_lapak', 'grade', 'lot_lusi', 'lot_pakan', 'no_set_lusi', 'panjang_m', 'status_tsd', 'no_document', 'pengirim', 'mengetahui', 'date'], 'required'],
+            [['stock_greige_id', 'greige_id', 'greige_group_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'jenis_gudang', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['panjang_m'], 'number'],
             [['note'], 'string'],
-            [['date'], 'safe'],
-            ['status', 'default', 'value' => self::STATUS_DRAFT],
-            [['is_pemotongan', 'is_hasil_mix'], 'boolean'],
-            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'operator', 'nomor_wo', 'color'], 'string', 'max' => 255],
+            [['date'], 'date', 'format'=>'php:Y-m-d'],
+            [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_set_lusi', 'no_document', 'pengirim', 'mengetahui'], 'string', 'max'=>255],
+            [['stock_greige_id'], 'exist', 'skipOnError'=>true, 'targetClass'=>TrnStockGreige::class, 'targetAttribute'=>['stock_greige_id'=>'id']],
+            [['greige_group_id'], 'exist', 'skipOnError'=>true, 'targetClass'=>MstGreigeGroup::class, 'targetAttribute'=>['greige_group_id'=>'id']],
         ];
     }
 
@@ -171,58 +163,57 @@ class TrnGudangStockOpname extends ActiveRecord
     {
         return [
             'id' => 'ID',
-            'greige_group_id' => 'Greige Group',
+            'stock_greige_id' => 'ID Stock Greige',
             'greige_id' => 'Greige',
+            'greige_group_id' => 'Greige Group',
             'asal_greige' => 'Asal Greige',
             'no_lapak' => 'No Lapak',
+            'grade' => 'Grade',
             'lot_lusi' => 'Lot Lusi',
             'lot_pakan' => 'Lot Pakan',
+            'no_set_lusi' => 'No Set Lusi',
+            'panjang_m' => 'Panjang (M)',
             'status_tsd' => 'Status TSD',
             'no_document' => 'No Document',
-            'operator' => 'Operator',
-            'note' => 'Catatan',
-            'status' => 'Status Header',
-            'date' => 'Tanggal',
+            'pengirim' => 'Pengirim',
+            'mengetahui' => 'Mengetahui',
+            'note' => 'Note',
+            'status' => 'Status',
+            'date' => 'Date',
             'jenis_gudang' => 'Jenis Gudang',
-            'nomor_wo' => 'Nomor WO',
-            'keputusan_qc' => 'Keputusan QC',
-            'color' => 'Warna',
-            'pfp_jenis_gudang' => 'PFP Jenis Gudang',
-            'is_pemotongan' => 'Pemotongan',
-            'is_hasil_mix' => 'Hasil Mix',
-            'created_at' => 'Dibuat pada',
-            'created_by' => 'Dibuat oleh',
-            'updated_at' => 'Diperbarui pada',
-            'updated_by' => 'Diperbarui oleh',
+            'created_at' => 'Created At',
+            'created_by' => 'Created By',
+            'updated_at' => 'Updated At',
+            'updated_by' => 'Updated By',
         ];
     }
 
-    public function getTrnGudangStockOpnameItems()
+    public function getStockGreige()
     {
-        return $this->hasMany(TrnGudangStockOpnameItem::class, ['trn_gudang_stock_opname_id' => 'id']);
-    }
-
-    public function getTrnGudangStockOpnameItemsNotOut()
-    {
-        return $this->hasMany(TrnGudangStockOpnameItem::class, ['trn_gudang_stock_opname_id' => 'id'])->where(['is_out' => false]);
+        return $this->hasOne(TrnStockGreige::class, ['id'=>'stock_greige_id']);
     }
 
     public function getGreige()
-    {
-        return $this->hasOne(MstGreige::class, ['id' => 'greige_id']);
-    }
-    public function getGreigeNamaKain()
-    {
-        return $this->greige->nama_kain;
-    }
+{
+    // sesuaikan nama model greige kamu, misalnya MstGreige atau TrnStockGreige
+    return $this->hasOne(MstGreige::class, ['id' => 'greige_id']);
+}
 
     public function getGreigeGroup()
     {
-        return $this->hasOne(MstGreigeGroup::className(), ['id' => 'greige_group_id']);
+        return $this->hasOne(MstGreigeGroup::class, ['id'=>'greige_group_id']);
     }
 
-    public function getTrnStockGreige()
+    public function getGreigeNamaKain()
     {
-        return $this->hasOne(TrnStockGreige::class, ['trn_stock_greige_id' => 'id']);
+        return $this->greige ? $this->greige->nama_kain : '-';
     }
+
+    public static function adaOpnameUntuk($stockGreigeId)
+    {
+        return static::find()
+            ->where(['stock_greige_id' => $stockGreigeId])
+            ->exists();
+    }
+    
 }

@@ -32,6 +32,13 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                 'title' => 'Buat Memo Penggantian Greige'
             ]).' ';
 
+            echo Html::a('Kembali Stock', ['kembali-stock', 'id' => $model->id], [
+                'class' => 'btn btn-danger',
+                'data-confirm' => 'Apakah Anda yakin ingin mengembalikan stok PFP ini?',
+                'data-method' => 'post',
+                'title' => 'Kembalikan stok PFP'
+            ]).' ';
+
             echo Html::a('Ganti Kartu Dyeing', ['ganti-dyeing', 'id' => $model->id], [
                     'class' => 'btn btn-info',
                     'onclick' => 'gantiDyeing(event, "Ganti Kartu Dyeing");',
@@ -78,7 +85,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
 
     <?php echo $this->render('/trn-kartu-proses-pfp/child/detail', ['model' => $model]);?>
 
-    <?php echo $this->render('/trn-kartu-proses-pfp/child/items', ['model' => $model]);?>
+    <?php echo $this->render('/trn-kartu-proses-pfp/child/items_processing', ['model' => $model]);?>
 
     <?php echo $this->render('/trn-kartu-proses-pfp/child/persetujuan', ['model' => $model]);?>
 

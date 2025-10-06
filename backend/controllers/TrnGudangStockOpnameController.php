@@ -20,7 +20,9 @@ use common\models\ar\TrnGudangStockOpname;
 use common\models\ar\TrnGudangStockOpnameItem;
 use common\models\ar\TrnGudangStockOpnameSearch;
 use common\models\ar\TrnGudangStockOpnameItemSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use common\models\ar\TrnStockGreigeSearch;
+use yii\data\ActiveDataProvider;
 use yii\db\Expression;
 use yii\db\Query;
 use yii\helpers\BaseVarDumper;
@@ -225,7 +227,7 @@ class TrnGudangStockOpnameController extends Controller
      */
     public function actionExecuteProcess($noDoc)
     {
-        $models = TrnStockGreige::findAll(['no_document'=>$noDoc, 'status'=>TrnStockGreige::STATUS_DRAFT]);
+        $models = TrnStockGreige::findAll(['no_document'=>$noDoc, 'status'=>TrnStockGreige::STATUS_VALID]);
 
         if($models !== null){
             $transaction = Yii::$app->db->beginTransaction();
@@ -665,10 +667,173 @@ class TrnGudangStockOpnameController extends Controller
      */
     protected function findModel($id)
     {
-        if (($model = TrnGudangStockOpname::findOne($id)) !== null) {
+        if (($model = TrnStockGreigeOpname::findOne($id)) !== null) {
             return $model;
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionIndexDuplicate()
+    {
+        $searchModel = new \common\models\ar\TrnStockGreigeOpnameSearch();
+
+        if (Yii::$app->request->get('TrnStockGreigeOpnameSearch') === null) {
+            $searchModel->status = TrnStockGreigeOpname::STATUS_VALID; 
+        }
+    
+        $dataProvider = $searchModel->search(\Yii::$app->request->queryParams);
+
+        $dataProvider->query->orderBy(['id' => SORT_DESC]);
+
+        return $this->render('index-duplicate', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+
+    public function actionDuplicateBulk()
+    {
+        $idsParam = Yii::$app->request->post('ids', []);
+
+        // handle ids bisa string "9,8,33" atau array [9,8,33]
+        if (!is_array($idsParam)) {
+            $ids = array_filter(array_map('intval', explode(',', $idsParam)));
+        } else {
+            $ids = array_filter(array_map('intval', $idsParam));
+        }
+
+        if (empty($ids)) {
+            Yii::$app->session->setFlash('error', 'Tidak ada data yang dipilih.');
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+        }
+
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+        try {
+            $count = 0;
+
+            // kolom tujuan TrnStockGreige
+            $targetColumns = array_keys(TrnStockGreige::getTableSchema()->columns);
+            $exclude = ['id', 'created_at', 'updated_at', 'updated_by'];
+
+            foreach ($ids as $id) {
+                $opname = TrnStockGreigeOpname::findOne((int)$id);
+                if (!$opname) {
+                    continue;
+                }
+
+                // ambil atribut yang valid
+                $data = array_intersect_key($opname->attributes, array_flip($targetColumns));
+                foreach ($exclude as $ex) {
+                    unset($data[$ex]);
+                }
+
+                $panjang = (float)($opname->panjang_m ?? 0);
+
+                $data['created_at'] = time();
+                $data['created_by'] = Yii::$app->user->id ?? null;
+
+                $new = new TrnStockGreige();
+                $new->setAttributes($data, false);
+                $new->date = date('Y-m-d');
+                $new->panjang_m = $panjang;
+
+                if (!$new->save(false)) {
+                    throw new \Exception("Gagal menyimpan TrnStockGreige untuk opname id: {$id}");
+                }
+
+                // update stock & available di MstGreige
+                if (!empty($opname->greige_id) && $panjang > 0) {
+                    $mst = MstGreige::findOne((int)$opname->greige_id);
+                    if ($mst) {
+                        $mst->stock += $panjang;
+                        $mst->available += $panjang;
+                        $mst->stock_opname -= $panjang;
+                        if ($mst->stock_opname < 0) {
+                            $mst->stock_opname = 0;
+                        }
+                        if (!$mst->save(false, ['stock', 'available', 'stock_opname'])) {
+                            throw new \Exception("Gagal update stok MstGreige id: {$mst->id}");
+                        }
+                    }
+                }
+
+                // update note dengan teks + tanggal
+                $opname->note = 'Telah Migrasi Ke Stock - ' . date('d-m-Y');
+                $opname->status = TrnStockGreigeOpname::STATUS_KELUAR_GUDANG;
+                if (!$opname->save(false, ['note','status'])) {
+                    throw new \Exception("Gagal update note untuk opname id: {$opname->id}");
+                }
+
+
+                $count++;
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', "$count data berhasil diduplikasi ke TrnStockGreige dan stok MstGreige diperbarui.");
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::error("Error duplicate-bulk: " . $e->getMessage(), __METHOD__);
+            Yii::$app->session->setFlash('error', 'Terjadi error saat proses duplikasi: ' . $e->getMessage());
+            return $this->redirect(['trn-gudang-stock-opname/index-duplicate']);
+        }
+    }
+
+
+    public function actionKeluarBulk()
+    {
+        $ids = Yii::$app->request->post('ids');
+        if (empty($ids)) {
+            Yii::$app->session->setFlash('error', 'Tidak ada data yang dipilih.');
+            return $this->redirect(['index-duplicate']);
+        }
+
+        $idArray = explode(',', $ids);
+
+        // Ambil semua record opname yang dipilih
+        $records = TrnStockGreigeOpname::find()
+            ->where(['id' => $idArray])
+            ->all();
+
+        // Grouping total panjang_m per greige_id
+        $totals = [];
+        foreach ($records as $record) {
+            $greigeId = $record->greige_id;
+            $totals[$greigeId] = ($totals[$greigeId] ?? 0) + (float)$record->panjang_m;
+        }
+
+        // Update status & note di tabel opname
+        TrnStockGreigeOpname::updateAll(
+            [
+                'status' => TrnStockGreigeOpname::STATUS_KELUAR_GUDANG,
+                'note'   => 'Telah dikeluarkan gudang - ' . date('d-m-Y'),
+            ],
+            ['id' => $idArray]
+        );
+
+        // Update stock_opname di tabel mst_greige
+        foreach ($totals as $greigeId => $jumlah) {
+            $greige = MstGreige::findOne($greigeId);
+            if ($greige !== null) {
+                $greige->stock_opname = (float)$greige->stock_opname - $jumlah;
+                if ($greige->stock_opname < 0) {
+                    $greige->stock_opname = 0; // supaya tidak minus
+                }
+                $greige->save(false, ['stock_opname']);
+            }
+        }
+
+        Yii::$app->session->setFlash('success', count($idArray) . ' data berhasil dikeluarkan dari stock opname.');
+        return $this->redirect(['index-duplicate']);
+    }
+
+
+
+
+
+    
 }

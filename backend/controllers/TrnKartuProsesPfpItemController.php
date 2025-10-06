@@ -219,4 +219,115 @@ class TrnKartuProsesPfpItemController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+
+    public function actionEditQty($id)
+    {
+        $model = $this->findModel($id);
+        $oldStockId = $model->stock_id;
+        $oldPanjang = $model->panjang_m;
+
+        if ($model->load(Yii::$app->request->post())) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if ($model->save(false)) {
+
+                    // Update stock lama
+                    if ($oldStockId && $oldStockId != $model->stock_id) {
+                        $oldStock = \common\models\ar\TrnStockGreige::findOne($oldStockId);
+                        if ($oldStock) {
+                            $oldStock->status = \common\models\ar\TrnStockGreige::STATUS_VALID;
+                            $oldStock->save(false);
+
+                            \common\models\ar\TrnStockGreigeOpname::updateAll(
+                                ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_VALID],
+                                ['stock_greige_id' => $oldStock->id]
+                            );
+                        }
+                    }
+
+                    // Update stock baru
+                    if ($model->stock_id) {
+                        $newStock = \common\models\ar\TrnStockGreige::findOne($model->stock_id);
+                        if ($newStock) {
+                            $newStock->status = \common\models\ar\TrnStockGreige::STATUS_ON_PROCESS_CARD;
+                            $newStock->save(false);
+
+                            \common\models\ar\TrnStockGreigeOpname::updateAll(
+                                ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+                                ['stock_greige_id' => $newStock->id]
+                            );
+                        }
+                    }
+
+                    // Update greige stock, available & stock_opname
+                    $greige = $model->stock ? $model->stock->greige : null;
+                    if ($greige) {
+                        $selisih = $model->panjang_m - $oldPanjang;
+
+                        $greige->stock     -= max($selisih, 0);
+                        $greige->available -= max($selisih, 0);
+                        $greige->stock     += max(-$selisih, 0);
+                        $greige->available += max(-$selisih, 0);
+
+                        if (\common\models\ar\TrnStockGreigeOpname::adaOpnameUntuk($model->stock_id)) {
+                            $greige->stock_opname -= max($selisih, 0);
+                            $greige->stock_opname += max(-$selisih, 0);
+                        }
+
+                        if (!$greige->save(false, ['stock','available','stock_opname'])) {
+                            throw new \Exception("Gagal update stock MstGreige: " . json_encode($greige->getErrors()));
+                        }
+                    } else {
+                        throw new \Exception("Relasi greige tidak ditemukan untuk stock ini.");
+                    }
+
+                    $transaction->commit();
+                    Yii::$app->session->setFlash('success', 'Qty & Stock berhasil diperbarui.');
+
+                    // redirect ke view kartu proses PFP
+                    return $this->redirect(['/processing-pfp/view', 'id' => $model->kartu_process_id]);
+                }
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Update gagal: ' . $e->getMessage());
+            }
+        }
+
+        // Data provider untuk modal pilih stock
+        $searchModel = new \common\models\search\TrnStockGreigeSearch();
+        $stocks = $searchModel->search(Yii::$app->request->queryParams);
+
+        $greigeId = $model->stock ? $model->stock->greige_id : null;
+        if ($greigeId) {
+            $stocks->query->andWhere(['greige_id' => $greigeId]);
+        }
+
+        return $this->renderAjax('@app/views/trn-kartu-proses-pfp/child/_form_edit_qty', [
+            'model' => $model,
+            'stocks' => $stocks,
+            'searchModel' => $searchModel,
+        ]);
+    }
+
+
+
+    public function actionEditMesin($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->load(Yii::$app->request->post())) {
+            if ($model->save(false, ['mesin'])) {
+                Yii::$app->session->setFlash('success', 'Nomer Mesin berhasil diperbarui.');
+                return $this->redirect(['/processing-pfp/view', 'id' => $model->kartu_process_id]);
+            }
+            Yii::$app->session->setFlash('error', 'Gagal menyimpan perubahan mesin.');
+        }
+
+        return $this->renderAjax('@app/views/trn-kartu-proses-pfp/child/_form_edit_mesin', [
+            'model' => $model,
+        ]);
+    }
+
+
 }

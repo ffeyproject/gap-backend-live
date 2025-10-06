@@ -17,6 +17,7 @@ use common\models\ar\TrnStockGreigeSearch;
 use common\models\ar\TrnGudangInspect;
 use common\models\ar\TrnGudangInspectItem;
 use common\models\ar\TrnGudangInspectSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use yii\db\Expression;
 use yii\db\Query;
 use yii\helpers\BaseVarDumper;
@@ -54,11 +55,20 @@ class TrnStockGreigeController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new TrnStockGreigeSearch(['jenis_gudang'=>TrnStockGreige::JG_FRESH]);
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $searchModel = new TrnStockGreigeSearch([
+            'jenis_gudang' => TrnStockGreige::JG_FRESH,
+        ]);
+
+        $queryParams = Yii::$app->request->queryParams;
+
+        if (!isset($queryParams['TrnStockGreigeSearch'])) {
+            $searchModel->status = TrnStockGreige::STATUS_VALID;
+        }
+
+        $dataProvider = $searchModel->search($queryParams);
 
         return $this->render('index', [
-            'searchModel' => $searchModel,
+            'searchModel'  => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
     }
@@ -813,4 +823,93 @@ class TrnStockGreigeController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+
+    /**
+     * @throws ForbiddenHttpException
+     */
+    public function actionDuplicateBulk()
+    {
+        if (!Yii::$app->request->isAjax || !Yii::$app->request->isPost) {
+            throw new \yii\web\ForbiddenHttpException('Method tidak diizinkan.');
+        }
+
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $ids = Yii::$app->request->post('ids', []);
+
+        if (empty($ids)) {
+            throw new \yii\web\BadRequestHttpException('Tidak ada item yang dipilih.');
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            foreach ($ids as $id) {
+                $stock = TrnStockGreige::findOne($id);
+                if (!$stock) {
+                    throw new \yii\web\NotFoundHttpException("Stock dengan ID $id tidak ditemukan.");
+                }
+
+                // ✅ VALIDASI STATUS – misalnya cuma boleh status VALID
+                if ($stock->status != TrnStockGreige::STATUS_VALID) {
+                
+                    throw new \yii\web\BadRequestHttpException("Stock ID $id statusnya tidak VALID.");
+                }
+
+                // ✅ CEK SUDAH PERNAH DUPLIKAT BELUM
+                $sudahAda = TrnStockGreigeOpname::find()
+                    ->where(['stock_greige_id' => $stock->id])
+                    ->exists();
+
+                if ($sudahAda) {
+                    throw new \yii\web\BadRequestHttpException("Stock ID $id sudah pernah di-duplikat sebelumnya.");
+                }
+
+                $opname = new \common\models\ar\TrnStockGreigeOpname([
+                    'stock_greige_id' => $stock->id,
+                    'greige_id' => $stock->greige_id,
+                    'greige_group_id' => $stock->greige_group_id,
+                    'asal_greige' => $stock->asal_greige,
+                    'no_lapak' => $stock->no_lapak,
+                    'grade' => $stock->grade,
+                    'lot_lusi' => $stock->lot_lusi,
+                    'lot_pakan' => $stock->lot_pakan,
+                    'no_set_lusi' => $stock->no_set_lusi,
+                    'panjang_m' => $stock->panjang_m,
+                    'status_tsd' => $stock->status_tsd,
+                    'no_document' => $stock->no_document,
+                    'pengirim' => $stock->pengirim,
+                    'mengetahui' => $stock->mengetahui,
+                    'note' => 'Duplikasi stock greige',
+                    'status' => 2,
+                    'date' => date('Y-m-d'),
+                    'jenis_gudang' => 1,
+                ]);
+
+                if (!$opname->save(false)) {
+                    $transaction->rollBack();
+                    throw new \yii\web\HttpException(500, "Gagal menyimpan stock opname untuk stock ID $id.");
+                }
+
+                // ✅ UPDATE FIELD STOCK_OPNAME DI MST_GREIGE
+                $mstGreige = \common\models\ar\MstGreige::findOne($stock->greige_id);
+                if ($mstGreige) {
+                    // tambahkan panjang_m ke stock_opname yang sudah ada
+                    $mstGreige->stock_opname = (float)$mstGreige->stock_opname + (float)$stock->panjang_m;
+                    if (!$mstGreige->save(false)) {
+                        $transaction->rollBack();
+                        throw new \yii\web\HttpException(500, "Gagal update stock_opname di mst_greige ID {$stock->greige_id}");
+                    }
+                }
+            }
+
+            $transaction->commit();
+            return ['status'=>true];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
+
+
+
 }

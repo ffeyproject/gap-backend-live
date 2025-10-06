@@ -38,17 +38,41 @@ class TrnGudangStockOpnameItem extends ActiveRecord
     }
 
     public function rules()
+{
+    return [
+        // hanya no_set_lusi dan grade yang wajib, opname_id boleh null
+        [['no_set_lusi', 'grade'], 'required'],
+
+        // integer tapi boleh null
+        [['trn_gudang_stock_opname_id'], 'integer'],
+
+        // field numeric/string lainnya
+        [['ket_defect'], 'string', 'max' => 100],
+        [['panjang_m'], 'number'],
+        [['created_at', 'updated_at'], 'safe'],
+        [['no_set_lusi'], 'string', 'max' => 50],
+        [['grade'], 'string', 'max' => 10],
+
+        // is_out boolean default false
+        ['is_out', 'boolean'],
+        ['is_out', 'default', 'value' => false],
+
+        // jika diisi, harus exist di tabel parent
+        [
+            ['trn_gudang_stock_opname_id'],
+            'exist',
+            'skipOnError' => true,
+            'targetClass' => TrnGudangStockOpname::class,
+            'targetAttribute' => ['trn_gudang_stock_opname_id' => 'id']
+        ],
+    ];
+}
+
+    public function behaviors()
     {
         return [
-            [['trn_gudang_stock_opname_id', 'no_set_lusi', 'grade'], 'required'],
-            [['trn_gudang_stock_opname_id'], 'integer'],
-            [['ket_defect'], 'string', 'max' => 100],
-            [['panjang_m'], 'number'],
-            [['created_at', 'updated_at'], 'safe'],
-            [['no_set_lusi'], 'string', 'max' => 50],
-            [['grade'], 'string', 'max' => 10],
-            [['is_out', 'boolean', 'default' => false]],
-            [['trn_gudang_stock_opname_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnGudangStockOpname::class, 'targetAttribute' => ['trn_gudang_stock_opname_id' => 'id']],
+            TimestampBehavior::class,
+            BlameableBehavior::class,
         ];
     }
 
@@ -75,4 +99,9 @@ class TrnGudangStockOpnameItem extends ActiveRecord
     public function getGreige(){
         return $this->trnGudangStockOpname->greige;
     }
+
+
+    
+
+    
 }

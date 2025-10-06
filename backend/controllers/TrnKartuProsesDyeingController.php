@@ -383,11 +383,199 @@ class TrnKartuProsesDyeingController extends Controller
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
+    // public function actionPosting($id)
+    // {
+    //     $model = $this->findModel($id);
+
+    //     if($model->status != $model::STATUS_DRAFT){
+    //         Yii::$app->session->setFlash('error', 'Kartu proses bukan draft, tidak bisa diposting.');
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }
+
+    //     $wo = $model->wo;
+    //     $mo = $wo->mo;
+    //     $greige = $wo->greige;
+    //     $greigeGroup = $greige->group;
+
+    //     $perBatchHalfToleransiAtas = 0;
+    //     $perBatchHalfToleransiBawah = 0;
+
+    //     if(!$model->no_limit_item){
+    //         $lenPerBatch = $greigeGroup->qty_per_batch;
+    //         $perBatchHalf = $lenPerBatch / 2; // setengah batch
+    //         $perBatchHalfInPercent = 0.02 * $perBatchHalf; //dua persen dari setengah batch
+    //         $perBatchHalfToleransiAtas = $perBatchHalf + $perBatchHalfInPercent;
+    //         $perBatchHalfToleransiBawah = $perBatchHalf - $perBatchHalfInPercent;
+    //     }
+
+    //     $model->status = $model::STATUS_POSTED;
+    //     $model->posted_at = time();
+    //     if($model->no_urut === null){
+    //         $model->setNomor();
+    //     }
+
+    //     $transaction = Yii::$app->db->beginTransaction();
+    //     try {
+    //         $totalTubeKiri = 0;
+    //         $totalTubeKanan = 0;
+    //         foreach ($model->trnKartuProsesDyeingItems as $trnKartuProsesDyeingItem) {
+    //             $stockItem = $trnKartuProsesDyeingItem->stock;
+    //             if($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD){
+    //                 $panjang = Yii::$app->formatter->asDecimal($stockItem->panjang_m);
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Salah satu roll greige ('.$panjang.'M) sudah digunakan oleh kartu proses lain, coba lagi.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+
+    //             $stockItem->status = $stockItem::STATUS_ON_PROCESS_CARD;
+    //             if(!$stockItem->save(false, ['status'])){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (1)');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+
+    //             switch ($trnKartuProsesDyeingItem->tube){
+    //                 case $trnKartuProsesDyeingItem::TUBE_KIRI:
+    //                     $totalTubeKiri += (float)$stockItem->panjang_m;
+    //                     break;
+    //                 case $trnKartuProsesDyeingItem::TUBE_KANAN:
+    //                     $totalTubeKanan += (float)$stockItem->panjang_m;
+    //                     break;
+    //             }
+    //         }
+
+    //         $totalLength = $totalTubeKiri + $totalTubeKanan;
+
+    //         if(!$model->no_limit_item){
+    //             if(($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan kurang dari setengah BATCH dikurang 2%.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+
+    //             if(($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan lebih dari setengah BATCH ditambah 2%.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+    //         }
+
+    //         if(!$model->save(false)){
+    //             $transaction->rollBack();
+    //             Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (2)');
+    //             return $this->redirect(['view', 'id' => $model->id]);
+    //         }
+
+    //         if($model->kartu_proses_id !== null){
+    //             $kartuProsesPg = $model->kartuProses;
+
+    //             if($kartuProsesPg->status != $model::STATUS_GANTI_GREIGE){//mungkin sudah keburu digunkan kartu proses lain
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Status Kartu Proses Penggantian tidak valid, tidak bisa diposting.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+
+    //             $kartuProsesPg->status = $kartuProsesPg::STATUS_GANTI_GREIGE_LINKED;
+    //             if(!$kartuProsesPg->save(false, ['status'])){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (3)');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+    //         }
+
+    //         //Booking greige--------------------------------------------------------------------------------------------
+    //         switch ($mo->jenis_gudang){
+    //             case TrnStockGreige::JG_WIP:
+    //                 $bookedAttr = 'booked_wip';
+    //                 break;
+    //             case TrnStockGreige::JG_PFP:
+    //                 $bookedAttr = 'booked_pfp';
+    //                 break;
+    //             case TrnStockGreige::JG_EX_FINISH:
+    //                 $bookedAttr = 'booked_ef';
+    //                 break;
+    //             case TrnStockGreige::JG_FRESH:
+    //                 if($wo->jenis_order === TrnSc::JENIS_ORDER_FRESH_ORDER){
+    //                     // jika jenis order wo === fresh dan jenis gudang mo == jg_fresh
+    //                     //ambil nilai original qty per batch greige untuk dasar pemotongan stok
+    //                     $qtyPerBatch = $greige->group->qty_per_batch;
+    //                     $selisih = $totalLength - $qtyPerBatch;
+    //                     if($model->is_redyeing){
+    //                         $update = [
+    //                             'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                         ];
+    //                         if($selisih < 0){
+    //                             $update = [
+    //                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                                 'available' => new \yii\db\Expression('available' . ' + ' . (abs($selisih) - $qtyPerBatch)),
+    //                             ];
+    //                         }elseif ($selisih > 0){
+    //                             $update = [
+    //                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                                 'available' => new \yii\db\Expression('available' . ' - ' . ($selisih + $qtyPerBatch)),
+    //                             ];
+    //                         }
+    //                     }else{
+    //                         $update = [
+    //                             'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $totalLength),
+    //                             'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                         ];
+    //                         if($selisih < 0){
+    //                             $update = [
+    //                                 'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
+    //                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                                 'available' => new \yii\db\Expression('available' . ' + ' . abs($selisih)),
+    //                             ];
+    //                         }elseif ($selisih > 0){
+    //                             $update = [
+    //                                 'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
+    //                                 'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+    //                                 'available' => new \yii\db\Expression('available' . ' - ' . $selisih),
+    //                             ];
+    //                         }
+    //                     }
+    //                     Yii::$app->db->createCommand()->update(
+    //                         MstGreige::tableName(),
+    //                         $update,
+    //                         ['id'=>$greige->id]
+    //                     )->execute();
+
+    //                     $transaction->commit();
+    //                     Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
+    //                     return $this->redirect(['view', 'id' => $model->id]);
+    //                 }
+
+    //                 $bookedAttr = 'booked';
+    //                 break;
+    //             default:
+    //                 $bookedAttr = 'booked';
+    //         }
+
+    //         Yii::$app->db->createCommand()->update(
+    //             MstGreige::tableName(),
+    //             [
+    //                 $bookedAttr => new \yii\db\Expression($bookedAttr . ' + ' . $totalLength),
+    //             ],
+    //             ['id'=>$greige->id]
+    //         )->execute();
+    //         //Booking greige--------------------------------------------------------------------------------------------
+
+    //         $transaction->commit();
+    //         Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     } catch (\Throwable $e) {
+    //         $transaction->rollBack();
+    //         Yii::$app->session->setFlash('error', $e->getMessage());
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }
+    // }
+
+
     public function actionPosting($id)
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT){
+        if ($model->status != $model::STATUS_DRAFT) {
             Yii::$app->session->setFlash('error', 'Kartu proses bukan draft, tidak bisa diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -400,17 +588,17 @@ class TrnKartuProsesDyeingController extends Controller
         $perBatchHalfToleransiAtas = 0;
         $perBatchHalfToleransiBawah = 0;
 
-        if(!$model->no_limit_item){
+        if (!$model->no_limit_item) {
             $lenPerBatch = $greigeGroup->qty_per_batch;
             $perBatchHalf = $lenPerBatch / 2; // setengah batch
-            $perBatchHalfInPercent = 0.02 * $perBatchHalf; //dua persen dari setengah batch
+            $perBatchHalfInPercent = 0.02 * $perBatchHalf; // dua persen dari setengah batch
             $perBatchHalfToleransiAtas = $perBatchHalf + $perBatchHalfInPercent;
             $perBatchHalfToleransiBawah = $perBatchHalf - $perBatchHalfInPercent;
         }
 
         $model->status = $model::STATUS_POSTED;
         $model->posted_at = time();
-        if($model->no_urut === null){
+        if ($model->no_urut === null) {
             $model->setNomor();
         }
 
@@ -418,23 +606,53 @@ class TrnKartuProsesDyeingController extends Controller
         try {
             $totalTubeKiri = 0;
             $totalTubeKanan = 0;
+
+            // loop tiap item kartu proses
             foreach ($model->trnKartuProsesDyeingItems as $trnKartuProsesDyeingItem) {
+                /** @var \common\models\ar\TrnStockGreige $stockItem */
                 $stockItem = $trnKartuProsesDyeingItem->stock;
-                if($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD){
+
+                if ($stockItem === null) {
+                    throw new \Exception('Stock item tidak ditemukan untuk salah satu item.');
+                }
+
+                // jika sudah dipakai
+                if ($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD) {
                     $panjang = Yii::$app->formatter->asDecimal($stockItem->panjang_m);
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Salah satu roll greige ('.$panjang.'M) sudah digunakan oleh kartu proses lain, coba lagi.');
-                    return $this->redirect(['view', 'id' => $model->id]);
+                    throw new \Exception('Salah satu roll greige (' . $panjang . 'M) sudah digunakan oleh kartu proses lain, coba lagi.');
                 }
 
+                // 1) set status TrnStockGreige => STATUS_ON_PROCESS_CARD
                 $stockItem->status = $stockItem::STATUS_ON_PROCESS_CARD;
-                if(!$stockItem->save(false, ['status'])){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (1)');
-                    return $this->redirect(['view', 'id' => $model->id]);
+                if (!$stockItem->save(false, ['status'])) {
+                    throw new \Exception('Gagal mengubah status stock greige (ID: ' . $stockItem->id . ').');
                 }
 
-                switch ($trnKartuProsesDyeingItem->tube){
+                // 2) kurangi stock_opname pada mst_greige
+                /** @var \common\models\ar\MstGreige $mstGreige */
+                $mstGreige = \common\models\ar\MstGreige::findOne($stockItem->greige_id);
+                if ($mstGreige !== null) {
+                    $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m;
+                    if ($newStockOpname < 0) {
+                        $newStockOpname = 0;
+                    }
+                    // pakai update supaya tidak memicu beforeSave yang tidak perlu
+                    Yii::$app->db->createCommand()->update(
+                        \common\models\ar\MstGreige::tableName(),
+                        ['stock_opname' => $newStockOpname],
+                        ['id' => $mstGreige->id]
+                    )->execute();
+                }
+
+                // 3) ubah status TrnStockGreigeOpname yang terkait (stock_greige_id sama)
+                // gunakan updateAll agar efisien (di dalam transaksi)
+                \common\models\ar\TrnStockGreigeOpname::updateAll(
+                    ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+                    ['stock_greige_id' => $stockItem->id]
+                );
+
+                // 4) hitung total per tube untuk validasi batch
+                switch ($trnKartuProsesDyeingItem->tube) {
                     case $trnKartuProsesDyeingItem::TUBE_KIRI:
                         $totalTubeKiri += (float)$stockItem->panjang_m;
                         break;
@@ -446,98 +664,77 @@ class TrnKartuProsesDyeingController extends Controller
 
             $totalLength = $totalTubeKiri + $totalTubeKanan;
 
-            if(!$model->no_limit_item){
-                if(($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan kurang dari setengah BATCH dikurang 2%.');
-                    return $this->redirect(['view', 'id' => $model->id]);
+            if (!$model->no_limit_item) {
+                if (($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)) {
+                    throw new \Exception('Jumlah greige tube kiri atau tube kanan kurang dari setengah BATCH dikurang 2%.');
                 }
 
-                if(($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan lebih dari setengah BATCH ditambah 2%.');
-                    return $this->redirect(['view', 'id' => $model->id]);
+                if (($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)) {
+                    throw new \Exception('Jumlah greige tube kiri atau tube kanan lebih dari setengah BATCH ditambah 2%.');
                 }
             }
 
-            if(!$model->save(false)){
-                $transaction->rollBack();
-                Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (2)');
-                return $this->redirect(['view', 'id' => $model->id]);
+            if (!$model->save(false)) {
+                throw new \Exception('Gagal menyimpan header kartu proses.');
             }
 
-            if($model->kartu_proses_id !== null){
+            if ($model->kartu_proses_id !== null) {
                 $kartuProsesPg = $model->kartuProses;
 
-                if($kartuProsesPg->status != $model::STATUS_GANTI_GREIGE){//mungkin sudah keburu digunkan kartu proses lain
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Status Kartu Proses Penggantian tidak valid, tidak bisa diposting.');
-                    return $this->redirect(['view', 'id' => $model->id]);
+                if ($kartuProsesPg->status != $model::STATUS_GANTI_GREIGE) { // mungkin sudah keburu digunkan kartu proses lain
+                    throw new \Exception('Status Kartu Proses Penggantian tidak valid, tidak bisa diposting.');
                 }
 
                 $kartuProsesPg->status = $kartuProsesPg::STATUS_GANTI_GREIGE_LINKED;
-                if(!$kartuProsesPg->save(false, ['status'])){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Gagal, coba lagi. (3)');
-                    return $this->redirect(['view', 'id' => $model->id]);
+                if (!$kartuProsesPg->save(false, ['status'])) {
+                    throw new \Exception('Gagal mengubah status Kartu Proses Penggantian.');
                 }
             }
 
-            //Booking greige--------------------------------------------------------------------------------------------
-            switch ($mo->jenis_gudang){
-                case TrnStockGreige::JG_WIP:
+            // Booking greige --------------------------------------------------------------------------------------------
+            switch ($mo->jenis_gudang) {
+                case \common\models\ar\TrnStockGreige::JG_WIP:
                     $bookedAttr = 'booked_wip';
                     break;
-                case TrnStockGreige::JG_PFP:
+                case \common\models\ar\TrnStockGreige::JG_PFP:
                     $bookedAttr = 'booked_pfp';
                     break;
-                case TrnStockGreige::JG_EX_FINISH:
+                case \common\models\ar\TrnStockGreige::JG_EX_FINISH:
                     $bookedAttr = 'booked_ef';
                     break;
-                case TrnStockGreige::JG_FRESH:
-                    if($wo->jenis_order === TrnSc::JENIS_ORDER_FRESH_ORDER){
+                case \common\models\ar\TrnStockGreige::JG_FRESH:
+                    if ($wo->jenis_order === \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER) {
                         // jika jenis order wo === fresh dan jenis gudang mo == jg_fresh
-                        //ambil nilai original qty per batch greige untuk dasar pemotongan stok
+                        // ambil nilai original qty per batch greige untuk dasar pemotongan stok
                         $qtyPerBatch = $greige->group->qty_per_batch;
                         $selisih = $totalLength - $qtyPerBatch;
-                        if($model->is_redyeing){
+                        if ($model->is_redyeing) {
                             $update = [
-                                'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                'booked' => new \yii\db\Expression('booked + ' . $totalLength),
                             ];
-                            if($selisih < 0){
-                                $update = [
-                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                    'available' => new \yii\db\Expression('available' . ' + ' . (abs($selisih) - $qtyPerBatch)),
-                                ];
-                            }elseif ($selisih > 0){
-                                $update = [
-                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                    'available' => new \yii\db\Expression('available' . ' - ' . ($selisih + $qtyPerBatch)),
-                                ];
+                            if ($selisih < 0) {
+                                $update['available'] = new \yii\db\Expression('available + ' . (abs($selisih) - $qtyPerBatch));
+                            } elseif ($selisih > 0) {
+                                $update['available'] = new \yii\db\Expression('available - ' . ($selisih + $qtyPerBatch));
                             }
-                        }else{
+                        } else {
                             $update = [
-                                'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $totalLength),
-                                'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
+                                'booked_wo' => new \yii\db\Expression('booked_wo - ' . $totalLength),
+                                'booked' => new \yii\db\Expression('booked + ' . $totalLength),
                             ];
-                            if($selisih < 0){
-                                $update = [
-                                    'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
-                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                    'available' => new \yii\db\Expression('available' . ' + ' . abs($selisih)),
-                                ];
-                            }elseif ($selisih > 0){
-                                $update = [
-                                    'booked_wo' => new \yii\db\Expression('booked_wo' . ' - ' . $qtyPerBatch),
-                                    'booked' => new \yii\db\Expression('booked' . ' + ' . $totalLength),
-                                    'available' => new \yii\db\Expression('available' . ' - ' . $selisih),
-                                ];
+                            if ($selisih < 0) {
+                                $update['booked_wo'] = new \yii\db\Expression('booked_wo - ' . $qtyPerBatch);
+                                $update['available'] = new \yii\db\Expression('available + ' . abs($selisih));
+                            } elseif ($selisih > 0) {
+                                $update['booked_wo'] = new \yii\db\Expression('booked_wo - ' . $qtyPerBatch);
+                                $update['available'] = new \yii\db\Expression('available - ' . $selisih);
                             }
                         }
+
                         Yii::$app->db->createCommand()->update(
-                            MstGreige::tableName(),
+                            \common\models\ar\MstGreige::tableName(),
                             $update,
-                            ['id'=>$greige->id]
+                            ['id' => $greige->id]
                         )->execute();
 
                         $transaction->commit();
@@ -552,13 +749,13 @@ class TrnKartuProsesDyeingController extends Controller
             }
 
             Yii::$app->db->createCommand()->update(
-                MstGreige::tableName(),
+                \common\models\ar\MstGreige::tableName(),
                 [
                     $bookedAttr => new \yii\db\Expression($bookedAttr . ' + ' . $totalLength),
                 ],
-                ['id'=>$greige->id]
+                ['id' => $greige->id]
             )->execute();
-            //Booking greige--------------------------------------------------------------------------------------------
+            // Booking greige --------------------------------------------------------------------------------------------
 
             $transaction->commit();
             Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
@@ -569,6 +766,8 @@ class TrnKartuProsesDyeingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
     }
+
+
 
     /**
      * Finds the TrnKartuProsesDyeing model based on its primary key value.
@@ -587,7 +786,59 @@ class TrnKartuProsesDyeingController extends Controller
     }
 
 
-   public function actionEditNomorKartu($id)
+//    public function actionEditNomorKartu($id)
+//     {
+//         $model = $this->findModel($id);
+
+//         if (!in_array($model->status, [
+//             $model::STATUS_DRAFT,
+//             $model::STATUS_POSTED,
+//             $model::STATUS_DELIVERED
+//         ])) {
+//             return $this->asJson(['error' => 'Hanya status DRAFT, POSTED, dan DELIVERED yang bisa diubah.']);
+//         }
+
+//         if (Yii::$app->request->isPost) {
+//             if ($model->load(Yii::$app->request->post())) {
+
+//                 // === Tambahkan validasi nomor_kartu + motif di sini ===
+//                 // pastikan relasi wo() ada di model TrnKartuProsesDyeing
+//                 $greigeId = $model->wo->greige_id ?? null;
+
+//                 if ($greigeId !== null) {
+//                     $exists = \common\models\ar\TrnKartuProsesDyeing::find()
+//                         ->joinWith('wo')
+//                         ->where([
+//                             \common\models\ar\TrnWo::tableName().'.greige_id' => $greigeId,
+//                             \common\models\ar\TrnKartuProsesDyeing::tableName().'.nomor_kartu' => $model->nomor_kartu,
+//                         ])
+//                         ->andWhere(['<>', \common\models\ar\TrnKartuProsesDyeing::tableName().'.id', $model->id])
+//                         ->exists();
+
+//                     if ($exists) {
+//                         $model->addError('nomor_kartu', 'Nomor kartu ini sudah digunakan untuk motif yang sama.');
+//                         // render kembali form AJAX supaya error muncul di modal
+//                         return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+//                     }
+//                 }
+//                 // === end validasi ===
+
+//                 // Sukses simpan → kirim JSON success
+//                 if ($model->save()) {
+//                     Yii::$app->session->setFlash('success', 'Nomor kartu berhasil diupdate');
+//                     return $this->asJson(['success' => true]);
+//                 }
+
+//                 // Kalau gagal save → kirim balik form dengan error
+//                 return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+//             }
+//         }
+
+//         return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
+//     }
+
+
+    public function actionEditNomorKartu($id)
     {
         $model = $this->findModel($id);
 
@@ -602,10 +853,8 @@ class TrnKartuProsesDyeingController extends Controller
         if (Yii::$app->request->isPost) {
             if ($model->load(Yii::$app->request->post())) {
 
-                // === Tambahkan validasi nomor_kartu + motif di sini ===
-                // pastikan relasi wo() ada di model TrnKartuProsesDyeing
+                // === Validasi nomor_kartu + motif ===
                 $greigeId = $model->wo->greige_id ?? null;
-
                 if ($greigeId !== null) {
                     $exists = \common\models\ar\TrnKartuProsesDyeing::find()
                         ->joinWith('wo')
@@ -618,26 +867,27 @@ class TrnKartuProsesDyeingController extends Controller
 
                     if ($exists) {
                         $model->addError('nomor_kartu', 'Nomor kartu ini sudah digunakan untuk motif yang sama.');
-                        // render kembali form AJAX supaya error muncul di modal
                         return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
                     }
                 }
                 // === end validasi ===
 
-                // Sukses simpan → kirim JSON success
+                // === Update field no sesuai format nama_motif/nomor_kartu ===
+                $namaMotif = $model->wo->greige->nama_kain ?? '';
+                $model->no = $namaMotif . '/' . $model->nomor_kartu; 
+                // === end update field no ===
+
                 if ($model->save()) {
-                    Yii::$app->session->setFlash('success', 'Nomor kartu berhasil diupdate');
+                    Yii::$app->session->setFlash('success', 'Nomor kartu & field No berhasil diupdate');
                     return $this->asJson(['success' => true]);
                 }
 
-                // Kalau gagal save → kirim balik form dengan error
                 return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
             }
         }
 
         return $this->renderAjax('_form_nomor_kartu', ['model' => $model]);
     }
-
 
 
 }

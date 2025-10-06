@@ -17,6 +17,7 @@ use common\models\Model;
 use Yii;
 use common\models\ar\TrnKartuProsesPfp;
 use common\models\ar\TrnKartuProsesPfpSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use yii\db\Expression;
 use yii\helpers\ArrayHelper;
 use yii\helpers\BaseVarDumper;
@@ -712,4 +713,94 @@ class ProcessingPfpController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+
+    public function actionKembaliStock($id)
+{
+    $model = $this->findModel($id);
+
+    // 1. Cek apakah sudah ada proses "Buka Greige"
+    $sudahBukaGreige = KartuProcessPfpProcess::find()
+        ->where(['kartu_process_id' => $model->id, 'process_id' => 1])
+        ->exists();
+
+    if ($sudahBukaGreige) {
+        Yii::$app->session->setFlash('error', 'Maaf, kartu sudah di Buka Greige.');
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
+        // 2. Ubah status kartu proses jadi GAGAL_PROSES
+        $model->status = $model::STATUS_GAGAL_PROSES;
+        $model->save(false, ['status']);
+
+        $trnStockGreigeIds = [];
+
+        // 3. Loop semua item PFP
+        foreach ($model->trnKartuProsesPfpItems as $item) {
+            $stockItem = $item->stock; // relasi harus ada di TrnKartuProsesPfpItem
+
+            if ($stockItem === null) {
+                continue;
+            }
+
+            // Ambil greige_id → prioritas dari stock, fallback ke kartu
+            $greigeId = $stockItem->greige_id ?? $model->greige_id;
+            if ($greigeId === null) {
+                continue;
+            }
+
+            $mstGreige = \common\models\ar\MstGreige::findOne($greigeId);
+            if ($mstGreige === null) {
+                continue;
+            }
+
+            // === PEMBEDAAN ===
+            if ($stockItem->opname instanceof \common\models\ar\TrnStockGreigeOpname) {
+                // ✅ Sudah ada di opname
+                $mstGreige->addBackToStockOpname($item->panjang_m);
+
+                // update status + note opname
+                $stockItem->opname->status = \common\models\ar\TrnStockGreigeOpname::STATUS_VALID;
+                $stockItem->opname->note   = 'Dikembalikan dari NK PFP: ' . $model->nomor_kartu;
+                $stockItem->opname->save(false, ['status','note']);
+
+                // simpan FK ke TrnStockGreige
+                if ($stockItem->opname->stock_greige_id) {
+                    $trnStockGreigeIds[] = $stockItem->opname->stock_greige_id;
+                }
+            } else {
+                // ✅ Tidak ada di opname
+                $mstGreige->addBackToStock($item->panjang_m);
+            }
+
+            // update note di TrnStockGreige
+            $stockItem->note = 'Dikembalikan dari NK PFP: ' . $model->nomor_kartu;
+            $stockItem->save(false, ['note']);
+
+            $trnStockGreigeIds[] = $stockItem->id;
+        }
+
+        // 4. Update semua TrnStockGreige sekaligus
+        if (!empty($trnStockGreigeIds)) {
+            \common\models\ar\TrnStockGreige::updateAll(
+                [
+                    'status' => \common\models\ar\TrnStockGreige::STATUS_VALID,
+                    'note'   => 'Dikembalikan dari NK PFP: ' . $model->nomor_kartu,
+                ],
+                ['id' => $trnStockGreigeIds]
+            );
+        }
+
+        $transaction->commit();
+        Yii::$app->session->setFlash('success', 'Stok PFP berhasil dikembalikan.');
+    } catch (\Throwable $e) {
+        $transaction->rollBack();
+        Yii::$app->session->setFlash('error', 'Gagal mengembalikan stok PFP: ' . $e->getMessage());
+    }
+
+    return $this->redirect(['view', 'id' => $model->id]);
+}
+
 }

@@ -383,5 +383,26 @@ class TrnOrderPfpController extends Controller
         Yii::$app->session->setFlash('success', 'Validasi stock berhasil diaktifkan.');
         return $this->redirect(['view', 'id' => $model->id]);
     }
+
+    public function actionSelectHandling($id)
+    {
+        $order = $this->findModel($id);
+
+        if (Yii::$app->request->isPost) {
+            $handlingId = Yii::$app->request->post('TrnOrderPfp')['handling_id'] ?? null;
+            if ($handlingId) {
+                $order->handling_id = $handlingId;
+                $order->save(false, ['handling_id']); // simpan hanya field handling_id
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                return ['success' => true];
+            }
+        }
+
+        return $this->renderAjax('select-handling', [
+            'model' => $order,
+        ]);
+    }
+
+
     
 }

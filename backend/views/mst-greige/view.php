@@ -50,15 +50,16 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                 'updated_by',
                 'aktif:boolean',
                 'stock:decimal',
+                'stock_opname:decimal',
                 'available:decimal',
                 [
                     'value' => $model->getTotalPanjangMGudangInspect(),
                     'label' => 'Stock Gudang Inspect'
                 ],
-                [
-                    'value' => $model->getTotalPanjangMGudangStockOpname(),
-                    'label' => 'Stock Opname'
-                ],
+                // [
+                //     'value' => $model->getTotalPanjangMGudangStockOpname(),
+                //     'label' => 'Stock Opname'
+                // ],
                 'booked_wo:decimal',
                 'booked_opfp:decimal',
                 'booked:decimal',
@@ -87,28 +88,36 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         </p>
         <table class="table table-bordered table-striped">
             <thead>
-            <tr>
-                <th>Grade A</th>
-                <th>Grade B</th>
-                <th>Grade C</th>
-                <th>Grade D</th>
-                <th>Grade E</th>
-                <th>NO Grade</th>
-                <th>A+</th>
-                <th>A*</th>
-                <th>TOTAL</th>
-            </tr>
+                <tr>
+                    <th>Grade A</th>
+                    <th>Grade B</th>
+                    <th>Grade C</th>
+                    <th>Grade D</th>
+                    <th>Grade E</th>
+                    <th>NO Grade</th>
+                    <th>A+</th>
+                    <th>A*</th>
+                    <th>TOTAL</th>
+                </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A]) ? $stockPerGrade[TrnStockGreige::GRADE_A] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_B]) ? $stockPerGrade[TrnStockGreige::GRADE_B] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_C]) ? $stockPerGrade[TrnStockGreige::GRADE_C] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_D]) ? $stockPerGrade[TrnStockGreige::GRADE_D] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_E]) ? $stockPerGrade[TrnStockGreige::GRADE_E] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_NG]) ? $stockPerGrade[TrnStockGreige::GRADE_NG] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A_PLUS]) ? $stockPerGrade[TrnStockGreige::GRADE_A_PLUS] : 0 ?></td>
-                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A_ASTERISK]) ? $stockPerGrade[TrnStockGreige::GRADE_A_ASTERISK] : 0 ?></td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A]) ? $stockPerGrade[TrnStockGreige::GRADE_A] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_B]) ? $stockPerGrade[TrnStockGreige::GRADE_B] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_C]) ? $stockPerGrade[TrnStockGreige::GRADE_C] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_D]) ? $stockPerGrade[TrnStockGreige::GRADE_D] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_E]) ? $stockPerGrade[TrnStockGreige::GRADE_E] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_NG]) ? $stockPerGrade[TrnStockGreige::GRADE_NG] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A_PLUS]) ? $stockPerGrade[TrnStockGreige::GRADE_A_PLUS] : 0 ?>
+                    </td>
+                    <td><?= isset($stockPerGrade[TrnStockGreige::GRADE_A_ASTERISK]) ? $stockPerGrade[TrnStockGreige::GRADE_A_ASTERISK] : 0 ?>
+                    </td>
                     <td><?= isset($stockPerGrade['total']) ? $stockPerGrade['total'] : 0 ?></td>
                 </tr>
             </tbody>

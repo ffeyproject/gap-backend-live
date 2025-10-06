@@ -362,6 +362,15 @@ $moduleId = $controller->module->id;
                         'label' => 'Stock Opname Keluar', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/stock-keluar'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && $actionId=='get-stock-keluar'
                     ],
+                   [
+                        'label' => 'Duplikat Stok ke Opname', 
+                        'icon' => 'circle', 
+                        'url' => ['/trn-gudang-stock-opname/index-duplicate'],
+                        'active' => $moduleId == 'app-backend'
+                            && $controllerId == 'trn-gudang-stock-opname'
+                            && $actionId == 'index-duplicate'
+                    ],
+
                 ],
             ],
             [
