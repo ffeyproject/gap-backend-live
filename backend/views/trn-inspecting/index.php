@@ -88,8 +88,35 @@ $this->params['breadcrumbs'][] = $this->title;
                 //'value'=>'memoRepair.no'
             //],
 	        'kombinasi',
-            'date:date',
-	        'tanggal_inspeksi:date',
+            [
+                'attribute' => 'dateRange',
+                'label' => 'Tanggal Kirim',
+                'value' => 'date',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'pluginOptions' => [
+                        'locale' => ['format' => 'YYYY-MM-DD'],
+                        'autoUpdateInput' => true,
+                        'opens' => 'left',
+                    ],
+                ],
+                'format' => ['date', 'php:Y-m-d'],
+            ],
+
+	        [
+                'attribute' => 'tanggalInspeksiRange',
+                'label' => 'Tanggal Inspeksi',
+                'value' => 'tanggal_inspeksi',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'pluginOptions' => [
+                        'locale' => ['format' => 'YYYY-MM-DD'],
+                        'autoUpdateInput' => true,
+                        'opens' => 'left',
+                    ],
+                ],
+                'format' => ['date', 'php:Y-m-d'],
+            ],
             'no_lot',            
             //'date',
             //'tanggal_inspeksi',

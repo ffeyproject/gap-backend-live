@@ -409,5 +409,53 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             $this->no_urut = 1;
         }
     }
+
+     /** 
+     * Setelah kartu disimpan → periksa apakah order sudah penuh (qty terpenuhi)
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        $order = $this->orderPfp;
+        if ($order === null) {
+            return;
+        }
+
+        // Hitung kartu proses yang aktif (tidak gagal)
+        $jumlahKartuProses = $order->getTrnKartuProsesPfps()
+            ->andWhere(['!=', 'status', self::STATUS_GAGAL_PROSES])
+            ->count();
+
+        // Jika sudah memenuhi qty dan status belum Processed → ubah jadi Processed
+        if ($jumlahKartuProses >= $order->qty && $order->status != TrnOrderPfp::STATUS_PROCESSED) {
+            $order->status = TrnOrderPfp::STATUS_PROCESSED;
+            $order->save(false);
+        }
+    }
+
+    /**
+     * Setelah kartu dihapus → periksa apakah order masih penuh
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+
+        $order = $this->orderPfp;
+        if ($order === null) {
+            return;
+        }
+
+        // Hitung ulang kartu proses aktif
+        $jumlahKartuProses = $order->getTrnKartuProsesPfps()
+            ->andWhere(['!=', 'status', self::STATUS_GAGAL_PROSES])
+            ->count();
+
+        // Jika jumlah kartu < qty dan status Processed → ubah balik ke Approved
+        if ($jumlahKartuProses < $order->qty && $order->status == TrnOrderPfp::STATUS_PROCESSED) {
+            $order->status = TrnOrderPfp::STATUS_APPROVED;
+            $order->save(false);
+        }
+    }
     
 }

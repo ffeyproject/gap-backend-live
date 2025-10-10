@@ -72,8 +72,36 @@ if(!empty($searchModel->wo_id)){
                 ],
             ],
             'colorName',
-            'tgl_inspeksi:date',
-            'tgl_kirim:date',
+            // 'tgl_inspeksi:date',
+            // 'tgl_kirim:date',
+            [
+                'attribute' => 'tglInspeksiRange',
+                'label' => 'Tanggal Inspeksi',
+                'value' => 'tgl_inspeksi',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'pluginOptions' => [
+                        'locale' => ['format' => 'YYYY-MM-DD'],
+                        'autoUpdateInput' => true,
+                        'opens' => 'left'
+                    ],
+                ],
+                'format' => ['date', 'php:Y-m-d'],
+            ],
+            [
+                'attribute' => 'tglKirimRange',
+                'label' => 'Tanggal Kirim',
+                'value' => 'tgl_kirim',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'pluginOptions' => [
+                        'locale' => ['format' => 'YYYY-MM-DD'],
+                        'autoUpdateInput' => true,
+                        'opens' => 'left'
+                    ],
+                ],
+                'format' => ['date', 'php:Y-m-d'],
+            ],
             'no_lot',
             //'jenis',
             [

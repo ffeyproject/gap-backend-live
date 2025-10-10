@@ -384,17 +384,17 @@ class TrnKartuProsesPfpController extends Controller
              * Periksa berapa banyak Order PFP yang sudah dibuat kartu prosesnya
              * kalau sudah mencukupi, ubah status nya jadi processed
              */
-            $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()->count('id');
-            if($jumlahKartuProses >= $orderPfp->qty){
-                if($orderPfp->status == $orderPfp::STATUS_APPROVED){
-                    $orderPfp->status = $orderPfp::STATUS_PROCESSED;
-                    if(!$orderPfp->save(false, ['status'])){
-                        $transaction->rollBack();
-                        Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
-                        return $this->redirect(['view', 'id' => $model->id]);
-                    }
-                }
-            }
+            // $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()->count('id');
+            // if($jumlahKartuProses >= $orderPfp->qty){
+            //     if($orderPfp->status == $orderPfp::STATUS_APPROVED){
+            //         $orderPfp->status = $orderPfp::STATUS_PROCESSED;
+            //         if(!$orderPfp->save(false, ['status'])){
+            //             $transaction->rollBack();
+            //             Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
+            //             return $this->redirect(['view', 'id' => $model->id]);
+            //         }
+            //     }
+            // }
 
             $qtyBatch = $model->greigeGroup->qty_per_batch;
             //menghitung selisih antaara total panjang dan qty per batch
