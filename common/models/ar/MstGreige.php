@@ -205,6 +205,14 @@ class MstGreige extends \yii\db\ActiveRecord
         return $this->save(false, ['stock', 'available', 'stock_opname']);
     }
 
+    public function reduceBackWoToStock($jumlah)
+    {
+        $this->available = (float)$this->available + (float)$jumlah;
+        $this->booked_wo = (float)$this->booked_wo - (float)$jumlah;
+
+        return $this->save(false, ['available', 'booked_wo']);
+    }
+
     /**
      * @return float
      * tidak dipakai lagi, sudah digantikan oleh kolom tambahan "available"

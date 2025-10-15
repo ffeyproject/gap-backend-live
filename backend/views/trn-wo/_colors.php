@@ -23,20 +23,21 @@ echo GridView::widget([
     'showPageSummary' => true,
     'toolbar' => [
         [
-            'content'=>
-                $model->status == $model::STATUS_DRAFT ? Html::a('<i class="glyphicon glyphicon-plus"></i>', ['/trn-wo-color/create', 'woId' => $model->id], [
-                    'class' => 'btn btn-xs btn-success',
-                    'title' => 'Add Color',
-                    'data-toggle'=>"modal",
-                    'data-target'=>"#trnWoModal",
-                    'data-title' => 'Add Color'
-                ]) : ''
+            'content' =>
+                $model->status == $model::STATUS_DRAFT
+                    ? Html::a('<i class="glyphicon glyphicon-plus"></i>', ['/trn-wo-color/create', 'woId' => $model->id], [
+                        'class' => 'btn btn-xs btn-success',
+                        'title' => 'Add Color',
+                        'data-toggle' => "modal",
+                        'data-target' => "#trnWoModal",
+                        'data-title' => 'Add Color'
+                    ])
+                    : ''
         ]
     ],
     'panel' => [
         'heading' => '<strong>Colors</strong>',
         'type' => GridView::TYPE_DEFAULT,
-        //'before' => false,
         'after' => false,
         'footer' => false
     ],
@@ -44,66 +45,98 @@ echo GridView::widget([
         ['class' => 'kartik\grid\SerialColumn'],
 
         'id',
-        //'mo_color_id',
-        //'color',
         [
-            'label'=>'Color',
-            'value'=>function($data){
-                /* @var $data TrnWoColor*/
+            'label' => 'Color',
+            'value' => function ($data) {
+                /** @var $data TrnWoColor */
                 return $data->moColor->color;
             }
         ],
         [
-            'label'=>'Qty Batch',
-            'attribute'=>'qty',
+            'label' => 'Qty Batch',
+            'attribute' => 'qty',
             'format' => 'decimal',
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
         [
-            'label'=>'Greige',
+            'label' => 'Greige',
             'attribute' => 'qtyBatchToMeter',
             'format' => 'decimal',
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
         [
-            'label'=>'Finish',
+            'label' => 'Finish',
             'attribute' => 'qtyFinish',
             'format' => 'decimal',
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
         [
-            'label'=>'Finish (Yard)',
+            'label' => 'Finish (Yard)',
             'attribute' => 'qtyFinishToYard',
             'format' => 'decimal',
             'pageSummary' => true,
             'hAlign' => 'right'
         ],
         [
-            'label'=>'Ready Colour',
+            'label' => 'Ready Colour',
             'attribute' => 'ready_colour',
             'format' => 'boolean',
-            'hAlign' => 'right'
+            'hAlign' => 'center'
         ],
         [
-            'label'=>'Ready Colour Date',
+            'label' => 'Ready Colour Date',
             'attribute' => 'date_ready_colour',
             'format' => 'date',
-            'hAlign' => 'right'
+            'hAlign' => 'center'
         ],
         [
             'class' => 'kartik\grid\ActionColumn',
             'controller' => 'trn-wo-color',
-            'template' => '{delete} {update} {batal} {ready-colour}',
+            'template' => '{update} {reduce-qty} {delete} {ready-colour}',
             'buttons' => [
-                'delete' => function($url, $data, $key) use($model){
-                    /* @var $data TrnWoColor*/
-                    if($model->status == $model::STATUS_DRAFT){
+
+                // UPDATE hanya DRAFT
+                'update' => function ($url, $data, $key) use ($model) {
+                    if ($model->status == $model::STATUS_DRAFT) {
+                        return Html::a('<i class="glyphicon glyphicon-pencil"></i>', $url, [
+                            'class' => 'btn btn-xs btn-warning',
+                            'title' => 'Update Color',
+                            'data-toggle' => "modal",
+                            'data-target' => "#trnWoModal",
+                            'data-title' => 'Update Color'
+                        ]);
+                    }
+                    return '';
+                },
+
+                // KURANGI QTY hanya APPROVED
+                'reduce-qty' => function ($url, $data, $key) use ($model) {
+                    if ($model->status == $model::STATUS_APPROVED) {
+                        return Html::a(
+                            '<i class="glyphicon glyphicon-minus"></i>',
+                            ['/trn-wo-color/reduce-qty', 'id' => $data->id], // route ke controller
+                            [
+                                'class' => 'btn btn-xs btn-danger',
+                                'title' => 'Kurangi Qty Color: ' . $data->moColor->color,
+                                'data-toggle' => 'modal',
+                                'data-target' => '#trnWoModal',
+                                'data-title' => 'Kurangi Qty Color',
+                                'data-pjax' => '0'
+                            ]
+                        );
+                    }
+                    return '';
+                },
+
+                // DELETE hanya DRAFT
+                'delete' => function ($url, $data, $key) use ($model) {
+                    if ($model->status == $model::STATUS_DRAFT) {
                         return Html::a('<i class="glyphicon glyphicon-trash"></i>', $url, [
                             'class' => 'btn btn-xs btn-danger',
-                            'title' => 'Delete Color: '.$data->moColor->color,
+                            'title' => 'Delete Color: ' . $data->moColor->color,
                             'data' => [
                                 'confirm' => 'Are you sure you want to delete this item?',
                                 'method' => 'post',
@@ -112,56 +145,29 @@ echo GridView::widget([
                     }
                     return '';
                 },
-                'update' => function($url, $data, $key) use($model){
-                    /* @var $data TrnWoColor*/
-                    if($model->status == $model::STATUS_DRAFT){
-                        return Html::a('<i class="glyphicon glyphicon-pencil"></i>', $url, [
-                            'class' => 'btn btn-xs btn-warning',
-                            'title' => 'Update Color',
-                            'data-toggle'=>"modal",
-                            'data-target'=>"#trnWoModal",
-                            'data-title' => 'Update Color'
-                        ]);
-                    }
-                    return '';
-                },
-                // 'batal' => function($url, $data, $key)use($model){
-                //     /* @var $data TrnWoColor*/
-                //     if($model->status == $model::STATUS_APPROVED){
-                //         return Html::a('<i class="glyphicon glyphicon-remove"></i>', $url, [
-                //             'class' => 'btn btn-xs btn-danger',
-                //             'title' => 'Batalkan WO Color: '.$data->moColor->color,
-                //             'data' => [
-                //                 'confirm' => 'Are you sure you want to batal this item?',
-                //                 'method' => 'post',
-                //             ],
-                //         ]);
-                //     }
-                //     return '';
-                // },
-                'ready-colour' => function($url, $data, $key)use($model){
-                    /* @var $data TrnWoColor*/
-                    if($model->status == $model::STATUS_APPROVED){
-                        if ($data->ready_colour){
+
+                // READY COLOUR toggle hanya APPROVED
+                'ready-colour' => function ($url, $data, $key) use ($model) {
+                    if ($model->status == $model::STATUS_APPROVED) {
+                        if ($data->ready_colour) {
                             return Html::a('<i class="glyphicon glyphicon-remove-sign"></i>', $url, [
                                 'class' => 'btn btn-xs btn-warning',
-                                'title' => 'Mark As Not Ready Colour: '.$data->moColor->color,
+                                'title' => 'Mark As Not Ready Colour: ' . $data->moColor->color,
                                 'data' => [
                                     'confirm' => 'Are you sure you want to mark this item?',
                                     'method' => 'post',
                                 ],
                             ]);
-                        }else{
+                        } else {
                             return Html::a('<i class="glyphicon glyphicon-ok-sign"></i>', $url, [
-                                'class' => 'btn btn-xs btn-warning',
-                                'title' => 'Mark As Ready Colour: '.$data->moColor->color,
+                                'class' => 'btn btn-xs btn-success',
+                                'title' => 'Mark As Ready Colour: ' . $data->moColor->color,
                                 'data' => [
                                     'confirm' => 'Are you sure you want to mark this item?',
                                     'method' => 'post',
                                 ],
                             ]);
                         }
-
                     }
                     return '';
                 },

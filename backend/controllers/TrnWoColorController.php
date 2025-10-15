@@ -2,6 +2,8 @@
 
 namespace backend\controllers;
 
+use common\models\ar\TrnKartuProsesDyeing;
+use common\models\ar\TrnKartuProsesPrinting;
 use common\models\ar\TrnMo;
 use common\models\ar\TrnWo;
 use Yii;
@@ -245,4 +247,115 @@ class TrnWoColorController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionReduceQty($id)
+    {
+        $model = $this->findModel($id);
+        $woColorId = $model->id;
+
+        // 🔹 Ambil semua kartu proses aktif (DRAFT - INSPECTED)
+        $statusAktif = [
+            TrnKartuProsesDyeing::STATUS_DRAFT,
+            TrnKartuProsesDyeing::STATUS_POSTED,
+            TrnKartuProsesDyeing::STATUS_DELIVERED,
+            TrnKartuProsesDyeing::STATUS_APPROVED,
+            TrnKartuProsesDyeing::STATUS_INSPECTED,
+        ];
+
+        // Hitung jumlah kartu proses per status
+        $kartuDyeing = TrnKartuProsesDyeing::find()
+            ->select(['status', 'COUNT(*) AS total'])
+            ->where(['wo_color_id' => $woColorId])
+            ->andWhere(['in', 'status', $statusAktif])
+            ->groupBy('status')
+            ->asArray()
+            ->all();
+
+        $kartuPrinting = TrnKartuProsesPrinting::find()
+            ->select(['status', 'COUNT(*) AS total'])
+            ->where(['wo_color_id' => $woColorId])
+            ->andWhere(['in', 'status', $statusAktif])
+            ->groupBy('status')
+            ->asArray()
+            ->all();
+
+        // Gabungkan semua status dari Dyeing & Printing
+        $statusSummary = [];
+        $totalKartuAktif = 0;
+
+        foreach (array_merge($kartuDyeing, $kartuPrinting) as $row) {
+            $status = (int)$row['status'];
+            $total = (int)$row['total'];
+            $totalKartuAktif += $total;
+
+            $statusLabel = TrnKartuProsesDyeing::statusOptions()[$status] ?? "Status {$status}";
+            $statusSummary[] = "{$total} Kartu {$statusLabel}";
+        }
+
+        // Hitung sisa batch yang bisa dikurangi
+        $sisaBisaKurangi = $model->qty - $totalKartuAktif;
+
+        if ($sisaBisaKurangi <= 0) {
+            $summaryText = !empty($statusSummary) ? implode(', ', $statusSummary) : 'Tidak ada kartu proses aktif.';
+            throw new \yii\web\ForbiddenHttpException(
+                "Semua batch sudah memiliki kartu proses aktif. ({$summaryText})"
+            );
+        }
+
+        // Jika GET (buka modal form)
+        if (Yii::$app->request->isAjax && !$model->load(Yii::$app->request->post())) {
+            return $this->renderAjax('@backend/views/trn-wo/_reduce_qty_form', [
+                'model' => $model,
+                'sisaBisaKurangi' => $sisaBisaKurangi,
+                'statusSummary' => $statusSummary,
+            ]);
+        }
+
+        // Jika POST (submit form)
+        if (Yii::$app->request->isPost) {
+            $reduceQty = Yii::$app->request->post('reduce_qty');
+
+            if (!is_numeric($reduceQty) || $reduceQty <= 0) {
+                Yii::$app->session->setFlash('error', 'Jumlah pengurangan tidak valid.');
+            } elseif ($reduceQty > $sisaBisaKurangi) {
+                Yii::$app->session->setFlash('error', "Pengurangan melebihi batch yang tersedia. Sisa hanya {$sisaBisaKurangi} batch.");
+            } else {
+                $greige = $model->wo->greige;
+                $group  = $greige->group;
+                $jumlah = $reduceQty * (float)$group->qty_per_batch;
+                $unitName = $group->unitName ?? 'Meter';
+
+                $transaction = Yii::$app->db->beginTransaction();
+                try {
+                    // Kurangi qty di WO Color
+                    $model->qty -= $reduceQty;
+                    $model->save(false);
+
+                    // Kembalikan stok greige
+                    $greige->reduceBackWoToStock($jumlah);
+
+                    $transaction->commit();
+
+                    $summaryText = !empty($statusSummary)
+                        ? ' (' . implode(', ', $statusSummary) . ')'
+                        : '';
+
+                    Yii::$app->session->setFlash(
+                        'success',
+                        "Qty berhasil dikurangi sebanyak {$reduceQty} batch "
+                        . "(" . number_format($jumlah, 2) . " {$unitName} dikembalikan ke stok)"
+                        . $summaryText
+                    );
+                } catch (\Throwable $e) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                }
+            }
+
+            return $this->redirect(['trn-wo/view', 'id' => $model->wo_id]);
+        }
+
+        throw new \yii\web\NotFoundHttpException('Halaman tidak ditemukan.');
+    }
+
 }
