@@ -434,10 +434,10 @@ class ProcessingDyeingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        if($model->getKartuProcessDyeingProcesses()->count('kartu_process_id') > 0){
-            Yii::$app->session->setFlash('error', 'Proses sudah berjalan, tidak bisa dibatalkan.');
-            return $this->redirect(['view', 'id' => $model->id]);
-        }
+        // if($model->getKartuProcessDyeingProcesses()->count('kartu_process_id') > 0){
+        //     Yii::$app->session->setFlash('error', 'Proses sudah berjalan, tidak bisa dibatalkan.');
+        //     return $this->redirect(['view', 'id' => $model->id]);
+        // }
 
         $model->status = $model::STATUS_BATAL;
 
@@ -969,11 +969,6 @@ class ProcessingDyeingController extends Controller
 
         return $this->redirect(['view', 'id' => $model->id]);
     }
-
-
-
-
-
 
     public function actionDuplicateBulk()
     {

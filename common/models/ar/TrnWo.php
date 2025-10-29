@@ -217,7 +217,7 @@ class TrnWo extends \yii\db\ActiveRecord
      */
     public function getTrnKartuProsesDyeingsNonPg()
     {
-        return $this->getTrnKartuProsesDyeings()->where(['not in', 'status', [TrnKartuProsesDyeing::STATUS_GANTI_GREIGE, TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED]]);
+        return $this->getTrnKartuProsesDyeings()->where(['not in', 'status', [TrnKartuProsesDyeing::STATUS_GANTI_GREIGE, TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED, TrnKartuProsesDyeing::STATUS_BATAL]]);
     }
 
     /**

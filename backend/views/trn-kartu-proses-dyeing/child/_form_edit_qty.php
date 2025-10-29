@@ -95,7 +95,8 @@ use yii\widgets\Pjax;
             ],
         ],
     ],
-]); ?>
+]); 
+?>
 
 <?php Pjax::end(); ?>
 

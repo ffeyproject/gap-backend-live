@@ -19,6 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'responsiveWrap' => false,
+        'showPageSummary' => true,
         'panel' => [
             'type' => 'default',
             'before'=>Html::tag(
@@ -65,6 +66,25 @@ $this->params['breadcrumbs'][] = $this->title;
             'dikerjakan_oleh',
             'lusi',
             'pakan',
+            [
+                'label' => 'Panjang',
+                'value' => function ($data) {
+                    /* @var $data TrnKartuProsesPfp */
+                    $totalPanjang = 0;
+                    if (!empty($data->trnKartuProsesPfpItems)) {
+                        foreach ($data->trnKartuProsesPfpItems as $item) {
+                            if ($item->stock && isset($item->stock->panjang_m)) {
+                                $totalPanjang += $item->stock->panjang_m;
+                            }
+                        }
+                    }
+                    return $totalPanjang;
+                },
+                'format' => ['decimal', 0],
+                'hAlign' => 'right',
+                'pageSummary' => true,
+                'pageSummaryFunc' => GridView::F_SUM,
+            ],
             //'note:ntext',
             [
                 'attribute'=>'status',

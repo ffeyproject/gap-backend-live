@@ -4,7 +4,6 @@ use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnStockGreige;
 use kartik\grid\GridView;
 use yii\data\ActiveDataProvider;
-use yii\db\Query;
 use yii\helpers\Html;
 
 /* @var $this yii\web\View */
@@ -14,20 +13,27 @@ $wo = $model->wo;
 $greige = $wo->greige;
 $greigeGroup = $greige->group;
 
-$canCreateItem = false;
+// ===== CONTROL LOGIC =====
+$canCreateItem = in_array($model->status, [
+    TrnKartuProsesDyeing::STATUS_DELIVERED,
+]);
 
-if($model->status === TrnKartuProsesDyeing::STATUS_DRAFT){
-    $canCreateItem = true;
-}
+$canDeleteItem = in_array($model->status, [
+    TrnKartuProsesDyeing::STATUS_DELIVERED,
+    TrnKartuProsesDyeing::STATUS_APPROVED,
+]);
 
+// ===== DATA PROVIDERS =====
 $dataProviderTubeKiri = new ActiveDataProvider([
-    'query' => $model->getTrnKartuProsesDyeingItems()->where(['tube'=>TrnKartuProsesDyeingItem::TUBE_KIRI]),
+    'query' => $model->getTrnKartuProsesDyeingItems()
+        ->where(['tube' => TrnKartuProsesDyeingItem::TUBE_KIRI]),
     'pagination' => false,
     'sort' => false
 ]);
 
 $dataProviderTubeKanan = new ActiveDataProvider([
-    'query' => $model->getTrnKartuProsesDyeingItems()->where(['tube'=>TrnKartuProsesDyeingItem::TUBE_KANAN]),
+    'query' => $model->getTrnKartuProsesDyeingItems()
+        ->where(['tube' => TrnKartuProsesDyeingItem::TUBE_KANAN]),
     'pagination' => false,
     'sort' => false
 ]);
@@ -37,21 +43,36 @@ $dataProviderTubeKanan = new ActiveDataProvider([
     <div class="box-header with-border">
         <h3 class="box-title">ITEMS</h3>
         <div class="box-tools pull-right">
-            <?=$canCreateItem ? Html::a('<i class="glyphicon glyphicon-plus"></i>', ['/trn-kartu-proses-dyeing-item/create', 'processId' => $model->id], [
-                'class' => 'btn btn-xs btn-success',
-                'title' => 'Add Items',
-                'data-toggle'=>"modal",
-                'data-target'=>"#kartuProsesDyeingModal",
-                'data-title' => 'Add Items'
-            ]) : ''?>
+            <?php if ($canCreateItem): ?>
+            <?= 
+                Html::a('<i class="glyphicon glyphicon-plus"></i>', 
+                    ['/trn-kartu-proses-dyeing-item/add-create', 'processId' => $model->id],
+                    [
+                        'class' => 'btn btn-xs btn-success',
+                        'title' => 'Tambah Roll',
+                        'data-toggle' => "modal",
+                        'data-target' => "#kartuProsesDyeingModal",
+                        'data-title' => 'Tambah Roll Baru'
+                    ]
+                )
+            ?>
+            <?php endif; ?>
         </div>
     </div>
+
     <div class="box-body">
-        <p><?='<strong>Greige: '.$greige->nama_kain.' - Per Batch: '.Yii::$app->formatter->asDecimal($greigeGroup->qty_per_batch).' '.$greigeGroup::unitOptions()[$greigeGroup->unit].'</strong>'?>
+        <p>
+            <strong>
+                Greige: <?= Html::encode($greige->nama_kain) ?> -
+                Per Batch: <?= Yii::$app->formatter->asDecimal($greigeGroup->qty_per_batch) ?>
+                <?= $greigeGroup::unitOptions()[$greigeGroup->unit] ?>
+            </strong>
         </p>
+
         <div class="row">
+            <!-- ==================== TUBE KIRI ==================== -->
             <div class="col-md-6">
-                <?=GridView::widget([
+                <?= GridView::widget([
                     'dataProvider' => $dataProviderTubeKiri,
                     'id' => 'KartuProsesDyeingItemsGridTubeKiri',
                     'pjax' => true,
@@ -68,118 +89,92 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                     ],
                     'columns' => [
                         ['class' => 'kartik\grid\SerialColumn'],
-
-                        //'id',
-                        //'process_id',
                         'date:date',
-                        //'mesin',
-                        // [
-                        //     'attribute'=>'panjang_m',
-                        //     'label'=>'Qty',
-                        //     'format'=>'decimal',
-                        //     'pageSummary' => true,
-                        //     //'hAlign' => 'right'
-                        // ],
                         [
                             'attribute' => 'panjang_m',
                             'label' => 'Qty',
                             'format' => ['decimal', 2],
                             'hAlign' => 'right',
                             'pageSummary' => true,
-                            'pageSummaryFunc' => \kartik\grid\GridView::F_SUM,
-                            'content' => function($data){
+                            'pageSummaryFunc' => GridView::F_SUM,
+                            'content' => function ($data) {
                                 return Html::a(
                                     Yii::$app->formatter->asDecimal($data->panjang_m, 2),
                                     ['/trn-kartu-proses-dyeing-item/edit-qty', 'id' => $data->id],
                                     [
                                         'data-toggle' => "modal",
                                         'data-target' => "#kartuProsesDyeingModal",
-                                        'data-title' => 'Edit Qty Roll ID: '.$data->id,
+                                        'data-title' => 'Edit Qty Roll ID: ' . $data->id,
                                         'title' => 'Klik untuk edit Qty',
                                     ]
                                 );
                             },
                         ],
-
                         [
                             'attribute' => 'mesin',
                             'label' => 'Mesin',
-                            'content' => function($data){
+                            'content' => function ($data) {
                                 return Html::a(
                                     $data->mesin,
                                     ['/trn-kartu-proses-dyeing-item/edit-mesin', 'id' => $data->id],
                                     [
                                         'data-toggle' => "modal",
                                         'data-target' => "#kartuProsesDyeingModal",
-                                        'data-title' => 'Edit Mesin Roll ID: '.$data->id,
+                                        'data-title' => 'Edit Mesin Roll ID: ' . $data->id,
                                         'title' => 'Klik untuk edit Mesin',
                                     ]
                                 );
                             }
                         ],
                         [
-                            'label'=>'Unit',
-                            'value'=>function($data) use($greigeGroup){
-                                return $greigeGroup->unitName;
+                            'label' => 'Unit',
+                            'value' => function ($data) {
+                                return $data->stock->greige->group->unitName ?? '';
                             },
                         ],
                         [
-                            'label'=>'Grade',
-                            'value'=>function($data){
-                                /* @var $data TrnKartuProsesDyeingItem*/
-                                return TrnStockGreige::gradeOptions()[$data->stock->grade];
+                            'label' => 'Grade',
+                            'value' => function ($data) {
+                                return isset($data->stock->grade)
+                                    ? TrnStockGreige::gradeOptions()[$data->stock->grade]
+                                    : '';
                             },
                         ],
                         [
-                            'attribute'=>'tube',
-                            'value'=>function($data){
-                                /* @var $data TrnKartuProsesDyeingItem*/
+                            'attribute' => 'tube',
+                            'value' => function ($data) {
                                 return $data::tubeOptions()[$data->tube];
                             },
-                            'filterType' => GridView::FILTER_SELECT2,
-                            'filterWidgetOptions' => [
-                                'data' => TrnKartuProsesDyeingItem::statusOptions(),
-                                'options' => ['placeholder' => '...'],
-                                'pluginOptions' => [
-                                    'allowClear' => true
-                                ],
-                            ],
                         ],
-                        //'note:ntext',
-                        //'status',
-                        //'created_at',
-                        //'created_by',
-                        //'updated_at',
-                        //'updated_by',
-
                         [
                             'class' => 'kartik\grid\ActionColumn',
-                            'controller' => 'trn-kartu-proses-dyeing-item',
-                            'template' => '{delete} {print}',
+                            'template' => '{delete-item}',
                             'buttons' => [
-                                'delete' => function($url, $model, $key) use($canCreateItem) {
-                                    /* @var $model TrnKartuProsesDyeingItem*/
-                                    if($canCreateItem){
-                                        return Html::a('<i class="glyphicon glyphicon-trash"></i>', $url, [
-                                            'class' => 'btn btn-xs btn-danger',
-                                            'title' => 'Delete: '.$model->id,
-                                            'data' => [
-                                                'confirm' => 'Are you sure you want to delete this item?',
-                                                'method' => 'post',
-                                            ],
-                                        ]);
+                                'delete-item' => function ($url, $itemModel) use ($canDeleteItem) {
+                                    if ($canDeleteItem) {
+                                        return Html::a(
+                                            '<i class="glyphicon glyphicon-minus"></i>',
+                                            ['/trn-kartu-proses-dyeing-item/delete-item', 'id' => $itemModel->id],
+                                            [
+                                                'title' => 'Hapus Roll',
+                                                'class' => 'btn btn-xs btn-danger',
+                                                'data-toggle' => "modal",
+                                                'data-target' => "#kartuProsesDyeingModal",
+                                                'data-title' => 'Hapus Roll ID: ' . $itemModel->id,
+                                            ]
+                                        );
                                     }
-
                                     return '';
                                 },
-                            ]
+                            ],
                         ],
                     ],
-                ])?>
+                ]) ?>
             </div>
 
+            <!-- ==================== TUBE KANAN ==================== -->
             <div class="col-md-6">
-                <?=GridView::widget([
+                <?= GridView::widget([
                     'dataProvider' => $dataProviderTubeKanan,
                     'id' => 'KartuProsesDyeingItemsGridTubeKanan',
                     'pjax' => true,
@@ -196,33 +191,22 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                     ],
                     'columns' => [
                         ['class' => 'kartik\grid\SerialColumn'],
-
-                        //'id',
-                        //'process_id',
                         'date:date',
-                        //'mesin',
-                        // [
-                        //     'attribute'=>'panjang_m',
-                        //     'label'=>'Qty',
-                        //     'format'=>'decimal',
-                        //     'pageSummary' => true,
-                        //     'hAlign' => 'right'
-                        // ],
                         [
                             'attribute' => 'panjang_m',
                             'label' => 'Qty',
                             'format' => ['decimal', 2],
                             'hAlign' => 'right',
                             'pageSummary' => true,
-                            'pageSummaryFunc' => \kartik\grid\GridView::F_SUM,
-                            'content' => function($data){
+                            'pageSummaryFunc' => GridView::F_SUM,
+                            'content' => function ($data) {
                                 return Html::a(
                                     Yii::$app->formatter->asDecimal($data->panjang_m, 2),
                                     ['/trn-kartu-proses-dyeing-item/edit-qty', 'id' => $data->id],
                                     [
                                         'data-toggle' => "modal",
                                         'data-target' => "#kartuProsesDyeingModal",
-                                        'data-title' => 'Edit Qty Roll ID: '.$data->id,
+                                        'data-title' => 'Edit Qty Roll ID: ' . $data->id,
                                         'title' => 'Klik untuk edit Qty',
                                     ]
                                 );
@@ -231,78 +215,63 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         [
                             'attribute' => 'mesin',
                             'label' => 'Mesin',
-                            'content' => function($data){
+                            'content' => function ($data) {
                                 return Html::a(
                                     $data->mesin,
                                     ['/trn-kartu-proses-dyeing-item/edit-mesin', 'id' => $data->id],
                                     [
                                         'data-toggle' => "modal",
                                         'data-target' => "#kartuProsesDyeingModal",
-                                        'data-title' => 'Edit Mesin Roll ID: '.$data->id,
+                                        'data-title' => 'Edit Mesin Roll ID: ' . $data->id,
                                         'title' => 'Klik untuk edit Mesin',
                                     ]
                                 );
                             }
                         ],
                         [
-                            'label'=>'Unit',
-                            'value'=>function($data) use($greigeGroup){
-                                return $greigeGroup->unitName;
+                            'label' => 'Unit',
+                            'value' => function ($data) {
+                                return $data->stock->greige->group->unitName ?? '';
                             },
                         ],
                         [
-                            'label'=>'Grade',
-                            'value'=>function($data){
-                                /* @var $data TrnKartuProsesDyeingItem*/
-                                return TrnStockGreige::gradeOptions()[$data->stock->grade];
+                            'label' => 'Grade',
+                            'value' => function ($data) {
+                                return isset($data->stock->grade)
+                                    ? TrnStockGreige::gradeOptions()[$data->stock->grade]
+                                    : '';
                             },
                         ],
                         [
-                            'attribute'=>'tube',
-                            'value'=>function($data){
-                                /* @var $data TrnKartuProsesDyeingItem*/
+                            'attribute' => 'tube',
+                            'value' => function ($data) {
                                 return $data::tubeOptions()[$data->tube];
                             },
-                            'filterType' => GridView::FILTER_SELECT2,
-                            'filterWidgetOptions' => [
-                                'data' => TrnKartuProsesDyeingItem::statusOptions(),
-                                'options' => ['placeholder' => '...'],
-                                'pluginOptions' => [
-                                    'allowClear' => true
-                                ],
-                            ],
                         ],
-                        //'note:ntext',
-                        //'status',
-                        //'created_at',
-                        //'created_by',
-                        //'updated_at',
-                        //'updated_by',
-
                         [
                             'class' => 'kartik\grid\ActionColumn',
-                            'controller' => 'trn-kartu-proses-dyeing-item',
-                            'template' => '{delete} {print}',
+                            'template' => '{delete-item}',
                             'buttons' => [
-                                'delete' => function($url, $model, $key) use($canCreateItem) {
-                                    /* @var $model TrnKartuProsesDyeingItem*/
-                                    if($canCreateItem){
-                                        return Html::a('<i class="glyphicon glyphicon-trash"></i>', $url, [
-                                            'class' => 'btn btn-xs btn-danger',
-                                            'title' => 'Delete: '.$model->id,
-                                            'data' => [
-                                                'confirm' => 'Are you sure you want to delete this item?',
-                                                'method' => 'post',
-                                            ],
-                                        ]);
+                                'delete-item' => function ($url, $itemModel) use ($canDeleteItem) {
+                                    if ($canDeleteItem) {
+                                        return Html::a(
+                                            '<i class="glyphicon glyphicon-minus"></i>',
+                                            ['/trn-kartu-proses-dyeing-item/delete-item', 'id' => $itemModel->id],
+                                            [
+                                                'title' => 'Hapus Roll',
+                                                'class' => 'btn btn-xs btn-danger',
+                                                'data-toggle' => "modal",
+                                                'data-target' => "#kartuProsesDyeingModal",
+                                                'data-title' => 'Hapus Roll ID: ' . $itemModel->id,
+                                            ]
+                                        );
                                     }
-
                                     return '';
                                 },
-                            ]
+                            ],
                         ],
                     ],
-                ])?>
+                ]) ?>
             </div>
         </div>
     </div>

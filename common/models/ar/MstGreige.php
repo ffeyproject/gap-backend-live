@@ -213,6 +213,32 @@ class MstGreige extends \yii\db\ActiveRecord
         return $this->save(false, ['available', 'booked_wo']);
     }
 
+    public function minusAddNewStock($jumlah)
+    {
+        $this->stock = (float)$this->stock - (float)$jumlah;
+        $this->available = (float)$this->available - (float)$jumlah;
+
+        // pastikan tidak negatif
+        if ($this->stock < 0) $this->stock = 0;
+        if ($this->available < 0) $this->available = 0;
+
+        return $this->save(false, ['stock', 'available']);
+    }
+
+    public function minusStockOpname($jumlah)
+    {
+        $this->stock = (float)$this->stock - (float)$jumlah;
+        $this->available = (float)$this->available - (float)$jumlah;
+        $this->stock_opname = (float)$this->stock_opname - (float)$jumlah;
+
+        // pastikan tidak negatif
+        if ($this->stock < 0) $this->stock = 0;
+        if ($this->available < 0) $this->available = 0;
+        if ($this->stock_opname < 0) $this->stock_opname = 0;
+
+        return $this->save(false, ['stock', 'available', 'stock_opname']);
+    }
+
     /**
      * @return float
      * tidak dipakai lagi, sudah digantikan oleh kolom tambahan "available"
