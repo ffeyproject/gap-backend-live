@@ -85,6 +85,13 @@ if($model->kartu_process_dyeing_id !== null){
                         'confirm' => 'Are you sure you want to posting this item?',
                         'method' => 'post',
                     ],
+                ]).' ';
+                echo Html::a('Hapus Semua Kode Defect', ['hapus-semua-defect', 'id' => $model->id], [
+                    'class' => 'btn btn-danger',
+                    'data' => [
+                        'confirm' => 'Apakah Anda yakin ingin menghapus semua kode defect dari inspeksi ini?',
+                        'method' => 'post',
+                    ],
                 ]);
                 break;
             /*case $model::STATUS_POSTED:

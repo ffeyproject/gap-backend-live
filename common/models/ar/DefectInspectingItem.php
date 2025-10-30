@@ -35,11 +35,11 @@ class DefectInspectingItem extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['inspecting_item_id', 'mst_kode_defect_id', 'meterage', 'point'], 'required'],
-            [['inspecting_item_id', 'mst_kode_defect_id'], 'integer'],
+            [['inspecting_item_id', 'inspecting_mklbj_item_id', 'mst_kode_defect_id', 'meterage', 'point'], 'required'],
+            [['inspecting_item_id', 'inspecting_mklbj_item_id', 'mst_kode_defect_id'], 'integer'],
             [['meterage', 'point'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
-            [['inspecting_item_id'], 'exist', 'skipOnError' => true, 'targetClass' => InspectingItem::className(), 'targetAttribute' => ['inspecting_item_id' => 'id']],
+            [['inspecting_item_id', 'inspecting_mklbj_item_id'], 'exist', 'skipOnError' => true, 'targetClass' => InspectingItem::className(), 'targetAttribute' => ['inspecting_item_id' => 'id']],
             [['mst_kode_defect_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstKodeDefect::className(), 'targetAttribute' => ['mst_kode_defect_id' => 'id']],
         ];
     }
@@ -52,6 +52,7 @@ class DefectInspectingItem extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'inspecting_item_id' => 'Inspecting Item ID',
+            'inspecting_mklbj_item_id' => 'Inspecting Mklbj Item ID',
             'mst_kode_defect_id' => 'Mst Kode Defect ID',
             'meterage' => 'Meterage',
             'point' => 'Point',

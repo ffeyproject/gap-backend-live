@@ -85,6 +85,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         'confirm' => 'Are you sure you want to posting this item?',
                         'method' => 'post',
                     ],
+                ]).' ';
+                echo Html::a('Hapus Semua Defect', ['hapus-semua-defect', 'id' => $model->id], [
+                    'class' => 'btn btn-danger',
+                    'data' => [
+                        'confirm' => 'Apakah Anda yakin ingin menghapus semua defect dari inspeksi ini?',
+                        'method' => 'post',
+                    ],
                 ]);
                 break;
         }

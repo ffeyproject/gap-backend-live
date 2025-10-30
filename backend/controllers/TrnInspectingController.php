@@ -5,6 +5,7 @@ namespace backend\controllers;
 use backend\models\form\InspectingHeaderForm;
 use backend\models\form\InspectingItemsForm;
 use backend\models\search\AnalisaPengirimanProduksi;
+use common\models\ar\DefectInspectingItem;
 use common\models\ar\InspectingItem;
 // use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnInspecting;
@@ -1647,4 +1648,47 @@ class TrnInspectingController extends Controller
 
     //     throw new NotFoundHttpException('The requested page does not exist.');
     // }
+
+    public function actionHapusSemuaDefect($id)
+    {
+        $model = $this->findModel($id);
+        
+        // ambil semua item dari inspecting ini
+        $items = $model->inspectingItems;
+        $itemIds = array_column($items, 'id');
+
+        if (empty($itemIds)) {
+            Yii::$app->session->setFlash('info', 'Tidak ada item yang memiliki defect.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            //  Hapus semua defect yang terkait dengan item-item ini
+            $deleted = DefectInspectingItem::deleteAll(['inspecting_item_id' => $itemIds]);
+
+            //  Update kolom updated_at dan updated_by
+            $model->updated_at = time(); // integer timestamp
+            $model->updated_by = Yii::$app->user->id;
+
+            if (!$model->save(false, ['updated_at', 'updated_by'])) {
+                throw new \yii\web\HttpException(500, 'Gagal memperbarui waktu/user terakhir.');
+            }
+
+            $transaction->commit();
+
+            if ($deleted) {
+                Yii::$app->session->setFlash('success', "Semua kode defect ($deleted baris) berhasil dihapus.");
+            } else {
+                Yii::$app->session->setFlash('warning', 'Tidak ada defect yang ditemukan untuk dihapus.');
+            }
+
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal menghapus defect: ' . $e->getMessage());
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
 }

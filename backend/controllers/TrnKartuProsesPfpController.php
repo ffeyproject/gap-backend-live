@@ -9,6 +9,7 @@ use Yii;
 use common\models\ar\TrnKartuProsesPfp;
 use common\models\ar\TrnKartuProsesPfpSearch;
 use common\models\ar\TrnStockGreige;
+use common\models\ar\TrnStockGreigeOpname;
 use yii\db\Expression;
 use yii\db\Query;
 use yii\helpers\Json;
