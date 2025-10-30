@@ -396,6 +396,28 @@ class TrnKartuProsesPfpController extends Controller
             //     }
             // }
 
+            // 2) Jika roll ini ada di TrnStockGreigeOpname, maka kurangi stock_opname dan ubah status opname
+            $mstGreige =MstGreige::findOne($stockItem->greige_id);
+            if ($mstGreige !== null) {
+                $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m;
+                if ($newStockOpname < 0) {
+                    $newStockOpname = 0;
+                }
+                // Kurangi nilai stock_opname langsung
+                Yii::$app->db->createCommand()->update(
+                   MstGreige::tableName(),
+                    ['stock_opname' => $newStockOpname],
+                    ['id' => $mstGreige->id]
+                )->execute();
+            }
+
+            // 3) Update status roll yang ada di TrnStockGreigeOpname (jika ada)
+           TrnStockGreigeOpname::updateAll(
+                ['status' =>TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+                ['stock_greige_id' => $stockItem->id]
+            );
+
+
             $qtyBatch = $model->greigeGroup->qty_per_batch;
             //menghitung selisih antaara total panjang dan qty per batch
             $difference = 0;
@@ -474,7 +496,7 @@ class TrnKartuProsesPfpController extends Controller
 
             // validasi nomor_kartu + greige_id tidak duplikat
             $qExists = (new \yii\db\Query())
-                ->from(\common\models\ar\TrnKartuProsesPfp::tableName())
+                ->from(TrnKartuProsesPfp::tableName())
                 ->select(new \yii\db\Expression('1'))
                 ->where([
                     'greige_id'   => $model->greige_id,

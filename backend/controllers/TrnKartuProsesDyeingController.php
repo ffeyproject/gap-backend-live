@@ -630,7 +630,7 @@ class TrnKartuProsesDyeingController extends Controller
 
                 // 2) kurangi stock_opname pada mst_greige
                 /** @var \common\models\ar\MstGreige $mstGreige */
-                $mstGreige = \common\models\ar\MstGreige::findOne($stockItem->greige_id);
+                $mstGreige = MstGreige::findOne($stockItem->greige_id);
                 if ($mstGreige !== null) {
                     $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m;
                     if ($newStockOpname < 0) {
@@ -638,7 +638,7 @@ class TrnKartuProsesDyeingController extends Controller
                     }
                     // pakai update supaya tidak memicu beforeSave yang tidak perlu
                     Yii::$app->db->createCommand()->update(
-                        \common\models\ar\MstGreige::tableName(),
+                        MstGreige::tableName(),
                         ['stock_opname' => $newStockOpname],
                         ['id' => $mstGreige->id]
                     )->execute();
@@ -646,8 +646,8 @@ class TrnKartuProsesDyeingController extends Controller
 
                 // 3) ubah status TrnStockGreigeOpname yang terkait (stock_greige_id sama)
                 // gunakan updateAll agar efisien (di dalam transaksi)
-                \common\models\ar\TrnStockGreigeOpname::updateAll(
-                    ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+                TrnStockGreigeOpname::updateAll(
+                    ['status' => TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
                     ['stock_greige_id' => $stockItem->id]
                 );
 
@@ -693,17 +693,17 @@ class TrnKartuProsesDyeingController extends Controller
 
             // Booking greige --------------------------------------------------------------------------------------------
             switch ($mo->jenis_gudang) {
-                case \common\models\ar\TrnStockGreige::JG_WIP:
+                case TrnStockGreige::JG_WIP:
                     $bookedAttr = 'booked_wip';
                     break;
-                case \common\models\ar\TrnStockGreige::JG_PFP:
+                case TrnStockGreige::JG_PFP:
                     $bookedAttr = 'booked_pfp';
                     break;
-                case \common\models\ar\TrnStockGreige::JG_EX_FINISH:
+                case TrnStockGreige::JG_EX_FINISH:
                     $bookedAttr = 'booked_ef';
                     break;
-                case \common\models\ar\TrnStockGreige::JG_FRESH:
-                    if ($wo->jenis_order === \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER) {
+                case TrnStockGreige::JG_FRESH:
+                    if ($wo->jenis_order === TrnSc::JENIS_ORDER_FRESH_ORDER) {
                         // jika jenis order wo === fresh dan jenis gudang mo == jg_fresh
                         // ambil nilai original qty per batch greige untuk dasar pemotongan stok
                         $qtyPerBatch = $greige->group->qty_per_batch;
@@ -856,13 +856,13 @@ class TrnKartuProsesDyeingController extends Controller
                 // === Validasi nomor_kartu + motif ===
                 $greigeId = $model->wo->greige_id ?? null;
                 if ($greigeId !== null) {
-                    $exists = \common\models\ar\TrnKartuProsesDyeing::find()
+                    $exists = TrnKartuProsesDyeing::find()
                         ->joinWith('wo')
                         ->where([
-                            \common\models\ar\TrnWo::tableName().'.greige_id' => $greigeId,
-                            \common\models\ar\TrnKartuProsesDyeing::tableName().'.nomor_kartu' => $model->nomor_kartu,
+                            TrnWo::tableName().'.greige_id' => $greigeId,
+                            TrnKartuProsesDyeing::tableName().'.nomor_kartu' => $model->nomor_kartu,
                         ])
-                        ->andWhere(['<>', \common\models\ar\TrnKartuProsesDyeing::tableName().'.id', $model->id])
+                        ->andWhere(['<>', TrnKartuProsesDyeing::tableName().'.id', $model->id])
                         ->exists();
 
                     if ($exists) {

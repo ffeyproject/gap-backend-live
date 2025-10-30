@@ -170,6 +170,17 @@ class PenerimaanKartuProsesPfpController extends Controller
                         throw new HttpException(500, 'Gagal, coba lagi.');
                     }
 
+                    // ✅ Tambahan logika untuk stock_opname
+                    $mstGreige = MstGreige::findOne($stockItem->greige_id);
+                    if ($mstGreige !== null) {
+                        $newStockOpname = (float)$mstGreige->stock_opname + (float)$stockItem->panjang_m;
+                        Yii::$app->db->createCommand()->update(
+                            MstGreige::tableName(),
+                            ['stock_opname' => $newStockOpname],
+                            ['id' => $mstGreige->id]
+                        )->execute();
+                    }
+
                     $totalItem++;
                     $totalLenngth += $trnKartuProsesPfpItem->panjang_m;
                 }

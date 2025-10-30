@@ -212,8 +212,8 @@ class PenerimaanKartuProsesDyeingController extends Controller
                         throw new HttpException(500, 'Gagal, coba lagi.');
                     }
                 }
+                
                 //Kembalikan status kartu_proses_id jika ada
-
                 $wo = $model->wo;
                 $mo = $wo->mo;
                 $greige = $wo->greige;
@@ -268,7 +268,17 @@ class PenerimaanKartuProsesDyeingController extends Controller
                     $transaction->rollBack();
                     throw new HttpException(500, 'Gagal, coba lagi.');
                 }
-                //kembalikan booked greige
+                
+                // ✅ Tambahkan kembali stok opname
+                $mstGreige = MstGreige::findOne($greigeId);
+                if ($mstGreige !== null) {
+                    $newStockOpname = (float)$mstGreige->stock_opname + (float)$totalPanjang;
+                    Yii::$app->db->createCommand()->update(
+                        MstGreige::tableName(),
+                        ['stock_opname' => $newStockOpname],
+                        ['id' => $mstGreige->id]
+                    )->execute();
+                }
 
                 if($flag){
                     $transaction->commit();
