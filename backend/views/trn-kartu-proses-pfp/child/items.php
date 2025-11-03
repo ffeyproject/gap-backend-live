@@ -47,7 +47,8 @@ $dataProviderTubeKanan = new ActiveDataProvider([
         </div>
     </div>
     <div class="box-body">
-        <p><?='<strong>Greige: '.$greige->nama_kain.' - Per Batch: '.Yii::$app->formatter->asDecimal($greigeGroup->qty_per_batch).' '.$greigeGroup::unitOptions()[$greigeGroup->unit].'</strong>'?></p>
+        <p><?='<strong>Greige: '.$greige->nama_kain.' - Per Batch: '.Yii::$app->formatter->asDecimal($greigeGroup->qty_per_batch).' '.$greigeGroup::unitOptions()[$greigeGroup->unit].'</strong>'?>
+        </p>
         <div class="row">
             <div class="col-md-6">
                 <?=GridView::widget([
@@ -239,3 +240,34 @@ $dataProviderTubeKanan = new ActiveDataProvider([
         </div>
     </div>
 </div>
+<?php
+$js = <<<JS
+// Fungsi pembuka Select2 Stock ID (cek berulang sampai siap)
+function openStockIdSelect2Pfp() {
+    var field = $('#trnkartuprosespfpitem-stock_id'); // sesuaikan ID ini jika beda
+    if (field.length && field.data('select2')) {
+        field.select2('open');
+        return true;
+    }
+    return false;
+}
+
+// Saat modal Add Items ditampilkan
+$(document).on('shown.bs.modal', '#kartuProsesPfpModal', function () {
+    var modal = $(this);
+
+    // Coba buka segera
+    if (!openStockIdSelect2Pfp()) {
+        // Kalau Select2 belum siap, ulangi tiap 300ms selama maksimal 3 detik
+        var attempts = 0;
+        var timer = setInterval(function(){
+            attempts++;
+            if (openStockIdSelect2Pfp() || attempts > 10) {
+                clearInterval(timer);
+            }
+        }, 300);
+    }
+});
+JS;
+$this->registerJs($js);
+?>

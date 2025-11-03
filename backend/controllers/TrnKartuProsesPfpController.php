@@ -297,169 +297,357 @@ class TrnKartuProsesPfpController extends Controller
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionPosting($id)
-    {
-        $model = $this->findModel($id);
+    // public function actionPosting($id)
+    // {
+    //     $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT){
-            Yii::$app->session->setFlash('error', 'Kartu proses bukan draft, tidak bisa diposting.');
-            return $this->redirect(['view', 'id' => $model->id]);
-        }
+    //     if($model->status != $model::STATUS_DRAFT){
+    //         Yii::$app->session->setFlash('error', 'Kartu proses bukan draft, tidak bisa diposting.');
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }
 
-        $orderPfp = $model->orderPfp;
-        $greigeGroup = $model->greigeGroup;
-        $greige = $model->greige;
+    //     $orderPfp = $model->orderPfp;
+    //     $greigeGroup = $model->greigeGroup;
+    //     $greige = $model->greige;
 
-        $perBatchHalfToleransiAtas = 0;
-        $perBatchHalfToleransiBawah = 0;
+    //     $perBatchHalfToleransiAtas = 0;
+    //     $perBatchHalfToleransiBawah = 0;
 
-        if(!$model->no_limit_item){
-            $lenPerBatch = (float)$greigeGroup->qty_per_batch;
-            $perBatchHalf = $lenPerBatch / 2; // setengah batch
-            $perBatchHalfInPercent = 0.02 * $perBatchHalf; //dua persen dari setengah batch
-            $perBatchHalfToleransiAtas = $perBatchHalf + $perBatchHalfInPercent;
-            $perBatchHalfToleransiBawah = $perBatchHalf - $perBatchHalfInPercent;
-        }
+    //     if(!$model->no_limit_item){
+    //         $lenPerBatch = (float)$greigeGroup->qty_per_batch;
+    //         $perBatchHalf = $lenPerBatch / 2; // setengah batch
+    //         $perBatchHalfInPercent = 0.02 * $perBatchHalf; //dua persen dari setengah batch
+    //         $perBatchHalfToleransiAtas = $perBatchHalf + $perBatchHalfInPercent;
+    //         $perBatchHalfToleransiBawah = $perBatchHalf - $perBatchHalfInPercent;
+    //     }
 
-        $model->status = $model::STATUS_POSTED;
-        $model->posted_at = time();
+    //     $model->status = $model::STATUS_POSTED;
+    //     $model->posted_at = time();
 
-        if($model->no_urut === null){
-            $model->setNomor();
-        }
+    //     if($model->no_urut === null){
+    //         $model->setNomor();
+    //     }
 
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            $totalTubeKiri = 0;
-            $totalTubeKanan = 0;
-            foreach ($model->trnKartuProsesPfpItems as $trnKartuProsesPfpItem) {
-                $stockItem = $trnKartuProsesPfpItem->stock;
-                if($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD){
-                    //BaseVarDumper::dump($trnKartuProsesPfpItem, 10, true);Yii::$app->end();
-                    $panjang = Yii::$app->formatter->asDecimal($stockItem->panjang_m);
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Salah satu roll greige (ID:'.$stockItem->id.', Pannjang: '.$panjang.'M) sudah digunakan oleh kartu proses lain, coba lagi.');
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
+    //     $transaction = Yii::$app->db->beginTransaction();
+    //     try {
+    //         $totalTubeKiri = 0;
+    //         $totalTubeKanan = 0;
+    //         foreach ($model->trnKartuProsesPfpItems as $trnKartuProsesPfpItem) {
+    //             $stockItem = $trnKartuProsesPfpItem->stock;
+    //             if($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD){
+    //                 //BaseVarDumper::dump($trnKartuProsesPfpItem, 10, true);Yii::$app->end();
+    //                 $panjang = Yii::$app->formatter->asDecimal($stockItem->panjang_m);
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Salah satu roll greige (ID:'.$stockItem->id.', Pannjang: '.$panjang.'M) sudah digunakan oleh kartu proses lain, coba lagi.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
 
-                $stockItem->status = $stockItem::STATUS_ON_PROCESS_CARD;
-                if(!$stockItem->save(false, ['status'])){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
+    //             $stockItem->status = $stockItem::STATUS_ON_PROCESS_CARD;
+    //             if(!$stockItem->save(false, ['status'])){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
 
-                switch ($trnKartuProsesPfpItem->tube){
-                    case $trnKartuProsesPfpItem::TUBE_KIRI:
-                        $totalTubeKiri += (float)$stockItem->panjang_m;
-                        break;
-                    case $trnKartuProsesPfpItem::TUBE_KANAN:
-                        $totalTubeKanan += (float)$stockItem->panjang_m;
-                        break;
-                }
-            }
+    //             switch ($trnKartuProsesPfpItem->tube){
+    //                 case $trnKartuProsesPfpItem::TUBE_KIRI:
+    //                     $totalTubeKiri += (float)$stockItem->panjang_m;
+    //                     break;
+    //                 case $trnKartuProsesPfpItem::TUBE_KANAN:
+    //                     $totalTubeKanan += (float)$stockItem->panjang_m;
+    //                     break;
+    //             }
+    //         }
 
-            $totalLength = $totalTubeKiri + $totalTubeKanan;
+    //         $totalLength = $totalTubeKiri + $totalTubeKanan;
 
-            if(!$model->no_limit_item){
-                if(($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan kurang dari 1 BATCH dikurang 2%.');
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
+    //         if(!$model->no_limit_item){
+    //             if(($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan kurang dari 1 BATCH dikurang 2%.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
 
-                if(($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan lebih dari 1 BATCH ditambah 2%.');
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
-            }
+    //             if(($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)){
+    //                 $transaction->rollBack();
+    //                 Yii::$app->session->setFlash('error', 'Jumlah greige tube kiri atau tube kanan lebih dari 1 BATCH ditambah 2%.');
+    //                 return $this->redirect(['view', 'id' => $model->id]);
+    //             }
+    //         }
 
-            if(!$model->save(false)){
+    //         if(!$model->save(false)){
+    //             $transaction->rollBack();
+    //             Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
+    //             return $this->redirect(['view', 'id' => $model->id]);
+    //         }
+
+    //         /**
+    //          * Periksa berapa banyak Order PFP yang sudah dibuat kartu prosesnya
+    //          * kalau sudah mencukupi, ubah status nya jadi processed
+    //          */
+    //         // $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()->count('id');
+    //         // if($jumlahKartuProses >= $orderPfp->qty){
+    //         //     if($orderPfp->status == $orderPfp::STATUS_APPROVED){
+    //         //         $orderPfp->status = $orderPfp::STATUS_PROCESSED;
+    //         //         if(!$orderPfp->save(false, ['status'])){
+    //         //             $transaction->rollBack();
+    //         //             Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
+    //         //             return $this->redirect(['view', 'id' => $model->id]);
+    //         //         }
+    //         //     }
+    //         // }
+
+    //         // 2) Jika roll ini ada di TrnStockGreigeOpname, maka kurangi stock_opname dan ubah status opname
+    //         $mstGreige =MstGreige::findOne($stockItem->greige_id);
+    //         if ($mstGreige !== null) {
+    //             $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m;
+    //             if ($newStockOpname < 0) {
+    //                 $newStockOpname = 0;
+    //             }
+    //             // Kurangi nilai stock_opname langsung
+    //             Yii::$app->db->createCommand()->update(
+    //                MstGreige::tableName(),
+    //                 ['stock_opname' => $newStockOpname],
+    //                 ['id' => $mstGreige->id]
+    //             )->execute();
+    //         }
+
+    //         // 3) Update status roll yang ada di TrnStockGreigeOpname (jika ada)
+    //        TrnStockGreigeOpname::updateAll(
+    //             ['status' =>TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+    //             ['stock_greige_id' => $stockItem->id]
+    //         );
+
+
+    //         $qtyBatch = $model->greigeGroup->qty_per_batch;
+    //         //menghitung selisih antaara total panjang dan qty per batch
+    //         $difference = 0;
+
+    //         if ($totalLength > $qtyBatch) {
+    //             $difference = abs($totalLength - $qtyBatch);
+    //         }
+    //         // BaseVarDumper::dump($difference, 10, true);Yii::$app->end();
+    //         //Booking greige--------------------------------------------------------------------------------------------
+
+    //         switch ($model->orderPfp->jenis_gudang){
+
+    //             case TrnStockGreige::JG_PFP:
+    //                 $availableAttr = 'available_pfp';
+    //                 break;
+    //             case TrnStockGreige::JG_FRESH:
+    //                 $availableAttr = 'available';
+    //                 break;
+    //             default:
+    //                 $availableAttr = 'available';
+    //         }
+    //         Yii::$app->db->createCommand()->update(
+    //             MstGreige::tableName(),
+    //             [   
+    //                 'booked_opfp' => new \yii\db\Expression('booked_opfp - ' . ($totalLength - $difference)),
+    //                 'booked' => new \yii\db\Expression('booked + ' . $totalLength),
+    //                 $availableAttr => new \yii\db\Expression($availableAttr . ' - ' . $difference),
+    //             ],
+    //             ['id'=>$greige->id]
+    //         )->execute();
+    //         //Booking greige--------------------------------------------------------------------------------------------
+
+    //         $transaction->commit();
+    //         Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     } catch (\Throwable $e) {
+    //         $transaction->rollBack();
+    //         Yii::$app->session->setFlash('error', $e->getMessage());
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }
+    // }
+
+public function actionPosting($id)
+{
+    $model = $this->findModel($id);
+
+    if ($model->status != $model::STATUS_DRAFT) {
+        Yii::$app->session->setFlash('error', 'Kartu proses bukan draft, tidak bisa diposting.');
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    $orderPfp    = $model->orderPfp;
+    $greigeGroup = $model->greigeGroup;
+    $greige      = $model->greige;
+
+    $perBatchHalfToleransiAtas  = 0;
+    $perBatchHalfToleransiBawah = 0;
+
+    if (!$model->no_limit_item) {
+        $lenPerBatch               = (float)$greigeGroup->qty_per_batch;
+        $perBatchHalf              = $lenPerBatch / 2;
+        $perBatchHalfInPercent     = 0.02 * $perBatchHalf;
+        $perBatchHalfToleransiAtas = $perBatchHalf + $perBatchHalfInPercent;
+        $perBatchHalfToleransiBawah = $perBatchHalf - $perBatchHalfInPercent;
+    }
+
+    $model->status = $model::STATUS_POSTED;
+    $model->posted_at = time();
+
+    if ($model->no_urut === null) {
+        $model->setNomor();
+    }
+
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
+        $totalTubeKiri  = 0;
+        $totalTubeKanan = 0;
+
+        foreach ($model->trnKartuProsesPfpItems as $trnKartuProsesPfpItem) {
+            $stockItem = $trnKartuProsesPfpItem->stock;
+
+            if ($stockItem->status == $stockItem::STATUS_ON_PROCESS_CARD) {
+                $panjang = Yii::$app->formatter->asDecimal($stockItem->panjang_m);
                 $transaction->rollBack();
-                Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
+                Yii::$app->session->setFlash('error', "Salah satu roll greige (ID:{$stockItem->id}, Panjang: {$panjang}M) sudah digunakan oleh kartu proses lain.");
                 return $this->redirect(['view', 'id' => $model->id]);
             }
 
-            /**
-             * Periksa berapa banyak Order PFP yang sudah dibuat kartu prosesnya
-             * kalau sudah mencukupi, ubah status nya jadi processed
-             */
-            // $jumlahKartuProses = $orderPfp->getTrnKartuProsesPfps()->count('id');
-            // if($jumlahKartuProses >= $orderPfp->qty){
-            //     if($orderPfp->status == $orderPfp::STATUS_APPROVED){
-            //         $orderPfp->status = $orderPfp::STATUS_PROCESSED;
-            //         if(!$orderPfp->save(false, ['status'])){
-            //             $transaction->rollBack();
-            //             Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
-            //             return $this->redirect(['view', 'id' => $model->id]);
-            //         }
-            //     }
-            // }
+            $stockItem->status = $stockItem::STATUS_ON_PROCESS_CARD;
+            if (!$stockItem->save(false, ['status'])) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Gagal menyimpan status roll.');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
 
-            // 2) Jika roll ini ada di TrnStockGreigeOpname, maka kurangi stock_opname dan ubah status opname
-            $mstGreige =MstGreige::findOne($stockItem->greige_id);
+            // Hitung total panjang
+            switch ($trnKartuProsesPfpItem->tube) {
+                case $trnKartuProsesPfpItem::TUBE_KIRI:
+                    $totalTubeKiri += (float)$stockItem->panjang_m;
+                    break;
+                case $trnKartuProsesPfpItem::TUBE_KANAN:
+                    $totalTubeKanan += (float)$stockItem->panjang_m;
+                    break;
+            }
+
+            // Kurangi stock_opname jika roll berasal dari opname
+            $mstGreige = \common\models\ar\MstGreige::findOne($stockItem->greige_id);
             if ($mstGreige !== null) {
-                $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m;
-                if ($newStockOpname < 0) {
-                    $newStockOpname = 0;
-                }
-                // Kurangi nilai stock_opname langsung
+                $newStockOpname = max(0, (float)$mstGreige->stock_opname - (float)$stockItem->panjang_m);
                 Yii::$app->db->createCommand()->update(
-                   MstGreige::tableName(),
+                    \common\models\ar\MstGreige::tableName(),
                     ['stock_opname' => $newStockOpname],
                     ['id' => $mstGreige->id]
                 )->execute();
             }
 
-            // 3) Update status roll yang ada di TrnStockGreigeOpname (jika ada)
-           TrnStockGreigeOpname::updateAll(
-                ['status' =>TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
+            // Update status opname
+            \common\models\ar\TrnStockGreigeOpname::updateAll(
+                ['status' => \common\models\ar\TrnStockGreigeOpname::STATUS_ON_PROCESS_CARD],
                 ['stock_greige_id' => $stockItem->id]
             );
+        }
 
+        $totalLength = $totalTubeKiri + $totalTubeKanan;
 
-            $qtyBatch = $model->greigeGroup->qty_per_batch;
-            //menghitung selisih antaara total panjang dan qty per batch
-            $difference = 0;
-
-            if ($totalLength > $qtyBatch) {
-                $difference = abs($totalLength - $qtyBatch);
+        if (!$model->no_limit_item) {
+            if (($totalTubeKiri < $perBatchHalfToleransiBawah) || ($totalTubeKanan < $perBatchHalfToleransiBawah)) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Jumlah tube kiri/kanan kurang dari 1 batch dikurangi 2%.');
+                return $this->redirect(['view', 'id' => $model->id]);
             }
-            // BaseVarDumper::dump($difference, 10, true);Yii::$app->end();
-            //Booking greige--------------------------------------------------------------------------------------------
 
-            switch ($model->orderPfp->jenis_gudang){
-
-                case TrnStockGreige::JG_PFP:
-                    $availableAttr = 'available_pfp';
-                    break;
-                case TrnStockGreige::JG_FRESH:
-                    $availableAttr = 'available';
-                    break;
-                default:
-                    $availableAttr = 'available';
+            if (($totalTubeKiri > $perBatchHalfToleransiAtas) || ($totalTubeKanan > $perBatchHalfToleransiAtas)) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Jumlah tube kiri/kanan melebihi 1 batch ditambah 2%.');
+                return $this->redirect(['view', 'id' => $model->id]);
             }
-            Yii::$app->db->createCommand()->update(
-                MstGreige::tableName(),
-                [   
-                    'booked_opfp' => new \yii\db\Expression('booked_opfp - ' . ($totalLength - $difference)),
-                    'booked' => new \yii\db\Expression('booked + ' . $totalLength),
-                    $availableAttr => new \yii\db\Expression($availableAttr . ' - ' . $difference),
-                ],
-                ['id'=>$greige->id]
-            )->execute();
-            //Booking greige--------------------------------------------------------------------------------------------
+        }
 
-            $transaction->commit();
-            Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
-            return $this->redirect(['view', 'id' => $model->id]);
-        } catch (\Throwable $e) {
+        if (!$model->save(false)) {
             $transaction->rollBack();
-            Yii::$app->session->setFlash('error', $e->getMessage());
+            Yii::$app->session->setFlash('error', 'Gagal menyimpan kartu proses.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
+
+        // ======== LOGIKA REVISI UTAMA DI SINI =========
+        $qtyBatch = (float)$model->greigeGroup->qty_per_batch;
+        $diff     = $totalLength - $qtyBatch;
+        $absDiff  = abs($diff);
+
+        switch ($model->orderPfp->jenis_gudang) {
+            case \common\models\ar\TrnStockGreige::JG_PFP:
+                $availableAttr = 'available_pfp';
+                break;
+            case \common\models\ar\TrnStockGreige::JG_FRESH:
+            default:
+                $availableAttr = 'available';
+                break;
+        }
+
+        if ($diff < 0) {
+            // UNDER-BATCH → Kembalikan sisa ke available, booked_opfp dikurangi 1 batch
+            Yii::$app->db->createCommand()->update(
+                \common\models\ar\MstGreige::tableName(),
+                [
+                    $availableAttr => new \yii\db\Expression($availableAttr . ' + :absDiff'),
+                    'booked_opfp'  => new \yii\db\Expression('GREATEST(booked_opfp - :qtyBatch, 0)'),
+                    'booked'       => new \yii\db\Expression('booked + :totalLength'),
+                ],
+                ['id' => $greige->id]
+            )->bindValues([
+                ':absDiff'     => $absDiff,
+                ':qtyBatch'    => $qtyBatch,
+                ':totalLength' => $totalLength,
+            ])->execute();
+
+        } elseif ($diff > 0) {
+            // OVER-BATCH → Kurangi available sebesar selisih, booked_opfp dikurangi 1 batch
+            Yii::$app->db->createCommand()->update(
+                \common\models\ar\MstGreige::tableName(),
+                [
+                    $availableAttr => new \yii\db\Expression($availableAttr . ' - :absDiff'),
+                    'booked_opfp'  => new \yii\db\Expression('GREATEST(booked_opfp - :qtyBatch, 0)'),
+                    'booked'       => new \yii\db\Expression('booked + :totalLength'),
+                ],
+                ['id' => $greige->id]
+            )->bindValues([
+                ':absDiff'     => $absDiff,
+                ':qtyBatch'    => $qtyBatch,
+                ':totalLength' => $totalLength,
+            ])->execute();
+
+        } else {
+            // PAS-BATCH → booked_opfp dikurangi 1 batch penuh
+            Yii::$app->db->createCommand()->update(
+                \common\models\ar\MstGreige::tableName(),
+                [
+                    'booked_opfp'  => new \yii\db\Expression('GREATEST(booked_opfp - :qtyBatch, 0)'),
+                    'booked'       => new \yii\db\Expression('booked + :totalLength'),
+                ],
+                ['id' => $greige->id]
+            )->bindValues([
+                ':qtyBatch'    => $qtyBatch,
+                ':totalLength' => $totalLength,
+            ])->execute();
+        }
+
+        // Rapikan data agar tidak ada nilai minus atau tidak logis
+        Yii::$app->db->createCommand("
+            UPDATE " . \common\models\ar\MstGreige::tableName() . "
+            SET 
+                available = GREATEST(LEAST(available, stock), 0),
+                available_pfp = GREATEST(LEAST(COALESCE(available_pfp,0), COALESCE(stock_pfp,0)), 0),
+                booked = GREATEST(booked, 0),
+                booked_opfp = GREATEST(booked_opfp, 0)
+            WHERE id = :id
+        ")->bindValue(':id', $greige->id)->execute();
+
+        $transaction->commit();
+        Yii::$app->session->setFlash('success', 'Kartu proses berhasil diposting.');
+        return $this->redirect(['view', 'id' => $model->id]);
+
+    } catch (\Throwable $e) {
+        $transaction->rollBack();
+        Yii::$app->session->setFlash('error', $e->getMessage());
+        return $this->redirect(['view', 'id' => $model->id]);
     }
+}
+
 
     /**
      * Finds the TrnKartuProsesPfp model based on its primary key value.

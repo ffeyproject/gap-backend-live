@@ -240,3 +240,35 @@ $dataProviderTubeKanan = new ActiveDataProvider([
         </div>
     </div>
 </div>
+<?php
+$js = <<<JS
+// Fungsi pembuka Select2 Stock ID (cek berulang sampai siap)
+function openStockIdSelect2Dyeing() {
+    var field = $('#trnkartuprosesdyeingitem-stock_id'); // pastikan ID ini sesuai dengan field Stock ID kamu
+    if (field.length && field.data('select2')) {
+        field.select2('open');
+        return true;
+    }
+    return false;
+}
+
+// Saat modal Add Items ditampilkan
+$(document).on('shown.bs.modal', '#kartuProsesDyeingModal', function () {
+    var modal = $(this);
+
+    // Coba buka segera
+    if (!openStockIdSelect2Dyeing()) {
+        // Kalau Select2 belum siap, ulangi tiap 300ms selama maksimal 3 detik
+        var attempts = 0;
+        var timer = setInterval(function(){
+            attempts++;
+            if (openStockIdSelect2Dyeing() || attempts > 10) {
+                clearInterval(timer);
+            }
+        }, 300);
+    }
+});
+JS;
+
+$this->registerJs($js);
+?>

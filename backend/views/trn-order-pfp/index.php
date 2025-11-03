@@ -18,6 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'responsiveWrap' => false,
+        'showPageSummary' => true,
         'panel' => [
             'before'=>Html::tag(
                 'div',
@@ -45,7 +46,12 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             //'no_urut',
             'no',
-            'qty:decimal',
+            [
+                'attribute' => 'qty',
+                'format' => ['decimal', 2],
+                'pageSummary' => true,
+                'pageSummaryFunc' => GridView::F_SUM,
+            ],
             //'note:ntext',
             [
                 'label'=>'Greige',
