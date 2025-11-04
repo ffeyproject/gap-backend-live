@@ -6,12 +6,10 @@ use yii\widgets\ActiveForm;
 use kartik\daterange\DateRangePicker;
 
 /**
- * Laporan Rekap Greige Stock Opname
- * - Rekap per tanggal dan motif
- * - Fitur pencarian tanggal dan nama motif
+ * Laporan Rekap Greige Stock Opname - Per Motif
  */
 
-$this->title = 'Laporan Rekap Stock Opname Greige';
+$this->title = 'Laporan Rekap Stock Opname Greige per Motif';
 $this->params['breadcrumbs'][] = 'Gudang Greige > ' . $this->title;
 
 // --- Ambil parameter pencarian ---
@@ -21,13 +19,12 @@ $namaMotif = $request->get('namaMotif');
 
 // --- Default tanggal jika belum ada input ---
 if (empty($tanggalRange)) {
-    $tanggalRange = '2025-11-03 to ' . date('Y-m-d'); // tanggal awal tetap 3 Nov 2025
+    $tanggalRange = '2025-11-03 to ' . date('Y-m-d');
 }
 
-// --- Query utama ---
+// --- Query utama (group by nama kain) ---
 $query = (new \yii\db\Query())
     ->select([
-        'trn_stock_greige_opname.date',
         'mst_greige.nama_kain AS nama_kain',
         'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
         'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
@@ -46,8 +43,9 @@ if (!empty($namaMotif)) {
     $query->andWhere(['like', 'mst_greige.nama_kain', $namaMotif]);
 }
 
-$query->groupBy(['trn_stock_greige_opname.date', 'mst_greige.nama_kain'])
-      ->orderBy(['trn_stock_greige_opname.date' => SORT_ASC]);
+// --- Grouping & Sorting ---
+$query->groupBy(['mst_greige.nama_kain'])
+      ->orderBy(['mst_greige.nama_kain' => SORT_ASC]);
 
 $data = $query->all();
 
@@ -55,16 +53,12 @@ $data = $query->all();
 $dataProvider = new \yii\data\ArrayDataProvider([
     'allModels' => $data,
     'pagination' => [
-        'pageSize' => 50,   // tampilkan 50 data per halaman
-    ],
-    'sort' => [
-        'attributes' => ['date'], 
-        'defaultOrder' => ['date' => SORT_DESC], // urut tanggal terbaru di atas
+        'pageSize' => 50,
     ],
 ]);
 ?>
 
-<div class="laporan-greige-opname-rekap container-fluid">
+<div class="laporan-greige-opname-per-motif container-fluid">
 
     <div class="row">
         <div class="col-md-12">
@@ -75,7 +69,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         </div>
     </div>
 
-    <!-- 🔍 Form Pencarian -->
+    <!-- 🔍 Filter -->
     <div class="panel panel-info" style="border-radius: 8px;">
         <div class="panel-heading" style="font-weight: bold;">
             <i class="glyphicon glyphicon-search"></i> Filter Laporan
@@ -83,7 +77,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         <div class="panel-body">
             <?php $form = ActiveForm::begin([
                 'method' => 'get',
-                'action' => ['laporan-greige-opname'],
+                'action' => ['laporan-greige-opname-motif'],
                 'options' => ['data-pjax' => 1],
             ]); ?>
 
@@ -112,7 +106,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
 
                 <div class="col-md-4" style="margin-top:25px;">
                     <?= Html::submitButton('<i class="glyphicon glyphicon-search"></i> Cari', ['class' => 'btn btn-primary']) ?>
-                    <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['laporan-greige-opname'], ['class' => 'btn btn-default']) ?>
+                    <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['laporan-greige-opname-motif'], ['class' => 'btn btn-default']) ?>
                 </div>
             </div>
 
@@ -120,18 +114,19 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         </div>
     </div>
 
-    <?php Pjax::begin(['id' => 'laporanRekapPjax']); ?>
+    <?php Pjax::begin(['id' => 'laporanMotifPjax']); ?>
 
     <?php
-        if (!empty($tanggalRange)) {
-            $range = explode(' to ', $tanggalRange);
-            $start = isset($range[0]) ? Yii::$app->formatter->asDate(trim($range[0]), 'php:d M Y') : '';
-            $end = isset($range[1]) ? Yii::$app->formatter->asDate(trim($range[1]), 'php:d M Y') : '';
-            echo Html::tag('div',
-                "<strong>Hasil Opname dari tanggal {$start}" . (!empty($end) ? " sampai {$end}" : '') . "</strong>",
-                ['class' => 'alert alert-warning text-center', 'style' => 'margin-bottom:15px; font-size:16px;']
-            );
-        }
+    // tampilkan info range tanggal
+    if (!empty($tanggalRange)) {
+        $range = explode(' to ', $tanggalRange);
+        $start = Yii::$app->formatter->asDate(trim($range[0]), 'php:d M Y');
+        $end = Yii::$app->formatter->asDate(trim($range[1]), 'php:d M Y');
+        echo Html::tag('div',
+            "<strong>Hasil Opname per Motif dari tanggal {$start} sampai {$end}</strong>",
+            ['class' => 'alert alert-info text-center', 'style' => 'margin-bottom:15px; font-size:16px;']
+        );
+    }
     ?>
 
     <?= GridView::widget([
@@ -149,14 +144,6 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         ],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn', 'header' => '#'],
-
-            [
-                'attribute' => 'date',
-                'label' => 'Tanggal',
-                'format' => ['date', 'php:Y-m-d'],
-                'hAlign' => 'center',
-                'width' => '150px',
-            ],
             [
                 'attribute' => 'nama_kain',
                 'label' => 'Motif / Nama Kain',
@@ -167,7 +154,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                 'label' => 'Total',
                 'format' => ['decimal', 2],
                 'hAlign' => 'right',
-                'width' => '120px',
+                'width' => '150px',
                 'pageSummary' => true,
                 'pageSummaryFunc' => GridView::F_SUM,
             ],
@@ -176,7 +163,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                 'label' => 'Valid',
                 'format' => ['decimal', 2],
                 'hAlign' => 'right',
-                'width' => '120px',
+                'width' => '150px',
                 'pageSummary' => true,
                 'pageSummaryFunc' => GridView::F_SUM,
             ],
@@ -185,31 +172,3 @@ $dataProvider = new \yii\data\ArrayDataProvider([
 
     <?php Pjax::end(); ?>
 </div>
-
-<style>
-.laporan-greige-opname-rekap-index {
-    background: #f8faff;
-    padding: 20px 25px;
-    border-radius: 10px;
-}
-
-.panel-info {
-    border-color: #bce8f1;
-    margin-bottom: 25px;
-}
-
-.panel-heading {
-    background-color: #d9edf7 !important;
-    color: #31708f !important;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}
-
-h2.text-primary {
-    font-weight: 600;
-}
-
-.btn {
-    border-radius: 6px;
-}
-</style>

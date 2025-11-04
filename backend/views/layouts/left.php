@@ -371,13 +371,19 @@ $moduleId = $controller->module->id;
                             && $actionId == 'index-duplicate'
                     ],
                     [
-    'label' => 'Laporan Stock Opname', 
-    'icon' => 'circle', 
-    'url' => ['/trn-gudang-stock-opname/laporan-greige-opname'],
-    'active' => $moduleId == 'app-backend'
-        && $controllerId == 'trn-gudang-stock-opname'
-        && $actionId == 'laporan-greige-opname'
-],
+                        'label' => 'Laporan Stock Opname Harian', 
+                        'icon' => 'circle', 
+                        'url' => ['/trn-gudang-stock-opname/laporan-greige-opname'],
+                        'active' => $moduleId == 'app-backend'
+                            && $controllerId == 'trn-gudang-stock-opname'
+                            && $actionId == 'laporan-greige-opname'
+                    ],
+                    [
+                        'label' => 'Laporan per Motif',
+                        'icon' => 'circle',
+                        'url' => ['/trn-gudang-stock-opname/laporan-greige-opname-motif'],
+                        'active' => $controllerId == 'trn-gudang-stock-opname' && $actionId == 'laporan-greige-opname-motif'
+                    ],
                 ],
             ],
             [

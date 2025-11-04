@@ -831,29 +831,84 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
-public function actionLaporanGreigeOpname()
-{
-    $query = (new \yii\db\Query())
-        ->select([
-            'trn_stock_greige_opname.date',
-            'mst_greige.nama_kain AS nama_kain',
-            'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang'
-        ])
-        ->from('trn_stock_greige_opname')
-        ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
-        ->groupBy(['trn_stock_greige_opname.date', 'mst_greige.nama_kain'])
-        ->orderBy(['trn_stock_greige_opname.date' => SORT_ASC]);
+    public function actionLaporanGreigeOpname()
+    {
+        $query = (new \yii\db\Query())
+            ->select([
+                'trn_stock_greige_opname.date',
+                'mst_greige.nama_kain AS nama_kain',
+                'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang'
+            ])
+            ->from('trn_stock_greige_opname')
+            ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
+            ->groupBy(['trn_stock_greige_opname.date', 'mst_greige.nama_kain'])
+            ->orderBy(['trn_stock_greige_opname.date' => SORT_ASC]);
 
-    $dataProvider = new \yii\data\ArrayDataProvider([
-        'allModels' => $query->all(),
-        'pagination' => ['pageSize' => 50],
-    ]);
+        $dataProvider = new \yii\data\ArrayDataProvider([
+            'allModels' => $query->all(),
+            'pagination' => ['pageSize' => 50],
+        ]);
 
-    return $this->render('laporan-greige-opname', [
-        'dataProvider' => $dataProvider,
-    ]);
-}
+        return $this->render('laporan-greige-opname', [
+            'dataProvider' => $dataProvider,
+        ]);
+    }
 
+
+    public function actionLaporanGreigeOpnameMotif()
+    {
+        // ambil parameter dari GET
+        $request = Yii::$app->request;
+        $tanggalRange = $request->get('tanggalRange');
+        $namaMotif = $request->get('namaMotif');
+
+        // default tanggal awal & akhir
+        if (empty($tanggalRange)) {
+            $tanggalRange = '2025-11-03 to ' . date('Y-m-d');
+        }
+
+        // query utama
+        $query = (new \yii\db\Query())
+            ->select([
+                'mst_greige.nama_kain AS nama_kain',
+                'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
+                'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
+            ])
+            ->from('trn_stock_greige_opname')
+            ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id');
+
+        // filter tanggal
+        if (!empty($tanggalRange)) {
+            $range = explode(' to ', $tanggalRange);
+            if (count($range) === 2) {
+                $query->andWhere(['between', 'trn_stock_greige_opname.date', trim($range[0]), trim($range[1])]);
+            }
+        }
+
+        // filter motif
+        if (!empty($namaMotif)) {
+            $query->andWhere(['like', 'mst_greige.nama_kain', $namaMotif]);
+        }
+
+        // group & urutan
+        $query->groupBy(['mst_greige.nama_kain'])
+            ->orderBy(['mst_greige.nama_kain' => SORT_ASC]);
+
+        // hasilkan data provider
+        $dataProvider = new \yii\data\ArrayDataProvider([
+            'allModels' => $query->all(),
+            'pagination' => [
+                'pageSize' => 50, // 50 data per halaman
+            ],
+        ]);
+
+        // kirim ke view
+        return $this->render('laporan-greige-opname-motif', [
+            'dataProvider' => $dataProvider,
+            'tanggalRange' => $tanggalRange,
+            'namaMotif' => $namaMotif,
+        ]);
+    }
 
 
 
