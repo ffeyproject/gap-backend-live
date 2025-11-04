@@ -3,12 +3,14 @@
 namespace backend\controllers;
 
 use backend\models\search\LaporanGreigeKeluar;
+use common\models\ar\MstGreige;
 use common\models\ar\TrnGreigeKeluarItem;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnStockGreigeSearch;
 use Yii;
 use common\models\ar\TrnGreigeKeluar;
 use common\models\ar\TrnGreigeKeluarSearch;
+use common\models\ar\TrnStockGreigeOpname;
 use yii\helpers\Json;
 use yii\helpers\Url;
 use yii\web\Controller;
@@ -241,83 +243,212 @@ class TrnGreigeKeluarController extends Controller
      * @throws ForbiddenHttpException
      * @throws NotFoundHttpException if the model cannot be found
      */
-    public function actionPosting($id)
-    {
-        $model = $this->findModel($id);
-        if($model->status != $model::STATUS_DRAFT){
-            throw new ForbiddenHttpException('Status tidak valid. Tidak bisa diposting.');
-        }
+    // public function actionPosting($id)
+    // {
+    //     $model = $this->findModel($id);
+    //     if($model->status != $model::STATUS_DRAFT){
+    //         throw new ForbiddenHttpException('Status tidak valid. Tidak bisa diposting.');
+    //     }
 
-        //bypass langsung approve
-        $model->posted_at = time();
-        $model->status = $model::STATUS_APPROVED;//$model::STATUS_POSTED;
-        $model->approved_at = time();
-        $model->approved_by = $model->approved_by === null ? Yii::$app->user->id : $model->approved_by;
-        $model->setNomor();
+    //     //bypass langsung approve
+    //     $model->posted_at = time();
+    //     $model->status = $model::STATUS_APPROVED;
+    //     $model->approved_at = time();
+    //     $model->approved_by = $model->approved_by === null ? Yii::$app->user->id : $model->approved_by;
+    //     $model->setNomor();
 
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            if(!$model->save(false, ['posted_at', 'status', 'approved_at', 'approved_by', 'no_urut', 'no'])){
-                $transaction->rollBack();
-                Yii::$app->session->setFlash('error', 'Gagal menyimpan, coba lagi.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
+    //     $transaction = Yii::$app->db->beginTransaction();
+    //     try {
+    //         if(!$model->save(false, ['posted_at', 'status', 'approved_at', 'approved_by', 'no_urut', 'no'])){
+    //             $transaction->rollBack();
+    //             Yii::$app->session->setFlash('error', 'Gagal menyimpan, coba lagi.');
+    //             return $this->redirect(['view', 'id' => $model->id]);
+    //         }
 
-            $greigesKeluar = [];
-            foreach ($model->trnGreigeKeluarItems as $trnGreigeKeluarItem) {
-                $model::getDb()->createCommand()->update(
-                    TrnStockGreige::tableName(),
-                    ['status'=>TrnStockGreige::STATUS_KELUAR_GUDANG],
-                    ['id'=>$trnGreigeKeluarItem->stock_greige_id]
-                )->execute();
+    //         $greigesKeluar = [];
+    //         foreach ($model->trnGreigeKeluarItems as $trnGreigeKeluarItem) {
+    //             $model::getDb()->createCommand()->update(
+    //                 TrnStockGreige::tableName(),
+    //                 ['status'=>TrnStockGreige::STATUS_KELUAR_GUDANG],
+    //                 ['id'=>$trnGreigeKeluarItem->stock_greige_id]
+    //             )->execute();
 
-                $stockGreige = $trnGreigeKeluarItem->stockGreige;
-                $greige = $stockGreige->greige;
-                $fieldToUpdate = '';
-                switch ($stockGreige->jenis_gudang){
-                    case TrnStockGreige::JG_FRESH:
-                        $fieldToUpdate = 'stock';
-                        break;
-                    case TrnStockGreige::JG_PFP:
-                        $fieldToUpdate = 'stock_pfp';
-                        break;
-                    case TrnStockGreige::JG_WIP:
-                        $fieldToUpdate = 'stock_wip';
-                        break;
-                    case TrnStockGreige::JG_EX_FINISH:
-                        $fieldToUpdate = 'stock_ex_finish';
-                        break;
-                }
+    //             $stockGreige = $trnGreigeKeluarItem->stockGreige;
+    //             $greige = $stockGreige->greige;
+    //             $fieldToUpdate = '';
+    //             switch ($stockGreige->jenis_gudang){
+    //                 case TrnStockGreige::JG_FRESH:
+    //                     $fieldToUpdate = 'stock';
+    //                     break;
+    //                 case TrnStockGreige::JG_PFP:
+    //                     $fieldToUpdate = 'stock_pfp';
+    //                     break;
+    //                 case TrnStockGreige::JG_WIP:
+    //                     $fieldToUpdate = 'stock_wip';
+    //                     break;
+    //                 case TrnStockGreige::JG_EX_FINISH:
+    //                     $fieldToUpdate = 'stock_ex_finish';
+    //                     break;
+    //             }
 
-                if(isset($greigesKeluar[$greige->id][$fieldToUpdate])){
-                    $greigesKeluar[$greige->id][$fieldToUpdate] += $stockGreige->panjang_m;
-                }else{
-                    $greigesKeluar[$greige->id][$fieldToUpdate] = $stockGreige->panjang_m;
-                }
-            }
+    //             if(isset($greigesKeluar[$greige->id][$fieldToUpdate])){
+    //                 $greigesKeluar[$greige->id][$fieldToUpdate] += $stockGreige->panjang_m;
+    //             }else{
+    //                 $greigesKeluar[$greige->id][$fieldToUpdate] = $stockGreige->panjang_m;
+    //             }
+    //         }
 
-            foreach ($greigesKeluar as $greigeId=>$greigeKeluar) {
-                $fields = [];
-                foreach ($greigeKeluar as $key=>$value) {
-                    $fields[] = $key.' = '.$key.' - '.$value; //"stock = stock - 2500"
+    //         foreach ($greigesKeluar as $greigeId=>$greigeKeluar) {
+    //             $fields = [];
+    //             foreach ($greigeKeluar as $key=>$value) {
+    //                 $fields[] = $key.' = '.$key.' - '.$value; //"stock = stock - 2500"
 
-                    if($key === 'stock'){
-                        $fields[] = "available = available - {$value}";
-                    }
-                }
-                $fieldStr = implode(', ', $fields);
-                Yii::$app->db->createCommand('UPDATE mst_greige SET '.$fieldStr.' WHERE id='.$greigeId)->execute();
-            }
+    //                 if($key === 'stock'){
+    //                     $fields[] = "available = available - {$value}";
+    //                 }
+    //             }
+    //             $fieldStr = implode(', ', $fields);
+    //             Yii::$app->db->createCommand('UPDATE mst_greige SET '.$fieldStr.' WHERE id='.$greigeId)->execute();
+    //         }
 
-            $transaction->commit();
-            Yii::$app->session->setFlash('success', 'Posting berhasil.');
-            return $this->redirect(['view', 'id' => $model->id]);
-        }catch (\Throwable $e) {
-            $transaction->rollBack();
-            Yii::$app->session->setFlash('error', $e->getMessage());
-            return $this->redirect(['view', 'id' => $model->id]);
-        }
+    //         $transaction->commit();
+    //         Yii::$app->session->setFlash('success', 'Posting berhasil.');
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }catch (\Throwable $e) {
+    //         $transaction->rollBack();
+    //         Yii::$app->session->setFlash('error', $e->getMessage());
+    //         return $this->redirect(['view', 'id' => $model->id]);
+    //     }
+    // }
+
+  public function actionPosting($id)
+{
+    $model = $this->findModel($id);
+    if ($model->status != $model::STATUS_DRAFT) {
+        throw new ForbiddenHttpException('Status tidak valid. Tidak bisa diposting.');
     }
+
+    // bypass langsung approve
+    $model->posted_at = time();
+    $model->status = $model::STATUS_APPROVED;
+    $model->approved_at = time();
+    $model->approved_by = $model->approved_by === null ? Yii::$app->user->id : $model->approved_by;
+    $model->setNomor();
+
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
+        if (!$model->save(false, ['posted_at', 'status', 'approved_at', 'approved_by', 'no_urut', 'no'])) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal menyimpan, coba lagi.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $greigesKeluar = [];
+        $now = date('d/m/Y H:i');
+
+        foreach ($model->trnGreigeKeluarItems as $trnGreigeKeluarItem) {
+            // 1️⃣ Update status stok greige
+            Yii::$app->db->createCommand()->update(
+                TrnStockGreige::tableName(),
+                ['status' => TrnStockGreige::STATUS_KELUAR_GUDANG],
+                ['id' => $trnGreigeKeluarItem->stock_greige_id]
+            )->execute();
+
+            // 2️⃣ Cek dan update TrnStockGreigeOpname bila ada dan valid
+            $opnameValid = TrnStockGreigeOpname::find()
+                ->where([
+                    'stock_greige_id' => $trnGreigeKeluarItem->stock_greige_id,
+                    'status' => TrnStockGreigeOpname::STATUS_VALID,
+                ])
+                ->exists();
+
+            if ($opnameValid) {
+                Yii::$app->db->createCommand()->update(
+                    TrnStockGreigeOpname::tableName(),
+                    [
+                        'status' => TrnStockGreigeOpname::STATUS_KELUAR_GUDANG,
+                        'note' => "Telah dikeluarkan lewat Menu Gudang Greige Keluar - {$now}",
+                    ],
+                    [
+                        'stock_greige_id' => $trnGreigeKeluarItem->stock_greige_id,
+                        'status' => TrnStockGreigeOpname::STATUS_VALID,
+                    ]
+                )->execute();
+            }
+
+            // 3️⃣ Kurangi stock_opname di mst_greige
+            $stockGreige = $trnGreigeKeluarItem->stockGreige;
+            $mstGreige = $stockGreige->greige;
+
+            if ($mstGreige !== null) {
+                $newStockOpname = (float)$mstGreige->stock_opname - (float)$stockGreige->panjang_m;
+                if ($newStockOpname < 0) {
+                    $newStockOpname = 0;
+                }
+                Yii::$app->db->createCommand()->update(
+                    MstGreige::tableName(),
+                    ['stock_opname' => $newStockOpname],
+                    ['id' => $mstGreige->id]
+                )->execute();
+            }
+
+            // 4️⃣ Kelompokkan stok keluar berdasarkan jenis gudang
+            $greige = $stockGreige->greige;
+            $fieldToUpdate = '';
+
+            switch ($stockGreige->jenis_gudang) {
+                case TrnStockGreige::JG_FRESH:
+                    $fieldToUpdate = 'stock';
+                    break;
+                case TrnStockGreige::JG_PFP:
+                    $fieldToUpdate = 'stock_pfp';
+                    break;
+                case TrnStockGreige::JG_WIP:
+                    $fieldToUpdate = 'stock_wip';
+                    break;
+                case TrnStockGreige::JG_EX_FINISH:
+                    $fieldToUpdate = 'stock_ex_finish';
+                    break;
+            }
+
+            if (isset($greigesKeluar[$greige->id][$fieldToUpdate])) {
+                $greigesKeluar[$greige->id][$fieldToUpdate] += $stockGreige->panjang_m;
+            } else {
+                $greigesKeluar[$greige->id][$fieldToUpdate] = $stockGreige->panjang_m;
+            }
+        }
+
+        // 5️⃣ Update stok di tabel mst_greige
+        foreach ($greigesKeluar as $greigeId => $greigeKeluar) {
+            $fields = [];
+            foreach ($greigeKeluar as $key => $value) {
+                $fields[] = $key . ' = ' . $key . ' - ' . $value;
+                if ($key === 'stock') {
+                    $fields[] = "available = available - {$value}";
+                }
+            }
+
+            // pastikan stock_opname juga dikurangi total keluar
+            $totalKeluar = array_sum($greigeKeluar);
+            $fields[] = "stock_opname = GREATEST(stock_opname - {$totalKeluar}, 0)";
+
+            $fieldStr = implode(', ', $fields);
+            Yii::$app->db->createCommand('UPDATE mst_greige SET ' . $fieldStr . ' WHERE id=' . $greigeId)->execute();
+        }
+
+        $transaction->commit();
+        Yii::$app->session->setFlash('success', 'Posting berhasil.');
+        return $this->redirect(['view', 'id' => $model->id]);
+
+    } catch (\Throwable $e) {
+        $transaction->rollBack();
+        Yii::$app->session->setFlash('error', $e->getMessage());
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+}
+
+
+
 
     /**
      * Finds the TrnGreigeKeluar model based on its primary key value.

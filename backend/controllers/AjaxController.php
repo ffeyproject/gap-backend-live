@@ -1177,6 +1177,9 @@ class AjaxController extends Controller
                 case TrnStockGreige::STATUS_TSD_PUTIH:
                     $text = '<span style="color:green;font-weight:bold;">'.$text.' &#9851;</span>';
                     break;
+                case TrnStockGreige::STATUS_GETAR_MESIN:
+                    $text = '<span style="color:green;font-weight:bold;">'.$text.' &#9851;</span>';
+                    break;
                 default:
                     $text = '<span style="color:black;">'.$text.' &#9737;</span>';
             }
