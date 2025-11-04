@@ -831,6 +831,29 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
+public function actionLaporanGreigeOpname()
+{
+    $query = (new \yii\db\Query())
+        ->select([
+            'trn_stock_greige_opname.date',
+            'mst_greige.nama_kain AS nama_kain',
+            'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang'
+        ])
+        ->from('trn_stock_greige_opname')
+        ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
+        ->groupBy(['trn_stock_greige_opname.date', 'mst_greige.nama_kain'])
+        ->orderBy(['trn_stock_greige_opname.date' => SORT_ASC]);
+
+    $dataProvider = new \yii\data\ArrayDataProvider([
+        'allModels' => $query->all(),
+        'pagination' => ['pageSize' => 50],
+    ]);
+
+    return $this->render('laporan-greige-opname', [
+        'dataProvider' => $dataProvider,
+    ]);
+}
+
 
 
 

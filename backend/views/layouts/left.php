@@ -370,7 +370,14 @@ $moduleId = $controller->module->id;
                             && $controllerId == 'trn-gudang-stock-opname'
                             && $actionId == 'index-duplicate'
                     ],
-
+                    [
+    'label' => 'Laporan Stock Opname', 
+    'icon' => 'circle', 
+    'url' => ['/trn-gudang-stock-opname/laporan-greige-opname'],
+    'active' => $moduleId == 'app-backend'
+        && $controllerId == 'trn-gudang-stock-opname'
+        && $actionId == 'laporan-greige-opname'
+],
                 ],
             ],
             [
