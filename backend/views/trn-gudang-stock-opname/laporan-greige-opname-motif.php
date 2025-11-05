@@ -145,10 +145,20 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         'columns' => [
             ['class' => 'yii\grid\SerialColumn', 'header' => '#'],
             [
-                'attribute' => 'nama_kain',
-                'label' => 'Motif / Nama Kain',
-                'hAlign' => 'left',
-            ],
+    'attribute' => 'nama_kain',
+    'label' => 'Motif / Nama Kain',
+    'format' => 'raw',
+    'value' => function($model) {
+        return Html::a(
+            Html::encode($model['nama_kain']),
+            '#',
+            [
+                'class' => 'show-history',
+                'data-nama' => $model['nama_kain']
+            ]
+        );
+    },
+],
             [
                 'attribute' => 'total_panjang',
                 'label' => 'Total',
@@ -171,4 +181,37 @@ $dataProvider = new \yii\data\ArrayDataProvider([
     ]); ?>
 
     <?php Pjax::end(); ?>
+    <!-- Modal History -->
+    <div class="modal fade" id="modal-history" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">History Opname per Hari</h4>
+                </div>
+                <div class="modal-body" id="modal-history-content">
+                    <div class="text-center text-muted">Memuat data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php
+$urlHistory = \yii\helpers\Url::to(['trn-gudang-stock-opname/history-motif']);
+$script = <<<JS
+$(document).on('click', '.show-history', function(e){
+    e.preventDefault();
+    var nama = $(this).data('nama');
+    $('#modal-history').modal('show');
+    $('#modal-history-content').html('<div class="text-center text-muted">Memuat data...</div>');
+    $.get('$urlHistory', {nama: nama}, function(data){
+        $('#modal-history-content').html(data);
+    });
+});
+JS;
+$this->registerJs($script);
+?>
+
 </div>

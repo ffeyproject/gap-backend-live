@@ -910,7 +910,70 @@ class TrnGudangStockOpnameController extends Controller
         ]);
     }
 
+    public function actionHistoryMotif($nama)
+    {
+        $bulanSekarang = date('m');
+        $tahunSekarang = date('Y');
 
+        // --- Hitung bulan sebelumnya ---
+        $bulanSebelumnya = $bulanSekarang - 1;
+        $tahunSebelumnya = $tahunSekarang;
+        if ($bulanSebelumnya == 0) {
+            $bulanSebelumnya = 12;
+            $tahunSebelumnya--;
+        }
+
+        // --- Data per hari untuk bulan sekarang ---
+        $data = (new \yii\db\Query())
+            ->select([
+                'trn_stock_greige_opname.date',
+                'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
+                'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
+            ])
+            ->from('trn_stock_greige_opname')
+            ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
+            ->where(['mst_greige.nama_kain' => $nama])
+            ->andWhere(new \yii\db\Expression('EXTRACT(MONTH FROM trn_stock_greige_opname.date) = :bulan', [':bulan' => $bulanSekarang]))
+            ->andWhere(new \yii\db\Expression('EXTRACT(YEAR FROM trn_stock_greige_opname.date) = :tahun', [':tahun' => $tahunSekarang]))
+            ->groupBy(['trn_stock_greige_opname.date'])
+            ->orderBy(['trn_stock_greige_opname.date' => SORT_ASC])
+            ->all();
+
+        // --- Total bulan sekarang ---
+        $totalSekarang = (new \yii\db\Query())
+            ->select([
+                'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
+                'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
+            ])
+            ->from('trn_stock_greige_opname')
+            ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
+            ->where(['mst_greige.nama_kain' => $nama])
+            ->andWhere(new \yii\db\Expression('EXTRACT(MONTH FROM trn_stock_greige_opname.date) = :bulan', [':bulan' => $bulanSekarang]))
+            ->andWhere(new \yii\db\Expression('EXTRACT(YEAR FROM trn_stock_greige_opname.date) = :tahun', [':tahun' => $tahunSekarang]))
+            ->one();
+
+        // --- Total bulan sebelumnya ---
+        $totalSebelumnya = (new \yii\db\Query())
+            ->select([
+                'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
+                'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
+            ])
+            ->from('trn_stock_greige_opname')
+            ->leftJoin('mst_greige', 'mst_greige.id = trn_stock_greige_opname.greige_id')
+            ->where(['mst_greige.nama_kain' => $nama])
+            ->andWhere(new \yii\db\Expression('EXTRACT(MONTH FROM trn_stock_greige_opname.date) = :bulan', [':bulan' => $bulanSebelumnya]))
+            ->andWhere(new \yii\db\Expression('EXTRACT(YEAR FROM trn_stock_greige_opname.date) = :tahun', [':tahun' => $tahunSebelumnya]))
+            ->one();
+
+        return $this->renderPartial('_history-motif', [
+            'namaMotif' => $nama,
+            'data' => $data,
+            'totalSekarang' => $totalSekarang,
+            'totalSebelumnya' => $totalSebelumnya,
+            'bulanSekarang' => $bulanSekarang,
+            'bulanSebelumnya' => $bulanSebelumnya,
+        ]);
+    }
 
 
     
