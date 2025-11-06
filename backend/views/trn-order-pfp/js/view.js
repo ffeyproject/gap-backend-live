@@ -112,3 +112,41 @@ $(document).on("beforeSubmit", "#select-handling-form", function (e) {
 
   return false;
 });
+
+$(document).on("beforeSubmit", ".tambah-qty-form form", function (e) {
+  e.preventDefault();
+  var form = $(this);
+  $.post(form.attr("action"), form.serialize())
+    .done(function (res) {
+      if (res.success) {
+        krajeeDialog.alert(res.message);
+        $("#trnOrderPfpModal").modal("hide");
+        location.reload();
+      } else {
+        krajeeDialog.alert(res.message);
+      }
+    })
+    .fail(function () {
+      krajeeDialog.alert("Terjadi kesalahan saat memproses.");
+    });
+  return false;
+});
+
+$(document).on("beforeSubmit", ".kurangi-qty-form form", function (e) {
+  e.preventDefault();
+  var form = $(this);
+  $.post(form.attr("action"), form.serialize())
+    .done(function (res) {
+      if (res.success) {
+        krajeeDialog.alert(res.message);
+        $("#trnOrderPfpModal").modal("hide");
+        location.reload();
+      } else {
+        krajeeDialog.alert(res.message);
+      }
+    })
+    .fail(function () {
+      krajeeDialog.alert("Terjadi kesalahan saat memproses.");
+    });
+  return false;
+});
