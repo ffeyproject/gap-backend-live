@@ -77,6 +77,7 @@ class TrnWoColor extends \yii\db\ActiveRecord
             'mo_color_id' => 'Mo Color ID',
             'qty' => 'Qty',
             'note' => 'Note',
+            'date_ready_colour' => 'Tanggal Siap Warna',
         ];
     }
 
@@ -207,4 +208,11 @@ class TrnWoColor extends \yii\db\ActiveRecord
                 return 0;
         }
     }
+
+    public function getKartuProsesDyeings()
+{
+    return $this->hasMany(\common\models\ar\TrnKartuProsesDyeing::class, ['wo_color_id' => 'id']);
+}
+
+
 }

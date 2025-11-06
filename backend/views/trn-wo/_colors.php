@@ -92,6 +92,29 @@ echo GridView::widget([
             'format' => 'date',
             'hAlign' => 'center'
         ],
+       [
+            'label' => 'Kartu Proses',
+            'format' => 'raw',
+            'visible' => ($model->scGreige && $model->scGreige->process == 1)
+                && ($model->mo && $model->mo->scGreige->process == 1),
+            'value' => function (\common\models\ar\TrnWoColor $data) {
+                $wo = $data->wo;
+                $mo = $wo ? $wo->mo : null;
+
+                if (
+                    $wo && $wo->scGreige && $wo->scGreige->process == 1 &&
+                    $mo && $mo->scGreige && $mo->scGreige->process == 1
+                ) {
+                    $count = count($data->kartuProsesDyeings);
+                    return $count > 0
+                        ? Html::tag('span', $count . ' kartu', ['class' => 'label label-success'])
+                        : Html::tag('span', 'Belum ada', ['class' => 'label label-default']);
+                }
+
+                return '-';
+            },
+            'hAlign' => 'center',
+        ],
         [
             'class' => 'kartik\grid\ActionColumn',
             'controller' => 'trn-wo-color',

@@ -35,6 +35,10 @@ class TrnWoColorSearch extends TrnWoColor
     public $tipeKontrak;
     public $proccess;
 
+    public $dateRangeReadyColour;
+    private $from_date_ready_colour;
+    private $to_date_ready_colour;
+
     public $woNo;
     /**
      * {@inheritdoc}
@@ -44,7 +48,7 @@ class TrnWoColorSearch extends TrnWoColor
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'mo_color_id'], 'integer'],
             [['qty'], 'number'],
-            [['note'], 'safe'],
+            [['note','dateRangeReadyColour'], 'safe'],
             [
                 [
                     'scNo', 'moNo', 'woNo', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
@@ -198,6 +202,27 @@ class TrnWoColorSearch extends TrnWoColor
             }
         }
 
+       if (!empty($this->dateRangeReadyColour)) {
+            $this->from_date_ready_colour = strtotime(substr($this->dateRangeReadyColour, 0, 10) . ' 00:00:00');
+            $this->to_date_ready_colour = strtotime(substr($this->dateRangeReadyColour, 14) . ' 23:59:59');
+
+            // Jika hanya satu tanggal (bukan range)
+            if ($this->from_date_ready_colour == $this->to_date_ready_colour) {
+                $query->andFilterWhere([
+                    'between',
+                    'trn_wo_color.date_ready_colour',
+                    $this->from_date_ready_colour,
+                    $this->from_date_ready_colour + 86400 - 1, // seluruh hari itu
+                ]);
+            } else {
+                $query->andFilterWhere([
+                    'between',
+                    'trn_wo_color.date_ready_colour',
+                    $this->from_date_ready_colour,
+                    $this->to_date_ready_colour,
+                ]);
+            }
+        }
         // grid filtering conditions
         $query->andFilterWhere([
             'trn_wo_color.id' => $this->id,

@@ -240,6 +240,12 @@ $moduleId = $controller->module->id;
                                 'url' => ['/trn-wo/rekap-total-wo'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'trn-wo'  && $actionId=='rekap-total-wo'
                             ],
+                            [
+                                'label'=>'Tanggal Siap Warna',
+                                'icon' => 'circle-o',
+                                'url' => ['/trn-wo/rekap-ready-colour'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'trn-wo'  && $actionId=='rekap-ready-colour'
+                            ],
                         ]
                     ],
                 ]

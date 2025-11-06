@@ -12,6 +12,7 @@ use common\models\rekap\RekapWoTotalSearch;
 use kartik\mpdf\Pdf;
 use Yii;
 use common\models\ar\TrnWo;
+use common\models\ar\TrnWoColorSearch;
 use common\models\ar\TrnWoSearch;
 use common\models\ar\User;
 use yii\db\Query;
@@ -610,6 +611,23 @@ class TrnWoController extends Controller
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    public function actionRekapReadyColour()
+    {
+        $searchModel = new TrnWoColorSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // pastikan query utama menyertakan NULLS LAST
+        $query = $dataProvider->query;
+        $query->orderBy(new \yii\db\Expression('date_ready_colour DESC NULLS LAST'));
+
+        return $this->render('rekap-ready-colour', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+
 
 
 
