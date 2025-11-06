@@ -1,4 +1,6 @@
 <?php
+
+use common\models\ar\TrnOrderPfpQtyLog;
 use kartik\dialog\Dialog;
 use yii\helpers\Html;
 use yii\widgets\DetailView;
@@ -103,38 +105,39 @@ use common\models\ar\TrnStockGreige;
     </div>
     <div class="box-body">
         <p>
-            Menampilkan stok greige didalam group "<?=$model->greigeGroup->nama_kain?>" di semua gudang, untuk membantu anda mengambil keputusan memposting order PFP ini.
+            Menampilkan stok greige didalam group "<?=$model->greigeGroup->nama_kain?>" di semua gudang, untuk membantu
+            anda mengambil keputusan memposting order PFP ini.
         </p>
         <table class="table table-bordered table-striped">
             <thead>
-            <tr>
-                <th rowspan="2" style="vertical-align: middle;">NO</th>
-                <th rowspan="2" style="vertical-align: middle;">GREIGE</th>
-                <th colspan="3" class="text-center">FRESH</th>
-                <th colspan="3" class="text-center">WIP</th>
-                <th colspan="3" class="text-center">PFP</th>
-                <th colspan="3" class="text-center">EX FINISH</th>
-            </tr>
-            <tr>
-                <th class="text-right">STOCK</th>
-                <th class="text-right">BOOKED</th>
-                <th class="text-right">AVAILABLE</th>
+                <tr>
+                    <th rowspan="2" style="vertical-align: middle;">NO</th>
+                    <th rowspan="2" style="vertical-align: middle;">GREIGE</th>
+                    <th colspan="3" class="text-center">FRESH</th>
+                    <th colspan="3" class="text-center">WIP</th>
+                    <th colspan="3" class="text-center">PFP</th>
+                    <th colspan="3" class="text-center">EX FINISH</th>
+                </tr>
+                <tr>
+                    <th class="text-right">STOCK</th>
+                    <th class="text-right">BOOKED</th>
+                    <th class="text-right">AVAILABLE</th>
 
-                <th class="text-right">STOCK</th>
-                <th class="text-right">BOOKED</th>
-                <th class="text-right">AVAILABLE</th>
+                    <th class="text-right">STOCK</th>
+                    <th class="text-right">BOOKED</th>
+                    <th class="text-right">AVAILABLE</th>
 
-                <th class="text-right">STOCK</th>
-                <th class="text-right">BOOKED</th>
-                <th class="text-right">AVAILABLE</th>
+                    <th class="text-right">STOCK</th>
+                    <th class="text-right">BOOKED</th>
+                    <th class="text-right">AVAILABLE</th>
 
-                <th class="text-right">STOCK</th>
-                <th class="text-right">BOOKED</th>
-                <th class="text-right">AVAILABLE</th>
-            </tr>
+                    <th class="text-right">STOCK</th>
+                    <th class="text-right">BOOKED</th>
+                    <th class="text-right">AVAILABLE</th>
+                </tr>
             </thead>
             <tbody>
-            <?php foreach ( $model->greigeGroup->mstGreiges as $i=>$greige):?>
+                <?php foreach ( $model->greigeGroup->mstGreiges as $i=>$greige):?>
                 <?php
                 $stockFresh = $greige->stock;
                 $bookedFresh = $greige->booked;
@@ -171,12 +174,66 @@ use common\models\ar\TrnStockGreige;
                     <td class="text-right"><?=Yii::$app->formatter->asDecimal($bookedEf)?></td>
                     <td class="text-right"><?=Yii::$app->formatter->asDecimal($availableEf)?></td>
                 </tr>
-            <?php endforeach;?>
+                <?php endforeach;?>
             </tbody>
         </table>
     </div>
     <div class="box-footer"></div>
 </div>
+
 <?php else:?>
-    <?= $this->render('_view-print', ['model'=>$model])?>
+<?= $this->render('_view-print', ['model'=>$model])?>
 <?php endif;?>
+<!-- RIWAYAT TAMBAH & KURANG QTY -->
+<div class="box box-solid">
+    <div class="box-header with-border">
+        <h3 class="box-title">Riwayat Perubahan Qty Batch</h3>
+    </div>
+    <div class="box-body">
+        <table class="table table-bordered table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>User</th>
+                    <th class="text-right">Qty (Batch)</th>
+                    <th class="text-right">Total Greige</th>
+                    <th>Alasan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $logs = TrnOrderPfpQtyLog::find()
+                    ->where(['order_pfp_id' => $model->id])
+                    ->orderBy(['created_at' => SORT_DESC])
+                    ->all();
+
+                if ($logs):
+                    foreach ($logs as $log):
+                        $isMinus = $log->qty_tambah < 0;
+                        $rowClass = $isMinus ? 'danger' : 'success';
+                ?>
+                <tr class="<?= $rowClass ?>">
+                    <td><?= Yii::$app->formatter->asDatetime($log->created_at) ?></td>
+                    <td><?= Html::encode($log->user->username ?? 'Unknown') ?></td>
+                    <td class="text-right">
+                        <?= $isMinus ? '(' . Yii::$app->formatter->asDecimal(abs($log->qty_tambah)) . ')' : Yii::$app->formatter->asDecimal($log->qty_tambah) ?>
+                    </td>
+                    <td class="text-right">
+                        <?= $isMinus ? '(' . Yii::$app->formatter->asDecimal(abs($log->total_meter)) . ')' : Yii::$app->formatter->asDecimal($log->total_meter) ?>
+                    </td>
+                    <td><?= Html::encode($log->keterangan) ?></td>
+                </tr>
+                <?php
+                    endforeach;
+                else:
+                ?>
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Belum ada riwayat perubahan qty.</td>
+                </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        <small><i>Keterangan: <span class="text-success">Hijau = Penambahan</span>, <span class="text-danger">Merah =
+                    Pengurangan</span></i></small>
+    </div>
+</div>

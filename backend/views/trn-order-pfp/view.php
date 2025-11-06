@@ -39,6 +39,32 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
     ) ?>
     <?php endif;?>
 
+    <?php if($model->status == $model::STATUS_APPROVED): ?>
+    <?= Html::a(
+        'Tambah Qty Batch',
+        ['tambah-qty', 'id' => $model->id],
+        [
+            'class' => 'btn btn-success ajaxModal',
+            'title' => 'Tambah Qty Batch untuk Order PFP: '.$model->id,
+            'data-target' => '#trnOrderPfpModal',
+            'data-toggle' => 'modal',
+        ]
+    ) ?>
+    <?php endif; ?>
+
+    <?php if ($model->status == $model::STATUS_APPROVED): ?>
+    <?= Html::a(
+        'Kurangi Qty Batch',
+        ['kurangi-qty', 'id' => $model->id],
+        [
+            'class' => 'btn btn-danger ajaxModal',
+            'title' => 'Kurangi Qty Batch untuk Order PFP: '.$model->id,
+            'data-target' => '#trnOrderPfpModal',
+            'data-toggle' => 'modal',
+        ]
+    ) ?>
+    <?php endif; ?>
+
     <?php
     if($model->status === $model::STATUS_DRAFT){
         echo '<p>';

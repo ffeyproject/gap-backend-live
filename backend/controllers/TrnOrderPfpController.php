@@ -7,6 +7,7 @@ use Yii;
 use common\models\ar\TrnOrderPfp;
 use common\models\ar\TrnOrderPfpSearch;
 use common\models\ar\MstGreige;
+use common\models\ar\TrnOrderPfpQtyLog;
 use common\models\ar\TrnStockGreige;
 use yii\web\Controller;
 use yii\web\ForbiddenHttpException;
@@ -403,6 +404,175 @@ class TrnOrderPfpController extends Controller
         ]);
     }
 
+    public function actionTambahQty($id)
+{
+    $model = $this->findModel($id);
+
+    if (Yii::$app->request->isPost) {
+        $qtyTambah = (float) Yii::$app->request->post('qty_tambah');
+        $alasan = trim(Yii::$app->request->post('alasan'));
+
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        if ($qtyTambah <= 0) {
+            return ['success' => false, 'message' => 'Jumlah batch harus lebih dari 0.'];
+        }
+
+        if (empty($alasan)) {
+            return ['success' => false, 'message' => 'Alasan penambahan qty wajib diisi.'];
+        }
+
+        $greige = $model->greige;
+        $greigeGroup = $greige->group;
+        $totalMeter = $qtyTambah * $greigeGroup->qty_per_batch;
+
+        // Tentukan atribut stok
+        switch ($model->jenis_gudang) {
+            case \common\models\ar\TrnStockGreige::JG_PFP:
+                $availableAttr = 'available_pfp';
+                $available = $greige->available_pfp;
+                break;
+            case \common\models\ar\TrnStockGreige::JG_FRESH:
+                $availableAttr = 'available';
+                $available = $greige->available;
+                break;
+            default:
+                $availableAttr = 'available';
+                $available = $greige->available;
+        }
+
+        // Validasi stok
+        if ($available < $totalMeter) {
+            return [
+                'success' => false,
+                'message' => '❌ Stok tidak mencukupi. Available: ' .
+                    Yii::$app->formatter->asDecimal($available) .
+                    ', dibutuhkan: ' . Yii::$app->formatter->asDecimal($totalMeter)
+            ];
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // Tambah qty order
+            $model->qty += $qtyTambah;
+            $model->save(false, ['qty']);
+
+            // Update stok greige
+            Yii::$app->db->createCommand()->update(
+                \common\models\ar\MstGreige::tableName(),
+                [
+                    $availableAttr => new \yii\db\Expression($availableAttr . ' - ' . $totalMeter),
+                    'booked_opfp' => new \yii\db\Expression('booked_opfp + ' . $totalMeter)
+                ],
+                ['id' => $greige->id]
+            )->execute();
+
+            // Simpan log
+            $log = new TrnOrderPfpQtyLog();
+            $log->order_pfp_id = $model->id;
+            $log->user_id = Yii::$app->user->id;
+            $log->qty_tambah = $qtyTambah;
+            $log->total_meter = $totalMeter;
+            $log->keterangan = $alasan;
+            $log->created_at = time();
+            $log->save(false);
+
+            $transaction->commit();
+
+            return [
+                'success' => true,
+                'message' => '✅ Qty batch berhasil ditambahkan (' .
+                    $qtyTambah . ' batch / ' .
+                    Yii::$app->formatter->asDecimal($totalMeter) . ' meter).'
+            ];
+        } catch (\Throwable $t) {
+            $transaction->rollBack();
+            throw $t;
+        }
+    }
+
+    return $this->renderAjax('tambah-qty', ['model' => $model]);
+}
+
+
+public function actionKurangiQty($id)
+{
+    $model = $this->findModel($id);
+
+    if (Yii::$app->request->isPost) {
+        $qtyKurang = (float) Yii::$app->request->post('qty_kurang');
+        $alasan = trim(Yii::$app->request->post('alasan'));
+
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        if ($qtyKurang <= 0) {
+            return ['success' => false, 'message' => 'Jumlah batch harus lebih dari 0.'];
+        }
+
+        if (empty($alasan)) {
+            return ['success' => false, 'message' => 'Alasan pengurangan qty wajib diisi.'];
+        }
+
+        if ($qtyKurang > $model->qty) {
+            return ['success' => false, 'message' => 'Jumlah pengurangan melebihi qty order saat ini.'];
+        }
+
+        $greige = $model->greige;
+        $greigeGroup = $greige->group;
+        $totalMeter = $qtyKurang * $greigeGroup->qty_per_batch;
+
+        switch ($model->jenis_gudang) {
+            case TrnStockGreige::JG_PFP:
+                $availableAttr = 'available_pfp';
+                break;
+            case TrnStockGreige::JG_FRESH:
+                $availableAttr = 'available';
+                break;
+            default:
+                $availableAttr = 'available';
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // Kurangi qty order
+            $model->qty -= $qtyKurang;
+            $model->save(false, ['qty']);
+
+            // Update stok greige (tambah available, kurangi booked_opfp)
+            Yii::$app->db->createCommand()->update(
+                MstGreige::tableName(),
+                [
+                    $availableAttr => new \yii\db\Expression($availableAttr . ' + ' . $totalMeter),
+                    'booked_opfp' => new \yii\db\Expression('booked_opfp - ' . $totalMeter)
+                ],
+                ['id' => $greige->id]
+            )->execute();
+
+            // Simpan log pengurangan
+            $log = new TrnOrderPfpQtyLog();
+            $log->order_pfp_id = $model->id;
+            $log->user_id = Yii::$app->user->id;
+            $log->qty_tambah = -$qtyKurang; // negatif menandakan pengurangan
+            $log->total_meter = -$totalMeter;
+            $log->keterangan = 'Pengurangan qty: ' . $alasan;
+            $log->created_at = time();
+            $log->save(false);
+
+            $transaction->commit();
+
+            return [
+                'success' => true,
+                'message' => '✅ Qty batch berhasil dikurangi (' . $qtyKurang .
+                    ' batch / ' . Yii::$app->formatter->asDecimal($totalMeter) . ' meter).'
+            ];
+        } catch (\Throwable $t) {
+            $transaction->rollBack();
+            throw $t;
+        }
+    }
+
+    return $this->renderAjax('kurangi-qty', ['model' => $model]);
+}
 
     
 }
