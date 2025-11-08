@@ -20,6 +20,11 @@ echo AjaxModal::widget([
     'size' => 'modal-md',
     'header' => '<h4 class="modal-title">...</h4>',
 ]);
+echo AjaxModal::widget([
+    'id' => 'editQtyModal',
+    'size' => 'modal-md',
+    'header' => '<h4 class="modal-title">Edit Qty Stock & Opname</h4>',
+]);
 ?>
 <div class="trn-stock-greige-index">
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
@@ -50,23 +55,32 @@ echo AjaxModal::widget([
         'type' => 'default',
         'before'=>Html::tag(
         'div',
-                Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).
-                Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']).
-                Html::a('<i class="glyphicon glyphicon-plus"></i> Bulk', ['create-dua'], ['class' => 'btn btn-info']).
+                Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default', 'style' => 'margin-right:5px;']).
+                Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success', 'style' => 'margin-right:5px;']).
+                Html::a('<i class="glyphicon glyphicon-plus"></i> Bulk', ['create-dua'], ['class' => 'btn btn-info', 'style' => 'margin-right:5px;']).
                 Html::a('Change Notes', ['change-notes'], [
                     'class' => 'btn btn-warning',
+                    'style' => 'margin-right:5px;',
                     'onclick' => 'changeNotes(event);',
                     'title' => 'Change Notes Selected Items'
                 ]).
                 Html::a('Ganti Ket. Weaving', ['change-ket-weaving'], [
                     'class' => 'btn btn-default',
+                    'style' => 'margin-right:5px;',
                     'onclick' => 'changeKetWeaving(event);',
                     'title' => 'Change Ket. Weaving Selected Items'
                 ]).
                 Html::a('<i class="glyphicon glyphicon-duplicate"></i> Duplikat Stock ke Stock Opname', ['duplicate-bulk'], [
                     'class' => 'btn btn-primary',
+                    'style' => 'margin-right:5px;',
                     'onclick' => 'duplicateStock(event);',
                     'title' => 'Duplikat Stock ke Stock Opname'
+                ]).
+                Html::a('<i class="glyphicon glyphicon-edit"></i> Edit Qty Stock & Opname', ['edit-qty'], [
+                    'class' => 'btn btn-warning',
+                    'style' => 'margin-right:5px;',
+                    'onclick' => 'editQtyStock(event);',
+                    'title' => 'Edit Qty Stock dan Opname'
                 ]),
                 ['class'=>'btn-group', 'role'=>'group']
             ),
@@ -234,7 +248,39 @@ echo AjaxModal::widget([
     ]); ?>
 
     <?=$this->render('_mix-quality')?>
+
+    <!-- Modal bawaan edit qty -->
+    <div id="modal-edit-qty" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-body text-center p-3">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+<?php
+$editQtyUrl = \yii\helpers\Url::to(['edit-qty']);
+$jsEditQty = <<<JS
+// Saat tombol Edit Qty diklik
+$(document).on('click', '.btn-edit-qty', function(e) {
+    e.preventDefault();
+    var keys = $('#StockGreigeGrid').yiiGridView('getSelectedRows');
+    if (keys.length === 0) {
+        alert('Pilih minimal satu item untuk edit Qty.');
+        return false;
+    }
+    var url = '{$editQtyUrl}?ids=' + keys.join(',');
+    $('#modal-edit-qty').modal('show')
+        .find('.modal-content')
+        .load(url);
+});
+JS;
+$this->registerJs($jsEditQty, View::POS_END);
+?>
 
 <?php
 $this->registerJsVar('mixItems', []);
@@ -247,3 +293,35 @@ var greigeGrade = undefined;
 JS;
 //$this->registerJsVar('actionUrl', $actionUrl);
 $this->registerJs($js.$this->render('js/index.js'), View::POS_END);
+$jsFixSelectAll = <<<JS
+function rebindGridCheckboxes() {
+    var grid = $('#StockGreigeGrid');
+    var selectAll = grid.find('.select-on-check-all');
+    var checkboxes = grid.find('input[name="selection[]"]');
+
+    // Rebind "select all" behaviour
+    selectAll.off('change').on('change', function() {
+        var checked = $(this).is(':checked');
+        checkboxes.prop('checked', checked).trigger('change');
+    });
+
+    // Rebind child checkbox behaviour
+    checkboxes.off('change').on('change', function() {
+        var total = checkboxes.length;
+        var checked = checkboxes.filter(':checked').length;
+        selectAll.prop('checked', total === checked);
+    });
+}
+
+// Initial load
+$(function() {
+    rebindGridCheckboxes();
+});
+
+// Rebind after PJAX reload
+$(document).on('pjax:end', function() {
+    rebindGridCheckboxes();
+});
+JS;
+
+$this->registerJs($jsFixSelectAll, View::POS_END);

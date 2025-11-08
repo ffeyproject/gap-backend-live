@@ -398,3 +398,14 @@ function duplicateStock(event) {
     $.alert({ title: "Peringatan!", content: "Tidak ada item yang dipilih." });
   }
 }
+
+function editQtyStock(event) {
+  event.preventDefault();
+  var keys = $("#StockGreigeGrid").yiiGridView("getSelectedRows");
+  if (keys.length === 0) {
+    alert("Pilih minimal satu data stock terlebih dahulu!");
+    return;
+  }
+  var url = "edit-qty?ids=" + keys.join(",");
+  $("#editQtyModal").modal("show").find(".modal-content").load(url);
+}

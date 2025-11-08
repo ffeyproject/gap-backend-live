@@ -911,5 +911,59 @@ class TrnStockGreigeController extends Controller
     }
 
 
+  public function actionEditQty($ids)
+{
+    $ids = explode(',', $ids);
+    $models = \common\models\ar\TrnStockGreige::findAll($ids);
+
+    if (Yii::$app->request->isPost) {
+        $post = Yii::$app->request->post('TrnStockGreige', []);
+
+        foreach ($models as $model) {
+            if (isset($post[$model->id]['panjang_m_baru'])) {
+                $qtyBaru = (float) $post[$model->id]['panjang_m_baru'];
+                $qtyLama = (float) $model->panjang_m;
+                $selisih = $qtyBaru - $qtyLama;
+
+                // Update field utama di TrnStockGreige
+                $model->panjang_m = $qtyBaru;
+                $model->save(false, ['panjang_m']);
+
+                // Update relasi greige jika ada (field stock, available, stock_opname)
+                if ($model->greige) {
+                    $greige = $model->greige;
+                    $greige->stock += $selisih;
+                    $greige->available += $selisih;
+                    $greige->stock_opname += $selisih;
+                    $greige->save(false, ['stock', 'available', 'stock_opname']);
+                }
+
+                // Update opname terkait jika ada
+                $opname = \common\models\ar\TrnStockGreigeOpname::find()
+                    ->where(['stock_greige_id' => $model->id])
+                    ->one();
+                if ($opname) {
+                    $opname->panjang_m += $selisih;
+                    $opname->save(false, ['panjang_m']);
+                }
+            }
+        }
+
+        // Jika request AJAX, kirim JSON response
+        if (Yii::$app->request->isAjax) {
+            Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+            return ['success' => true, 'message' => 'Qty Stock & Opname berhasil diperbarui.'];
+        }
+
+        Yii::$app->session->setFlash('success', 'Qty Stock & Opname berhasil diperbarui.');
+        return $this->redirect(['index']);
+    }
+
+    return $this->renderAjax('edit-qty', [
+        'models' => $models,
+    ]);
+}
+
+
 
 }
