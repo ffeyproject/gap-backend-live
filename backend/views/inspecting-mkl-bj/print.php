@@ -228,7 +228,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?=($index+1).$item['join_piece']?></td>
+                                                <?= $item['no_urut'] ? $item['no_urut'] . ($item['join_piece'] ?: '') : ($index + 1) ?>
+                                            </td>
                                             <td class="bordered" style="text-align: center;">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {
@@ -414,7 +415,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?=($index+1).$item['join_piece']?></td>
+                                               <?= $item['no_urut'] ? $item['no_urut'] . ($item['join_piece'] ?: '') : ($index + 1) ?>
+                                            </td>
                                             <td class="bordered" style="text-align: center">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {

@@ -84,32 +84,29 @@ class InspectingMklBjController extends Controller
      */
     public function actionCreate()
     {
-        $model = new InspectingMklBj([
-            /*'wo_id' => '4',
-            'wo_color_id' => '5',
-            'tgl_inspeksi' => '2021-07-06',
-            'tgl_kirim' => '2021-07-06',
-            'no_lot' => 'No Lot',
-            'jenis' => '1',
-            'satuan' => '1',*/
-        ]);
+        $model = new InspectingMklBj();
         $modelItem = new InspectingMklBjItems();
 
-        if (Yii::$app->request->isAjax){
+        if (Yii::$app->request->isAjax) {
             Yii::$app->response->format = Response::FORMAT_JSON;
 
-            if($model->load(Yii::$app->request->post())){
-                if($model->validate()){
+            if ($model->load(Yii::$app->request->post())) {
+                if ($model->validate()) {
                     $transaction = Yii::$app->db->beginTransaction();
                     try {
-                        if(! ($flag = $model->save(false))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                        if (!($flag = $model->save(false))) {
+                            throw new HttpException(500, 'Gagal menyimpan header.');
                         }
 
-                        foreach (Json::decode(Yii::$app->request->post('items')) as $item) {
+                        // =============================
+                        // Simpan semua item baru
+                        // =============================
+                        $dataItems = Json::decode(Yii::$app->request->post('items'));
+
+                        foreach ($dataItems as $item) {
                             $modelItem = new InspectingMklBjItems([
                                 'inspecting_id' => $model->id,
+                                'no_urut' => $item['no_urut'] ?? null,
                                 'grade' => $item['grade'],
                                 'defect' => $item['defect'],
                                 'lot_no' => $item['lot_no'],
@@ -118,38 +115,67 @@ class InspectingMklBjController extends Controller
                                 'note' => $item['note'],
                             ]);
 
-                            if(!($flag = $modelItem->save(false))){
-                                $transaction->rollBack();
-                                throw new HttpException(500, 'Gagal, coba lagi. (2)');
+                            if (!($flag = $modelItem->save(false))) {
+                                throw new HttpException(500, 'Gagal menyimpan item.');
                             }
                         }
 
+                        // =============================
+                        // Rehitung qty_sum, qty_count, is_head
+                        // =============================
                         $query = InspectingMklBjItems::find();
-                        $getItemBasedOnInspectingId = $query->where(['=', 'inspecting_id', $model->id])->all();
-                        foreach ($getItemBasedOnInspectingId as $gIBOII) {
-                            $qty_sum = $query->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $model->id])->sum('qty');
-                            $qty_count = $query->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $model->id])->count();
-                            $is_head = $query->orderBy('is_head DESC')->orderBy('id ASC')
-                                            ->where(['=', 'join_piece', $gIBOII->join_piece])
-                                            ->andWhere(['=', 'inspecting_id', $model->id])
-                                            ->andWhere(['<>', 'join_piece', ""])->one();
-                            $gIBOII['qty_sum'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? NULL : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? $gIBOII['qty'] : $qty_sum);
-                            $gIBOII['qr_code'] = 'MKL-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
-                            $gIBOII['is_head'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : 1;
-                            $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
-                            $gIBOII->save();
+                        $itemsInInspect = $query->where(['inspecting_id' => $model->id])->all();
+
+                        foreach ($itemsInInspect as $row) {
+                            $qtyCount = $query->where([
+                                'join_piece' => $row->join_piece,
+                                'inspecting_id' => $model->id
+                            ])->count();
+
+                            $isHead = $query->orderBy(['is_head' => SORT_DESC, 'id' => SORT_ASC])
+                                ->where(['join_piece' => $row->join_piece, 'inspecting_id' => $model->id])
+                                ->andWhere(['<>', 'join_piece', ""])
+                                ->one();
+
+                            $qtySum = $query->where([
+                                'join_piece' => $row->join_piece,
+                                'inspecting_id' => $model->id
+                            ])->sum('qty');
+
+                            $row->qty_sum = ($isHead && ($isHead['id'] != $row['id']))
+                                ? null
+                                : (($row->join_piece == null || $row->join_piece == "")
+                                    ? $row->qty
+                                    : $qtySum);
+
+                            $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
+
+                            // ⚠️ Hapus pembuatan QR otomatis
+                            // $row->qr_code = 'MKL-' . $row->inspecting_id . '-' . $row->id;
+
+                            $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
+                                ? 0
+                                : (($row->join_piece == null || $row->join_piece == "")
+                                    ? 1
+                                    : $qtyCount);
+
+                            $row->save(false);
                         }
 
-                        if($flag){
+                        if ($flag) {
                             $transaction->commit();
-                            return ['success'=>true, 'redirect'=>Url::to(['view', 'id'=>$model->id])];
+                            return ['success' => true, 'redirect' => Url::to(['view', 'id' => $model->id])];
                         }
-                    }catch (\Throwable $t){
+
+                    } catch (\Throwable $t) {
                         $transaction->rollBack();
                         throw $t;
                     }
                 }
 
+                // =============================
+                // Jika validasi gagal
+                // =============================
                 $result = [];
                 foreach ($model->getErrors() as $attribute => $errors) {
                     $result[Html::getInputId($model, $attribute)] = $errors;
@@ -168,107 +194,129 @@ class InspectingMklBjController extends Controller
     {
         $model = $this->findModel($id);
         $modelItem = new InspectingMklBjItems();
-        // $items = ArrayHelper::toArray($model->getItems()->orderBy('id ASC')->all());
-       $items = ArrayHelper::toArray(
+
+        // Ambil item dengan urutan no_urut ASC (NULL terakhir)
+        $items = ArrayHelper::toArray(
             $model->getItems()
                 ->orderBy([
-                    new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'), // NULL terakhir
+                    new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'),
                     'no_urut' => SORT_ASC,
                     'id' => SORT_ASC
                 ])
                 ->all()
         );
 
-        if (Yii::$app->request->isAjax){
+        if (Yii::$app->request->isAjax) {
             Yii::$app->response->format = Response::FORMAT_JSON;
 
-            if($model->load(Yii::$app->request->post())){
-                if($model->validate()){
+            if ($model->load(Yii::$app->request->post())) {
+                if ($model->validate()) {
                     $transaction = Yii::$app->db->beginTransaction();
                     try {
-                        if(! ($flag = $model->save(false))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                        if (!($flag = $model->save(false))) {
+                            throw new HttpException(500, 'Gagal menyimpan header.');
                         }
 
-                        $dI = Json::decode(Yii::$app->request->post('deletedItems'));
-                        if(count($dI) > 0) {
-                            for ($i=0; $i < count($dI); $i++) { 
-                                if ($dI[$i] <> 0) {
-                                    Yii::$app->db->createCommand()->delete(InspectingMklBjItems::tableName(), ['=', 'id', $dI[$i]])->execute();
-                                }
-                            }
+                        // ============================
+                        // Hapus item yang dihapus user
+                        // ============================
+                        $deletedItems = Json::decode(Yii::$app->request->post('deletedItems'));
+                        if (!empty($deletedItems)) {
+                            InspectingMklBjItems::deleteAll(['id' => $deletedItems]);
                         }
 
+                        // ============================
+                        // Simpan atau update item
+                        // ============================
                         $dataItems = Json::decode(Yii::$app->request->post('items'));
+                        $lastNoUrut = (int) InspectingMklBjItems::find()
+                            ->where(['inspecting_id' => $model->id])
+                            ->max('no_urut');
+
                         foreach ($dataItems as $item) {
-                            $transaction = Yii::$app->db->beginTransaction();
-                            try {
-                                if ($item['id'] == 0) {
-                                    Yii::$app->db->createCommand()->insert(InspectingMklBjItems::tableName(), [
-                                        'inspecting_id' => $model->id,
-                                        'grade' => $item['grade'],
-                                        'defect' => $item['defect'],
-                                        'lot_no' => $item['lot_no'],
-                                        'join_piece' => $item['join_piece'],
-                                        'qty' => $item['qty'],
-                                        'note' => $item['note'],
-                                    ])->execute();
-                                } else {
-                                    $query = $this->findItem($item['id']);
-                                        $query['inspecting_id'] = $query->inspecting_id;
-                                        $query['grade'] = $item['grade'];
-                                        $query['defect'] = $item['defect'];
-                                        $query['lot_no'] = $item['lot_no'];
-                                        $query['join_piece'] = $item['join_piece'];
-                                        $query['qty'] = $item['qty'];
-                                        $query['qty_sum'] = $query->is_head == 1 ? $item['qty'] : NULL;
-                                        $query['note'] = $item['note'];
-                                        $query['qr_code_desc'] = $query->qr_code_desc;
-                                        $query['qr_print_at'] = $query->qr_print_at;
-                                    $query->save();
-                                }
-                                $transaction->commit();
-                            }catch (\Throwable $t){
-                                $transaction->rollBack();
-                                throw $t;
+                            if ((int)$item['id'] === 0) {
+                                // Item baru
+                                $noUrut = !empty($item['no_urut']) ? $item['no_urut'] : $lastNoUrut + 1;
+                                $lastNoUrut = max($lastNoUrut, $noUrut);
+
+                                Yii::$app->db->createCommand()->insert(InspectingMklBjItems::tableName(), [
+                                    'inspecting_id' => $model->id,
+                                    'no_urut' => $noUrut,
+                                    'grade' => $item['grade'],
+                                    'defect' => $item['defect'],
+                                    'lot_no' => $item['lot_no'],
+                                    'join_piece' => $item['join_piece'],
+                                    'qty' => $item['qty'],
+                                    'note' => $item['note'],
+                                ])->execute();
+
+                            } else {
+                                // Update item lama
+                                $existing = $this->findItem($item['id']);
+                                $existing->no_urut = !empty($item['no_urut']) ? $item['no_urut'] : $existing->no_urut;
+                                $existing->grade = $item['grade'];
+                                $existing->defect = $item['defect'];
+                                $existing->lot_no = $item['lot_no'];
+                                $existing->join_piece = $item['join_piece'];
+                                $existing->qty = $item['qty'];
+                                $existing->note = $item['note'];
+                                $existing->save(false);
                             }
                         }
 
-                        $query2 = InspectingMklBjItems::find();
-                        $getItemBasedOnInspectingId = $query2->where(['=', 'inspecting_id', $model->id])->all();
-                        foreach ($getItemBasedOnInspectingId as $gIBOII) {
-                            $transaction = Yii::$app->db->beginTransaction();
-                            try {
-                                $qty_count = $query2->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $model->id])->count();
-                                $is_head = $query2->orderBy('is_head DESC')->orderBy('id ASC')
-                                            ->where(['=', 'join_piece', $gIBOII->join_piece])
-                                            ->andWhere(['=', 'inspecting_id', $model->id])
-                                            ->andWhere(['<>', 'join_piece', ""])->one();
-                                $qty_sum = $query2->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $model->id])->sum('qty');
-                                $gIBOII['qty_sum'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? NULL : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? $gIBOII['qty'] : $qty_sum);
-                                $gIBOII['is_head'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : 1;
-                                // $gIBOII['qr_code'] = ($gIBOII['qr_code'] <> NULL || $gIBOII['qr_code']) ? $gIBOII['qr_code'] : 'MKL-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
-                                $gIBOII->qr_code = $gIBOII->qr_code ?: 'MKL-'.$gIBOII->inspecting_id.'-'.$gIBOII->id;
-                                $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
-                                $gIBOII->save();
-                                $transaction->commit();
-                            } catch (\Throwable $th) {
-                                $transaction->rollBack();
-                                throw $th;
-                            }
+                        // ============================
+                        // Rehitung summary field
+                        // ============================
+                        $query = InspectingMklBjItems::find();
+                        $itemsInInspect = $query->where(['inspecting_id' => $model->id])->all();
+
+                        foreach ($itemsInInspect as $row) {
+                            $qtyCount = $query->where([
+                                'join_piece' => $row->join_piece,
+                                'inspecting_id' => $model->id
+                            ])->count();
+
+                            $isHead = $query->orderBy(['is_head' => SORT_DESC, 'id' => SORT_ASC])
+                                ->where(['join_piece' => $row->join_piece, 'inspecting_id' => $model->id])
+                                ->andWhere(['<>', 'join_piece', ""])
+                                ->one();
+
+                            $qtySum = $query->where([
+                                'join_piece' => $row->join_piece,
+                                'inspecting_id' => $model->id
+                            ])->sum('qty');
+
+                            // Hitung ulang qty_sum dan qty_count
+                            $row->qty_sum = ($isHead && ($isHead['id'] != $row['id']))
+                                ? null
+                                : (($row->join_piece == null || $row->join_piece == "")
+                                    ? $row->qty
+                                    : $qtySum);
+
+                            $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
+
+                            // ⚠️ Tidak lagi membuat qr_code otomatis
+                            // $row->qr_code = $row->qr_code ?: 'MKL-' . $row->inspecting_id . '-' . $row->id;
+
+                            $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
+                                ? 0
+                                : (($row->join_piece == null || $row->join_piece == "")
+                                    ? 1
+                                    : $qtyCount);
+
+                            $row->save(false);
                         }
 
-                        if($flag){
-                            $transaction->commit();
-                            return ['success'=>true, 'redirect'=>Url::to(['view', 'id'=>$model->id])];
-                        }
-                    }catch (\Throwable $t){
+                        $transaction->commit();
+                        return ['success' => true, 'redirect' => Url::to(['view', 'id' => $model->id])];
+
+                    } catch (\Throwable $t) {
                         $transaction->rollBack();
                         throw $t;
                     }
                 }
 
+                // Jika validasi gagal
                 $result = [];
                 foreach ($model->getErrors() as $attribute => $errors) {
                     $result[Html::getInputId($model, $attribute)] = $errors;
@@ -280,7 +328,7 @@ class InspectingMklBjController extends Controller
         return $this->render('update', [
             'model' => $model,
             'modelItem' => $modelItem,
-            'items' => $items
+            'items' => $items,
         ]);
     }
 

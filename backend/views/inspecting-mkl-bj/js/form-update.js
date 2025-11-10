@@ -4,33 +4,43 @@ const formatterNumber = new Intl.NumberFormat("ID-id", {
   maximumFractionDigits: 8,
 });
 
+// Fungsi ambil nomor urut otomatis
+function getNextNoUrutFromTable() {
+  let allData = itemTable.rows().data().toArray();
+  if (allData.length === 0) return 1;
+  let maxNoUrut = Math.max.apply(
+    Math,
+    allData.map((it) => parseInt(it.no_urut || 0) || 0)
+  );
+  return maxNoUrut + 1;
+}
+
+// Inisialisasi DataTable
 var itemTable = $("#InspectingItemTable").DataTable({
   data: inspectingItems,
   columns: [
-    {
-      data: function (row, type, set) {
-        return "-";
-      },
-    },
-    { data: "gradeLabel" },
-    { data: "qty" },
-    { data: "join_piece" },
-    { data: "lot_no" },
-    { data: "defect" },
-    { data: "note" },
+    { data: null, title: "No" },
+    { data: "no_urut", title: "No Urut" },
+    { data: "gradeLabel", title: "Grade" },
+    { data: "qty", title: "Ukuran" },
+    { data: "join_piece", title: "Join Piece" },
+    { data: "lot_no", title: "No Lot" },
+    { data: "defect", title: "Defect" },
+    { data: "note", title: "Keterangan" },
     {
       data: "qr_code",
-      render: function (data, type, row) {
-        if (data) {
-          return '<i class="fa fa-qrcode"></i>';
-        } else {
-          return "";
-        }
+      title: "QR",
+      render: function (data) {
+        return data ? '<i class="fa fa-qrcode"></i>' : "";
       },
     },
     {
-      data: function (row, type, set) {
-        return '<button class="btn btn-xs btn-warning editItemData"><i class="fa fa-edit"></i></button> <button class="btn btn-xs btn-danger removeItemData"><i class="fa fa-trash"></i></button>';
+      data: null,
+      title: "Action",
+      render: function () {
+        return `
+          <button class="btn btn-xs btn-warning editItemData"><i class="fa fa-edit"></i></button>
+          <button class="btn btn-xs btn-danger removeItemData"><i class="fa fa-trash"></i></button>`;
       },
     },
   ],
@@ -39,15 +49,6 @@ var itemTable = $("#InspectingItemTable").DataTable({
   paging: false,
   searching: false,
   info: false,
-  columnDefs: [
-    {
-      render: function (data, type, row) {
-        //return moment(data, "X").format("Do MMMM YYYY, h:mm");
-        return formatterNumber.format(data);
-      },
-      targets: [],
-    },
-  ],
   rowCallback: function (row, data, index) {
     $("td", row)
       .eq(0)
@@ -57,15 +58,15 @@ var itemTable = $("#InspectingItemTable").DataTable({
 
 var deletedItemIds = [];
 
+// Hapus item
 $("#InspectingItemTable tbody").on(
   "click",
   "button.removeItemData",
   function () {
     var row = itemTable.row($(this).parents("tr"));
-    // Get the data for the current row
     var rowData = row.data();
     if (rowData.qr_code) {
-      alert("Tidak bisa menghapus data, karena qr sudah di cetak!");
+      alert("Tidak bisa menghapus data, karena QR sudah dicetak!");
     } else {
       row.remove().draw(false);
       deletedItemIds.push(rowData.id);
@@ -74,170 +75,148 @@ $("#InspectingItemTable tbody").on(
   }
 );
 
+// Edit item
 $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
   let row = itemTable.row($(this).parents("tr"));
-  let rowNumber = row.index(); //for check the index of row that you want to edit in table
   let data = row.data();
-  let gradeOld = data.grade;
-  let qr_code = data.qr_code;
-
-  // value edit
-  let jp_value = data.join_piece != null ? data.join_piece : "";
-  let d_value = data.defect != null ? data.defect : "";
-  let ln_value = data.lot_no != null ? data.lot_no : "";
-  let q_value = data.qty != null ? data.qty : "";
-  //console.log(data);
+  let rowIndex = row.index();
 
   $.confirm({
-    title: "Edit!",
-    content:
-      "" +
-      '<form action="" class="formName">' +
-      '<div class="form-group"><label>Grade</label><select id="optionGrade" class="editGrade form-control"><option value="7">Grade A+</option> <option value="8">Grade A*</option> <option value="3">Grade C</option> <option value="4">Piece Kecil</option> <option value="5">Sample</option> <option value="1">Grade A</option> <option value="2">Grade B</option> <option value="9">Grade Putih</option></select></div>' +
-      '<div class="form-group"><label>Ukuran</label><input type="text" class="editUkuran form-control" value="' +
-      q_value +
-      '"/></div>' +
-      '<div class="form-group"><label>Join Piece</label><input type="text" class="editJoinPiece form-control" value="' +
-      jp_value +
-      '"/></div>' +
-      '<div class="form-group"><label>Lot No</label><input type="text" class="editLotNo form-control" value="' +
-      ln_value +
-      '"/></div>' +
-      '<div class="form-group"><label>Defect</label><input type="text" class="editDefect form-control" value="' +
-      d_value +
-      '"/></div>' +
-      '<div class="form-group"><label>Keterangan</label><input type="text" class="editKeterangan form-control" value="' +
-      data.note +
-      '"/></div>' +
-      "</form>",
+    title: "Edit Item",
+    content: `
+      <form class="formName">
+        <div class="form-group"><label>No Urut</label>
+          <input type="number" class="editNoUrut form-control" value="${
+            data.no_urut ?? ""
+          }" placeholder="Isi atau biarkan kosong (otomatis)">
+        </div>
+        <div class="form-group"><label>Grade</label>
+          <select id="optionGrade" class="editGrade form-control">
+            <option value="1">Grade A</option>
+            <option value="2">Grade B</option>
+            <option value="3">Grade C</option>
+            <option value="4">Piece Kecil</option>
+            <option value="5">Sample</option>
+            <option value="7">Grade A+</option>
+            <option value="8">Grade A*</option>
+            <option value="9">Grade Putih</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Ukuran</label><input type="text" class="editUkuran form-control" value="${
+          data.qty ?? ""
+        }"/></div>
+        <div class="form-group"><label>Join Piece</label><input type="text" class="editJoinPiece form-control" value="${
+          data.join_piece ?? ""
+        }"/></div>
+        <div class="form-group"><label>Lot No</label><input type="text" class="editLotNo form-control" value="${
+          data.lot_no ?? ""
+        }"/></div>
+        <div class="form-group"><label>Defect</label><input type="text" class="editDefect form-control" value="${
+          data.defect ?? ""
+        }"/></div>
+        <div class="form-group"><label>Keterangan</label><input type="text" class="editKeterangan form-control" value="${
+          data.note ?? ""
+        }"/></div>
+      </form>`,
     buttons: {
-      formSubmit: {
-        text: "Submit",
+      submit: {
+        text: "Simpan",
         btnClass: "btn-blue",
         action: function () {
-          let grade = $("#optionGrade").children("option:selected").val();
-          let gradeLabel = $("#optionGrade").children("option:selected").text();
-          let defect = this.$content.find(".editDefect").val();
-          let lot_no = this.$content.find(".editLotNo").val();
-          let qty = this.$content.find(".editUkuran").val();
-          let joinPiece = this.$content.find(".editJoinPiece").val();
-          let note = this.$content.find(".editKeterangan").val();
+          let no_urut = this.$content.find(".editNoUrut").val().trim();
+          let grade = $("#optionGrade").val();
+          let gradeLabel = $("#optionGrade option:selected").text();
+          let qty = this.$content.find(".editUkuran").val().trim();
 
-          if (!grade) {
-            $.alert("Grade harus diisi.");
-            return false;
-          }
-          if (!qty) {
-            $.alert("Ukuran harus diisi.");
-            return false;
-          }
+          if (!grade) return $.alert("Grade harus diisi!");
+          if (!qty) return $.alert("Ukuran harus diisi!");
 
-          //console.log({grade: grade, gradeLabel: gradeLabel, ukuran: ukuran, join_piece: joinPiece, keterangan: keterangan});
+          let joinPiece = this.$content.find(".editJoinPiece").val().trim();
+          let lot_no = this.$content.find(".editLotNo").val().trim();
+          let defect = this.$content.find(".editDefect").val().trim();
+          let note = this.$content.find(".editKeterangan").val().trim();
+
           itemTable
-            .row(rowNumber)
+            .row(rowIndex)
             .data({
               id: data.id,
-              grade: grade,
-              gradeLabel: gradeLabel,
-              defect: defect,
-              lot_no: lot_no,
-              qty: qty,
+              no_urut: no_urut || data.no_urut || getNextNoUrutFromTable(),
+              grade,
+              gradeLabel,
+              qty,
               join_piece: joinPiece,
-              note: note,
-              qr_code: qr_code,
+              lot_no,
+              defect,
+              note,
+              qr_code: data.qr_code,
             })
             .draw(false);
         },
       },
-      cancel: function () {
-        //close
-      },
+      cancel: function () {},
     },
     onContentReady: function () {
-      // bind to events
-      var jc = this;
-
       this.$content
-        .find('option[value="' + gradeOld + '"]')
+        .find(`#optionGrade option[value='${data.grade}']`)
         .attr("selected", "selected");
-
-      this.$content.find("form").on("submit", function (e) {
-        // if the user submits the form by pressing enter in the field.
-        e.preventDefault();
-        jc.$$formSubmit.trigger("click"); // reference the button and click it
-      });
     },
   });
 });
 
-$("#InspectingFormHeader").on("afterInit", function (e) {
+// Submit form header (update)
+$("#InspectingFormHeader").on("afterInit", function () {
   $("#InspectingFormHeader").on("beforeSubmit", function () {
-    var $yiiform = $(this);
-    let deletedItems = deletedItemIds;
+    let $yiiform = $(this);
     let dataItems = itemTable.rows().data().toArray();
-
-    // console.log(dataItems);
-
     if (dataItems.length < 1) {
-      $.alert({
-        title: "Gagal!",
-        content: "Tidak ada item untuk disimpan.!",
-      });
-    } else {
-      $.blockUI();
-
-      let formData = $yiiform.serializeArray();
-      formData.push(
-        { name: "items", value: JSON.stringify(dataItems) },
-        { name: "deletedItems", value: JSON.stringify(deletedItems) }
-      );
-
-      $.ajax({
-        type: $yiiform.attr("method"),
-        url: $yiiform.attr("action"),
-        data: formData,
-        beforeSend: function (jqXHR, settings) {},
-        success: function (data, textStatus, jqXHR) {
-          console.log(data);
-          if (data.success) {
-            window.location.replace(data.redirect);
-          } else if (data.validation) {
-            // server validation failed
-            $yiiform.yiiActiveForm("updateMessages", data.validation, true); // renders validation messages at appropriate places
-          } else {
-            $.alert({
-              title: "Gagal!",
-              content: "incorrect server response!",
-            });
-          }
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-          //console.log(jqXHR);
-          let msg = textStatus;
-
-          if (jqXHR.responseJSON) {
-            msg = jqXHR.responseJSON.message;
-          }
-
-          $.alert({
-            title: errorThrown,
-            content: msg,
-          });
-        },
-        complete: function () {
-          $.unblockUI();
-        },
-      });
+      $.alert({ title: "Gagal!", content: "Tidak ada item untuk disimpan!" });
+      return false;
     }
 
+    $.blockUI();
+    let formData = $yiiform.serializeArray();
+    formData.push(
+      { name: "items", value: JSON.stringify(dataItems) },
+      { name: "deletedItems", value: JSON.stringify(deletedItemIds) }
+    );
+
+    $.ajax({
+      type: $yiiform.attr("method"),
+      url: $yiiform.attr("action"),
+      data: formData,
+      success: function (data) {
+        if (data.success) {
+          window.location.replace(data.redirect);
+        } else if (data.validation) {
+          $yiiform.yiiActiveForm("updateMessages", data.validation, true);
+        } else {
+          $.alert({ title: "Gagal!", content: "Incorrect server response!" });
+        }
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        $.alert({
+          title: errorThrown,
+          content: jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus,
+        });
+      },
+      complete: function () {
+        $.unblockUI();
+      },
+    });
     return false;
   });
 });
 
-$("#InspectingFormItem").on("afterInit", function (e) {
+// Tambah item baru
+$("#InspectingFormItem").on("afterInit", function () {
   $("#InspectingFormItem").on("beforeSubmit", function () {
+    let manualNoUrut = $("#inspectingmklbjitems-no_urut").val().trim();
+    let nextNoUrut =
+      manualNoUrut !== "" ? parseInt(manualNoUrut) : getNextNoUrutFromTable();
+
     let data = {
       id: 0,
+      no_urut: nextNoUrut,
       grade: $("#inspectingmklbjitems-grade").select2("data")[0].id,
       gradeLabel: $("#inspectingmklbjitems-grade").select2("data")[0].text,
       defect: $("#inspectingmklbjitems-defect").val(),
@@ -256,16 +235,15 @@ $("#InspectingFormItem").on("afterInit", function (e) {
       ).value,
       qr_code: 0,
     };
-    //console.log(data);
-    itemTable.row.add(data).draw(false);
 
+    itemTable.row.add(data).draw(false);
     $("#ItemCounter").html(itemTable.rows().data().length);
 
     $("#InspectingFormItem").get(0).reset();
-
+    $("#inspectingmklbjitems-no_urut").val(getNextNoUrutFromTable());
     $("#inspectingmklbjitems-qty").focus();
 
-    return false; // prevent default form submission
+    return false;
   });
 });
 

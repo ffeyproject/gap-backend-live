@@ -195,18 +195,21 @@ class TrnInspectingController extends Controller
                         throw new HttpException(500, 'Gagal, coba lagi. (1)');
                     }
 
-                    foreach (Json::decode(Yii::$app->request->post('items')) as $item) {
+                   foreach (Json::decode(Yii::$app->request->post('items')) as $idx => $item) {
                         $modelItem = new InspectingItem([
                             'inspecting_id' => $modelInspecting->id,
-                            'grade' => $item['grade'],
-                            'defect' => $item['defect'],
-                            'lot_no' => $item['lot_no'],
-                            'join_piece' => $item['join_piece'],
-                            'qty' => $item['ukuran'],
-                            'note' => $item['keterangan'],
+                            'grade'         => $item['grade'],
+                            'defect'        => $item['defect'],
+                            'lot_no'        => $item['lot_no'],
+                            'join_piece'    => $item['join_piece'],
+                            'qty'           => $item['ukuran'],
+                            'note'          => $item['keterangan'],
+                            'no_urut'       => isset($item['no_urut']) && $item['no_urut'] !== '' 
+                                                ? (int)$item['no_urut'] 
+                                                : ($idx + 1), // fallback: urutan input
                         ]);
 
-                        if(!($flag = $modelItem->save(false))){
+                        if (!($flag = $modelItem->save(false))) {
                             $transaction->rollBack();
                             throw new HttpException(500, 'Gagal, coba lagi. (2)');
                         }
@@ -311,21 +314,24 @@ class TrnInspectingController extends Controller
         ->andWhere(['IS NOT', 'no_urut', null])
         ->exists();
 
+        // === Ambil item lama dengan mapping ke array biasa ===
+        $itemsData = [];
         $inspectItems = $model->getInspectingItems()
-        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
-        ->all();
-        foreach ($inspectItems as $inspectingItem) {
-            $items[] = [
-                'id' => $inspectingItem->id,
-                'grade' => $inspectingItem->grade,
-                'gradeLabel' => $inspectingItem::gradeOptions()[$inspectingItem->grade],
-                'grade_up' => $inspectingItem->grade_up,
-                'gradeupLabel' => $inspectingItem->grade_up ? $inspectingItem::gradeOptions()[$inspectingItem->grade_up] : '',
-                'defect' => $inspectingItem->defect,
-                'lot_no' => $inspectingItem->lot_no,
-                'ukuran' => $inspectingItem->qty,
-                'join_piece' => $inspectingItem->join_piece,
-                'keterangan' => $inspectingItem->note
+            ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
+            ->all();
+
+        foreach ($inspectItems as $item) {
+            $itemsData[] = [
+                'id' => (int) $item->id,
+                'no_urut' => $item->no_urut ? (int) $item->no_urut : null,
+                'grade' => (int) $item->grade,
+                'gradeLabel' => InspectingItem::gradeOptions()[$item->grade] ?? '-',
+                'ukuran' => (float) $item->qty,
+                'join_piece' => $item->join_piece ?: '',
+                'lot_no' => $item->lot_no ?: '',
+                'defect' => $item->defect ?: '',
+                'keterangan' => $item->note ?: '',
+                'qr_code' => $item->qr_code ?: '',
             ];
         }
 
@@ -458,14 +464,15 @@ class TrnInspectingController extends Controller
             return ['validation' => $result];
         }
 
-        return $this->render('upgrade', [
+        // === Render ke view ===
+        return $this->render('update', [
             'model' => $model,
             'modelHeader' => $modelHeader,
             'modelItem' => $modelItem,
             'nomorKartu' => $nomorKartu,
             'kombinasi' => $kombinasi,
             'k3l_code' => $k3l_code,
-            'items' => $items
+            'items' => $itemsData, // <--- pastikan array scalar
         ]);
     }
 
@@ -481,7 +488,7 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT){
+        if ($model->status != $model::STATUS_DRAFT) {
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diupdate.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -502,23 +509,21 @@ class TrnInspectingController extends Controller
         $nomorKartu = '';
         $k3l_code = '';
         $kombinasi = '-';
-        $jenis_inspek = '';
 
-        if($model->memo_repair_id !== null){
+        // === Identifikasi kartu proses (Dyeing/Printing/MemoRepair) ===
+        if ($model->memo_repair_id !== null) {
             $modelHeader->kartu_proses_id = $model->memo_repair_id;
             $nomorKartu = $model->memoRepair->no;
             $k3l_code = $model->k3l_code;
-            $jenis_inspek = $model->jenis_inspek;
             $modelHeader->jenis_order = 'memo_repair';
-        }else{
-            switch ($model->scGreige->process){
+        } else {
+            switch ($model->scGreige->process) {
                 case TrnScGreige::PROCESS_DYEING:
                     $modelHeader->kartu_proses_id = $model->kartu_process_dyeing_id;
                     $nomorKartu = $model->kartuProcessDyeing->no;
                     $k3l_code = $model->k3l_code;
                     $modelHeader->jenis_order = 'dyeing';
                     $kombinasi = $model->kartuProcessDyeing->woColor->moColor->color;
-                     
                     break;
                 case TrnScGreige::PROCESS_PRINTING:
                     $modelHeader->kartu_proses_id = $model->kartu_process_printing_id;
@@ -526,213 +531,173 @@ class TrnInspectingController extends Controller
                     $k3l_code = $model->k3l_code;
                     $modelHeader->jenis_order = 'printing';
                     $kombinasi = $model->kartuProcessPrinting->woColor->moColor->color;
-                     
                     break;
             }
         }
 
         $modelItem = new InspectingItemsForm();
 
+        // === Ambil item lama ===
         $items = [];
-        $inspectingId = $model->id;
-        $hasNoUrut = \common\models\ar\InspectingItem::find()
-        ->where(['inspecting_id' => $inspectingId])
-        ->andWhere(['IS NOT', 'no_urut', null])
-        ->exists();
-
         $inspectItems = $model->getInspectingItems()
-        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
-        ->all();
-        foreach ($inspectItems as $inspectingItem) {
+           ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
+            ->all();
+
+        foreach ($inspectItems as $item) {
             $items[] = [
-                'item_id' => $inspectingItem->id,
-                'grade' => $inspectingItem->grade,
-                'gradeLabel' => $inspectingItem::gradeOptions()[$inspectingItem->grade],
-                'defect' => $inspectingItem->defect,
-                'lot_no' => $inspectingItem->lot_no,
-                'ukuran' => $inspectingItem->qty,
-                'join_piece' => $inspectingItem->join_piece,
-                'keterangan' => $inspectingItem->note,
-                'qr_code' => $inspectingItem->qr_code
+                'id' => $item->id,
+                'no_urut' => $item->no_urut,
+                'grade' => $item->grade,
+                'gradeLabel' => InspectingItem::gradeOptions()[$item->grade] ?? '-',
+                'defect' => $item->defect,
+                'lot_no' => $item->lot_no,
+                'ukuran' => $item->qty,
+                'join_piece' => $item->join_piece,
+                'keterangan' => $item->note,
+                'qr_code' => $item->qr_code,
             ];
         }
 
+        // === Jika request AJAX (simpan data) ===
         if (Yii::$app->request->isAjax) {
             Yii::$app->response->format = Response::FORMAT_JSON;
 
-            if($modelHeader->load(Yii::$app->request->post()) && $modelHeader->validate()){
+            if ($modelHeader->load(Yii::$app->request->post()) && $modelHeader->validate()) {
                 $modelInspecting = $model;
 
-                switch ($modelHeader->jenis_order){
+                // === Mapping header sesuai jenis_order ===
+                switch ($modelHeader->jenis_order) {
                     case 'dyeing':
                         $kp = TrnKartuProsesDyeing::findOne($modelHeader->kartu_proses_id);
-                        if($kp === null){
-                            throw new ForbiddenHttpException('ID Proses tidak valid');
-                        }
-
-                        $modelInspecting->kartu_process_dyeing_id = $modelHeader->kartu_proses_id;
+                        if (!$kp) throw new ForbiddenHttpException('ID Proses tidak valid');
+                        $modelInspecting->kartu_process_dyeing_id = $kp->id;
                         $modelInspecting->jenis_process = TrnScGreige::PROCESS_DYEING;
-                        $modelInspecting->k3l_code = $modelHeader->k3l_code;
-                        $modelInspecting->defect = $modelHeader->defect;
                         $modelInspecting->wo_id = $kp->wo_id;
                         $modelInspecting->mo_id = $kp->mo_id;
                         $modelInspecting->sc_greige_id = $kp->sc_greige_id;
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
-                         $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
                     case 'printing':
                         $kp = TrnKartuProsesPrinting::findOne($modelHeader->kartu_proses_id);
-                        if($kp === null){
-                            throw new ForbiddenHttpException('ID Proses tidak valid');
-                        }
-
-                        $modelInspecting->kartu_process_printing_id = $modelHeader->kartu_proses_id;
+                        if (!$kp) throw new ForbiddenHttpException('ID Proses tidak valid');
+                        $modelInspecting->kartu_process_printing_id = $kp->id;
                         $modelInspecting->jenis_process = TrnScGreige::PROCESS_PRINTING;
-                        $modelInspecting->k3l_code = $modelHeader->k3l_code;
-                        $modelInspecting->defect = $modelHeader->defect;
                         $modelInspecting->wo_id = $kp->wo_id;
                         $modelInspecting->mo_id = $kp->mo_id;
                         $modelInspecting->sc_greige_id = $kp->sc_greige_id;
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
-                         $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
                     case 'memo_repair':
-                        /* @var $modelMemoRepair TrnMemoRepair*/
-                        $modelMemoRepair = TrnMemoRepair::find()->where([
-                            'and',
-                            ['id'=>$modelHeader->kartu_proses_id, 'status'=>TrnMemoRepair::STATUS_REPAIRED]
-                        ])->one();
-                        if(empty($modelMemoRepair)){
-                            throw new ForbiddenHttpException('ID Memo Repair tidak valid');
-                        }
-
-                        $modelInspecting->memo_repair_id = $modelMemoRepair->id;
-                        $modelInspecting->jenis_process = $modelMemoRepair->scGreige->process;
+                        $mr = TrnMemoRepair::find()
+                            ->where(['id' => $modelHeader->kartu_proses_id, 'status' => TrnMemoRepair::STATUS_REPAIRED])
+                            ->one();
+                        if (!$mr) throw new ForbiddenHttpException('ID Memo Repair tidak valid');
+                        $modelInspecting->memo_repair_id = $mr->id;
+                        $modelInspecting->jenis_process = $mr->scGreige->process;
+                        $modelInspecting->wo_id = $mr->wo_id;
+                        $modelInspecting->mo_id = $mr->mo_id;
+                        $modelInspecting->sc_greige_id = $mr->sc_greige_id;
+                        $modelInspecting->sc_id = $mr->sc_id;
                         $modelInspecting->kombinasi = '-';
-                        $modelInspecting->unit = $modelMemoRepair->returBuyer->unit;
-                        $modelInspecting->k3l_code = $modelHeader->k3l_code;
-                        $modelInspecting->defect = $modelHeader->defect;
-                        $modelInspecting->wo_id = $modelMemoRepair->wo_id;
-                        $modelInspecting->mo_id = $modelMemoRepair->mo_id;
-                        $modelInspecting->sc_greige_id = $modelMemoRepair->sc_greige_id;
-                        $modelInspecting->sc_id = $modelMemoRepair->sc_id;
-                        $modelInspecting->kombinasi = '-';
-                        $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
                         break;
-                    default:
-                        throw new HttpException(500, 'Permintaan tidak valid.');
-                }
-
-                if($modelInspecting->kartu_process_dyeing_id === null && $modelInspecting->kartu_process_printing_id === null && $modelInspecting->memo_repair_id === null){
-                    throw new ForbiddenHttpException('Referensi tidak valid. Periksa kembali.');
                 }
 
                 $modelInspecting->no_lot = $modelHeader->no_lot;
                 $modelInspecting->tanggal_inspeksi = $modelHeader->tgl_inspeksi;
                 $modelInspecting->date = $modelHeader->tgl_kirim;
                 $modelInspecting->unit = $modelHeader->status;
+                $modelInspecting->k3l_code = $modelHeader->k3l_code;
                 $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
 
                 $transaction = Yii::$app->db->beginTransaction();
+
                 try {
-                    if(!($flag = $modelInspecting->save(false))){
-                        $transaction->rollBack();
-                        throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                    if (!$modelInspecting->save(false)) {
+                        throw new HttpException(500, 'Gagal menyimpan header.');
                     }
 
-                    $dI = Json::decode(Yii::$app->request->post('deletedItems'));
-                    if(count($dI) > 0) {
-                        for ($i=0; $i < count($dI); $i++) { 
-                            if ($dI[$i] <> 0) {
-                                Yii::$app->db->createCommand()->delete(InspectingItem::tableName(), ['=', 'id', $dI[$i]])->execute();
-                            }
+                    // === Update / Tambah / Hapus Items ===
+                    $itemsData = Json::decode(Yii::$app->request->post('items', '[]'));
+                    $existingItems = InspectingItem::find()
+                        ->where(['inspecting_id' => $modelInspecting->id])
+                        ->indexBy('id')
+                        ->all();
+
+                    $processedIds = [];
+
+                    foreach ($itemsData as $item) {
+                        $itemModel = null;
+
+                        if (!empty($item['id']) && isset($existingItems[$item['id']])) {
+                            $itemModel = $existingItems[$item['id']];
+                        } else {
+                            $itemModel = new InspectingItem(['inspecting_id' => $modelInspecting->id]);
                         }
-                    }
 
-                    foreach (Json::decode(Yii::$app->request->post('items')) as $item) {
-                        $transaction = Yii::$app->db->beginTransaction();
-                        try {
-                            if ($item['item_id'] == 0) {
-                                $modelItem = new InspectingItem([
-                                    'inspecting_id' => $modelInspecting->id,
-                                    'grade' => $item['grade'],
-                                    'join_piece' => $item['join_piece'],
-                                    'defect' => $item['defect'],
-                                    'lot_no' => $item['lot_no'],
-                                    'qty' => $item['ukuran'],
-                                    'note' => $item['keterangan'],
-                                ]);
-                                $modelItem->save();
-                                $transaction->commit();
-                            } else {
-                                $query = $this->findItem($item['item_id']);
-                                    $query['inspecting_id'] = $modelInspecting->id;
-                                    $query['grade'] = $item['grade'];
-                                    $query['defect'] = $item['defect'];
-                                    $query['lot_no'] = $item['lot_no'];
-                                    $query['join_piece'] = $item['join_piece'];
-                                    $query['qty'] = $item['ukuran'];
-                                    $query['qty_sum'] = $query->is_head == 1 ? $item['ukuran'] : NULL;
-                                    $query['note'] = $item['keterangan'];
-                                    $query['qr_code_desc'] = $query->qr_code_desc;
-                                    $query['qr_print_at'] = $query->qr_print_at;
-                                    $query->save();
-                                    $transaction->commit();
-                            }
+                        $itemModel->grade = $item['grade'];
+                        $itemModel->defect = $item['defect'];
+                        $itemModel->lot_no = $item['lot_no'];
+                        $itemModel->join_piece = $item['join_piece'];
+                        $itemModel->qty = $item['ukuran'];
+                        $itemModel->note = $item['keterangan'];
+                        $itemModel->no_urut = !empty($item['no_urut']) ? (int)$item['no_urut'] : null;
 
-                        } catch (\Throwable $t){
-                            $transaction->rollBack();
-                            throw $t;
+                        if (!$itemModel->save(false)) {
+                            throw new HttpException(500, 'Gagal menyimpan item.');
                         }
+
+                        $processedIds[] = $itemModel->id;
                     }
 
+                    // Hapus item yang tidak ada di frontend
+                    $toDelete = array_diff(array_keys($existingItems), $processedIds);
+                    if ($toDelete) {
+                        InspectingItem::deleteAll(['id' => $toDelete]);
+                    }
+
+                    // === Recalculate join_piece data ===
                     $query2 = InspectingItem::find();
-                    $getItemBasedOnInspectingId = $query2->where(['=', 'inspecting_id', $modelInspecting->id])->all();
-                    foreach ($getItemBasedOnInspectingId as $gIBOII) {
-                        $transaction = Yii::$app->db->beginTransaction();
-                        try {
-                            $qty_count = $query2->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $modelInspecting->id])->count();
-                            $qty_sum = $query2->where(['=', 'join_piece', $gIBOII->join_piece])->andWhere(['=', 'inspecting_id', $modelInspecting->id])->sum('qty');
-                            $is_head = $query2->orderBy('is_head DESC')->orderBy('id ASC')
-                                            ->where(['=', 'join_piece', $gIBOII->join_piece])
-                                            ->andWhere(['=', 'inspecting_id', $modelInspecting->id])
-                                            ->andWhere(['<>', 'join_piece', ""])->one();
-                            $gIBOII['qty_sum'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? NULL : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? $gIBOII['qty'] : $qty_sum);
-                            $gIBOII['is_head'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : 1;
-                            // $gIBOII['qr_code'] = ($gIBOII['qr_code'] <> NULL || $gIBOII['qr_code']) ? $gIBOII['qr_code'] : 'INS-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
-                            $gIBOII['qr_code'] = !empty($gIBOII['qr_code']) ? $gIBOII['qr_code'] : 'INS-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
-                            $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
-                            $gIBOII->save();
-                            $transaction->commit();
-                        }catch (\Throwable $t){
-                            $transaction->rollBack();
-                            throw $t;
-                        }
+                    $getItems = $query2->where(['inspecting_id' => $modelInspecting->id])->all();
+
+                    foreach ($getItems as $gIBOII) {
+                        $qty_count = $query2->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])->count();
+                        $qty_sum = $query2->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])->sum('qty');
+                        $is_head = $query2->orderBy(['is_head' => SORT_DESC, 'id' => SORT_ASC])
+                            ->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])
+                            ->andWhere(['<>', 'join_piece', ""])
+                            ->one();
+
+                        $gIBOII->qty_sum = ($is_head && ($is_head->id != $gIBOII->id))
+                            ? null
+                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "") ? $gIBOII->qty : $qty_sum);
+                        $gIBOII->is_head = ($is_head && ($is_head->id != $gIBOII->id)) ? 0 : 1;
+                        $gIBOII->qr_code = $gIBOII->qr_code ?: 'INS-' . $gIBOII->inspecting_id . '-' . $gIBOII->id;
+                        $gIBOII->qty_count = ($is_head && ($is_head->id != $gIBOII->id))
+                            ? 0
+                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "") ? 1 : $qty_count);
+                        $gIBOII->save(false);
                     }
 
-                    if ($flag){
-                        $transaction->commit();
-                        return ['success'=>true, 'redirect'=>Url::to(['view', 'id'=>$modelInspecting->id])];
+                    $transaction->commit();
+                    return ['success' => true, 'redirect' => Url::to(['view', 'id' => $modelInspecting->id])];
 
-                    }
-                }catch (\Throwable $t){
+                } catch (\Throwable $t) {
                     $transaction->rollBack();
                     throw $t;
                 }
             }
 
+            // === Validation error ===
             $result = [];
-            // The code below comes from ActiveForm::validate(). We do not need to validate the model
-            // again, as it was already validated by save(). Just collect the messages.
             foreach ($modelHeader->getErrors() as $attribute => $errors) {
                 $result[Html::getInputId($modelHeader, $attribute)] = $errors;
             }
-
             return ['validation' => $result];
         }
 
+        // === Render halaman update ===
         return $this->render('update', [
             'model' => $model,
             'modelHeader' => $modelHeader,
@@ -743,6 +708,7 @@ class TrnInspectingController extends Controller
             'items' => $items
         ]);
     }
+
 
     /**
      * Deletes an existing Inspecting model.

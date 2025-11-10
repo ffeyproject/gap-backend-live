@@ -221,6 +221,7 @@ use yii\helpers\Url;
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>No Urut</th>
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>
@@ -232,19 +233,20 @@ use yii\helpers\Url;
                 <tbody>
                     <tr>
                         <td>
-                            <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
-                            'data' => InspectingItem::gradeOptions(),
-                            /*'options' => ['placeholder' => 'Pilih ...'],
-                            'pluginOptions' => [
-                                'allowClear' => true
-                            ],*/
-                        ])->label(false) ?>
+                            <?= $formItem->field($modelItem, 'no_urut')
+                                ->textInput(['placeholder' => 'Otomatis jika dikosongkan'])
+                                ->label(false) ?>
                         </td>
-                        <td><?=$formItem->field($modelItem, 'ukuran')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'keterangan')->textInput()->label(false)?></td>
+                        <td>
+                            <?= $formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
+                                'data' => InspectingItem::gradeOptions(),
+                            ])->label(false) ?>
+                        </td>
+                        <td><?= $formItem->field($modelItem, 'ukuran')->textInput()->label(false) ?></td>
+                        <td><?= $formItem->field($modelItem, 'join_piece')->textInput()->label(false) ?></td>
+                        <td><?= $formItem->field($modelItem, 'lot_no')->textInput()->label(false) ?></td>
+                        <td><?= $formItem->field($modelItem, 'defect')->textInput()->label(false) ?></td>
+                        <td><?= $formItem->field($modelItem, 'keterangan')->textInput()->label(false) ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -268,6 +270,7 @@ use yii\helpers\Url;
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>No Urut</th> <!-- NEW -->
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>

@@ -172,6 +172,7 @@ use common\models\ar\InspectingMklBjItems;
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>No Urut</th>
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>
@@ -184,12 +185,13 @@ use common\models\ar\InspectingMklBjItems;
                 <tbody>
                     <tr>
                         <td>
+                            <?= $formItem->field($modelItem, 'no_urut')
+                            ->textInput(['placeholder' => 'Otomatis jika dikosongkan'])
+                            ->label(false) ?>
+                        </td>
+                        <td>
                             <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
                             'data' => \common\models\ar\InspectingMklBjItems::gradeOptions(),
-                            /*'options' => ['placeholder' => 'Pilih ...'],
-                            'pluginOptions' => [
-                                'allowClear' => true
-                            ],*/
                         ])->label(false) ?>
                         </td>
                         <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
@@ -198,7 +200,8 @@ use common\models\ar\InspectingMklBjItems;
                         <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
                         <td class="text-right">
-                            <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?></td>
+                            <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -219,6 +222,7 @@ use common\models\ar\InspectingMklBjItems;
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>No Urut</th>
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>

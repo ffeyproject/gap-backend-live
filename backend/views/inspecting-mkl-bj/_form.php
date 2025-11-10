@@ -96,10 +96,6 @@ use common\models\ar\InspectingMklBjItems;
                         'options' => ['placeholder' => 'Select ...'],
                         'select2Options' => [
                             'pluginOptions' => ['allowClear' => true],
-                            'pluginEvents' => [
-                                //'select2:unselect' => 'function(e){if(kartuProsesIdOnUnSelect !== null){kartuProsesIdOnUnSelect(e)}}',
-                                //'select2:select' => 'function(e){if(kartuProsesIdOnSelect !== null){kartuProsesIdOnSelect(e)}}'
-                            ],
                         ],
                         'pluginOptions' => [
                             'depends' => ['inspectingmklbj-wo_id'],
@@ -172,6 +168,7 @@ use common\models\ar\InspectingMklBjItems;
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>No Urut</th>
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>
@@ -183,22 +180,19 @@ use common\models\ar\InspectingMklBjItems;
                 </thead>
                 <tbody>
                     <tr>
-                        <td>
-                            <?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
-                            'data' => \common\models\ar\InspectingMklBjItems::gradeOptions(),
-                            /*'options' => ['placeholder' => 'Pilih ...'],
-                            'pluginOptions' => [
-                                'allowClear' => true
-                            ],*/
-                        ])->label(false) ?>
+                        <td><?=$formItem->field($modelItem, 'no_urut')->textInput(['placeholder'=>'Jika Kosong Otomatis (1)'])->label(false)?>
                         </td>
+                        <td><?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
+                            'data' => InspectingMklBjItems::gradeOptions(),
+                        ])->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
                         <td class="text-right">
-                            <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?></td>
+                            <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -219,6 +213,7 @@ use common\models\ar\InspectingMklBjItems;
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>No Urut</th>
                         <th>Grade</th>
                         <th>Ukuran</th>
                         <th>Join Piece</th>
@@ -241,3 +236,4 @@ use common\models\ar\InspectingMklBjItems;
 <?php
 $this->registerJsVar('inspectingItems', $items);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), $this::POS_END);
+?>
