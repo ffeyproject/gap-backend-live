@@ -498,63 +498,63 @@ class TrnInspectingController extends Controller
         );
 
         $modelHeader = new InspectingHeaderForm([
-            'tgl_kirim' => $model->date,
-            'tgl_inspeksi' => $model->tanggal_inspeksi,
-            'no_lot' => $model->no_lot,
-            'defect' => $model->defect,
-            'status' => $model->unit,
-            'jenis_inspek' => $model->jenis_inspek,
+            'tgl_kirim'     => $model->date,
+            'tgl_inspeksi'  => $model->tanggal_inspeksi,
+            'no_lot'        => $model->no_lot,
+            'defect'        => $model->defect,
+            'status'        => $model->unit,
+            'jenis_inspek'  => $model->jenis_inspek,
         ]);
 
         $nomorKartu = '';
-        $k3l_code = '';
-        $kombinasi = '-';
+        $k3l_code   = '';
+        $kombinasi  = '-';
 
         // === Identifikasi kartu proses (Dyeing/Printing/MemoRepair) ===
         if ($model->memo_repair_id !== null) {
             $modelHeader->kartu_proses_id = $model->memo_repair_id;
             $nomorKartu = $model->memoRepair->no;
-            $k3l_code = $model->k3l_code;
+            $k3l_code   = $model->k3l_code;
             $modelHeader->jenis_order = 'memo_repair';
         } else {
             switch ($model->scGreige->process) {
                 case TrnScGreige::PROCESS_DYEING:
                     $modelHeader->kartu_proses_id = $model->kartu_process_dyeing_id;
                     $nomorKartu = $model->kartuProcessDyeing->no;
-                    $k3l_code = $model->k3l_code;
+                    $k3l_code   = $model->k3l_code;
                     $modelHeader->jenis_order = 'dyeing';
-                    $kombinasi = $model->kartuProcessDyeing->woColor->moColor->color;
+                    $kombinasi  = $model->kartuProcessDyeing->woColor->moColor->color;
                     break;
                 case TrnScGreige::PROCESS_PRINTING:
                     $modelHeader->kartu_proses_id = $model->kartu_process_printing_id;
                     $nomorKartu = $model->kartuProcessPrinting->no;
-                    $k3l_code = $model->k3l_code;
+                    $k3l_code   = $model->k3l_code;
                     $modelHeader->jenis_order = 'printing';
-                    $kombinasi = $model->kartuProcessPrinting->woColor->moColor->color;
+                    $kombinasi  = $model->kartuProcessPrinting->woColor->moColor->color;
                     break;
             }
         }
 
         $modelItem = new InspectingItemsForm();
 
-        // === Ambil item lama ===
+        // === Ambil item lama (urutkan: no_urut dulu, jika NULL pakai id) ===
         $items = [];
         $inspectItems = $model->getInspectingItems()
-           ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
+            ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
             ->all();
 
         foreach ($inspectItems as $item) {
             $items[] = [
-                'id' => $item->id,
-                'no_urut' => $item->no_urut,
-                'grade' => $item->grade,
+                'id'         => $item->id,
+                'no_urut'    => $item->no_urut,
+                'grade'      => $item->grade,
                 'gradeLabel' => InspectingItem::gradeOptions()[$item->grade] ?? '-',
-                'defect' => $item->defect,
-                'lot_no' => $item->lot_no,
-                'ukuran' => $item->qty,
+                'defect'     => $item->defect,
+                'lot_no'     => $item->lot_no,
+                'ukuran'     => $item->qty,
                 'join_piece' => $item->join_piece,
                 'keterangan' => $item->note,
-                'qr_code' => $item->qr_code,
+                'qr_code'    => $item->qr_code,
             ];
         }
 
@@ -578,6 +578,7 @@ class TrnInspectingController extends Controller
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
                         break;
+
                     case 'printing':
                         $kp = TrnKartuProsesPrinting::findOne($modelHeader->kartu_proses_id);
                         if (!$kp) throw new ForbiddenHttpException('ID Proses tidak valid');
@@ -589,6 +590,7 @@ class TrnInspectingController extends Controller
                         $modelInspecting->sc_id = $kp->sc_id;
                         $modelInspecting->kombinasi = $kp->woColor->moColor->color;
                         break;
+
                     case 'memo_repair':
                         $mr = TrnMemoRepair::find()
                             ->where(['id' => $modelHeader->kartu_proses_id, 'status' => TrnMemoRepair::STATUS_REPAIRED])
@@ -604,12 +606,12 @@ class TrnInspectingController extends Controller
                         break;
                 }
 
-                $modelInspecting->no_lot = $modelHeader->no_lot;
-                $modelInspecting->tanggal_inspeksi = $modelHeader->tgl_inspeksi;
-                $modelInspecting->date = $modelHeader->tgl_kirim;
-                $modelInspecting->unit = $modelHeader->status;
-                $modelInspecting->k3l_code = $modelHeader->k3l_code;
-                $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
+                $modelInspecting->no_lot          = $modelHeader->no_lot;
+                $modelInspecting->tanggal_inspeksi= $modelHeader->tgl_inspeksi;
+                $modelInspecting->date            = $modelHeader->tgl_kirim;
+                $modelInspecting->unit            = $modelHeader->status;
+                $modelInspecting->k3l_code        = $modelHeader->k3l_code;
+                $modelInspecting->jenis_inspek    = $modelHeader->jenis_inspek;
 
                 $transaction = Yii::$app->db->beginTransaction();
 
@@ -636,13 +638,17 @@ class TrnInspectingController extends Controller
                             $itemModel = new InspectingItem(['inspecting_id' => $modelInspecting->id]);
                         }
 
-                        $itemModel->grade = $item['grade'];
-                        $itemModel->defect = $item['defect'];
-                        $itemModel->lot_no = $item['lot_no'];
+                        $itemModel->grade      = $item['grade'];
+                        $itemModel->defect     = $item['defect'];
+                        $itemModel->lot_no     = $item['lot_no'];
                         $itemModel->join_piece = $item['join_piece'];
-                        $itemModel->qty = $item['ukuran'];
-                        $itemModel->note = $item['keterangan'];
-                        $itemModel->no_urut = !empty($item['no_urut']) ? (int)$item['no_urut'] : null;
+                        $itemModel->qty        = $item['ukuran'];
+                        $itemModel->note       = $item['keterangan'];
+
+                        // Simpan no_urut bila ada, kalau kosong biarkan NULL (nanti di-autofill)
+                        $itemModel->no_urut = (isset($item['no_urut']) && (int)$item['no_urut'] > 0)
+                            ? (int)$item['no_urut']
+                            : null;
 
                         if (!$itemModel->save(false)) {
                             throw new HttpException(500, 'Gagal menyimpan item.');
@@ -657,26 +663,80 @@ class TrnInspectingController extends Controller
                         InspectingItem::deleteAll(['id' => $toDelete]);
                     }
 
-                    // === Recalculate join_piece data ===
+                    // === ⛳ AUTO-FIX no_urut KOSONG ===
+                    // Isi no_urut yang masih NULL dengan angka terkecil mulai dari 1,
+                    // berdasarkan urutan ID ASC, tanpa menimpa no_urut yang sudah ada,
+                    // dan menghindari tabrakan angka.
+                    $allItems = InspectingItem::find()
+                        ->where(['inspecting_id' => $modelInspecting->id])
+                        ->orderBy(['id' => SORT_ASC])
+                        ->all();
+
+                    // Kumpulkan nomor yang sudah terpakai
+                    $used = [];
+                    foreach ($allItems as $ai) {
+                        if (!empty($ai->no_urut) && (int)$ai->no_urut > 0) {
+                            $used[(int)$ai->no_urut] = true;
+                        }
+                    }
+
+                    // Helper untuk cari nomor terkecil yang belum dipakai
+                    $next = 1;
+                    $getNextFree = function() use (&$next, &$used) {
+                        while (isset($used[$next])) $next++;
+                        $used[$next] = true;
+                        return $next;
+                    };
+
+                    // Isi untuk item yang no_urut-nya NULL (urut ID ASC)
+                    foreach ($allItems as $ai) {
+                        if (empty($ai->no_urut) || (int)$ai->no_urut <= 0) {
+                            $ai->no_urut = $getNextFree();
+                            $ai->save(false, ['no_urut']);
+                        }
+                    }
+
+                    // === Recalculate join_piece data (qty_sum, qty_count, is_head, qr_code) ===
                     $query2 = InspectingItem::find();
                     $getItems = $query2->where(['inspecting_id' => $modelInspecting->id])->all();
 
                     foreach ($getItems as $gIBOII) {
-                        $qty_count = $query2->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])->count();
-                        $qty_sum = $query2->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])->sum('qty');
+                        $qty_count = $query2->where([
+                            'join_piece'    => $gIBOII->join_piece,
+                            'inspecting_id' => $modelInspecting->id
+                        ])->count();
+
+                        $qty_sum = $query2->where([
+                            'join_piece'    => $gIBOII->join_piece,
+                            'inspecting_id' => $modelInspecting->id
+                        ])->sum('qty');
+
                         $is_head = $query2->orderBy(['is_head' => SORT_DESC, 'id' => SORT_ASC])
-                            ->where(['join_piece' => $gIBOII->join_piece, 'inspecting_id' => $modelInspecting->id])
+                            ->where([
+                                'join_piece'    => $gIBOII->join_piece,
+                                'inspecting_id' => $modelInspecting->id
+                            ])
                             ->andWhere(['<>', 'join_piece', ""])
                             ->one();
 
                         $gIBOII->qty_sum = ($is_head && ($is_head->id != $gIBOII->id))
                             ? null
-                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "") ? $gIBOII->qty : $qty_sum);
+                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "")
+                                ? $gIBOII->qty
+                                : $qty_sum);
+
                         $gIBOII->is_head = ($is_head && ($is_head->id != $gIBOII->id)) ? 0 : 1;
+
+                        // NOTE: hanya generate nilai qr_code jika kosong.
+                        // Tidak menyentuh qr_print_at di sini supaya tidak dianggap "sudah tercetak".
                         $gIBOII->qr_code = $gIBOII->qr_code ?: 'INS-' . $gIBOII->inspecting_id . '-' . $gIBOII->id;
+
                         $gIBOII->qty_count = ($is_head && ($is_head->id != $gIBOII->id))
                             ? 0
-                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "") ? 1 : $qty_count);
+                            : (($gIBOII->join_piece == null || $gIBOII->join_piece == "")
+                                ? 1
+                                : $qty_count);
+
                         $gIBOII->save(false);
                     }
 
@@ -699,13 +759,13 @@ class TrnInspectingController extends Controller
 
         // === Render halaman update ===
         return $this->render('update', [
-            'model' => $model,
+            'model'       => $model,
             'modelHeader' => $modelHeader,
-            'modelItem' => $modelItem,
-            'nomorKartu' => $nomorKartu,
-            'kombinasi' => $kombinasi,
-            'k3l_code' => $k3l_code,
-            'items' => $items
+            'modelItem'   => $modelItem,
+            'nomorKartu'  => $nomorKartu,
+            'kombinasi'   => $kombinasi,
+            'k3l_code'    => $k3l_code,
+            'items'       => $items
         ]);
     }
 

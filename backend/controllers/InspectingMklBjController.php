@@ -217,26 +217,27 @@ class InspectingMklBjController extends Controller
                             throw new HttpException(500, 'Gagal menyimpan header.');
                         }
 
-                        // ============================
                         // Hapus item yang dihapus user
-                        // ============================
                         $deletedItems = Json::decode(Yii::$app->request->post('deletedItems'));
                         if (!empty($deletedItems)) {
                             InspectingMklBjItems::deleteAll(['id' => $deletedItems]);
                         }
 
-                        // ============================
-                        // Simpan atau update item
-                        // ============================
+                        // Ambil semua item dari request
                         $dataItems = Json::decode(Yii::$app->request->post('items'));
+
+                        // Dapatkan nomor urut terakhir di DB
                         $lastNoUrut = (int) InspectingMklBjItems::find()
                             ->where(['inspecting_id' => $model->id])
                             ->max('no_urut');
 
                         foreach ($dataItems as $item) {
+                            // Jika item baru (id = 0)
                             if ((int)$item['id'] === 0) {
-                                // Item baru
-                                $noUrut = !empty($item['no_urut']) ? $item['no_urut'] : $lastNoUrut + 1;
+                                $noUrut = !empty($item['no_urut'])
+                                    ? $item['no_urut']
+                                    : $lastNoUrut + 1;
+
                                 $lastNoUrut = max($lastNoUrut, $noUrut);
 
                                 Yii::$app->db->createCommand()->insert(InspectingMklBjItems::tableName(), [
@@ -249,11 +250,12 @@ class InspectingMklBjController extends Controller
                                     'qty' => $item['qty'],
                                     'note' => $item['note'],
                                 ])->execute();
-
                             } else {
                                 // Update item lama
                                 $existing = $this->findItem($item['id']);
-                                $existing->no_urut = !empty($item['no_urut']) ? $item['no_urut'] : $existing->no_urut;
+                                $existing->no_urut = !empty($item['no_urut'])
+                                    ? $item['no_urut']
+                                    : $existing->no_urut;
                                 $existing->grade = $item['grade'];
                                 $existing->defect = $item['defect'];
                                 $existing->lot_no = $item['lot_no'];
@@ -264,9 +266,23 @@ class InspectingMklBjController extends Controller
                             }
                         }
 
-                        // ============================
+                        // ✅ AUTO-FIX no_urut kosong agar berurutan dari 1 (berdasarkan id terkecil)
+                        $itemsInInspect = InspectingMklBjItems::find()
+                            ->where(['inspecting_id' => $model->id])
+                            ->orderBy(['id' => SORT_ASC])
+                            ->all();
+
+                        $counter = 1;
+                        foreach ($itemsInInspect as $row) {
+                            if (empty($row->no_urut)) {
+                                $row->no_urut = $counter++;
+                            } else {
+                                $counter = max($counter, $row->no_urut + 1);
+                            }
+                            $row->save(false);
+                        }
+
                         // Rehitung summary field
-                        // ============================
                         $query = InspectingMklBjItems::find();
                         $itemsInInspect = $query->where(['inspecting_id' => $model->id])->all();
 
@@ -286,7 +302,6 @@ class InspectingMklBjController extends Controller
                                 'inspecting_id' => $model->id
                             ])->sum('qty');
 
-                            // Hitung ulang qty_sum dan qty_count
                             $row->qty_sum = ($isHead && ($isHead['id'] != $row['id']))
                                 ? null
                                 : (($row->join_piece == null || $row->join_piece == "")
@@ -294,16 +309,12 @@ class InspectingMklBjController extends Controller
                                     : $qtySum);
 
                             $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
-
-                            // ⚠️ Tidak lagi membuat qr_code otomatis
-                            // $row->qr_code = $row->qr_code ?: 'MKL-' . $row->inspecting_id . '-' . $row->id;
-
+                            $row->qr_code = $row->qr_code ?: 'MKL-' . $row->inspecting_id . '-' . $row->id;
                             $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
                                 ? 0
                                 : (($row->join_piece == null || $row->join_piece == "")
                                     ? 1
                                     : $qtyCount);
-
                             $row->save(false);
                         }
 
