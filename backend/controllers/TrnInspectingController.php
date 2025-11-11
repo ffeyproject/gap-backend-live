@@ -63,6 +63,8 @@ class TrnInspectingController extends Controller
         $searchModel = new TrnInspectingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $dataProvider->query->orderBy(['id' => SORT_DESC]);
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -229,10 +231,55 @@ class TrnInspectingController extends Controller
                         $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
                         $gIBOII->save();
                     }
-                    if ($flag){
-                        $transaction->commit();
-                        return ['success'=>true, 'redirect'=>Url::to(['view', 'id'=>$modelInspecting->id])];
+                    if ($flag) {
+                    // === ubah status terkait ===
+                        try {
+                            // simpan perubahan status pada header inspecting
+                            if (!$flag = $modelInspecting->save(false, ['status', 'approved_by', 'approved_at'])) {
+                                $transaction->rollBack();
+                                Yii::$app->session->setFlash('error', 'Gagal menyimpan status inspeksi.');
+                            } else {
+                                if ($modelInspecting->memo_repair_id !== null) {
+                                    $modelMemoRepair = $modelInspecting->memoRepair;
+                                    $modelMemoRepair->status = $modelMemoRepair::STATUS_INSPECTED;
+                                    if (!($flag = $modelMemoRepair->save(false, ['status']))) {
+                                        $transaction->rollBack();
+                                        Yii::$app->session->setFlash('error', 'Gagal ubah status memo repair.');
+                                    }
+                                } else {
+                                    switch ($modelInspecting->jenis_process) {
+                                        case TrnScGreige::PROCESS_DYEING:
+                                            $modelKartuProses = $modelInspecting->kartuProcessDyeing;
+                                            $modelKartuProses->status = $modelKartuProses::STATUS_INSPECTED;
+                                            if (!($flag = $modelKartuProses->save(false, ['status']))) {
+                                                $transaction->rollBack();
+                                                Yii::$app->session->setFlash('error', 'Gagal ubah status dyeing.');
+                                            }
+                                            break;
+                                        case TrnScGreige::PROCESS_PRINTING:
+                                            $modelKartuProses = $modelInspecting->kartuProcessPrinting;
+                                            $modelKartuProses->status = $modelKartuProses::STATUS_INSPECTED;
+                                            if (!($flag = $modelKartuProses->save(false, ['status']))) {
+                                                $transaction->rollBack();
+                                                Yii::$app->session->setFlash('error', 'Gagal ubah status printing.');
+                                            }
+                                            break;
+                                        default:
+                                            $transaction->rollBack();
+                                            Yii::$app->session->setFlash('error', 'Jenis proses tidak didukung.');
+                                    }
+                                }
+                            }
 
+                            // commit transaksi jika semua berhasil
+                            $transaction->commit();
+                            Yii::$app->session->setFlash('success', 'Data berhasil disimpan dan status diperbarui.');
+                            return ['success' => true, 'redirect' => Url::to(['view', 'id' => $modelInspecting->id])];
+
+                        } catch (\Throwable $e) {
+                            $transaction->rollBack();
+                            throw $e;
+                        }
                     }
                 }catch (\Throwable $t){
                     $transaction->rollBack();

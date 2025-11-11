@@ -55,6 +55,8 @@ class InspectingMklBjController extends Controller
         $searchModel = new InspectingMklBjSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $dataProvider->query->orderBy(['id' => SORT_DESC]);
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -309,7 +311,7 @@ class InspectingMklBjController extends Controller
                                     : $qtySum);
 
                             $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
-                            $row->qr_code = $row->qr_code ?: 'MKL-' . $row->inspecting_id . '-' . $row->id;
+                            $row->qr_code = $row->qr_code ?: 'INS2-' . $row->inspecting_id . '-' . $row->id;
                             $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
                                 ? 0
                                 : (($row->join_piece == null || $row->join_piece == "")
@@ -411,7 +413,7 @@ class InspectingMklBjController extends Controller
                                             ->andWhere(['=', 'inspecting_id', $model->id])
                                             ->andWhere(['<>', 'join_piece', ""])->one();
                             $gIBOII['qty_sum'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? NULL : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? $gIBOII['qty'] : $qty_sum);
-                            $gIBOII['qr_code'] = 'MKL-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
+                            $gIBOII['qr_code'] = 'INS2-'.$gIBOII['inspecting_id'].'-'.$gIBOII['id'];
                             $gIBOII['is_head'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : 1;
                             $gIBOII['qty_count'] = ($is_head && ($is_head['id'] <> $gIBOII['id'])) ? 0 : ($gIBOII['join_piece'] == NULL || $gIBOII['join_piece'] == "" ? 1 : $qty_count);
                             $gIBOII->save();
@@ -688,10 +690,10 @@ class InspectingMklBjController extends Controller
     //     return $pdf->render();
     // }
 
-    public function actionQr($id, $param3, $param4, $param5)
+    public function actionQr($id, $param3, $param4, $param5, $param7)
     {
         $model = $this->findItem($id);
-        $create_qr = 'MKL-' . $model->inspecting_id . '-' . $model->id;
+        $create_qr = 'INS2-' . $model->inspecting_id . '-' . $model->id;
 
         // Cek artikel / design
         if ($model->inspecting->jenis == 1) {
@@ -744,13 +746,36 @@ class InspectingMklBjController extends Controller
         $data['k3l_code'] = $model->inspecting->k3l_code ?? '-';
         $data['color'] = $model->inspecting->moColor->color ?? '-';
         $data['is_design_or_artikel'] = $is_design_or_article ?: '-';
-        $data['length'] = str_replace(' ', '', $model->qty_sum . ' ' . ($model->inspecting->satuan == 1
-            ? 'YDS / ' . $getMeter . ' M'
-            : ($model->inspecting->satuan == 2
-                ? 'M'
-                : ($model->inspecting->satuan == 3
-                    ? 'PCS'
-                    : 'KG'))));
+        // $data['length'] = str_replace(' ', '', $model->qty_sum . ' ' . ($model->inspecting->satuan == 1
+        //     ? 'YDS / ' . $getMeter . ' M'
+        //     : ($model->inspecting->satuan == 2
+        //         ? 'M'
+        //         : ($model->inspecting->satuan == 3
+        //             ? 'PCS'
+        //             : 'KG'))));
+        if ($param7 == 1) {
+            // Jika param7 == 1, tampilkan YDS / M (ada konversi meter)
+            $data['length'] = str_replace(' ', '', $model->qty_sum . ' ' . (
+                $model->inspecting->satuan == 1
+                    ? 'YDS / ' . $getMeter . ' M'
+                    : ($model->inspecting->satuan == 2
+                        ? 'M'
+                        : ($model->inspecting->satuan == 3
+                            ? 'PCS'
+                            : 'KG'))
+            ));
+        } else {
+            // Jika param7 != 1, tampilkan satuan tunggal saja (tanpa meter)
+            $data['length'] = str_replace(' ', '', $model->qty_sum . ' ' . (
+                $model->inspecting->satuan == 1
+                    ? 'YDS'
+                    : ($model->inspecting->satuan == 2
+                        ? 'M'
+                        : ($model->inspecting->satuan == 3
+                            ? 'PCS'
+                            : 'KG'))
+            ));
+        }
         $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
         $data['qty_count'] = str_pad($model->qty_count, 3, '0', STR_PAD_LEFT);
         $data['grade'] = $getWidth . '"/' . $getGrade;
@@ -845,7 +870,7 @@ class InspectingMklBjController extends Controller
             ->all();
         foreach ($items as $key => $iI) {
             $getMeter = round($iI->qty_sum * 0.9144, 1);
-            $create_qr = 'MKL-'.$iI->inspecting->id.'-'.$iI->id;
+            $create_qr = 'INS2-'.$iI->inspecting->id.'-'.$iI->id;
             if ($iI->is_head == 1) {
                 // $countKey = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
                 $countItems = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
@@ -943,7 +968,7 @@ class InspectingMklBjController extends Controller
         return $pdf->render();
     }
 
-    public function actionQrAll($id, $param1, $param2,$param6)
+    public function actionQrAll($id, $param1, $param2,$param6, $param8)
     {
         $model = $this->findModel($id);
         $data = [];
@@ -969,7 +994,7 @@ class InspectingMklBjController extends Controller
             }else{
                 $getMeter = round($iI->qty_sum * 0.9144, 2);
             }
-            $create_qr = 'MKL-'.$iI->inspecting->id.'-'.$iI->id;
+            $create_qr = 'INS2-'.$iI->inspecting->id.'-'.$iI->id;
             if ($iI->is_head == 1) {
                 // $countKey = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
                 $countItems = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
@@ -991,7 +1016,28 @@ class InspectingMklBjController extends Controller
                 $no_wo = $iI->inspecting && $iI->inspecting->wo && $iI->inspecting->wo->no ? $iI->inspecting->wo->no : '-';
                 $color = $iI->inspecting && $iI->inspecting->moColor->color ? $iI->inspecting->moColor->color : '-';
                 $k3l_code = $iI->inspecting && $iI->inspecting->k3l_code ? $iI->inspecting->k3l_code : '-';
-                $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->satuan == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->satuan == 2 ? 'M' : ($iI->inspecting->satuan == 3 ? 'PCS' : 'KG'))));
+                // $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->satuan == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->satuan == 2 ? 'M' : ($iI->inspecting->satuan == 3 ? 'PCS' : 'KG'))));
+                 if ($param8 == 1) {
+                    $length = str_replace(' ', '', $iI->qty_sum.' '.(
+                        $iI->inspecting->satuan == 1
+                            ? 'YDS / '.$getMeter.' M'
+                            : ($iI->inspecting->satuan == 2
+                                ? 'M'
+                                : ($iI->inspecting->satuan == 3
+                                    ? 'PCS'
+                                    : 'KG'))
+                    ));
+                } else {
+                    $length = str_replace(' ', '', $iI->qty_sum.' '.(
+                        $iI->inspecting->satuan == 1
+                            ? 'YDS'
+                            : ($iI->inspecting->satuan == 2
+                                ? 'M'
+                                : ($iI->inspecting->satuan == 3
+                                    ? 'PCS'
+                                    : 'KG'))
+                    ));
+                }
                 $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
                 $qty_count = $countItems.($key+1).'/'.$countItems.count($model->items);
                 $grade = $getWidth.'"/'.$getGrade;

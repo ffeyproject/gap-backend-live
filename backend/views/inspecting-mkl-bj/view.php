@@ -148,6 +148,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                 <?= Html::checkbox('param3', $defaultCheck, ['label' => 'Made In Indonesia', 'id' => 'param3Checkbox']); ?>
                 <?= Html::checkbox('param4', $defaultCheck, ['label' => 'Registrasi K3L', 'id' => 'param4Checkbox']); ?>
                 <?= Html::checkbox('param5', $defaultCheck, ['label' => 'Aktifkan Pembulatan Decimal', 'id' => 'param5Checkbox']); ?>
+                <?= Html::checkbox('param7', $defaultCheck, ['label' => '2 Satuan', 'id' => 'param7Checkbox']); ?>
 
             </div>
 
@@ -473,6 +474,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <?= Html::checkbox('param1', $defaultCheck, ['label' => 'Made In Indonesia', 'id' => 'param1Checkbox']); ?>
                     <?= Html::checkbox('param2', $defaultCheck, ['label' => 'Registrasi K3L', 'id' => 'param2Checkbox']); ?>
                     <?= Html::checkbox('param6', $defaultCheck, ['label' => 'Aktifkan Pembulatan Decimal', 'id' => 'param6Checkbox']); ?>
+                    <?= Html::checkbox('param8', $defaultCheck, ['label' => '2 Satuan', 'id' => 'param8Checkbox']); ?>
                     <p class="m-0"><small><b>*checklist untuk menampilkan</b></small></p>
                 </div>
                 <div class="box-tools pull-right">
@@ -688,13 +690,14 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
+        var param8Value = $("#param8Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
 
 
         // Determine the URL based on checkbox status
         var theView = (param1Value == 0 && param2Value == 0) ? "qr-all-without-attribute" : "qr-all";
 
         // Build the URL with the selected values
-        var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value;
+        var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value + "&param8=" + param8Value;
 
         var replacedUrl = url.replace(/replace/, theView);
 
@@ -709,9 +712,10 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         var param3Value = $("#param3Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param4Value = $("#param4Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
         var param5Value = $("#param5Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
+        var param7Value = $("#param7Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
 
         // Build the URL with the selected values
-        var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value;
+        var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value + "&param7=" + param7Value;
 
         // Redirect to the new URL
         window.location.href = url;
