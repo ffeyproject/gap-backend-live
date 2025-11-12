@@ -776,7 +776,17 @@ class InspectingMklBjController extends Controller
                             : 'KG'))
             ));
         }
-        $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
+        // $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
+        // Tentukan nomor urut dari DB atau fallback ke urutan index ($key + 1)
+        $noUrut = isset($model->no_urut) && !empty($model->no_urut) ? $model->no_urut : ($key + 1);
+
+        // Tambahkan no_urut ke data untuk digunakan di view
+        $data['no_urut'] = $noUrut;
+
+        // Gabungkan no_lot dan no_urut
+        $data['no_lot'] = $model->inspecting->no_lot
+            ? $model->inspecting->no_lot . '/' . $noUrut
+            : '-';
         $data['qty_count'] = str_pad($model->qty_count, 3, '0', STR_PAD_LEFT);
         $data['grade'] = $getWidth . '"/' . $getGrade;
         $data['defect'] = str_replace(',', '|', $model->defect);
@@ -893,7 +903,14 @@ class InspectingMklBjController extends Controller
                 $color = $iI->inspecting && $iI->inspecting->moColor->color ? $iI->inspecting->moColor->color : '-';
                 $k3l_code = $iI->inspecting && $iI->inspecting->k3l_code ? $iI->inspecting->k3l_code : '-';
                 $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->satuan == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->satuan == 2 ? 'M' : ($iI->inspecting->satuan == 3 ? 'PCS' : 'KG'))));
-                $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // Tentukan nomor urut: pakai dari database jika ada, jika tidak, gunakan index loop
+                $noUrut = isset($iI->no_urut) && !empty($iI->no_urut) ? $iI->no_urut : ($key + 1);
+
+                // Gabungkan no_lot dan no_urut
+                $no_lot = $iI->inspecting && $iI->inspecting->no_lot
+                    ? $iI->inspecting->no_lot . '/' . $noUrut
+                    : '-';
                 $qty_count = $countItems.($key+1).'/'.$countItems.count($model->items);
                 $grade = $getWidth.'"/'.$getGrade;
                 // $motif_greige = $iI->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
@@ -923,6 +940,7 @@ class InspectingMklBjController extends Controller
                     'is_design_or_artikel' => $is_design_or_article ? $is_design_or_article : '-',
                     'length' => $length,
                     'no_lot' => $no_lot,
+                    'no_urut' => $noUrut,
                     'qty_count' => $qty_count,
                     'grade' => $grade,
                     'qr_code_desc' => $iI->qr_code_desc ? ($iI->qr_code_desc == $qr_code_desc ? $iI->qr_code_desc : $qr_code_desc) : $qr_code_desc,
@@ -1038,7 +1056,14 @@ class InspectingMklBjController extends Controller
                                     : 'KG'))
                     ));
                 }
-                $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // Tentukan nomor urut: ambil dari DB jika ada, kalau tidak pakai urutan array
+                $noUrut = isset($iI->no_urut) && !empty($iI->no_urut) ? $iI->no_urut : ($key + 1);
+
+                // Gabungkan no_lot/no_urut
+                $no_lot = $iI->inspecting && $iI->inspecting->no_lot
+                    ? $iI->inspecting->no_lot . '/' . $noUrut
+                    : '-';
                 $qty_count = $countItems.($key+1).'/'.$countItems.count($model->items);
                 $grade = $getWidth.'"/'.$getGrade;
                 // $motif_greige = $iI->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
@@ -1068,6 +1093,7 @@ class InspectingMklBjController extends Controller
                     'is_design_or_artikel' => $is_design_or_article ? $is_design_or_article : '-',
                     'length' => $length,
                     'no_lot' => $no_lot,
+                    'no_urut' => $noUrut,
                     'qty_count' => $qty_count,
                     'grade' => $grade,
                     'qr_code_desc' => $iI->qr_code_desc ? ($iI->qr_code_desc == $qr_code_desc ? $iI->qr_code_desc : $qr_code_desc) : $qr_code_desc,

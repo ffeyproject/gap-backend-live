@@ -74,7 +74,9 @@ $formatter = Yii::$app->formatter;
                     <b><?= strlen($line2) > 0 ? str_replace(' ', '&nbsp;', rtrim($line2, ' ')) : '&nbsp;' ?></b>
                 </p>
 
-                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>"><b><?= $m['no_lot'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>">
+                    <b><?= $m['no_lot'] . '/' . $m['no_urut'] ?></b>
+                </p>
 
                 <p style="font-family: Calibri; font-size: 18px;" id="<?= mt_rand() ?>">
                     <b><?= str_replace(' ', '&nbsp;', rtrim($line12, ' ')) ?></b>

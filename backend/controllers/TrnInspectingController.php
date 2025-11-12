@@ -1281,7 +1281,14 @@ class TrnInspectingController extends Controller
             ($model->inspecting->unit == 2 ? 'M' :
             ($model->inspecting->unit == 3 ? 'PCS' : 'KG'))
         ));
-        $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
+        // $data['no_lot'] = $model->inspecting->no_lot ? $model->inspecting->no_lot . '/' . ($key + 1) : '-';
+        // Jika kolom no_urut ada di InspectingItem, gunakan itu; jika tidak, pakai index loop ($key + 1)
+        $noUrut = isset($model->no_urut) && !empty($model->no_urut) ? $model->no_urut : ($key + 1);
+        $data['no_urut'] = $noUrut; // tambahkan field no_urut agar bisa dipakai di view
+
+        $data['no_lot'] = $model->inspecting->no_lot
+            ? $model->inspecting->no_lot . '/' . $noUrut
+            : '-';
         $data['qty_count'] = strlen($model->qty_count) == 1 ? '00' : (strlen($model->qty_count) == 2 ? '0' : '') . $model->qty_count;
         $data['grade'] = $getWidth . '"/' . $getGrade;
         $data['defect'] = str_replace(',', '|', $model->defect);
@@ -1432,6 +1439,7 @@ class TrnInspectingController extends Controller
                     'is_design_or_artikel' => $is_design_or_article ? $is_design_or_article : '-',
                     'length' => $length,
                     'no_lot' => $no_lot,
+                    'no_urut' => $iI->no_urut,
                     'qty_count' => $qty_count,
                     'grade' => $grade,
                     'qr_code_desc' => $iI->qr_code_desc ? ($iI->qr_code_desc == $qr_code_desc ? $iI->qr_code_desc : $qr_code_desc) : $qr_code_desc,
@@ -1562,6 +1570,7 @@ class TrnInspectingController extends Controller
                     'is_design_or_artikel' => $is_design_or_article ? $is_design_or_article : '-',
                     'length' => $length,
                     'no_lot' => $no_lot,
+                    'no_urut' => $iI->no_urut,
                     'qty_count' => $qty_count,
                     'grade' => $grade,
                     'qr_code_desc' => $iI->qr_code_desc ? ($iI->qr_code_desc == $qr_code_desc ? $iI->qr_code_desc : $qr_code_desc) : $qr_code_desc,
