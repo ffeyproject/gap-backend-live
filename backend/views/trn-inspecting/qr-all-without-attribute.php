@@ -79,7 +79,7 @@ $formatter = Yii::$app->formatter;
                 </p>
 
                 <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>">
-                    <b><?= $m['no_lot'] . '/' . $m['no_urut'] ?></b>
+                    <b><?= $m['no_lot'] ?></b>
                 </p>
 
                 <p style="font-family: Calibri; font-size: 18px;">

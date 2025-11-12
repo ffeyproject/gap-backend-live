@@ -1409,7 +1409,11 @@ class TrnInspectingController extends Controller
                 $color = $iI->inspecting && $iI->inspecting->kombinasi ? $iI->inspecting->kombinasi : '-';
                 $k3l_code = $iI->inspecting && $iI->inspecting->k3l_code ? $iI->inspecting->k3l_code : '-';
                 $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->unit == 1 ? 'YDS / '.$getMeter.' M' : ($iI->inspecting->unit == 2 ? 'M' : ($iI->inspecting->unit == 3 ? 'PCS' : 'KG'))));
-                $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                $noUrut = !empty($iI->no_urut) ? $iI->no_urut : ($key + 1);
+                $no_lot = !empty($iI->no_lot)
+                    ? $iI->no_lot . '/' . $noUrut
+                    : (($iI->inspecting && !empty($iI->inspecting->no_lot)) ? $iI->inspecting->no_lot . '/' . $noUrut : '-');
                 $qty_count = $countKey.($key+1).'/'.$countItems.count($model->inspectingItems);
                 $grade = $getWidth.'"/'.$getGrade;
                 // $motif_greige = $iI->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
@@ -1540,7 +1544,11 @@ class TrnInspectingController extends Controller
                 } else {
                     $length = str_replace(' ', '', $iI->qty_sum.' '.($iI->inspecting->unit == 1 ? 'YDS' : ($iI->inspecting->unit == 2 ? 'M' : ($iI->inspecting->unit == 3 ? 'PCS' : 'KG'))));
                 }
-                $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                // $no_lot = $iI->inspecting && $iI->inspecting->no_lot ? $iI->inspecting->no_lot.'/'.($key+1) : '-';
+                $noUrut = !empty($iI->no_urut) ? $iI->no_urut : ($key + 1);
+                $no_lot = !empty($iI->no_lot)
+                    ? $iI->no_lot . '/' . $noUrut
+                    : (($iI->inspecting && !empty($iI->inspecting->no_lot)) ? $iI->inspecting->no_lot . '/' . $noUrut : '-');
                 $qty_count = $countKey.($key+1).'/'.$countItems.count($model->inspectingItems);
                 $grade = $getWidth.'"/'.$getGrade;
                 // $motif_greige = $iI->inspecting->wo->mo->scGreige->greigeGroup->nama_kain;
@@ -1570,7 +1578,7 @@ class TrnInspectingController extends Controller
                     'is_design_or_artikel' => $is_design_or_article ? $is_design_or_article : '-',
                     'length' => $length,
                     'no_lot' => $no_lot,
-                    'no_urut' => $iI->no_urut,
+                    'no_urut' => $noUrut,
                     'qty_count' => $qty_count,
                     'grade' => $grade,
                     'qr_code_desc' => $iI->qr_code_desc ? ($iI->qr_code_desc == $qr_code_desc ? $iI->qr_code_desc : $qr_code_desc) : $qr_code_desc,
