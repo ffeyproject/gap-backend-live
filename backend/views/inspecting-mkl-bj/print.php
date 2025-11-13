@@ -85,8 +85,8 @@ $joinPieces = [
 
 $inspectingItems = $model->getItems()
     ->orderBy([
-        new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'), // Prioritaskan yg punya no_urut
-        'no_urut' => SORT_ASC,
+        new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'),
+        // 'no_urut' => SORT_ASC,
         'id' => SORT_ASC
     ])
     ->all();
@@ -228,7 +228,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $item['no_urut'] ? $item['no_urut'] . ($item['join_piece'] ?: '') : ($index + 1) ?>
+                                                <?= ($index + 1) . $item['join_piece'] ?>
                                             </td>
                                             <td class="bordered" style="text-align: center;">
                                                 <?php
@@ -415,7 +415,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                               <?= $item['no_urut'] ? $item['no_urut'] . ($item['join_piece'] ?: '') : ($index + 1) ?>
+                                                <?= ($index + 1) . $item['join_piece'] ?>
                                             </td>
                                             <td class="bordered" style="text-align: center">
                                                 <?php
