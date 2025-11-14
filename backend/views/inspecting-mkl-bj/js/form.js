@@ -67,8 +67,25 @@ $("#InspectingItemTable tbody").on(
   "click",
   "button.removeItemData",
   function () {
-    itemTable.row($(this).parents("tr")).remove().draw(false);
+    // 1. Hapus dulu row
+    let row = itemTable.row($(this).parents("tr"));
+    row.remove();
+
+    // 2. Reset nomor urut seluruh item di DataTable
+    itemTable.rows().every(function (index) {
+      let d = this.data();
+      d.no_urut = index + 1;
+      this.data(d);
+    });
+
+    // 3. Redraw tabel
+    itemTable.draw(false);
+
+    // 4. Update counter
     $("#ItemCounter").html(itemTable.rows().data().length);
+
+    // 5. Update input form no_urut (INI YANG PENTING!!)
+    $("#inspectingmklbjitems-no_urut").val(getNextNoUrutFromTable());
   }
 );
 

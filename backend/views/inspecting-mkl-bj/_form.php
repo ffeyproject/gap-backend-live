@@ -185,8 +185,23 @@ use common\models\ar\InspectingMklBjItems;
                         <td><?=$formItem->field($modelItem, 'grade')->widget(Select2::classname(), [
                             'data' => InspectingMklBjItems::gradeOptions(),
                         ])->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
+                        <td>
+                            <?= $formItem->field($modelItem, 'qty')
+                                ->textInput([
+                                    'autocomplete' => 'off',
+                                    'placeholder' => 'Masukkan Qty'
+                                ])
+                                ->label(false)
+                            ?>
+                        </td>
+                        <td>
+                            <?= $formItem->field($modelItem, 'join_piece')
+                                ->textInput([
+                                    'autocomplete' => 'off'
+                                ])
+                                ->label(false)
+                            ?>
+                        </td>
                         <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>

@@ -242,8 +242,22 @@ use yii\helpers\Url;
                                 'data' => InspectingItem::gradeOptions(),
                             ])->label(false) ?>
                         </td>
-                        <td><?= $formItem->field($modelItem, 'ukuran')->textInput()->label(false) ?></td>
-                        <td><?= $formItem->field($modelItem, 'join_piece')->textInput()->label(false) ?></td>
+                        <td>
+                            <?= $formItem->field($modelItem, 'ukuran')
+                                ->textInput([
+                                    'autocomplete' => 'off'
+                                ])
+                                ->label(false)
+                            ?>
+                        </td>
+                        <td>
+                            <?= $formItem->field($modelItem, 'join_piece')
+                                ->textInput([
+                                    'autocomplete' => 'off'
+                                ])
+                                ->label(false)
+                            ?>
+                        </td>
                         <td><?= $formItem->field($modelItem, 'lot_no')->textInput()->label(false) ?></td>
                         <td><?= $formItem->field($modelItem, 'defect')->textInput()->label(false) ?></td>
                         <td><?= $formItem->field($modelItem, 'keterangan')->textInput()->label(false) ?></td>

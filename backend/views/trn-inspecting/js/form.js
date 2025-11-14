@@ -84,8 +84,24 @@ $("#InspectingItemTable tbody").on(
   "button.removeItemData",
   function () {
     var row = itemTable.row($(this).parents("tr"));
-    row.remove().draw(false);
+
+    // Hapus dulu
+    row.remove();
+
+    // Reset nomor urut
+    itemTable.rows().every(function (index) {
+      let d = this.data();
+      d.no_urut = index + 1;
+      this.data(d);
+    });
+
+    itemTable.draw(false);
+
+    // Update counter
     $("#ItemCounter").html(itemTable.rows().data().length);
+
+    // ✔ UPDATE ISIAN FORM NO_URUT OTOMATIS
+    $("#inspectingitemsform-no_urut").val(getNextNoUrutFromTable());
   }
 );
 
