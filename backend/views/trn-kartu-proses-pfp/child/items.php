@@ -54,6 +54,16 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                 <?=GridView::widget([
                     'dataProvider' => $dataProviderTubeKiri,
                     'id' => 'KartuProsesPfpItemsGridTubeKiri',
+                    'rowOptions' => function ($model) {
+                        $exists = \common\models\ar\TrnStockGreigeOpname::find()
+                            ->where(['stock_greige_id' => $model->stock_id])
+                            ->exists();
+
+                        if ($exists) {
+                            return ['style' => 'background-color: #ffff66']; // kuning cerah
+                        }
+                        return [];
+                    },
                     'pjax' => true,
                     'responsiveWrap' => false,
                     'resizableColumns' => false,
@@ -147,6 +157,16 @@ $dataProviderTubeKanan = new ActiveDataProvider([
             <div class="col-md-6">
                 <?=GridView::widget([
                     'dataProvider' => $dataProviderTubeKanan,
+                    'rowOptions' => function ($model) {
+                        $exists = \common\models\ar\TrnStockGreigeOpname::find()
+                            ->where(['stock_greige_id' => $model->stock_id])
+                            ->exists();
+
+                        if ($exists) {
+                            return ['style' => 'background-color: #ffff66']; // kuning cerah
+                        }
+                        return [];
+                    },
                     'id' => 'KartuProsesPfpItemsGridTubeKanan',
                     'pjax' => true,
                     'responsiveWrap' => false,
