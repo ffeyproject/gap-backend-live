@@ -409,3 +409,45 @@ function editQtyStock(event) {
   var url = "edit-qty?ids=" + keys.join(",");
   $("#editQtyModal").modal("show").find(".modal-content").load(url);
 }
+
+function changeNoDocument(e) {
+  e.preventDefault();
+  var keys = $("#StockGreigeGrid").yiiGridView("getSelectedRows");
+
+  if (keys.length === 0) {
+    alert("Pilih minimal satu item untuk diubah No Document.");
+    return false;
+  }
+
+  // simpan ke variabel global
+  window.selectedIdsChangeNoDoc = keys;
+
+  $("#modal-change-no-document").modal("show");
+}
+
+$(document).on("submit", "#form-change-no-document", function (e) {
+  e.preventDefault();
+
+  var noDoc = $(this).find('[name="no_document"]').val();
+  var ids = window.selectedIdsChangeNoDoc;
+
+  $.ajax({
+    url: "change-no-document",
+    type: "POST",
+    data: {
+      ids: ids,
+      no_document: noDoc,
+    },
+    success: function (res) {
+      if (res.success) {
+        $("#modal-change-no-document").modal("hide");
+        $.pjax.reload({ container: "#StockGreigeGrid-pjax" });
+      } else {
+        alert("Gagal update No Document");
+      }
+    },
+    error: function () {
+      alert("Error update No Document");
+    },
+  });
+});

@@ -70,6 +70,12 @@ echo AjaxModal::widget([
                     'onclick' => 'changeKetWeaving(event);',
                     'title' => 'Change Ket. Weaving Selected Items'
                 ]).
+                Html::a('Change No Document', ['change-no-document'], [
+                    'class' => 'btn btn-warning',
+                    'style' => 'margin-right:5px;',
+                    'onclick' => 'changeNoDocument(event);',
+                    'title' => 'Change No Document Selected Items'
+                ]) .
                 Html::a('<i class="glyphicon glyphicon-duplicate"></i> Duplikat Stock ke Stock Opname', ['duplicate-bulk'], [
                     'class' => 'btn btn-primary',
                     'style' => 'margin-right:5px;',
@@ -257,6 +263,27 @@ echo AjaxModal::widget([
                     <i class="fa fa-spinner fa-spin fa-2x"></i>
                     <p>Loading...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-change-no-document" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form id="form-change-no-document">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Change No Document</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <label>No Document Baru:</label>
+                        <input type="text" name="no_document" class="form-control" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Update</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -965,5 +965,30 @@ class TrnStockGreigeController extends Controller
 }
 
 
+public function actionChangeNoDocument()
+{
+    if (!Yii::$app->request->isAjax) {
+        throw new ForbiddenHttpException('Hanya AJAX yang diperbolehkan.');
+    }
+
+    Yii::$app->response->format = Response::FORMAT_JSON;
+
+    $ids = Yii::$app->request->post('ids', []);
+    $noDocument = Yii::$app->request->post('no_document');
+
+    if (empty($ids) || empty($noDocument)) {
+        return ['success' => false];
+    }
+
+    Yii::$app->db->createCommand()->update(
+        TrnStockGreige::tableName(),
+        ['no_document' => $noDocument],
+        ['id' => $ids]
+    )->execute();
+
+    return ['success' => true];
+}
+
+
 
 }
