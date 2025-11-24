@@ -977,17 +977,40 @@ public function actionChangeNoDocument()
     $noDocument = Yii::$app->request->post('no_document');
 
     if (empty($ids) || empty($noDocument)) {
-        return ['success' => false];
+        return ['success' => false, 'message' => 'Data tidak lengkap'];
     }
 
-    Yii::$app->db->createCommand()->update(
-        TrnStockGreige::tableName(),
-        ['no_document' => $noDocument],
-        ['id' => $ids]
-    )->execute();
+    // Transaksi agar aman
+    $transaction = Yii::$app->db->beginTransaction();
+    try {
 
-    return ['success' => true];
+        // 1️⃣ Update no_document pada TrnStockGreige
+        Yii::$app->db->createCommand()->update(
+            TrnStockGreige::tableName(),
+            ['no_document' => $noDocument],
+            ['id' => $ids]
+        )->execute();
+
+        // 2️⃣ Update juga pada TrnStockOpname
+        Yii::$app->db->createCommand()->update(
+            \common\models\ar\TrnStockGreigeOpname::tableName(),
+            ['no_document' => $noDocument],
+            ['stock_greige_id' => $ids]
+        )->execute();
+
+        $transaction->commit();
+        return ['success' => true];
+
+    } catch (\Throwable $e) {
+        $transaction->rollBack();
+        return [
+            'success' => false,
+            'message' => $e->getMessage(),
+        ];
+    }
 }
+
+
 
 
 
