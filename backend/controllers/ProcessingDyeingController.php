@@ -384,6 +384,20 @@ class ProcessingDyeingController extends Controller
         throw new MethodNotAllowedHttpException('Method not allowed.');
     }
 
+    protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
+    {
+        Yii::$app->db->createCommand()->insert('action_log_kartu_dyeing', [
+            'user_id'       => Yii::$app->user->id,
+            'username'      => Yii::$app->user->identity->username ?? null,
+            'kartu_proses_id' => $kartuProsesId,
+            'action_name'   => $actionName,
+            'description'   => $description,
+            'ip'            => Yii::$app->request->userIP,
+            'user_agent'    => Yii::$app->request->userAgent,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ])->execute();
+    }
+
     /**
      * Deletes an existing KartuProsesDyeing model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
@@ -410,6 +424,12 @@ class ProcessingDyeingController extends Controller
         $model->approved_at = time();
         $model->approved_by = Yii::$app->user->id;
         $model->save(false, ['status', 'approved_at', 'approved_by']);
+
+        $this->logKartuDyeing(
+            'masuk_verpacking',
+            $model->id,
+            'Kartu Proses Dyeing disetujui'
+        );
 
         Yii::$app->session->setFlash('success', 'Berhasil disetujui, proses bisa dilanjutkan ke tahap inspecting.');
         return $this->redirect(['view', 'id' => $model->id]);

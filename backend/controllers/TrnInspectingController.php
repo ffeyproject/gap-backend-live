@@ -5,6 +5,7 @@ namespace backend\controllers;
 use backend\models\form\InspectingHeaderForm;
 use backend\models\form\InspectingItemsForm;
 use backend\models\search\AnalisaPengirimanProduksi;
+use common\models\ar\ActionLogKartuDyeing;
 use common\models\ar\DefectInspectingItem;
 use common\models\ar\InspectingItem;
 // use common\models\ar\TrnGudangJadi;
@@ -1351,6 +1352,30 @@ class TrnInspectingController extends Controller
             throw $t;
         }
 
+        // ---------------------------------------------------
+        // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // ---------------------------------------------------
+        $this->logKartuDyeing(
+            'make_up_packing',
+            $model->kartu_process_dyeing_id,
+            'Set status Make Up Packing Selesai Qr di Print'
+        );
+
+        // -----------------------------------------------
+        // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
+        // -----------------------------------------------
+        if (!empty($model->kartu_process_dyeing_id)) {
+
+            $kp = TrnKartuProsesDyeing::findOne($model->kartu_process_dyeing_id);
+
+            if ($kp !== null) {
+                $kp->status = TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING;
+                $kp->updated_at = time();
+                $kp->updated_by = Yii::$app->user->id;
+                $kp->save(false, ['status', 'updated_at', 'updated_by']);
+            }
+        }
+
         // === CETAK PDF ===
         $content = $this->renderPartial('qr', ['model' => $data]);
 
@@ -1484,6 +1509,30 @@ class TrnInspectingController extends Controller
                     $transaction->rollBack();
                     throw $t;
                 }
+            }
+        }
+
+        // ---------------------------------------------------
+        // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // ---------------------------------------------------
+        $this->logKartuDyeing(
+            'make_up_packing',
+            $model->kartu_process_dyeing_id,
+            'Set status Make Up Packing Selesai Qr di Print'
+        );
+
+        // -----------------------------------------------
+        // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
+        // -----------------------------------------------
+        if (!empty($model->kartu_process_dyeing_id)) {
+
+            $kp = TrnKartuProsesDyeing::findOne($model->kartu_process_dyeing_id);
+
+            if ($kp !== null) {
+                $kp->status = TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING;
+                $kp->updated_at = time();
+                $kp->updated_by = Yii::$app->user->id;
+                $kp->save(false, ['status', 'updated_at', 'updated_by']);
             }
         }
 
@@ -1621,6 +1670,15 @@ class TrnInspectingController extends Controller
                 }
             }
         }
+
+        // ---------------------------------------------------
+        // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // ---------------------------------------------------
+        $this->logKartuDyeing(
+            'make_up_packing',
+            $model->kartu_process_dyeing_id,
+            'Set status Make Up Packing Selesai Qr di Print'
+        );
 
         // -----------------------------------------------
         // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
@@ -1861,6 +1919,25 @@ class TrnInspectingController extends Controller
         ]);
     }
 
+    protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
+    {
+        $log = new ActionLogKartuDyeing();
+
+        $log->user_id = Yii::$app->user->id ?? null;
+        $log->username = Yii::$app->user->identity->username ?? null;
+
+        $log->kartu_proses_id = $kartuProsesId;
+        $log->action_name = $actionName;
+        $log->description = $description;
+
+        $log->ip = Yii::$app->request->userIP;
+        $log->user_agent = Yii::$app->request->userAgent;
+        $log->created_at = date('Y-m-d H:i:s');
+
+        $log->save(false);
+    }
+
+
     public function actionSetStatusGudangJadiAll($tahun = null)
     {
         // Query dasar
@@ -1913,6 +1990,13 @@ class TrnInspectingController extends Controller
             throw new NotFoundHttpException("Data kartu tidak ditemukan.");
         }
 
+        // === LOG AKSI ===
+        $this->logKartuDyeing(
+            'close_kartu',
+            $model->id,
+            'User menutup kartu proses dyeing'
+        );
+
         // Set status menjadi CLOSE
         $model->status = TrnKartuProsesDyeing::STATUS_CLOSE;
         $model->updated_at = time();
@@ -1936,6 +2020,12 @@ class TrnInspectingController extends Controller
             throw new NotFoundHttpException("Data tidak ditemukan.");
         }
 
+        $this->logKartuDyeing(
+            'rolling_packing',
+            $model->id,
+            'Set status Rolling Packing'
+        );
+
         $model->status = TrnKartuProsesDyeing::STATUS_ROLLING_PACKING;
         $model->updated_at = time();
         $model->updated_by = Yii::$app->user->id;
@@ -1953,6 +2043,12 @@ class TrnInspectingController extends Controller
         if (!$model) {
             throw new NotFoundHttpException("Data tidak ditemukan.");
         }
+
+        $this->logKartuDyeing(
+            'make_up_packing',
+            $model->id,
+            'Set status Make Up Packing'
+        );
 
         $model->status = TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING;
         $model->updated_at = time();
@@ -1973,6 +2069,12 @@ class TrnInspectingController extends Controller
             throw new NotFoundHttpException("Data tidak ditemukan.");
         }
 
+        $this->logKartuDyeing(
+            'folded_packing',
+            $model->id,
+            'Set status Folded Packing'
+        );
+
         $model->status = TrnKartuProsesDyeing::STATUS_FOLDED_PACKING;
         $model->updated_at = time();
         $model->updated_by = Yii::$app->user->id;
@@ -1990,6 +2092,12 @@ class TrnInspectingController extends Controller
         if (!$model) {
             throw new NotFoundHttpException("Data tidak ditemukan.");
         }
+
+        $this->logKartuDyeing(
+            'selvedge_packing',
+            $model->id,
+            'Set status Selvedge Packing'
+        );
 
         $model->status = TrnKartuProsesDyeing::STATUS_SELVEDGE_PACKING;
         $model->updated_at = time();
