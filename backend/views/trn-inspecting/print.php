@@ -77,12 +77,8 @@ $joinPieces = [
     InspectingItem::GRADE_PUTIH => [],
 ];
 
-// $inspectingItems = $model->getInspectingItems()
-//     ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
-//     ->all();
-// $indexLimit = round(count($inspectingItems) / 2);
 $inspectingItems = $model->getInspectingItems()
-    ->orderBy(['id' => SORT_ASC])
+    ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
     ->all();
 $indexLimit = round(count($inspectingItems) / 2);
 ?>
@@ -222,8 +218,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= ($index + 1) . $item['join_piece'] ?>
-                                            </td>
+                                                <?=($item['no_urut'] ?? ($index + 1)).$item['join_piece']?></td>
                                             <td class="bordered" style="text-align: center;">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {
@@ -427,7 +422,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= ($index + 1) . $item['join_piece'] ?>
+                                                <?=($item['no_urut'] ?? ($index + 1)).$item['join_piece']?></td>
                                             <td class="bordered" style="text-align: center">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {

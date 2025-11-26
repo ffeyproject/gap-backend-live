@@ -91,6 +91,18 @@ class PenerimaanInspectingController extends Controller
                             throw new HttpException(500, 'Gagal, coba lagi. (1)');
                         }
 
+                        // ===============================
+                        // UPDATE STATUS KARTU PROSES DYEING
+                        // ===============================
+                        if (!empty($model->kartu_process_dyeing_id)) {
+                            $kp = $model->kartuProcessDyeing;
+                            if ($kp !== null) {
+                                $kp->status = \common\models\ar\TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI;
+                                $kp->updated_at = time();
+                                $kp->updated_by = Yii::$app->user->id;
+                                $kp->save(false, ['status', 'updated_at', 'updated_by']);
+                            }
+                        }
                         $rollsQty = [];
                         foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item) {
                             if(!empty($item->join_piece)) {

@@ -26,6 +26,7 @@ $totalQtyGrade = [
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
     InspectingItem::GRADE_PUTIH => 0,
+    InspectingItem::GRADE_D => 0,
 ];
 $totalPiecesGrade = [
     InspectingItem::GRADE_A => 0,
@@ -36,6 +37,7 @@ $totalPiecesGrade = [
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
     InspectingItem::GRADE_PUTIH => 0,
+    InspectingItem::GRADE_D => 0,
 ];
 $totalRollGrade = [
     InspectingItem::GRADE_A => 0,
@@ -46,6 +48,7 @@ $totalRollGrade = [
     InspectingItem::GRADE_A_PLUS => 0,
     InspectingItem::GRADE_A_ASTERISK => 0,
     InspectingItem::GRADE_PUTIH => 0,
+    InspectingItem::GRADE_D => 0,
 ];
 $joinPieces = [
     InspectingItem::GRADE_A => [],
@@ -56,6 +59,7 @@ $joinPieces = [
     InspectingItem::GRADE_A_PLUS => [],
     InspectingItem::GRADE_A_ASTERISK => [],
     InspectingItem::GRADE_PUTIH => [],
+    InspectingItem::GRADE_D => [],
 ];
 
 $no_wo = substr($model->wo->no, -1);
@@ -97,6 +101,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Grade A</th>
                     <th>Grade B</th>
                     <th>Grade C</th>
+                    <th>Grade D</th>
                     <th>Piece Kecil</th>
                     <th>Contoh</th>
                     <th>Grade A+</th>
@@ -109,6 +114,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Keterangan</th>
                     <th>Qr-Code</th>
                     <th>Qr-Data</th>
+                    <th>ID Barang</th>
                     <th>Qr-Code Print at</th>
                 </tr>
             </thead>
@@ -205,6 +211,23 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                                 }
                             } else {
                                 if($item['grade'] === InspectingItem::GRADE_C){
+                                    echo $formatter->asDecimal($item['qty']);
+                                }else{
+                                    echo '0';
+                                }
+                            }
+                        ?>
+                    </td>
+                    <td>
+                        <?php
+                            if ($item['grade_up'] <> NULL) {
+                                if($item['grade_up'] === InspectingItem::GRADE_D){
+                                    echo $formatter->asDecimal($item['qty']);
+                                }else{
+                                    echo '0';
+                                }
+                            } else {
+                                if($item['grade'] === InspectingItem::GRADE_D){
                                     echo $formatter->asDecimal($item['qty']);
                                 }else{
                                     echo '0';
@@ -374,8 +397,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             }
                         ?>
                     </td>
-                    <td style="width: 150px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
-                    <td style="width: 200px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                    <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
+                    <td><?=$item['id']?></td>
+                    <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
                 </tr>
                 <?php endforeach;?>
                 </body>
@@ -383,9 +407,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
     </div>
     <div class="box-footer with-border">
         <?php
-        $totalPieces = $totalPiecesGrade[InspectingItem::GRADE_A] + $totalPiecesGrade[InspectingItem::GRADE_B] + $totalPiecesGrade[InspectingItem::GRADE_C] + $totalPiecesGrade[InspectingItem::GRADE_PK] + $totalPiecesGrade[InspectingItem::GRADE_SAMPLE] + $totalPiecesGrade[InspectingItem::GRADE_A_PLUS] + $totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingItem::GRADE_PUTIH];
-        $totalQty = $totalQtyGrade[InspectingItem::GRADE_A] + $totalQtyGrade[InspectingItem::GRADE_B] + $totalQtyGrade[InspectingItem::GRADE_C] + $totalQtyGrade[InspectingItem::GRADE_PK] + $totalQtyGrade[InspectingItem::GRADE_SAMPLE] + $totalQtyGrade[InspectingItem::GRADE_A_PLUS] + $totalQtyGrade[InspectingItem::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingItem::GRADE_PUTIH];
-        $totalRoll = $totalRollGrade[InspectingItem::GRADE_A] + $totalRollGrade[InspectingItem::GRADE_B] + $totalRollGrade[InspectingItem::GRADE_C] + $totalRollGrade[InspectingItem::GRADE_PK] + $totalRollGrade[InspectingItem::GRADE_SAMPLE] + $totalRollGrade[InspectingItem::GRADE_A_PLUS] + $totalRollGrade[InspectingItem::GRADE_A_ASTERISK] + $totalRollGrade[InspectingItem::GRADE_PUTIH];
+        $totalPieces = $totalPiecesGrade[InspectingItem::GRADE_A] + $totalPiecesGrade[InspectingItem::GRADE_B] + $totalPiecesGrade[InspectingItem::GRADE_C] + $totalPiecesGrade[InspectingItem::GRADE_PK] + $totalPiecesGrade[InspectingItem::GRADE_SAMPLE] + $totalPiecesGrade[InspectingItem::GRADE_A_PLUS] + $totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingItem::GRADE_PUTIH] + $totalPiecesGrade[InspectingItem::GRADE_D];
+        $totalQty = $totalQtyGrade[InspectingItem::GRADE_A] + $totalQtyGrade[InspectingItem::GRADE_B] + $totalQtyGrade[InspectingItem::GRADE_C] + $totalQtyGrade[InspectingItem::GRADE_PK] + $totalQtyGrade[InspectingItem::GRADE_SAMPLE] + $totalQtyGrade[InspectingItem::GRADE_A_PLUS] + $totalQtyGrade[InspectingItem::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingItem::GRADE_PUTIH] + $totalQtyGrade[InspectingItem::GRADE_D];
+        $totalRoll = $totalRollGrade[InspectingItem::GRADE_A] + $totalRollGrade[InspectingItem::GRADE_B] + $totalRollGrade[InspectingItem::GRADE_C] + $totalRollGrade[InspectingItem::GRADE_PK] + $totalRollGrade[InspectingItem::GRADE_SAMPLE] + $totalRollGrade[InspectingItem::GRADE_A_PLUS] + $totalRollGrade[InspectingItem::GRADE_A_ASTERISK] + $totalRollGrade[InspectingItem::GRADE_PUTIH] + $totalRollGrade[InspectingItem::GRADE_D];
 
         if($model->unit == MstGreigeGroup::UNIT_YARD){
             $totalM = Converter::yardToMeter($totalQty);
@@ -479,6 +503,24 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             <td>
                                 <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_C]);
+                            ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade D</th>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_D]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_D]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_D]);
                             ?>
                             </td>
                         </tr>

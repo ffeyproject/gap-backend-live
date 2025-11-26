@@ -87,7 +87,7 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
       no_urut_value +
       '"/></div>' +
       '<div class="form-group"><label>Grade</label><select id="optionGrade" class="editGrade form-control">' +
-      '<option value="7">Grade A+</option><option value="8">Grade A*</option><option value="3">Grade C</option><option value="4">Piece Kecil</option><option value="5">Sample</option><option value="1">Grade A</option><option value="2">Grade B</option>' +
+      '<option value="7">Grade A+</option><option value="8">Grade A*</option><option value="3">Grade C</option><option value="4">Piece Kecil</option><option value="5">Sample</option><option value="1">Grade A</option><option value="2">Grade B</option><option value="10">Grade D</option>' +
       "</select></div>" +
       '<div class="form-group"><label>Ukuran</label><input type="text" class="editUkuran form-control" value="' +
       (data.ukuran || "") +

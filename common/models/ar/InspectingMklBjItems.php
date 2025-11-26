@@ -21,19 +21,20 @@ use yii\helpers\ArrayHelper;
  */
 class InspectingMklBjItems extends \yii\db\ActiveRecord
 {
-    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9;
+    const GRADE_A = 1; const GRADE_B = 2; const GRADE_C = 3; const GRADE_PK = 4; const GRADE_SAMPLE = 5; const GRADE_A_PLUS = 7; const GRADE_A_ASTERISK = 8; const GRADE_PUTIH = 9; const GRADE_D = 10;
     /**
      * @return array
      */
     public static function gradeOptions(){
         return [
-            self::GRADE_A_PLUS => 'Grade A+',
-            self::GRADE_A_ASTERISK => 'Grade A*',
-            self::GRADE_C => 'Grade C',
-            self::GRADE_PK => 'Piece Kecil',
-            self::GRADE_SAMPLE => 'Sample',
             self::GRADE_A => 'Grade A',
             self::GRADE_B => 'Grade B',
+            self::GRADE_C => 'Grade C',
+            self::GRADE_A_PLUS => 'Grade A+',
+            self::GRADE_A_ASTERISK => 'Grade A*',
+            self::GRADE_PK => 'Piece Kecil',
+            self::GRADE_SAMPLE => 'Sample',
+            self::GRADE_D => 'Grade D',
             self::GRADE_PUTIH => 'Grade Putih',
         ];
     }
@@ -73,7 +74,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             [['inspecting_id'], 'integer'],
             [['no_urut'], 'default', 'value' => null],
             [['no_urut'], 'integer'],
-            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH]],
+            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH, InspectingItem::GRADE_D]],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['join_piece'], 'string', 'max' => 10],

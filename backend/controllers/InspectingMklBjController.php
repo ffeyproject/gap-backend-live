@@ -236,9 +236,16 @@ class InspectingMklBjController extends Controller
                         foreach ($dataItems as $item) {
                             // Jika item baru (id = 0)
                             if ((int)$item['id'] === 0) {
-                                $noUrut = !empty($item['no_urut'])
-                                    ? $item['no_urut']
-                                    : $lastNoUrut + 1;
+                                // Jika grade SAMPLE → biarkan NULL
+                                if ($item['grade'] == InspectingMklBjItems::GRADE_SAMPLE) {
+                                    $noUrut = null;
+                                } else {
+                                    $noUrut = !empty($item['no_urut'])
+                                        ? $item['no_urut']
+                                        : $lastNoUrut + 1;
+
+                                    $lastNoUrut = max($lastNoUrut, $noUrut);
+                                }
 
                                 $lastNoUrut = max($lastNoUrut, $noUrut);
 
@@ -255,9 +262,14 @@ class InspectingMklBjController extends Controller
                             } else {
                                 // Update item lama
                                 $existing = $this->findItem($item['id']);
-                                $existing->no_urut = !empty($item['no_urut'])
-                                    ? $item['no_urut']
-                                    : $existing->no_urut;
+                                // Jika SAMPLE → pastikan NULL
+                                if ($item['grade'] == InspectingMklBjItems::GRADE_SAMPLE) {
+                                    $existing->no_urut = null;
+                                } else {
+                                    $existing->no_urut = !empty($item['no_urut'])
+                                        ? $item['no_urut']
+                                        : $existing->no_urut;
+                                }
                                 $existing->grade = $item['grade'];
                                 $existing->defect = $item['defect'];
                                 $existing->lot_no = $item['lot_no'];
@@ -274,13 +286,39 @@ class InspectingMklBjController extends Controller
                             ->orderBy(['id' => SORT_ASC])
                             ->all();
 
-                        $counter = 1;
+                        // Kumpulkan nomor terpakai oleh item NON-SAMPLE
+                        $used = [];
                         foreach ($itemsInInspect as $row) {
-                            if (empty($row->no_urut)) {
-                                $row->no_urut = $counter++;
-                            } else {
-                                $counter = max($counter, $row->no_urut + 1);
+                            if ($row->grade != InspectingMklBjItems::GRADE_SAMPLE && !empty($row->no_urut)) {
+                                $used[(int)$row->no_urut] = true;
                             }
+                        }
+
+                        // NORMALISASI ULANG NO_URUT UNTUK SEMUA NON-SAMPLE (berurutan dari 1)
+                        $counter = 1;
+
+                        foreach ($itemsInInspect as $row) {
+
+                            // Jika SAMPLE → tetap NULL, tapi QR-code tetap simpan
+                            if ($row->grade == InspectingMklBjItems::GRADE_SAMPLE) {
+                                $row->no_urut = null;
+
+                                if (empty($row->qr_code)) {
+                                    $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                                }
+
+                                $row->save(false);
+                                continue;
+                            }
+
+                            // Untuk NON-SAMPLE → nomor urut disusun ulang mulai dari 1
+                            $row->no_urut = $counter;
+                            $counter++;
+
+                            if (empty($row->qr_code)) {
+                                $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            }
+
                             $row->save(false);
                         }
 
@@ -311,12 +349,31 @@ class InspectingMklBjController extends Controller
                                     : $qtySum);
 
                             $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
-                            $row->qr_code = $row->qr_code ?: 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            // $row->qr_code = $row->qr_code ?: 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            if (empty($row->qr_code)) {
+                                $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            }
                             $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
                                 ? 0
                                 : (($row->join_piece == null || $row->join_piece == "")
                                     ? 1
                                     : $qtyCount);
+                                    
+                                // generate QR Code dulu → berlaku untuk semua grade
+                                if (empty($row->qr_code)) {
+                                    $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                                }
+
+                                // ⛔ Jika SAMPLE: no_urut NULL, tapi tetap simpan QR-code
+                                if ($row->grade == InspectingMklBjItems::GRADE_SAMPLE) {
+
+                                    $row->no_urut = null; // selalu NULL
+                                    $row->save(false);    // <--- SIMPAN QR-CODE JUGA DI SINI
+
+                                    continue; // lewatkan auto-fix tapi QR-code sudah tersimpan
+                                }
+
+                                
                             $row->save(false);
                         }
 

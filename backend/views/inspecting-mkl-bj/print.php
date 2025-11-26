@@ -85,9 +85,9 @@ $joinPieces = [
 
 $inspectingItems = $model->getItems()
     ->orderBy([
-        new \yii\db\Expression('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END'),
-        // 'no_urut' => SORT_ASC,
-        'id' => SORT_ASC
+        new \yii\db\Expression("CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END"),
+        'no_urut' => SORT_ASC,
+        'id' => SORT_ASC,
     ])
     ->all();
     
@@ -191,7 +191,9 @@ $indexLimit = round(count($inspectingItems) / 2);
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($inspectingItems as $index=>$item):?>
+                                        <?php 
+                                        $packingNumber = 1;
+                                        foreach ($inspectingItems as $index=>$item):?>
                                         <?php
                                         if ($index == $indexLimit) {
                                             break;
@@ -228,8 +230,9 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= ($index + 1) . $item['join_piece'] ?>
+                                                <?= $packingNumber . $item['join_piece']; ?>
                                             </td>
+                                            <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center;">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {
@@ -376,7 +379,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($inspectingItems as $index=>$item):?>
+                                        <?php 
+                                        foreach ($inspectingItems as $index=>$item):?>
                                         <?php
                                         if ($index < $indexLimit) {
                                             continue;
@@ -415,8 +419,9 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= ($index + 1) . $item['join_piece'] ?>
+                                                <?= $packingNumber . $item['join_piece']; ?>
                                             </td>
+                                            <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {

@@ -29,6 +29,7 @@ $totalQtyGrade = [
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
     InspectingMklBjItems::GRADE_PUTIH => 0,
+    InspectingMklBjItems::GRADE_D => 0,
 ];
 $totalPiecesGrade = [
     InspectingMklBjItems::GRADE_A => 0,
@@ -39,6 +40,7 @@ $totalPiecesGrade = [
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
     InspectingMklBjItems::GRADE_PUTIH => 0,
+    InspectingMklBjItems::GRADE_D => 0,
 ];
 $totalRollGrade = [
     InspectingMklBjItems::GRADE_A => 0,
@@ -49,6 +51,7 @@ $totalRollGrade = [
     InspectingMklBjItems::GRADE_A_PLUS => 0,
     InspectingMklBjItems::GRADE_A_ASTERISK => 0,
     InspectingMklBjItems::GRADE_PUTIH => 0,
+    InspectingMklBjItems::GRADE_D => 0,
 ];
 $joinPieces = [
     InspectingMklBjItems::GRADE_A => [],
@@ -59,6 +62,7 @@ $joinPieces = [
     InspectingMklBjItems::GRADE_A_PLUS => [],
     InspectingMklBjItems::GRADE_A_ASTERISK => [],
     InspectingMklBjItems::GRADE_PUTIH => [],
+    InspectingMklBjItems::GRADE_D => [],
 ];
 
 $no_wo = substr($model->wo->no, -1);
@@ -164,9 +168,11 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                 <thead>
                     <tr>
                         <th>No. Packing</th>
+                        <th>No Urut</th>
                         <th>Grade A</th>
                         <th>Grade B</th>
                         <th>Grade C</th>
+                        <th>Grade D</th>
                         <th>Piece Kecil</th>
                         <th>Contoh</th>
                         <th>Grade A+</th>
@@ -179,6 +185,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>Keterangan</th>
                         <th>QR Code</th>
                         <th>QR Code ID</th>
+                        <th>ID Barang</th>
                         <th>Qr-Code Print at</th>
                     </tr>
                 </thead>
@@ -228,6 +235,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     ?>
                     <tr>
                         <td><?=($index+1).$item['join_piece']?></td>
+                        <td><?= $item->no_urut ?: '' ?></td>
                         <td>
                             <?php
                                 if ($item['grade_up'] <> NULL) {
@@ -272,6 +280,23 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                                     }
                                 } else {
                                     if($item['grade'] === InspectingMklBjItems::GRADE_C){
+                                        echo $formatter->asDecimal($item['qty']);
+                                    }else{
+                                        echo '0';
+                                    }
+                                }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                                if ($item['grade_up'] <> NULL) {
+                                    if($item['grade_up'] === InspectingMklBjItems::GRADE_D){
+                                        echo $formatter->asDecimal($item['qty']);
+                                    }else{
+                                        echo '0';
+                                    }
+                                } else {
+                                    if($item['grade'] === InspectingMklBjItems::GRADE_D){
                                         echo $formatter->asDecimal($item['qty']);
                                     }else{
                                         echo '0';
@@ -436,8 +461,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                                 }
                             ?>
                         </td>
-                        <td style="width: 150px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
-                        <td style="width: 200px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                        <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
+                        <td><?= $item['id'] ?></td>
+                        <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
                     </tr>
                     <?php endforeach;?>
                 </tbody>
@@ -446,9 +472,9 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
 
         <div class="box-footer with-border">
             <?php
-            $totalPieces = $totalPiecesGrade[InspectingMklBjItems::GRADE_A] + $totalPiecesGrade[InspectingMklBjItems::GRADE_B] + $totalPiecesGrade[InspectingMklBjItems::GRADE_C] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PUTIH];
-            $totalQty = $totalQtyGrade[InspectingMklBjItems::GRADE_A] + $totalQtyGrade[InspectingMklBjItems::GRADE_B] + $totalQtyGrade[InspectingMklBjItems::GRADE_C] + $totalQtyGrade[InspectingMklBjItems::GRADE_PK] + $totalQtyGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalQtyGrade[InspectingMklBjItems::GRADE_PUTIH];
-            $totalRoll = $totalRollGrade[InspectingMklBjItems::GRADE_A] + $totalRollGrade[InspectingMklBjItems::GRADE_B] + $totalRollGrade[InspectingMklBjItems::GRADE_C] + $totalRollGrade[InspectingMklBjItems::GRADE_PK] + $totalRollGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalRollGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalRollGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalRollGrade[InspectingMklBjItems::GRADE_PUTIH];
+            $totalPieces = $totalPiecesGrade[InspectingMklBjItems::GRADE_A] + $totalPiecesGrade[InspectingMklBjItems::GRADE_B] + $totalPiecesGrade[InspectingMklBjItems::GRADE_C] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalPiecesGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalPiecesGrade[InspectingMklBjItems::GRADE_PUTIH] + $totalPiecesGrade[InspectingMklBjItems::GRADE_D];
+            $totalQty = $totalQtyGrade[InspectingMklBjItems::GRADE_A] + $totalQtyGrade[InspectingMklBjItems::GRADE_B] + $totalQtyGrade[InspectingMklBjItems::GRADE_C] + $totalQtyGrade[InspectingMklBjItems::GRADE_PK] + $totalQtyGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalQtyGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalQtyGrade[InspectingMklBjItems::GRADE_PUTIH] + $totalQtyGrade[InspectingMklBjItems::GRADE_D];
+            $totalRoll = $totalRollGrade[InspectingMklBjItems::GRADE_A] + $totalRollGrade[InspectingMklBjItems::GRADE_B] + $totalRollGrade[InspectingMklBjItems::GRADE_C] + $totalRollGrade[InspectingMklBjItems::GRADE_PK] + $totalRollGrade[InspectingMklBjItems::GRADE_SAMPLE] + $totalRollGrade[InspectingMklBjItems::GRADE_A_ASTERISK] + $totalRollGrade[InspectingMklBjItems::GRADE_A_PLUS] + $totalRollGrade[InspectingMklBjItems::GRADE_PUTIH] + $totalRollGrade[InspectingMklBjItems::GRADE_D];
 
             if($model->satuan == MstGreigeGroup::UNIT_YARD){
                 $totalM = Converter::yardToMeter($totalQty);
@@ -615,6 +641,24 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             <td>
                                 <?php
                             echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_B]);
+                            ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Total Grade D</th>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalPiecesGrade[InspectingMklBjItems::GRADE_D]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalRollGrade[InspectingMklBjItems::GRADE_D]);
+                            ?>
+                            </td>
+                            <td>
+                                <?php
+                            echo $formatter->asDecimal($totalQtyGrade[InspectingMklBjItems::GRADE_D]);
                             ?>
                             </td>
                         </tr>

@@ -61,15 +61,15 @@ use yii\helpers\BaseVarDumper;
  */
 class TrnInspecting extends \yii\db\ActiveRecord
 {
-    const STATUS_DRAFT = 1;
+    const STATUS_DRAFT = 1;//baru selesai di inspek
     const STATUS_POSTED = 2;//langsung bypass jadi approved
-    const STATUS_APPROVED = 3;//sudah bisa diterima oleh gudang jadi
+    const STATUS_APPROVED = 3;//sudah bisa diterima oleh gudang jadi dan selesai di verpacking
     const STATUS_DELIVERED = 4;//Diterima oleh gudang jadi
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Approved', self::STATUS_DELIVERED => 'Delivered'];
+        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Selesai Verpacking', self::STATUS_DELIVERED => 'Diterima Gudang Jadi'];
     }
 
     const FRESH_INSPEKSI = 1;

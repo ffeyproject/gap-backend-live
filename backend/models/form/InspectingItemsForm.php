@@ -29,7 +29,7 @@ class InspectingItemsForm extends Model
             ['no_urut', 'integer'],
             ['join_piece', 'match', 'pattern' => '/^[A-Z]{1,2}$/'],
             [['join_piece', 'keterangan'], 'string'],
-            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH]],
+            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH, InspectingItem::GRADE_D]],
         ];
     }
 

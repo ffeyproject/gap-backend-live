@@ -693,9 +693,18 @@ class TrnInspectingController extends Controller
                         $itemModel->note       = $item['keterangan'];
 
                         // Simpan no_urut bila ada, kalau kosong biarkan NULL (nanti di-autofill)
-                        $itemModel->no_urut = (isset($item['no_urut']) && (int)$item['no_urut'] > 0)
-                            ? (int)$item['no_urut']
-                            : null;
+                        // $itemModel->no_urut = (isset($item['no_urut']) && (int)$item['no_urut'] > 0)
+                        //     ? (int)$item['no_urut']
+                        //     : null;
+
+                        // -- Jika grade adalah SAMPLE, biarkan NULL --
+                        if ($item['grade'] == InspectingItem::GRADE_SAMPLE) {
+                            $itemModel->no_urut = null;
+                        } else {
+                            $itemModel->no_urut = (!empty($item['no_urut']) && (int)$item['no_urut'] > 0)
+                                ? (int)$item['no_urut']
+                                : null;
+                        }
 
                         if (!$itemModel->save(false)) {
                             throw new HttpException(500, 'Gagal menyimpan item.');
@@ -719,15 +728,15 @@ class TrnInspectingController extends Controller
                         ->orderBy(['id' => SORT_ASC])
                         ->all();
 
-                    // Kumpulkan nomor yang sudah terpakai
+                    // Kumpulkan nomor yang sudah terpakai (selain item SAMPLE)
                     $used = [];
                     foreach ($allItems as $ai) {
-                        if (!empty($ai->no_urut) && (int)$ai->no_urut > 0) {
+                        if ($ai->grade != InspectingItem::GRADE_SAMPLE && !empty($ai->no_urut)) {
                             $used[(int)$ai->no_urut] = true;
                         }
                     }
 
-                    // Helper untuk cari nomor terkecil yang belum dipakai
+                    // Helper cari nomor terkecil
                     $next = 1;
                     $getNextFree = function() use (&$next, &$used) {
                         while (isset($used[$next])) $next++;
@@ -735,13 +744,28 @@ class TrnInspectingController extends Controller
                         return $next;
                     };
 
-                    // Isi untuk item yang no_urut-nya NULL (urut ID ASC)
-                    foreach ($allItems as $ai) {
-                        if (empty($ai->no_urut) || (int)$ai->no_urut <= 0) {
-                            $ai->no_urut = $getNextFree();
-                            $ai->save(false, ['no_urut']);
+
+
+                    // Isi nomor untuk item non-sample, set NULL untuk sample
+                        foreach ($allItems as $ai) {
+
+                            // ⛔ Abaikan / kosongkan nomor untuk GRADE SAMPLE
+                            if ($ai->grade == InspectingItem::GRADE_SAMPLE) {
+
+                                if ($ai->no_urut !== null) {
+                                    $ai->no_urut = null;
+                                    $ai->save(false, ['no_urut']);
+                                }
+
+                                continue;
+                            }
+
+                            // ✔ Nomor otomatis untuk item biasa
+                            if (empty($ai->no_urut) || (int)$ai->no_urut <= 0) {
+                                $ai->no_urut = $getNextFree();
+                                $ai->save(false, ['no_urut']);
+                            }
                         }
-                    }
 
                     // === Recalculate join_piece data (qty_sum, qty_count, is_head, qr_code) ===
                     $query2 = InspectingItem::find();
@@ -883,7 +907,7 @@ class TrnInspectingController extends Controller
                     switch ($model->jenis_process){
                         case TrnScGreige::PROCESS_DYEING:
                             $modelKartuProses = $model->kartuProcessDyeing;
-                            $modelKartuProses->status = $modelKartuProses::STATUS_INSPECTED;
+                            $modelKartuProses->status = $modelKartuProses::STATUS_PERIKSA_PENGIRIMAN;
                             if (!($flag = $modelKartuProses->save(false, ['status']))) {
                                 $transaction->rollBack();
                                 Yii::$app->session->setFlash('error', '2');
@@ -1598,6 +1622,21 @@ class TrnInspectingController extends Controller
             }
         }
 
+        // -----------------------------------------------
+        // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
+        // -----------------------------------------------
+        if (!empty($model->kartu_process_dyeing_id)) {
+
+            $kp = TrnKartuProsesDyeing::findOne($model->kartu_process_dyeing_id);
+
+            if ($kp !== null) {
+                $kp->status = TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING;
+                $kp->updated_at = time();
+                $kp->updated_by = Yii::$app->user->id;
+                $kp->save(false, ['status', 'updated_at', 'updated_by']);
+            }
+        }
+
         $content = $this->renderPartial('qr-all', ['model' => $data]);
         // setup kartik\mpdf\Pdf component
         $pdf = new Pdf([
@@ -1779,6 +1818,187 @@ class TrnInspectingController extends Controller
         }
 
         return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+
+    public function actionDataKartuProsesDyeing()
+    {
+        $searchModel = new TrnKartuProsesDyeingSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // FILTER STATUS
+        $dataProvider->query->andWhere([
+            'IN',
+            'trn_kartu_proses_dyeing.status',
+            [
+                TrnKartuProsesDyeing::STATUS_APPROVED,
+                TrnKartuProsesDyeing::STATUS_INSPECTED,
+                // TrnKartuProsesDyeing::STATUS_SELESAI_INSPECT,
+                TrnKartuProsesDyeing::STATUS_ROLLING_PACKING,
+                TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING,
+                TrnKartuProsesDyeing::STATUS_FOLDED_PACKING,
+                TrnKartuProsesDyeing::STATUS_PERIKSA_PENGIRIMAN,
+                TrnKartuProsesDyeing::STATUS_SELVEDGE_PACKING,
+            ]
+        ]);
+
+        return $this->render('data-kartu-proses-dyeing', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    public function actionViewKartu($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new \yii\web\NotFoundHttpException("Data Kartu Proses Dyeing tidak ditemukan.");
+        }
+
+        return $this->render('view-kartu', [
+            'model' => $model
+        ]);
+    }
+
+    public function actionSetStatusGudangJadiAll($tahun = null)
+    {
+        // Query dasar
+        $query = TrnKartuProsesDyeing::find();
+
+        // Jika user memilih tahun pada modal → filter by YEAR(date)
+        if ($tahun) {
+            $query->andWhere('EXTRACT(YEAR FROM "date") = :tahun', [':tahun' => $tahun]);
+        }
+
+        // Ambil semua kartu yang akan diproses
+        $kartuList = $query->all();
+
+        $count = 0; // jumlah berhasil diproses
+
+        foreach ($kartuList as $kartu) {
+
+            // cek apakah masih ada inspecting status != 4
+            $belumSelesai = TrnInspecting::find()
+                ->where(['kartu_process_dyeing_id' => $kartu->id])
+                ->andWhere(['<>', 'status', 1])
+                ->exists();
+
+            if ($belumSelesai) {
+                continue;
+            }
+
+            // update status kartu proses dyeing
+            $kartu->status = TrnKartuProsesDyeing::STATUS_INSPECTED;
+            $kartu->delivered_at = time();
+            $kartu->delivered_by = \Yii::$app->user->id;
+
+            $kartu->save(false, ['status', 'delivered_at', 'delivered_by']);
+
+            $count++;
+        }
+
+        \Yii::$app->session->setFlash('success',
+            "Berhasil memproses {$count} data pada tahun " . ($tahun ?: 'semua tahun')
+        );
+
+        return $this->redirect(['data-kartu-proses-dyeing']);
+    }
+
+    public function actionCloseKartu($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException("Data kartu tidak ditemukan.");
+        }
+
+        // Set status menjadi CLOSE
+        $model->status = TrnKartuProsesDyeing::STATUS_CLOSE;
+        $model->updated_at = time();
+        $model->updated_by = Yii::$app->user->id;
+
+        if ($model->save(false, ['status', 'updated_at', 'updated_by'])) {
+            Yii::$app->session->setFlash('success', 'Kartu proses berhasil di-close.');
+        } else {
+            Yii::$app->session->setFlash('danger', 'Gagal menutup kartu proses.');
+        }
+
+        return $this->redirect(['view-kartu', 'id' => $id]);
+    }
+
+
+    public function actionSetRollingPacking($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException("Data tidak ditemukan.");
+        }
+
+        $model->status = TrnKartuProsesDyeing::STATUS_ROLLING_PACKING;
+        $model->updated_at = time();
+        $model->updated_by = Yii::$app->user->id;
+
+        $model->save(false, ['status', 'updated_at', 'updated_by']);
+
+        Yii::$app->session->setFlash('success', 'Status diubah menjadi Rolling Packing.');
+        return $this->redirect(['view-kartu', 'id' => $id]);
+    }
+
+    public function actionSetMakeUpPacking($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException("Data tidak ditemukan.");
+        }
+
+        $model->status = TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING;
+        $model->updated_at = time();
+        $model->updated_by = Yii::$app->user->id;
+
+        $model->save(false, ['status', 'updated_at', 'updated_by']);
+
+        Yii::$app->session->setFlash('success', 'Status diubah menjadi Make Up Packing.');
+        return $this->redirect(['view-kartu', 'id' => $id]);
+    }
+
+
+    public function actionSetFoldedPacking($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException("Data tidak ditemukan.");
+        }
+
+        $model->status = TrnKartuProsesDyeing::STATUS_FOLDED_PACKING;
+        $model->updated_at = time();
+        $model->updated_by = Yii::$app->user->id;
+
+        $model->save(false, ['status', 'updated_at', 'updated_by']);
+
+        Yii::$app->session->setFlash('success', 'Status diubah menjadi Folded Packing.');
+        return $this->redirect(['view-kartu', 'id' => $id]);
+    }
+
+    public function actionSetSelvedgePacking($id)
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
+
+        if (!$model) {
+            throw new NotFoundHttpException("Data tidak ditemukan.");
+        }
+
+        $model->status = TrnKartuProsesDyeing::STATUS_SELVEDGE_PACKING;
+        $model->updated_at = time();
+        $model->updated_by = Yii::$app->user->id;
+
+        $model->save(false, ['status', 'updated_at', 'updated_by']);
+
+        Yii::$app->session->setFlash('success', 'Status diubah menjadi Selvedge Packing.');
+        return $this->redirect(['view-kartu', 'id' => $id]);
     }
 
 }

@@ -596,6 +596,14 @@ $moduleId = $controller->module->id;
                         'url' => '#',
                         'items' => [
                             [
+                                'label' => 'Data Kartu Proses Dyeing',
+                                'icon'  => 'circle-o',
+                                'url'   => ['/trn-inspecting/data-kartu-proses-dyeing'],
+                                'active' => $moduleId=='app-backend' 
+                                    && $controllerId == 'trn-inspecting' 
+                                    && $actionId=='data-kartu-proses-dyeing'
+                            ],
+                            [
                                 'label' => 'Inspecting', 'icon' => 'circle-o', 'url' => ['/trn-inspecting/kartu-proses-dyeing'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'trn-inspecting' && $actionId=='kartu-proses-dyeing'
                             ],

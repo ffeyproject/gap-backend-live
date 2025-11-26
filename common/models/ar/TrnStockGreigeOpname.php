@@ -109,7 +109,7 @@ class TrnStockGreigeOpname extends \yii\db\ActiveRecord
 
     const STATUS_PENDING = 1;
     const STATUS_VALID = 2;
-    const STATUS_ON_PROCESS_CARD = 3; //diinput ke kartu proses
+    const STATUS_ON_PROCESS_CARD = 3;
     const STATUS_DIPOTONG = 4;
     const STATUS_KELUAR_GUDANG = 5;
     const STATUS_MIXED = 6;

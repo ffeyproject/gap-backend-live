@@ -65,13 +65,24 @@ $("#InspectingItemTable tbody").on(
   function () {
     var row = itemTable.row($(this).parents("tr"));
     var rowData = row.data();
+
+    // Jika item sudah punya QR → tampilkan konfirmasi
     if (rowData.qr_code) {
-      alert("Tidak bisa menghapus data, karena QR sudah dicetak!");
-    } else {
-      row.remove().draw(false);
-      deletedItemIds.push(rowData.id);
-      $("#ItemCounter").html(itemTable.rows().data().length);
+      if (!confirm("QR sudah dicetak. Yakin ingin menghapus item ini?")) {
+        return; // batal hapus
+      }
     }
+
+    // Tetap hapus item
+    row.remove().draw(false);
+
+    // Masukkan ID ke daftar deletedItemIds (hanya jika bukan item baru)
+    if (rowData.id && rowData.id != 0) {
+      deletedItemIds.push(rowData.id);
+    }
+
+    // Update jumlah baris
+    $("#ItemCounter").html(itemTable.rows().data().length);
   }
 );
 
@@ -100,6 +111,7 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
             <option value="7">Grade A+</option>
             <option value="8">Grade A*</option>
             <option value="9">Grade Putih</option>
+            <option value="10">Grade D</option>
           </select>
         </div>
         <div class="form-group"><label>Ukuran</label><input type="text" class="editUkuran form-control" value="${
