@@ -140,7 +140,7 @@ class DepDropController extends Controller
                     case 'dyeing':
                         $query = TrnKartuProsesDyeing::find()
                             ->select(new Expression('id, no "name"'))
-                            ->andWhere(['status'=>[TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED]])
+                            ->andWhere(['status'=>[TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED, TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI]])
                             //->limit(20)
                             ->asArray()
                         ;

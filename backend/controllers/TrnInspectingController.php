@@ -255,6 +255,13 @@ class TrnInspectingController extends Controller
                                             if (!($flag = $modelKartuProses->save(false, ['status']))) {
                                                 $transaction->rollBack();
                                                 Yii::$app->session->setFlash('error', 'Gagal ubah status dyeing.');
+                                            } else {
+                                                // === LOGGING TAMBAHAN DI SINI ===
+                                                $this->logKartuDyeing(
+                                                    'selesai_inspect_make_up',
+                                                    $modelKartuProses->id,
+                                                    'Set status Selesai Input Inspek & Make Up Packing'
+                                                );
                                             }
                                             break;
                                         case TrnScGreige::PROCESS_PRINTING:
@@ -1352,14 +1359,14 @@ class TrnInspectingController extends Controller
             throw $t;
         }
 
-        // ---------------------------------------------------
-        // LOG SET STATUS MAKE UP PACKING via QR ALL
-        // ---------------------------------------------------
-        $this->logKartuDyeing(
-            'make_up_packing',
-            $model->kartu_process_dyeing_id,
-            'Set status Make Up Packing Selesai Qr di Print'
-        );
+        // // ---------------------------------------------------
+        // // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // // ---------------------------------------------------
+        // $this->logKartuDyeing(
+        //     'make_up_packing',
+        //     $model->kartu_process_dyeing_id,
+        //     'Set status Make Up Packing Selesai Qr di Print'
+        // );
 
         // -----------------------------------------------
         // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
