@@ -480,6 +480,8 @@ class TrnPotongGreigeController extends Controller
              *  ============================= */
             $sisa = $stockGreige->panjang_m - $itemsTotal;
 
+           $sisa = $stockGreige->panjang_m - $itemsTotal;
+
             if ($sisa > 0) {
 
                 $modelNewStock = new TrnStockGreige();
@@ -494,7 +496,8 @@ class TrnPotongGreigeController extends Controller
                 $modelNewStock->lot_pakan        = $stockGreige->lot_pakan;
                 $modelNewStock->no_set_lusi      = $stockGreige->no_set_lusi;
 
-                $modelNewStock->panjang_m        = $item->panjang_m;
+                // PERBAIKAN DI SINI
+                $modelNewStock->panjang_m        = $sisa;
 
                 $modelNewStock->status_tsd       = $stockGreige->status_tsd;
                 $modelNewStock->no_document      = $stockGreige->no_document;
@@ -507,7 +510,6 @@ class TrnPotongGreigeController extends Controller
 
                 $modelNewStock->status           = TrnStockGreige::STATUS_VALID;
                 $modelNewStock->is_pemotongan    = true;
-                $modelNewStock->is_pemotongan = true;
 
                 if (!$modelNewStock->save(false)) {
                     $transaction->rollBack();
