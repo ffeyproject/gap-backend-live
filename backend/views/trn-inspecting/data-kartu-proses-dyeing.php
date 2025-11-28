@@ -57,7 +57,7 @@ $tahunList = ArrayHelper::map(
             ['class' => 'kartik\grid\SerialColumn'],
             [
                 'class' => 'kartik\grid\ActionColumn',
-                'template' => '{view}',
+                'template' => '{view} {history}',
                 'buttons' => [
                     'view' => function ($url, $model) {
                         return Html::a(
@@ -65,12 +65,18 @@ $tahunList = ArrayHelper::map(
                             ['trn-inspecting/view-kartu', 'id' => $model->id],
                             ['title' => 'Lihat Kartu Proses Dyeing']
                         );
-                    }
-                ]
+                    },
+                    'history' => function ($url, $model) {
+                        return Html::a(
+                            '<span class="glyphicon glyphicon-time"></span>',
+                            ['trn-inspecting/history-kartu', 'id' => $model->id],
+                            ['title' => 'Lihat Riwayat Kartu']
+                        );
+                    },
+                ],
             ],
 
             'id',
-
             [
                 'attribute'=>'woNo',
                 'label'=>'Nomor WO',

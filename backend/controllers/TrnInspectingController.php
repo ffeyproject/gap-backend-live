@@ -2116,4 +2116,19 @@ class TrnInspectingController extends Controller
         return $this->redirect(['view-kartu', 'id' => $id]);
     }
 
+
+    public function actionHistoryKartu($id)
+{
+    $model = TrnKartuProsesDyeing::findOne($id);
+
+    if (!$model) {
+        throw new NotFoundHttpException("Kartu tidak ditemukan.");
+    }
+
+    return $this->render('history-kartu', [
+        'model' => $model,
+        'logs' => $model->actionLogs,
+    ]);
+}
+
 }
