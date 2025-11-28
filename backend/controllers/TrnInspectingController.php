@@ -1928,19 +1928,29 @@ class TrnInspectingController extends Controller
 
     protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
     {
-        $log = new ActionLogKartuDyeing();
+        // Hitung berapa kali aksi ini sudah pernah dicatat
+        $count = ActionLogKartuDyeing::find()
+            ->where([
+                'kartu_proses_id' => $kartuProsesId,
+                'action_name' => $actionName
+            ])
+            ->count();
 
+        // Jika sudah ada sebelumnya → tambahkan nomor urut
+        if ($count > 0) {
+            $description = $description . ' (' . ($count + 1) . ')';
+        }
+
+        // Simpan log
+        $log = new ActionLogKartuDyeing();
         $log->user_id = Yii::$app->user->id ?? null;
         $log->username = Yii::$app->user->identity->username ?? null;
-
         $log->kartu_proses_id = $kartuProsesId;
         $log->action_name = $actionName;
         $log->description = $description;
-
         $log->ip = Yii::$app->request->userIP;
         $log->user_agent = Yii::$app->request->userAgent;
         $log->created_at = date('Y-m-d H:i:s');
-
         $log->save(false);
     }
 
@@ -2118,17 +2128,17 @@ class TrnInspectingController extends Controller
 
 
     public function actionHistoryKartu($id)
-{
-    $model = TrnKartuProsesDyeing::findOne($id);
+    {
+        $model = TrnKartuProsesDyeing::findOne($id);
 
-    if (!$model) {
-        throw new NotFoundHttpException("Kartu tidak ditemukan.");
+        if (!$model) {
+            throw new NotFoundHttpException("Kartu tidak ditemukan.");
+        }
+
+        return $this->render('history-kartu', [
+            'model' => $model,
+            'logs' => $model->actionLogs,
+        ]);
     }
-
-    return $this->render('history-kartu', [
-        'model' => $model,
-        'logs' => $model->actionLogs,
-    ]);
-}
 
 }

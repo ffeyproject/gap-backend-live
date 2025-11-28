@@ -561,7 +561,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
     public function getActionLogs()
     {
         return $this->hasMany(ActionLogKartuDyeing::class, ['kartu_proses_id' => 'id'])
-            ->orderBy(['created_at' => SORT_DESC]);
+            ->orderBy(['created_at' => SORT_ASC]);
     }
         
 
