@@ -69,7 +69,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Selesai Verpacking', self::STATUS_DELIVERED => 'Diterima Gudang Jadi'];
+        return [self::STATUS_DRAFT => 'Selesai Inspek', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Selesai Verpacking', self::STATUS_DELIVERED => 'Diterima Gudang Jadi'];
     }
 
     const FRESH_INSPEKSI = 1;
