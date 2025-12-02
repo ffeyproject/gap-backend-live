@@ -2141,4 +2141,15 @@ class TrnInspectingController extends Controller
         ]);
     }
 
+   public function actionRekapHistoryKartuDyeing()
+    {
+        $searchModel = new \common\models\ar\ActionLogKartuDyeingSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('rekap-history-kartu-dyeing', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
 }

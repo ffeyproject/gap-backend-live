@@ -611,6 +611,14 @@ $moduleId = $controller->module->id;
                                 'label' => 'Penolakan', 'icon' => 'circle-o', 'url' => ['/inspecting-dyeing-reject/index'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'inspecting-dyeing-reject'
                             ],
+                            [
+                                'label' => 'Rekap History Kartu Dyeing',
+                                'icon'  => 'circle-o',
+                                'url'   => ['/trn-inspecting/rekap-history-kartu-dyeing'],
+                                'active' => $moduleId=='app-backend' 
+                                    && $controllerId == 'trn-inspecting' 
+                                    && $actionId=='rekap-history-kartu-dyeing'
+                            ],
                         ]
                     ],
                     [

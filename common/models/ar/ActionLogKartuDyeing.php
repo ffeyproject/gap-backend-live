@@ -22,4 +22,10 @@ class ActionLogKartuDyeing extends ActiveRecord
             [['username', 'action_name', 'ip'], 'string', 'max' => 255],
         ];
     }
+
+    public function getKartuProses()
+    {
+        return $this->hasOne(TrnKartuProsesDyeing::class, ['id' => 'kartu_proses_id']);
+    }
+
 }
