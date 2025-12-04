@@ -84,6 +84,12 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         'date:date',
                         //'mesin',
                         [
+                            'label' => 'No Document',
+                            'value' => function($data){
+                                return $data->stock->no_document ?? '-';
+                            }
+                        ],
+                        [
                             'attribute'=>'panjang_m',
                             'label'=>'Qty',
                             'format'=>'decimal',
@@ -187,6 +193,12 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         //'process_id',
                         'date:date',
                         //'mesin',
+                        [
+                            'label' => 'No Document',
+                            'value' => function($data){
+                                return $data->stock->no_document ?? '-';
+                            }
+                        ],
                         [
                             'attribute'=>'panjang_m',
                             'label'=>'Qty',
