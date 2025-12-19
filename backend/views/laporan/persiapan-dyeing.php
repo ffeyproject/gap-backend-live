@@ -76,12 +76,16 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Nomor WO',
                 'value'=>'wo.no'
             ],
-            [
+             [
                 'label' => 'Motif',
-                'attribute' => 'motif',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->greigeNamaKain;
+                'value' => function ($data) {
+                    /* @var $data TrnKartuProsesDyeing */
+
+                    $lusi  = $data->lusi ?? '';
+                    $motif = $data->wo->greigeNamaKain ?? '';
+                    $pakan = $data->pakan ?? '';
+
+                    return trim($lusi . ' ' . $motif . ' ' . $pakan);
                 }
             ],
             [
@@ -91,7 +95,52 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $data->woColor->moColor->color;
                 }
             ],
-            'no',
+            'nomor_kartu',
+            [
+                'label' => 'Panjang',
+                'value' => function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $panjangTotal = $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+                    return $panjangTotal === null ? 0 : $panjangTotal;
+                },
+                'format' => 'decimal',
+                'pageSummary' => true
+            ],
+            [
+                'label' => 'Berat',
+                'value' => function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    return $data->berat;
+                },
+                //'format' => 'decimal'
+            ],
+             [
+                'label' => 'Gul',
+                'value' => function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $jumlahRoll = $data->getTrnKartuProsesDyeingItems()->count('id');
+                    return $jumlahRoll === null ? 0 : $jumlahRoll;
+                },
+                'format' => 'decimal',
+                'pageSummary' => true
+            ],
+             [
+                'label' => 'Shift',
+                'value' => function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    $model = $data->getKartuProcessDyeingProcesses()->where(['process_id'=>1])->one();
+                    if($model !== null){
+                        try {
+                            $model = \yii\helpers\Json::decode($model['value']);
+                            return $model['shift_group'];
+                        }catch (Throwable $t){
+                            return '-';
+                        }
+                    }
+
+                    return '-';
+                }
+            ], 
             [
                 'label' => 'MC',
                 'value' => function($data){
@@ -109,52 +158,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     return '-';
                 }
             ],
-            [
-                'label' => 'Shift',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    $model = $data->getKartuProcessDyeingProcesses()->where(['process_id'=>1])->one();
-                    if($model !== null){
-                        try {
-                            $model = \yii\helpers\Json::decode($model['value']);
-                            return $model['shift_group'];
-                        }catch (Throwable $t){
-                            return '-';
-                        }
-                    }
-
-                    return '-';
-                }
-            ],
-            'delivered_at:datetime',
-            [
-                'label' => 'Panjang',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    $panjangTotal = $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
-                    return $panjangTotal === null ? 0 : $panjangTotal;
-                },
-                'format' => 'decimal',
-                'pageSummary' => true
-            ],
-            [
-                'label' => 'Gul',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    $jumlahRoll = $data->getTrnKartuProsesDyeingItems()->count('id');
-                    return $jumlahRoll === null ? 0 : $jumlahRoll;
-                },
-                'format' => 'decimal',
-                'pageSummary' => true
-            ],
-            [
-                'label' => 'Berat',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    return $data->berat;
-                },
-                //'format' => 'decimal'
-            ],
+             'delivered_at:datetime',
         ],
     ]); ?>
 

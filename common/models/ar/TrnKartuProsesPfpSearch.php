@@ -13,8 +13,10 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
 {
     public $orderPfpNo;
     public $dateRange;
+    public $namaKain;
     private $from_date;
     private $to_date;
+    
 
     /**
      * {@inheritdoc}
@@ -23,7 +25,7 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
     {
         return [
             [['id', 'greige_group_id', 'greige_id', 'order_pfp_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'integer'],
-            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'pc_bukaan', 'pc_scouring', 'pc_relaxing', 'pc_scutcher', 'pc_preset', 'pc_weight_reducetion', 'pc_washing_off', 'pc_heat_sett', 'pc_padding', 'nomor_kartu'], 'safe'],
+            [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'pc_bukaan', 'pc_scouring', 'pc_relaxing', 'pc_scutcher', 'pc_preset', 'pc_weight_reducetion', 'pc_washing_off', 'pc_heat_sett', 'pc_padding', 'nomor_kartu', 'namaKain'], 'safe'],
             [['orderPfpNo', 'dateRange'], 'safe']
         ];
     }
@@ -47,7 +49,7 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
     public function search($params)
     {
         $query = TrnKartuProsesPfp::find();
-        $query->joinWith('orderPfp');
+        $query->joinWith('orderPfp', 'greige');
 
         // add conditions that should always apply here
 
@@ -59,6 +61,11 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
                 ]
             ],
         ]);
+
+        $dataProvider->sort->attributes['namaKain'] = [
+            'asc'  => ['mst_greige.nama_kain' => SORT_ASC],
+            'desc' => ['mst_greige.nama_kain' => SORT_DESC],
+        ];
 
         $dataProvider->sort->attributes['dateRange'] = [
             'asc' => ['trn_kartu_proses_pfp.date' => SORT_ASC],
@@ -129,6 +136,8 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
             //->andFilterWhere(['ilike', 'pc_padding', $this->pc_padding])
             ->andFilterWhere(['ilike', 'trn_order_pfp.no', $this->orderPfpNo])
         ;
+
+        $query->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->namaKain]);
 
         return $dataProvider;
     }

@@ -522,10 +522,22 @@ $moduleId = $controller->module->id;
                         'url' => '#',
                         'items' => [
                             [
-                                'label' => 'Persiapan Dyeing', 'icon' => 'circle-o', 'url' => ['/laporan/persiapan-dyeing'],
-                                'active' => $moduleId=='app-backend' && $controllerId == 'laporan'
+                                'label' => 'Persiapan Dyeing',
+                                'icon' => 'circle-o',
+                                'url' => ['/laporan/persiapan-dyeing'],
+                                'active' => $moduleId == 'app-backend'
+                                    && $controllerId == 'laporan'
+                                    && $actionId == 'persiapan-dyeing',
                             ],
-                        ]
+                            [
+                                'label' => 'Persiapan PFP',
+                                'icon' => 'circle-o',
+                                'url' => ['/laporan/persiapan-pfp'],
+                                'active' => $moduleId == 'app-backend'
+                                    && $controllerId == 'laporan'
+                                    && $actionId == 'persiapan-pfp',
+                            ],
+                        ],
                     ],
                 ],
             ],
