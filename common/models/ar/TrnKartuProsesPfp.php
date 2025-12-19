@@ -8,6 +8,7 @@ use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Json;
+use common\models\ar\MstProcessPfp;
 
 /**
  * This is the model class for table "trn_kartu_proses_pfp".
@@ -455,6 +456,61 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
         if ($jumlahKartuProses < $order->qty && $order->status == TrnOrderPfp::STATUS_PROCESSED) {
             $order->status = TrnOrderPfp::STATUS_APPROVED;
             $order->save(false);
+        }
+    }
+
+    public function getShift()
+    {
+        // ambil process awal PFP
+        $processId = MstProcessPfp::find()
+            ->select('id')
+            ->where(['order' => 1])
+            ->scalar();
+
+        if (!$processId) {
+            return '-';
+        }
+
+        $process = $this->getKartuProcessPfpProcesses()
+            ->where(['process_id' => $processId])
+            ->one();
+
+        if ($process === null || empty($process->value)) {
+            return '-';
+        }
+
+        try {
+            $data = Json::decode($process->value);
+            return $data['shift_operator'] ?? '-';
+        } catch (\Throwable $t) {
+            return '-';
+        }
+    }
+
+    public function getMc()
+    {
+        $processId = MstProcessPfp::find()
+            ->select('id')
+            ->where(['order' => 1])
+            ->scalar();
+
+        if (!$processId) {
+            return '-';
+        }
+
+        $process = $this->getKartuProcessPfpProcesses()
+            ->where(['process_id' => $processId])
+            ->one();
+
+        if ($process === null || empty($process->value)) {
+            return '-';
+        }
+
+        try {
+            $data = Json::decode($process->value);
+            return $data['no_mesin'] ?? '-';
+        } catch (\Throwable $t) {
+            return '-';
         }
     }
     

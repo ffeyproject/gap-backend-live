@@ -124,23 +124,25 @@ $this->params['breadcrumbs'][] = $this->title;
                 'format' => 'decimal',
                 'pageSummary' => true
             ],
-             [
+            [
+                'attribute' => 'shift', // ✅ WAJIB
                 'label' => 'Shift',
-                'value' => function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    $model = $data->getKartuProcessDyeingProcesses()->where(['process_id'=>1])->one();
-                    if($model !== null){
+                'value' => function ($data) {
+                    $model = $data->getKartuProcessDyeingProcesses()
+                        ->where(['process_id' => 1])
+                        ->one();
+
+                    if ($model !== null) {
                         try {
-                            $model = \yii\helpers\Json::decode($model['value']);
-                            return $model['shift_group'];
-                        }catch (Throwable $t){
+                            $json = \yii\helpers\Json::decode($model->value);
+                            return $json['shift_group'] ?? '-';
+                        } catch (\Throwable $t) {
                             return '-';
                         }
                     }
-
                     return '-';
                 }
-            ], 
+            ],
             [
                 'label' => 'MC',
                 'value' => function($data){

@@ -101,26 +101,10 @@ $this->params['breadcrumbs'][] = $this->title;
             'format' => 'decimal',
             'pageSummary' => true,
         ],
-        [
-            'label' => 'Shift',
-            'value' => function ($data) {
-                /* @var $data \common\models\ar\TrnKartuProsesPfp */
-                $model = $data->getKartuProcessPfpProcesses()
-                    ->where(['process_id' => 1])
-                    ->one();
-
-                if ($model !== null) {
-                    try {
-                        $value = \yii\helpers\Json::decode($model->value);
-                        return $value['shift_group'] ?? '-';
-                    } catch (\Throwable $t) {
-                        return '-';
-                    }
-                }
-
-                return '-';
-            }
-        ],
+      [
+    'attribute' => 'shift',
+    'label' => 'Shift',
+],
         [
             'label' => 'MC',
             'value' => function ($data) {
