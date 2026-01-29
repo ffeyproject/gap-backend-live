@@ -84,7 +84,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
         ];
     }
 
-    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;const LEBAR_KAIN_68 = 5;const LEBAR_KAIN_72 = 6;const LEBAR_KAIN_69 = 7;const LEBAR_KAIN_70 = 8;const LEBAR_KAIN_71 = 9;const LEBAR_KAIN_74 = 10;const LEBAR_KAIN_76 = 11;const LEBAR_KAIN_78 = 12;const LEBAR_KAIN_80 = 13;const LEBAR_KAIN_82 = 14;const LEBAR_KAIN_84 = 15;const LEBAR_KAIN_86 = 16;const LEBAR_KAIN_88 = 17;const LEBAR_KAIN_90 = 18;
+    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;const LEBAR_KAIN_68 = 5;const LEBAR_KAIN_72 = 6;const LEBAR_KAIN_69 = 7;const LEBAR_KAIN_70 = 8;const LEBAR_KAIN_71 = 9;const LEBAR_KAIN_74 = 10;const LEBAR_KAIN_76 = 11;const LEBAR_KAIN_78 = 12;const LEBAR_KAIN_80 = 13;const LEBAR_KAIN_82 = 14;const LEBAR_KAIN_84 = 15;const LEBAR_KAIN_86 = 16;const LEBAR_KAIN_88 = 17;const LEBAR_KAIN_90 = 18;const LEBAR_KAIN_60 = 19;
     /**
      * @return array
      */
@@ -92,6 +92,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
         return [
             self::LEBAR_KAIN_44 => '44',
             self::LEBAR_KAIN_58 => '58',
+            self::LEBAR_KAIN_60 => '60',
             self::LEBAR_KAIN_64 => '64',
             self::LEBAR_KAIN_66 => '66',
             self::LEBAR_KAIN_68 => '68',
@@ -166,7 +167,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
             ['artikel_sc', 'string', 'max' => 255],
 
             ['lebar_kain', 'default', 'value'=>TrnScGreige::LEBAR_KAIN_44],
-            ['lebar_kain', 'in', 'range' => [TrnScGreige::LEBAR_KAIN_44, TrnScGreige::LEBAR_KAIN_58, TrnScGreige::LEBAR_KAIN_64, TrnScGreige::LEBAR_KAIN_66, TrnScGreige::LEBAR_KAIN_68, TrnScGreige::LEBAR_KAIN_72, TrnScGreige::LEBAR_KAIN_69, TrnScGreige::LEBAR_KAIN_70, TrnScGreige::LEBAR_KAIN_71, TrnScGreige::LEBAR_KAIN_74, TrnScGreige::LEBAR_KAIN_76, TrnScGreige::LEBAR_KAIN_78, TrnScGreige::LEBAR_KAIN_80, TrnScGreige::LEBAR_KAIN_82, TrnScGreige::LEBAR_KAIN_84, TrnScGreige::LEBAR_KAIN_86, TrnScGreige::LEBAR_KAIN_88, TrnScGreige::LEBAR_KAIN_90]],
+            ['lebar_kain', 'in', 'range' => [TrnScGreige::LEBAR_KAIN_44, TrnScGreige::LEBAR_KAIN_58, TrnScGreige::LEBAR_KAIN_64, TrnScGreige::LEBAR_KAIN_66, TrnScGreige::LEBAR_KAIN_68, TrnScGreige::LEBAR_KAIN_72, TrnScGreige::LEBAR_KAIN_69, TrnScGreige::LEBAR_KAIN_70, TrnScGreige::LEBAR_KAIN_71, TrnScGreige::LEBAR_KAIN_74, TrnScGreige::LEBAR_KAIN_76, TrnScGreige::LEBAR_KAIN_78, TrnScGreige::LEBAR_KAIN_80, TrnScGreige::LEBAR_KAIN_82, TrnScGreige::LEBAR_KAIN_84, TrnScGreige::LEBAR_KAIN_86, TrnScGreige::LEBAR_KAIN_88, TrnScGreige::LEBAR_KAIN_90, TrnScGreige::LEBAR_KAIN_60]],
 
             ['grade', 'default', 'value'=>TrnScGreige::GRADE_A],
             ['grade', 'in', 'range' => [TrnScGreige::GRADE_A, TrnScGreige::GRADE_B, TrnScGreige::GRADE_C, TrnScGreige::GRADE_ALL]],
