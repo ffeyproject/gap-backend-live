@@ -280,7 +280,7 @@ class InspectingMklBjController extends Controller
                             }
                         }
 
-                        // ✅ AUTO-FIX no_urut kosong agar berurutan dari 1 (berdasarkan id terkecil)
+                        // ✅ AUTO-FIX no_urut kosong (berdasarkan id terkecil)
                         $itemsInInspect = InspectingMklBjItems::find()
                             ->where(['inspecting_id' => $model->id])
                             ->orderBy(['id' => SORT_ASC])
@@ -294,35 +294,31 @@ class InspectingMklBjController extends Controller
                             }
                         }
 
-                        // NORMALISASI ULANG NO_URUT UNTUK SEMUA NON-SAMPLE (berurutan dari 1)
-                        $counter = 1;
+                        // Helper cari nomor terkecil
+                        $next = 1;
+                        $getNextFree = function() use (&$next, &$used) {
+                            while (isset($used[$next])) $next++;
+                            $used[$next] = true;
+                            return $next;
+                        };
 
+                        // 1. Pastikan no_urut terisi (kecuali SAMPLE)
                         foreach ($itemsInInspect as $row) {
-
-                            // Jika SAMPLE → tetap NULL, tapi QR-code tetap simpan
                             if ($row->grade == InspectingMklBjItems::GRADE_SAMPLE) {
-                                $row->no_urut = null;
-
-                                if (empty($row->qr_code)) {
-                                    $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                                if ($row->no_urut !== null) {
+                                    $row->no_urut = null;
+                                    $row->save(false, ['no_urut']);
                                 }
-
-                                $row->save(false);
                                 continue;
                             }
 
-                            // Untuk NON-SAMPLE → nomor urut disusun ulang mulai dari 1
-                            $row->no_urut = $counter;
-                            $counter++;
-
-                            if (empty($row->qr_code)) {
-                                $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            if (empty($row->no_urut) || (int)$row->no_urut <= 0) {
+                                $row->no_urut = $getNextFree();
+                                $row->save(false, ['no_urut']);
                             }
-
-                            $row->save(false);
                         }
 
-                        // Rehitung summary field
+                        // 2. Rehitung summary field & QR Code
                         $query = InspectingMklBjItems::find();
                         $itemsInInspect = $query->where(['inspecting_id' => $model->id])->all();
 
@@ -349,31 +345,17 @@ class InspectingMklBjController extends Controller
                                     : $qtySum);
 
                             $row->is_head = ($isHead && ($isHead['id'] != $row['id'])) ? 0 : 1;
-                            // $row->qr_code = $row->qr_code ?: 'INS2-' . $row->inspecting_id . '-' . $row->id;
+                            
                             if (empty($row->qr_code)) {
                                 $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
                             }
+
                             $row->qty_count = ($isHead && ($isHead['id'] != $row['id']))
                                 ? 0
                                 : (($row->join_piece == null || $row->join_piece == "")
                                     ? 1
                                     : $qtyCount);
-                                    
-                                // generate QR Code dulu → berlaku untuk semua grade
-                                if (empty($row->qr_code)) {
-                                    $row->qr_code = 'INS2-' . $row->inspecting_id . '-' . $row->id;
-                                }
 
-                                // ⛔ Jika SAMPLE: no_urut NULL, tapi tetap simpan QR-code
-                                if ($row->grade == InspectingMklBjItems::GRADE_SAMPLE) {
-
-                                    $row->no_urut = null; // selalu NULL
-                                    $row->save(false);    // <--- SIMPAN QR-CODE JUGA DI SINI
-
-                                    continue; // lewatkan auto-fix tapi QR-code sudah tersimpan
-                                }
-
-                                
                             $row->save(false);
                         }
 
