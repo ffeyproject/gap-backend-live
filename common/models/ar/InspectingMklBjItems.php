@@ -74,7 +74,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             [['inspecting_id'], 'integer'],
             [['no_urut'], 'default', 'value' => null],
             [['no_urut'], 'integer'],
-            ['grade', 'in', 'range' => [InspectingItem::GRADE_A, InspectingItem::GRADE_B, InspectingItem::GRADE_C, InspectingItem::GRADE_PK, InspectingItem::GRADE_SAMPLE, InspectingItem::GRADE_A_PLUS, InspectingItem::GRADE_A_ASTERISK, InspectingItem::GRADE_PUTIH, InspectingItem::GRADE_D]],
+            ['grade', 'in', 'range' => [self::GRADE_A, self::GRADE_B, self::GRADE_C, self::GRADE_PK, self::GRADE_SAMPLE, self::GRADE_A_PLUS, self::GRADE_A_ASTERISK, self::GRADE_PUTIH, self::GRADE_D]],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['join_piece'], 'string', 'max' => 10],
@@ -125,7 +125,15 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
      */
     public function getGradeName()
     {
-        return self::gradeOptions()[$this->grade];
+        return self::gradeOptions()[$this->grade] ?? 'Other';
+    }
+
+    /**
+     * @return string
+     */
+    public function getGradeLabel()
+    {
+        return $this->getGradeName();
     }
 
      public function getDefectInspectingItems()

@@ -224,7 +224,23 @@ class InspectingMklBjController extends Controller
                     'no_urut' => SORT_ASC,
                     'id' => SORT_ASC
                 ])
-                ->all()
+                ->all(),
+            [
+                'common\models\ar\InspectingMklBjItems' => [
+                    'id',
+                    'inspecting_id',
+                    'no_urut',
+                    'grade',
+                    'gradeLabel',
+                    'qty',
+                    'join_piece',
+                    'lot_no',
+                    'defect',
+                    'note',
+                    'is_head',
+                    'qr_code',
+                ],
+            ]
         );
 
         if (Yii::$app->request->isAjax) {
