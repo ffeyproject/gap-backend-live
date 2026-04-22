@@ -7,6 +7,8 @@ use yii\helpers\Url;
 use yii\web\JsExpression;
 use common\models\ar\MstK3l;
 use common\models\ar\InspectingMklBjItems;
+use common\models\ar\MstKodeDefect;
+use yii\helpers\ArrayHelper;
 
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\InspectingMklBj */
@@ -16,6 +18,37 @@ use common\models\ar\InspectingMklBjItems;
 
 \backend\assets\DataTablesAsset::register($this);
 ?>
+
+<style>
+    #InspectingItemTable thead th {
+        background-color: #3c8dbc;
+        color: white;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+    #InspectingItemTable tbody td {
+        vertical-align: middle;
+        font-size: 13px;
+    }
+    #InspectingItemTable tbody tr:hover {
+        background-color: #f5f5f5;
+        transition: background-color 0.2s ease;
+    }
+    .badge-grade {
+        font-size: 11px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .badge-grade-a { background-color: #00a65a; color: white; }
+    .badge-grade-b { background-color: #f39c12; color: white; }
+    .badge-grade-c { background-color: #dd4b39; color: white; }
+    .badge-grade-other { background-color: #777; color: white; }
+</style>
 
 <div class="inspecting-mkl-bj-form">
     <!--Form Header-->
@@ -197,7 +230,15 @@ use common\models\ar\InspectingMklBjItems;
                         <td><?=$formItem->field($modelItem, 'qty')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'join_piece')->textInput()->label(false)?></td>
                         <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
+                        <td><?= $formItem->field($modelItem, 'defect')->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
+                                return $model->no_urut . ' - ' . $model->nama_defect;
+                            }),
+                            'options' => ['placeholder' => 'Pilih ...', 'multiple' => true],
+                            'pluginOptions' => [
+                                'allowClear' => true
+                            ],
+                        ])->label(false) ?></td>
                         <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
                         <td class="text-right">
                             <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?>
@@ -217,8 +258,8 @@ use common\models\ar\InspectingMklBjItems;
                 <span class="label label-primary" id="ItemCounter">0</span>
             </div>
         </div>
-        <div class="box-body">
-            <table id="InspectingItemTable" class="table table-bordered">
+        <div class="box-body table-responsive">
+            <table id="InspectingItemTable" class="table table-striped table-hover table-bordered">
                 <thead>
                     <tr>
                         <th>No</th>
@@ -244,5 +285,8 @@ use common\models\ar\InspectingMklBjItems;
 </div>
 
 <?php
+$this->registerJsVar('defectOptions', ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
+    return $model->no_urut . ' - ' . $model->nama_defect;
+}));
 $this->registerJsVar('inspectingItems', $items);
 $this->registerJs($this->renderFile(__DIR__.'/js/form-update.js'), $this::POS_END);

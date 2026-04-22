@@ -15,6 +15,7 @@ use common\models\ar\TrnScGreige;
 use common\models\ar\MstGreigeGroup;
 use yii\base\BaseObject;
 use yii\db\Query;
+use common\models\ar\MstKodeDefect;
 use yii\helpers\ArrayHelper;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Html;
@@ -119,6 +120,24 @@ class InspectingMklBjController extends Controller
 
                             if (!($flag = $modelItem->save(false))) {
                                 throw new HttpException(500, 'Gagal menyimpan item.');
+                            }
+
+                            if (!empty($item['defect'])) {
+                                $defects = explode(',', $item['defect']);
+                                foreach ($defects as $defectNoUrut) {
+                                    $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                    if ($mstDefect) {
+                                        $defectItem = new DefectInspectingItem([
+                                            'inspecting_mklbj_item_id' => $modelItem->id,
+                                            'mst_kode_defect_id' => $mstDefect->id,
+                                            'meterage' => 0,
+                                            'point' => 0,
+                                        ]);
+                                        if (!$defectItem->save(false)) {
+                                            throw new HttpException(500, 'Gagal simpan defect item.');
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -249,7 +268,7 @@ class InspectingMklBjController extends Controller
 
                                 $lastNoUrut = max($lastNoUrut, $noUrut);
 
-                                Yii::$app->db->createCommand()->insert(InspectingMklBjItems::tableName(), [
+                                $newItem = new InspectingMklBjItems([
                                     'inspecting_id' => $model->id,
                                     'no_urut' => $noUrut,
                                     'grade' => $item['grade'],
@@ -258,7 +277,9 @@ class InspectingMklBjController extends Controller
                                     'join_piece' => $item['join_piece'],
                                     'qty' => $item['qty'],
                                     'note' => $item['note'],
-                                ])->execute();
+                                ]);
+                                $newItem->save(false);
+                                $targetItem = $newItem;
                             } else {
                                 // Update item lama
                                 $existing = $this->findItem($item['id']);
@@ -277,6 +298,26 @@ class InspectingMklBjController extends Controller
                                 $existing->qty = $item['qty'];
                                 $existing->note = $item['note'];
                                 $existing->save(false);
+                                $targetItem = $existing;
+                            }
+
+                            DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => $targetItem->id]);
+                            if (!empty($item['defect'])) {
+                                $defects = explode(',', $item['defect']);
+                                foreach ($defects as $defectNoUrut) {
+                                    $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                    if ($mstDefect) {
+                                        $defectItem = new DefectInspectingItem([
+                                            'inspecting_mklbj_item_id' => $targetItem->id,
+                                            'mst_kode_defect_id' => $mstDefect->id,
+                                            'meterage' => 0,
+                                            'point' => 0,
+                                        ]);
+                                        if (!$defectItem->save(false)) {
+                                            throw new HttpException(500, 'Gagal simpan defect item.');
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -440,6 +481,25 @@ class InspectingMklBjController extends Controller
                             $query_one['qty'] = $item['qty'] ? $item['qty'] : $query_one->qty;
                             $query_one['note'] = $item['note'] ? $item['note'] : $query_one->note;
                             $query_one->save();
+
+                            DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => $query_one->id]);
+                            if (!empty($item['defect'])) {
+                                $defects = explode(',', $item['defect']);
+                                foreach ($defects as $defectNoUrut) {
+                                    $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                    if ($mstDefect) {
+                                        $defectItem = new DefectInspectingItem([
+                                            'inspecting_mklbj_item_id' => $query_one->id,
+                                            'mst_kode_defect_id' => $mstDefect->id,
+                                            'meterage' => 0,
+                                            'point' => 0,
+                                        ]);
+                                        if (!$defectItem->save(false)) {
+                                            throw new HttpException(500, 'Gagal simpan defect item.');
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         $query = InspectingMklBjItems::find();

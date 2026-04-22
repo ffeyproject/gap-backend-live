@@ -5,10 +5,12 @@ use common\models\ar\InspectingItem;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\MstK3l;
 use common\models\ar\TrnInspecting;
+use common\models\ar\MstKodeDefect;
 use kartik\widgets\ActiveForm;
 use kartik\widgets\DatePicker;
 use kartik\widgets\DepDrop;
 use kartik\widgets\Select2;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 
 /* @var $this yii\web\View */
@@ -259,7 +261,15 @@ use yii\helpers\Url;
                             ?>
                         </td>
                         <td><?= $formItem->field($modelItem, 'lot_no')->textInput()->label(false) ?></td>
-                        <td><?= $formItem->field($modelItem, 'defect')->textInput()->label(false) ?></td>
+                        <td><?= $formItem->field($modelItem, 'defect')->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
+                                return $model->no_urut . ' - ' . $model->nama_defect;
+                            }),
+                            'options' => ['placeholder' => 'Pilih ...', 'multiple' => true],
+                            'pluginOptions' => [
+                                'allowClear' => true
+                            ],
+                        ])->label(false) ?></td>
                         <td><?= $formItem->field($modelItem, 'keterangan')->textInput()->label(false) ?></td>
                     </tr>
                 </tbody>

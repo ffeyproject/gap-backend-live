@@ -12,27 +12,40 @@ var itemTable = $("#InspectingItemTable").DataTable({
   columns: [
     {
       data: null,
+      className: "text-center",
       render: function (data, type, row, meta) {
         return meta.row + 1; // Kolom "No"
       },
     },
-    { data: "no_urut" },
-    { data: "gradeLabel" },
-    { data: "ukuran" },
-    { data: "join_piece" },
-    { data: "lot_no" },
+    { data: "no_urut", className: "text-center" },
+    { 
+      data: "gradeLabel",
+      render: function(data, type, row) {
+          let cls = 'badge-grade-other';
+          if(row.grade == 1 || row.grade == 7 || row.grade == 8) cls = 'badge-grade-a';
+          else if(row.grade == 2) cls = 'badge-grade-b';
+          else if(row.grade == 3) cls = 'badge-grade-c';
+          return `<span class="badge ${cls} badge-grade">${data}</span>`;
+      }
+    },
+    { data: "ukuran", className: "text-right" },
+    { data: "join_piece", className: "text-center" },
+    { data: "lot_no", className: "text-center" },
     { data: "defect" },
     { data: "keterangan" },
     {
       data: null,
+      className: "text-center",
       render: function () {
         return `
-          <button class="btn btn-xs btn-warning editItemData">
-            <i class="fa fa-edit"></i>
-          </button>
-          <button class="btn btn-xs btn-danger removeItemData">
-            <i class="fa fa-trash"></i>
-          </button>`;
+          <div class="btn-group">
+            <button class="btn btn-xs btn-warning editItemData" title="Edit">
+              <i class="fa fa-pencil"></i>
+            </button>
+            <button class="btn btn-xs btn-danger removeItemData" title="Hapus">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>`;
       },
     },
   ],
@@ -98,9 +111,7 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
       '<div class="form-group"><label>Lot No</label><input type="text" class="editLotNo form-control" value="' +
       (data.lot_no || "") +
       '"/></div>' +
-      '<div class="form-group"><label>Defect</label><input type="text" class="editDefect form-control" value="' +
-      (data.defect || "") +
-      '"/></div>' +
+      '<div class="form-group"><label>Defect</label><select id="editDefect" class="form-control" multiple="multiple"></select></div>' +
       '<div class="form-group"><label>Keterangan</label><input type="text" class="editKeterangan form-control" value="' +
       (data.keterangan || "") +
       '"/></div>' +
@@ -113,7 +124,7 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
           let no_urut = this.$content.find(".editNoUrut").val();
           let grade = $("#optionGrade").val();
           let gradeLabel = $("#optionGrade option:selected").text();
-          let defect = this.$content.find(".editDefect").val();
+          let defect = $("#editDefect").val() ? $("#editDefect").val().join(',') : '';
           let lot_no = this.$content.find(".editLotNo").val();
           let ukuran = this.$content.find(".editUkuran").val();
           let joinPiece = this.$content.find(".editJoinPiece").val();
@@ -147,6 +158,22 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
       this.$content
         .find('option[value="' + gradeOld + '"]')
         .attr("selected", "selected");
+
+      // Initialize Select2 for defects
+      let $editDefect = this.$content.find("#editDefect");
+      $.each(defectOptions, function(key, value) {
+          $editDefect.append($("<option></option>").attr("value", key).text(value));
+      });
+      $editDefect.select2({
+          width: '100%',
+          placeholder: 'Pilih defect...',
+          allowClear: true,
+          dropdownParent: jc.$content
+      });
+      if (data.defect) {
+          $editDefect.val(data.defect.split(',')).trigger('change');
+      }
+
       this.$content.find("form").on("submit", function (e) {
         e.preventDefault();
         jc.$$formSubmit.trigger("click");
@@ -172,7 +199,7 @@ $("#InspectingFormItem").on("afterInit", function () {
       no_urut: nextNoUrut,
       grade: $("#inspectingitemsform-grade").select2("data")[0].id,
       gradeLabel: $("#inspectingitemsform-grade").select2("data")[0].text,
-      defect: $("#inspectingitemsform-defect").val(),
+      defect: $("#inspectingitemsform-defect").val() ? $("#inspectingitemsform-defect").val().join(',') : '',
       lot_no: $("#inspectingitemsform-lot_no").val(),
       ukuran: $("#inspectingitemsform-ukuran").val(),
       join_piece: $("#inspectingitemsform-join_piece").val(),

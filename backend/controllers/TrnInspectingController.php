@@ -17,6 +17,7 @@ use common\models\ar\TrnKartuProsesPrintingSearch;
 use common\models\ar\TrnMemoRepair;
 use common\models\ar\TrnMemoRepairSearch;
 use common\models\ar\TrnScGreige;
+use common\models\ar\MstKodeDefect;
 use common\models\ar\TrnWo;
 use common\models\ar\MstGreigeGroup;
 use kartik\mpdf\Pdf;
@@ -215,6 +216,25 @@ class TrnInspectingController extends Controller
                         if (!($flag = $modelItem->save(false))) {
                             $transaction->rollBack();
                             throw new HttpException(500, 'Gagal, coba lagi. (2)');
+                        }
+
+                        if (!empty($item['defect'])) {
+                            $defects = explode(',', $item['defect']);
+                            foreach ($defects as $defectNoUrut) {
+                                $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                if ($mstDefect) {
+                                    $defectItem = new DefectInspectingItem([
+                                        'inspecting_item_id' => $modelItem->id,
+                                        'mst_kode_defect_id' => $mstDefect->id,
+                                        'meterage' => 0,
+                                        'point' => 0,
+                                    ]);
+                                    if (!$defectItem->save(false)) {
+                                        $transaction->rollBack();
+                                        throw new HttpException(500, 'Gagal simpan defect item.');
+                                    }
+                                }
+                            }
                         }
                     }
                     $query = InspectingItem::find();
@@ -481,6 +501,26 @@ class TrnInspectingController extends Controller
                         $query_one['qty'] = $item['ukuran'] ? $item['ukuran'] : $query_one->ukuran;
                         $query_one['note'] = $item['keterangan'] ? $item['keterangan'] : $query_one->note;
                         $query_one->save();
+
+                        DefectInspectingItem::deleteAll(['inspecting_item_id' => $query_one->id]);
+                        if (!empty($item['defect'])) {
+                            $defects = explode(',', $item['defect']);
+                            foreach ($defects as $defectNoUrut) {
+                                $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                if ($mstDefect) {
+                                    $defectItem = new DefectInspectingItem([
+                                        'inspecting_item_id' => $query_one->id,
+                                        'mst_kode_defect_id' => $mstDefect->id,
+                                        'meterage' => 0,
+                                        'point' => 0,
+                                    ]);
+                                    if (!$defectItem->save(false)) {
+                                        $transaction->rollBack();
+                                        throw new HttpException(500, 'Gagal simpan defect item.');
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     $query = InspectingItem::find();
@@ -716,6 +756,26 @@ class TrnInspectingController extends Controller
 
                         if (!$itemModel->save(false)) {
                             throw new HttpException(500, 'Gagal menyimpan item.');
+                        }
+
+                        // === PERSIST DEFECTS ===
+                        DefectInspectingItem::deleteAll(['inspecting_item_id' => $itemModel->id]);
+                        if (!empty($item['defect'])) {
+                            $defects = explode(',', $item['defect']);
+                            foreach ($defects as $defectNoUrut) {
+                                $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                if ($mstDefect) {
+                                    $defectItem = new DefectInspectingItem([
+                                        'inspecting_item_id' => $itemModel->id,
+                                        'mst_kode_defect_id' => $mstDefect->id,
+                                        'meterage' => 0,
+                                        'point' => 0,
+                                    ]);
+                                    if (!$defectItem->save(false)) {
+                                        throw new HttpException(500, 'Gagal simpan defect item.');
+                                    }
+                                }
+                            }
                         }
 
                         $processedIds[] = $itemModel->id;

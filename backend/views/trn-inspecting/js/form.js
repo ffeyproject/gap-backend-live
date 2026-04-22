@@ -308,7 +308,7 @@ $("#InspectingFormItem").on("afterInit", function () {
       no_urut: nextNoUrut,
       grade: $("#inspectingitemsform-grade").select2("data")[0].id,
       gradeLabel: $("#inspectingitemsform-grade").select2("data")[0].text,
-      defect: $("#inspectingitemsform-defect").val(),
+      defect: $("#inspectingitemsform-defect").val() ? $("#inspectingitemsform-defect").val().join(',') : '',
       lot_no: $("#inspectingitemsform-lot_no").val(),
       ukuran: $("#InspectingFormItem").yiiActiveForm(
         "find",

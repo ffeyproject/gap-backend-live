@@ -7,6 +7,8 @@ use yii\helpers\Url;
 use yii\web\JsExpression;
 use common\models\ar\MstK3l;
 use common\models\ar\InspectingMklBjItems;
+use common\models\ar\MstKodeDefect;
+use yii\helpers\ArrayHelper;
 
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\InspectingMklBj */
@@ -203,7 +205,15 @@ use common\models\ar\InspectingMklBjItems;
                             ?>
                         </td>
                         <td><?=$formItem->field($modelItem, 'lot_no')->textInput()->label(false)?></td>
-                        <td><?=$formItem->field($modelItem, 'defect')->textInput()->label(false)?></td>
+                        <td><?= $formItem->field($modelItem, 'defect')->widget(Select2::classname(), [
+                            'data' => ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
+                                return $model->no_urut . ' - ' . $model->nama_defect;
+                            }),
+                            'options' => ['placeholder' => 'Pilih ...', 'multiple' => true],
+                            'pluginOptions' => [
+                                'allowClear' => true
+                            ],
+                        ])->label(false) ?></td>
                         <td><?=$formItem->field($modelItem, 'note')->textInput()->label(false)?></td>
                         <td class="text-right">
                             <?=\yii\helpers\Html::submitButton('Enter', ['class'=>'btn btn-success'])?>

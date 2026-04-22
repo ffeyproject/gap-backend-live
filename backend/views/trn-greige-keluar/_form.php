@@ -7,6 +7,7 @@ use kartik\grid\GridView;
 use kartik\widgets\Select2;
 use yii\helpers\Html;
 use kartik\widgets\ActiveForm;
+use yii\web\View;
 
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\TrnGreigeKeluar */
@@ -17,11 +18,12 @@ use kartik\widgets\ActiveForm;
 
 \backend\assets\DataTablesAsset::register($this);
 
-$keluarItems = array();
+$keluarItems = [];
 if (!$model->isNewRecord) {
     foreach ($modelsItem as $modelItem) {
         $modelStock = $modelItem->stockGreige;
-        $keluarItems[] = array(
+
+        $keluarItems[] = [
             'id' => $modelStock->id,
             'nama_greige' => $modelStock->greige->nama_kain,
             'grade' => $modelStock->grade,
@@ -32,7 +34,7 @@ if (!$model->isNewRecord) {
             'lot_pakan' => $modelStock->lot_pakan,
             'asal_greige' => $modelStock->asal_greige,
             'asal_greige_name' => $modelStock::asalGreigeOptions()[$modelStock->asal_greige],
-        );
+        ];
     }
 }
 ?>
@@ -112,24 +114,44 @@ if (!$model->isNewRecord) {
         'filterModel' => $searchModel,
         'id' => 'StockGreigeGrid',
 
-        // ✅ KUNING jika stock greige ada di stock opname
+        // ✅ BARIS KUNING JIKA STOCK SUDAH ADA DI STOCK OPNAME
         'rowOptions' => function ($model) {
             /* @var $model \common\models\ar\TrnStockGreige */
             return $model->isDuplicated
-                ? array('style' => 'background-color:#fff3cd;')
-                : array();
+                ? ['style' => 'background-color:#fff3cd;']
+                : [];
         },
 
         'responsiveWrap' => false,
         'pjax' => true,
+
+        // ✅ MUNCUL TOMBOL "SEMUA" DAN EXPORT (seperti gambar)
+        'toolbar' => [
+            '{toggleData}',
+            '{export}',
+        ],
+
+        'toggleDataContainer' => ['class' => 'btn-group mr-2'],
+        'toggleDataOptions' => [
+            'all' => [
+                'label' => 'Semua',
+                'class' => 'btn btn-default',
+            ],
+            'page' => [
+                'label' => 'Halaman',
+                'class' => 'btn btn-default',
+            ],
+        ],
+
         'panel' => [
             'type' => 'default',
             'heading' => 'Stocks',
             'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['create'], ['class' => 'btn btn-default']),
             'after' => false,
         ],
-        'toolbar' => [],
+
         'showPageSummary' => true,
+
         'columns' => [
             [
                 'class' => 'kartik\grid\ActionColumn',
@@ -137,7 +159,7 @@ if (!$model->isNewRecord) {
                 'buttons' => [
                     'view' => function ($url, $model, $key) {
                         /* @var $model TrnStockGreige */
-                        $data = array(
+                        $data = [
                             'id' => $model->id,
                             'nama_greige' => $model->greige->nama_kain,
                             'grade' => $model->grade,
@@ -148,13 +170,15 @@ if (!$model->isNewRecord) {
                             'lot_pakan' => $model->lot_pakan,
                             'asal_greige' => $model->asal_greige,
                             'asal_greige_name' => $model::asalGreigeOptions()[$model->asal_greige],
-                        );
+                        ];
 
                         $dataStr = \yii\helpers\Json::encode($data);
 
-                        return Html::a('<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>', '#', [
-                            'onclick' => "addItem(event, {$dataStr})",
-                        ]);
+                        return Html::a(
+                            '<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>',
+                            '#',
+                            ['onclick' => "addItem(event, {$dataStr})"]
+                        );
                     },
                 ],
             ],
@@ -186,7 +210,7 @@ if (!$model->isNewRecord) {
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
-                    'data' => \common\models\ar\TrnStockGreige::tsdOptions(),
+                    'data' => TrnStockGreige::tsdOptions(),
                     'options' => ['placeholder' => '...'],
                     'pluginOptions' => [
                         'allowClear' => true,
@@ -252,5 +276,5 @@ if (!$model->isNewRecord) {
 
 <?php
 $this->registerJsVar('keluarItems', $keluarItems);
-$this->registerJs($this->render('js/form.js'), \yii\web\View::POS_END);
+$this->registerJs($this->render('js/form.js'), View::POS_END);
 ?>
