@@ -784,6 +784,7 @@ class TrnInspectingController extends Controller
                     // Hapus item yang tidak ada di frontend
                     $toDelete = array_diff(array_keys($existingItems), $processedIds);
                     if ($toDelete) {
+                        DefectInspectingItem::deleteAll(['inspecting_item_id' => $toDelete]);
                         InspectingItem::deleteAll(['id' => $toDelete]);
                     }
 
@@ -927,6 +928,7 @@ class TrnInspectingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
+        DefectInspectingItem::deleteAll(['inspecting_item_id' => InspectingItem::find()->select('id')->where(['inspecting_id' => $model->id])]);
         InspectingItem::deleteAll(['inspecting_id'=>$model->id]);
 
         $model->delete();

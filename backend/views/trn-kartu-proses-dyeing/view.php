@@ -93,6 +93,13 @@ $formatter = Yii::$app->formatter;
         case $model::STATUS_DELIVERED:
         case $model::STATUS_APPROVED:
         case $model::STATUS_INSPECTED:
+        case $model::STATUS_ROLLING_PACKING:
+        case $model::STATUS_MAKE_UP_PACKING:
+        case $model::STATUS_FOLDED_PACKING:
+        case $model::STATUS_TERIMA_GUDANG_JADI:
+        case $model::STATUS_PERIKSA_PENGIRIMAN:
+        case $model::STATUS_CLOSE:
+        case $model::STATUS_SELVEDGE_PACKING:
         case $model::STATUS_GANTI_GREIGE:
         case $model::STATUS_GANTI_GREIGE_LINKED:
             echo $this->render('/processing-dyeing/child/proses_disabled', ['model' => $model, 'attrsLabels'=>$attrsLabels, 'processModels'=>$processModels, 'processesUlang'=>$processesUlang, 'formatter'=>$formatter]);

@@ -254,14 +254,26 @@ class InspectingMklBjController extends Controller
                             throw new HttpException(500, 'Gagal menyimpan header.');
                         }
 
-                        // Hapus item yang dihapus user
-                        $deletedItems = Json::decode(Yii::$app->request->post('deletedItems'));
-                        if (!empty($deletedItems)) {
-                            InspectingMklBjItems::deleteAll(['id' => $deletedItems]);
+                        // Ambil semua item dari request
+                        $dataItems = Json::decode(Yii::$app->request->post('items', '[]'));
+                        $existingItems = InspectingMklBjItems::find()
+                            ->where(['inspecting_id' => $model->id])
+                            ->indexBy('id')
+                            ->all();
+
+                        $processedIds = [];
+                        foreach ($dataItems as $item) {
+                            if (!empty($item['id'])) {
+                                $processedIds[] = $item['id'];
+                            }
                         }
 
-                        // Ambil semua item dari request
-                        $dataItems = Json::decode(Yii::$app->request->post('items'));
+                        // Hapus item yang tidak ada di frontend
+                        $toDelete = array_diff(array_keys($existingItems), $processedIds);
+                        if (!empty($toDelete)) {
+                            DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => $toDelete]);
+                            InspectingMklBjItems::deleteAll(['id' => $toDelete]);
+                        }
 
                         // Dapatkan nomor urut terakhir di DB
                         $lastNoUrut = (int) InspectingMklBjItems::find()
@@ -577,6 +589,7 @@ class InspectingMklBjController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
+        DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => InspectingMklBjItems::find()->select('id')->where(['inspecting_id' => $model->id])]);
         InspectingMklBjItems::deleteAll(['inspecting_id'=>$model->id]);
         $model->delete();
 
