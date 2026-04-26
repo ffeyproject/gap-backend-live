@@ -52,6 +52,13 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                         'class' => 'btn btn-warning',
                         'title' => 'Batalkan WO: '.$model->id,
                         'onclick' => 'batalWo(event);',
+                    ]).' '.
+                    Html::a('Ubah Lebar Kain', ['ubah-lebar-kain', 'id' => $model->id], [
+                        'class' => 'btn btn-success',
+                        'title' => 'Ubah Lebar Kain: '.$model->id,
+                        'data-toggle' => 'modal',
+                        'data-target' => '#trnWoModal',
+                        'data-title' => 'Ubah Lebar Kain WO: '.$model->no
                     ])
                 ;
                 break;

@@ -219,6 +219,47 @@ class TrnWoController extends Controller
     }
 
     /**
+     * Ubah Lebar Kain pada TrnScGreige.
+     * Syarat: WO berstatus disetujui.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionUbahLebarKain($id)
+    {
+        if(Yii::$app->request->isAjax){
+            $wo = $this->findModel($id);
+
+            if($wo->status != $wo::STATUS_APPROVED){
+                throw new ForbiddenHttpException('Status tidak valid, tidak bisa ubah lebar kain.');
+            }
+
+            $model = $wo->scGreige;
+
+            if ($model->load(Yii::$app->request->post())) {
+                if($model->save(true, ['lebar_kain'])){
+                    return $this->asJson(['success' => true]);
+                }
+
+                $result = [];
+                foreach ($model->getErrors() as $attribute => $errors) {
+                    $result[\yii\helpers\Html::getInputId($model, $attribute)] = $errors;
+                }
+
+                return $this->asJson(['validation' => $result]);
+            }
+
+            return $this->renderAjax('ubah-lebar-kain', [
+                'model' => $model,
+                'wo' => $wo
+            ]);
+        }
+
+        throw new MethodNotAllowedHttpException('Metode tidak diijinkan.');
+    }
+
+
+    /**
      * Deletes an existing TrnWo model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id
