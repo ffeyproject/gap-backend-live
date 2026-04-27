@@ -149,19 +149,21 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
           let defect = this.$content.find(".editDefect").val().trim();
           let note = this.$content.find(".editKeterangan").val().trim();
 
+          let newData = Object.assign({}, data, {
+            id: data.id ?? null,
+            no_urut: no_urut || data.no_urut,
+            grade,
+            gradeLabel,
+            qty,
+            join_piece,
+            lot_no,
+            defect,
+            note,
+          });
+
           itemTable
             .row(rowIndex)
-            .data({
-              id: data.id ?? null,
-              no_urut: no_urut || data.no_urut,
-              grade,
-              gradeLabel,
-              qty,
-              join_piece,
-              lot_no,
-              defect,
-              note,
-            })
+            .data(newData)
             .draw(false);
         },
       },
