@@ -77,20 +77,19 @@ $('#InspectingItemTable tbody').on( 'click', 'button.editItemData', function () 
                         return false;
                     }
 
-                    itemTable.row(rowNumber).data(
-                        {
-                            id: data.id,
-                            grade: gradeOld,
-                            gradeLabel: gradeOldLabel,
-                            grade_up: grade,
-                            gradeupLabel: gradeLabel,
-                            ukuran: ukuran,
-                            join_piece: joinPiece == 'null' ? '' : joinPiece,
-                            lot_no: lot_no, 
-                            defect: defect,
-                            keterangan: keterangan
-                        }
-                    ).draw(false);
+                    let newData = Object.assign({}, data, {
+                        grade: gradeOld,
+                        gradeLabel: gradeOldLabel,
+                        grade_up: grade,
+                        gradeupLabel: gradeLabel,
+                        ukuran: ukuran,
+                        join_piece: joinPiece == 'null' ? '' : joinPiece,
+                        lot_no: lot_no, 
+                        defect: defect,
+                        keterangan: keterangan
+                    });
+
+                    itemTable.row(rowNumber).data(newData).draw(false);
                 }
             },
             cancel: function () {

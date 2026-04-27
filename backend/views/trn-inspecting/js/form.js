@@ -165,18 +165,21 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
             return false;
           }
 
+          // Preserve existing data (like id, qr_code) and update with new values
+          let newData = Object.assign({}, data, {
+            no_urut: parseInt(no_urut) || rowNumber + 1,
+            grade: grade,
+            gradeLabel: gradeLabel,
+            ukuran: ukuran,
+            join_piece: joinPiece,
+            lot_no: lot_no,
+            defect: defect,
+            keterangan: keterangan,
+          });
+
           itemTable
             .row(rowNumber)
-            .data({
-              no_urut: parseInt(no_urut) || rowNumber + 1,
-              grade: grade,
-              gradeLabel: gradeLabel,
-              ukuran: ukuran,
-              join_piece: joinPiece,
-              lot_no: lot_no,
-              defect: defect,
-              keterangan: keterangan,
-            })
+            .data(newData)
             .draw(false);
         },
       },
