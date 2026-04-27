@@ -329,12 +329,23 @@ class InspectingMklBjController extends Controller
                                 $targetItem = $existing;
                             }
 
-                            DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => $targetItem->id]);
-                            if (!empty($item['defect'])) {
-                                $defects = explode(',', $item['defect']);
-                                foreach ($defects as $defectNoUrut) {
-                                    $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
-                                    if ($mstDefect) {
+                            // === PERSIST DEFECTS ===
+                            $existingDefects = DefectInspectingItem::find()
+                                ->where(['inspecting_mklbj_item_id' => $targetItem->id])
+                                ->indexBy('mst_kode_defect_id')
+                                ->all();
+
+                            $newDefectCodes = !empty($item['defect']) ? explode(',', $item['defect']) : [];
+                            $processedDefectIds = [];
+
+                            foreach ($newDefectCodes as $defectNoUrut) {
+                                $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                if ($mstDefect) {
+                                    if (isset($existingDefects[$mstDefect->id])) {
+                                        // Sudah ada, biarkan saja (pertahankan meterage dan point)
+                                        $processedDefectIds[] = $mstDefect->id;
+                                    } else {
+                                        // Defect baru, buat dengan nilai 0
                                         $defectItem = new DefectInspectingItem([
                                             'inspecting_mklbj_item_id' => $targetItem->id,
                                             'mst_kode_defect_id' => $mstDefect->id,
@@ -344,7 +355,15 @@ class InspectingMklBjController extends Controller
                                         if (!$defectItem->save(false)) {
                                             throw new HttpException(500, 'Gagal simpan defect item.');
                                         }
+                                        $processedDefectIds[] = $mstDefect->id;
                                     }
+                                }
+                            }
+
+                            // Hapus defect yang tidak ada lagi di input
+                            foreach ($existingDefects as $mstId => $defectModel) {
+                                if (!in_array($mstId, $processedDefectIds)) {
+                                    $defectModel->delete();
                                 }
                             }
                         }
@@ -510,12 +529,23 @@ class InspectingMklBjController extends Controller
                             $query_one['note'] = $item['note'] ? $item['note'] : $query_one->note;
                             $query_one->save();
 
-                            DefectInspectingItem::deleteAll(['inspecting_mklbj_item_id' => $query_one->id]);
-                            if (!empty($item['defect'])) {
-                                $defects = explode(',', $item['defect']);
-                                foreach ($defects as $defectNoUrut) {
-                                    $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
-                                    if ($mstDefect) {
+                            // === PERSIST DEFECTS ===
+                            $existingDefects = DefectInspectingItem::find()
+                                ->where(['inspecting_mklbj_item_id' => $query_one->id])
+                                ->indexBy('mst_kode_defect_id')
+                                ->all();
+
+                            $newDefectCodes = !empty($item['defect']) ? explode(',', $item['defect']) : [];
+                            $processedDefectIds = [];
+
+                            foreach ($newDefectCodes as $defectNoUrut) {
+                                $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
+                                if ($mstDefect) {
+                                    if (isset($existingDefects[$mstDefect->id])) {
+                                        // Sudah ada, biarkan saja (pertahankan meterage dan point)
+                                        $processedDefectIds[] = $mstDefect->id;
+                                    } else {
+                                        // Defect baru, buat dengan nilai 0
                                         $defectItem = new DefectInspectingItem([
                                             'inspecting_mklbj_item_id' => $query_one->id,
                                             'mst_kode_defect_id' => $mstDefect->id,
@@ -525,7 +555,15 @@ class InspectingMklBjController extends Controller
                                         if (!$defectItem->save(false)) {
                                             throw new HttpException(500, 'Gagal simpan defect item.');
                                         }
+                                        $processedDefectIds[] = $mstDefect->id;
                                     }
+                                }
+                            }
+
+                            // Hapus defect yang tidak ada lagi di input
+                            foreach ($existingDefects as $mstId => $defectModel) {
+                                if (!in_array($mstId, $processedDefectIds)) {
+                                    $defectModel->delete();
                                 }
                             }
                         }

@@ -135,19 +135,21 @@ $("#InspectingItemTable tbody").on("click", "button.editItemData", function () {
             return false;
           }
 
+          let newData = Object.assign({}, data, {
+            id: data.id, // pertahankan ID
+            no_urut: parseInt(no_urut) || rowNumber + 1,
+            grade: grade,
+            gradeLabel: gradeLabel,
+            ukuran: ukuran,
+            join_piece: joinPiece,
+            lot_no: lot_no,
+            defect: defect,
+            keterangan: keterangan,
+          });
+
           itemTable
             .row(rowNumber)
-            .data({
-              id: data.id, // pertahankan ID
-              no_urut: parseInt(no_urut) || rowNumber + 1,
-              grade: grade,
-              gradeLabel: gradeLabel,
-              ukuran: ukuran,
-              join_piece: joinPiece,
-              lot_no: lot_no,
-              defect: defect,
-              keterangan: keterangan,
-            })
+            .data(newData)
             .draw(false);
         },
       },

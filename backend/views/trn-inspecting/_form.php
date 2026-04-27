@@ -320,5 +320,8 @@ $this->registerJsVar('kartuProsesIdOnUnSelect', null);
 $this->registerJsVar('kpModel', null);
 $this->registerJsVar('jenisProses', null);
 $this->registerJsVar('kpUrl', Url::to(['/ajax/lookup-kp-by-id']));
+$this->registerJsVar('defectOptions', ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
+    return $model->no_urut . ' - ' . $model->nama_defect;
+}));
 $this->registerJsVar('inspectingItems', []);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), $this::POS_END);
