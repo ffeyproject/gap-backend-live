@@ -31,18 +31,19 @@ $months = [
                     <th class="text-right">T. WO</th>
                     <th class="text-right">Inspek</th>
                     <th class="text-right">Kirim</th>
+                    <th class="text-right">Stock di Gudang</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($models)): ?>
                     <tr>
-                        <td colspan="9" class="text-center">Tidak ada data Sales Contract.</td>
+                        <td colspan="10" class="text-center">Tidak ada data Sales Contract.</td>
                     </tr>
                 <?php else: ?>
                     <?php 
                     $totals = [
                         'batch' => 0, 'finishMeter' => 0, 'finishYard' => 0,
-                        'mo' => 0, 'wo' => 0, 'inspek' => 0, 'kirim' => 0
+                        'mo' => 0, 'wo' => 0, 'inspek' => 0, 'kirim' => 0, 'stock' => 0
                     ];
                     
                     foreach ($models as $model): 
@@ -53,6 +54,7 @@ $months = [
                         $wo = $model->qtyWoColorNotBatal;
                         $inspek = $model->qtyInspected;
                         $kirim = $model->qtyKirim;
+                        $stock = $model->qtyStock;
                         $unitName = $model->scUnitName;
                         
                         $totals['batch'] += $batch;
@@ -62,6 +64,7 @@ $months = [
                         $totals['wo'] += $wo;
                         $totals['inspek'] += $inspek;
                         $totals['kirim'] += $kirim;
+                        $totals['stock'] += $stock;
                     ?>
                         <tr>
                             <td style="font-weight: bold;"><?= Html::encode($model->no) ?></td>
@@ -94,6 +97,10 @@ $months = [
                                 <strong><?= number_format($kirim, 2) ?></strong>
                                 <small class="text-muted"><?= Html::encode($unitName) ?></small>
                             </td>
+                            <td class="text-right text-warning">
+                                <strong><?= number_format($stock, 2) ?></strong>
+                                <small class="text-muted"><?= Html::encode($unitName) ?></small>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <tr class="info" style="font-weight: bold;">
@@ -105,6 +112,7 @@ $months = [
                         <td class="text-right"><?= number_format($totals['wo'], 2) ?></td>
                         <td class="text-right"><?= number_format($totals['inspek'], 2) ?></td>
                         <td class="text-right"><?= number_format($totals['kirim'], 2) ?></td>
+                        <td class="text-right"><?= number_format($totals['stock'], 2) ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>

@@ -779,6 +779,13 @@ class TrnSc extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return float
+     */
+    public function getQtyStock() {
+        return (float)$this->qtyInspected - (float)$this->qtyKirim;
+    }
+
+    /**
      * @return string
      */
     public function getScUnitName() {

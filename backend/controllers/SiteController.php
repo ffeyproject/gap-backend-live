@@ -160,6 +160,7 @@ class SiteController extends Controller
         Yii::$app->session->close();
 
         $marketingId = Yii::$app->user->id;
+        $currentYear = date('Y');
 
         $query = TrnSc::find()
             ->joinWith(['cust'])
