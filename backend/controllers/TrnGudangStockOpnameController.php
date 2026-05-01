@@ -861,6 +861,7 @@ class TrnGudangStockOpnameController extends Controller
         $request = Yii::$app->request;
         $tanggalRange = $request->get('tanggalRange');
         $namaMotif = $request->get('namaMotif');
+        $asalGreige = $request->get('asalGreige');
 
         // default tanggal awal & akhir
         if (empty($tanggalRange)) {
@@ -871,6 +872,7 @@ class TrnGudangStockOpnameController extends Controller
         $query = (new \yii\db\Query())
             ->select([
                 'mst_greige.nama_kain AS nama_kain',
+                'trn_stock_greige_opname.asal_greige',
                 'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
                 'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
             ])
@@ -890,9 +892,14 @@ class TrnGudangStockOpnameController extends Controller
             $query->andWhere(['like', 'mst_greige.nama_kain', $namaMotif]);
         }
 
+        // filter asal greige
+        if (!empty($asalGreige)) {
+            $query->andWhere(['trn_stock_greige_opname.asal_greige' => $asalGreige]);
+        }
+
         // group & urutan
-        $query->groupBy(['mst_greige.nama_kain'])
-            ->orderBy(['mst_greige.nama_kain' => SORT_ASC]);
+        $query->groupBy(['mst_greige.nama_kain', 'trn_stock_greige_opname.asal_greige'])
+            ->orderBy(['mst_greige.nama_kain' => SORT_ASC, 'trn_stock_greige_opname.asal_greige' => SORT_ASC]);
 
         // hasilkan data provider
         $dataProvider = new \yii\data\ArrayDataProvider([
@@ -907,6 +914,7 @@ class TrnGudangStockOpnameController extends Controller
             'dataProvider' => $dataProvider,
             'tanggalRange' => $tanggalRange,
             'namaMotif' => $namaMotif,
+            'asalGreige' => $asalGreige,
         ]);
     }
 

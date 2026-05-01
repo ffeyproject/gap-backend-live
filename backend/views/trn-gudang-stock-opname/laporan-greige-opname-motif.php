@@ -4,6 +4,9 @@ use kartik\grid\GridView;
 use yii\widgets\Pjax;
 use yii\widgets\ActiveForm;
 use kartik\daterange\DateRangePicker;
+use kartik\select2\Select2;
+use yii\helpers\ArrayHelper;
+use common\models\ar\MstGreige;
 
 /**
  * Laporan Rekap Greige Stock Opname - Per Motif
@@ -16,6 +19,7 @@ $this->params['breadcrumbs'][] = 'Gudang Greige > ' . $this->title;
 $request = Yii::$app->request;
 $tanggalRange = $request->get('tanggalRange');
 $namaMotif = $request->get('namaMotif');
+$asalGreige = $request->get('asalGreige');
 
 // --- Default tanggal jika belum ada input ---
 if (empty($tanggalRange)) {
@@ -26,6 +30,7 @@ if (empty($tanggalRange)) {
 $query = (new \yii\db\Query())
     ->select([
         'mst_greige.nama_kain AS nama_kain',
+        'trn_stock_greige_opname.asal_greige',
         'SUM(trn_stock_greige_opname.panjang_m) AS total_panjang',
         'SUM(CASE WHEN trn_stock_greige_opname.status = 2 THEN trn_stock_greige_opname.panjang_m ELSE 0 END) AS total_valid'
     ])
@@ -42,10 +47,13 @@ if (!empty($tanggalRange)) {
 if (!empty($namaMotif)) {
     $query->andWhere(['like', 'mst_greige.nama_kain', $namaMotif]);
 }
+if (!empty($asalGreige)) {
+    $query->andWhere(['trn_stock_greige_opname.asal_greige' => $asalGreige]);
+}
 
 // --- Grouping & Sorting ---
-$query->groupBy(['mst_greige.nama_kain'])
-      ->orderBy(['mst_greige.nama_kain' => SORT_ASC]);
+$query->groupBy(['mst_greige.nama_kain', 'trn_stock_greige_opname.asal_greige'])
+      ->orderBy(['mst_greige.nama_kain' => SORT_ASC, 'trn_stock_greige_opname.asal_greige' => SORT_ASC]);
 
 $data = $query->all();
 
@@ -96,15 +104,33 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                     ]) ?>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <?= Html::label('Nama Motif / Kain', 'namaMotif', ['class' => 'control-label']) ?>
-                    <?= Html::textInput('namaMotif', $namaMotif, [
-                        'class' => 'form-control',
-                        'placeholder' => 'Masukkan nama motif...',
+                    <?= Select2::widget([
+                        'name' => 'namaMotif',
+                        'value' => $namaMotif,
+                        'data' => ArrayHelper::map(MstGreige::find()->select(['nama_kain'])->distinct()->orderBy('nama_kain')->all(), 'nama_kain', 'nama_kain'),
+                        'options' => ['placeholder' => 'Pilih motif...'],
+                        'pluginOptions' => [
+                            'allowClear' => true
+                        ],
                     ]) ?>
                 </div>
 
-                <div class="col-md-4" style="margin-top:25px;">
+                <div class="col-md-3">
+                    <?= Html::label('Asal Greige', 'asalGreige', ['class' => 'control-label']) ?>
+                    <?= Select2::widget([
+                        'name' => 'asalGreige',
+                        'value' => $asalGreige,
+                        'data' => \common\models\ar\TrnStockGreigeOpname::asalGreigeOptions(),
+                        'options' => ['placeholder' => '--- Pilih Asal Greige ---'],
+                        'pluginOptions' => [
+                            'allowClear' => true
+                        ],
+                    ]) ?>
+                </div>
+
+                <div class="col-md-3" style="margin-top:25px;">
                     <?= Html::submitButton('<i class="glyphicon glyphicon-search"></i> Cari', ['class' => 'btn btn-primary']) ?>
                     <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['laporan-greige-opname-motif'], ['class' => 'btn btn-default']) ?>
                 </div>
@@ -159,6 +185,13 @@ $dataProvider = new \yii\data\ArrayDataProvider([
         );
     },
 ],
+            [
+                'attribute' => 'asal_greige',
+                'label' => 'Asal Greige',
+                'value' => function($model) {
+                    return \common\models\ar\TrnStockGreigeOpname::asalGreigeOptions()[$model['asal_greige']] ?? '-';
+                },
+            ],
             [
                 'attribute' => 'total_panjang',
                 'label' => 'Total',
