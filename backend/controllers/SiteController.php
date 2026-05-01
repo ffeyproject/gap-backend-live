@@ -15,6 +15,11 @@ use backend\models\LoginForm;
 use common\components\WhacenterService;
 use common\models\ar\TrnWo;
 use common\models\ar\User;
+use common\models\ar\TrnSc;
+use common\models\ar\InspectingMklBj;
+use common\models\ar\TrnScGreige;
+use yii\db\Query;
+use yii\db\Expression;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use yii\web\NotAcceptableHttpException;
@@ -61,7 +66,146 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        if (!Yii::$app->user->can('Marketing')) {
+            return $this->render('index', [
+                'topBuyers' => [],
+                'summary' => [],
+                'currentYear' => date('Y'),
+                'isMarketing' => false
+            ]);
+        }
+
+        $marketingId = Yii::$app->user->id;
+        $currentYear = date('Y');
+
+        // Query untuk mendapatkan data buyer dengan qty batch terbanyak (Tahun Ini)
+        $topBuyers = (new Query())
+            ->select([
+                'mst_customer.name as buyer_name',
+                'SUM(trn_sc_greige.qty) as total_qty_batch'
+            ])
+            ->from('trn_sc')
+            ->innerJoin('trn_sc_greige', 'trn_sc_greige.sc_id = trn_sc.id')
+            ->innerJoin('mst_customer', 'mst_customer.id = trn_sc.cust_id')
+            ->where(['trn_sc.marketing_id' => $marketingId])
+            ->andWhere(['not in', 'trn_sc.status', [TrnSc::STATUS_DRAFT, TrnSc::STATUS_BATAL]])
+            ->andWhere(new Expression('EXTRACT(YEAR FROM "trn_sc"."date") = :year', [':year' => $currentYear]))
+            ->groupBy(['mst_customer.name'])
+            ->orderBy(['total_qty_batch' => SORT_DESC])
+            ->all();
+
+        // Statistik ringkasan untuk marketing (Tahun Ini)
+        $summary = (new Query())
+            ->select([
+                'COUNT(DISTINCT trn_sc.id) as total_sc',
+                'SUM(trn_sc_greige.qty) as total_qty_batch'
+            ])
+            ->from('trn_sc')
+            ->innerJoin('trn_sc_greige', 'trn_sc_greige.sc_id = trn_sc.id')
+            ->where(['trn_sc.marketing_id' => $marketingId])
+            ->andWhere(['not in', 'trn_sc.status', [TrnSc::STATUS_DRAFT, TrnSc::STATUS_BATAL]])
+            ->andWhere(new Expression('EXTRACT(YEAR FROM "trn_sc"."date") = :year', [':year' => $currentYear]))
+            ->one();
+
+        return $this->render('index', [
+            'topBuyers' => $topBuyers,
+            'summary' => $summary,
+            'currentYear' => $currentYear,
+            'isMarketing' => true
+        ]);
+    }
+
+    public function actionScByMonth($buyerName = null)
+    {
+        if (!Yii::$app->user->can('Marketing')) {
+            return '';
+        }
+
+        $marketingId = Yii::$app->user->id;
+        $currentYear = date('Y');
+
+        $query = (new Query())
+            ->select([
+                new Expression('EXTRACT(MONTH FROM "trn_sc"."date") as bulan'),
+                'COUNT(DISTINCT trn_sc.id) as total_sc',
+                'SUM(trn_sc_greige.qty) as total_qty_batch'
+            ])
+            ->from('trn_sc')
+            ->innerJoin('trn_sc_greige', 'trn_sc_greige.sc_id = trn_sc.id')
+            ->innerJoin('mst_customer', 'mst_customer.id = trn_sc.cust_id')
+            ->where(['trn_sc.marketing_id' => $marketingId])
+            ->andWhere(['not in', 'trn_sc.status', [TrnSc::STATUS_DRAFT, TrnSc::STATUS_BATAL]])
+            ->andWhere(new Expression('EXTRACT(YEAR FROM "trn_sc"."date") = :year', [':year' => $currentYear]));
+
+        if ($buyerName) {
+            $query->andWhere(['mst_customer.name' => $buyerName]);
+        }
+
+        $data = $query->groupBy([new Expression('EXTRACT(MONTH FROM "trn_sc"."date")')])
+            ->orderBy(['bulan' => SORT_ASC])
+            ->all();
+
+        return $this->renderAjax('_sc_by_month', [
+            'data' => $data,
+            'currentYear' => $currentYear,
+            'buyerName' => $buyerName
+        ]);
+    }
+
+    public function actionScDetailByMonth($month, $buyerName = null)
+    {
+        if (!Yii::$app->user->can('Marketing')) {
+            return '';
+        }
+        Yii::$app->session->close();
+
+        $marketingId = Yii::$app->user->id;
+
+        $query = TrnSc::find()
+            ->joinWith(['cust'])
+            ->with([
+                'trnScGreiges.greigeGroup', 
+                'trnInspectings.inspectingItems', 
+                'trnKirimBuyers.header',
+                'trnMoColors.mo',
+                'trnWoColors.wo'
+            ])
+            ->where(['trn_sc.marketing_id' => $marketingId])
+            ->andWhere(['not in', 'trn_sc.status', [TrnSc::STATUS_DRAFT, TrnSc::STATUS_BATAL]])
+            ->andWhere(new Expression('EXTRACT(YEAR FROM "trn_sc"."date") = :year', [':year' => $currentYear]))
+            ->andWhere(new Expression('EXTRACT(MONTH FROM "trn_sc"."date") = :month', [':month' => $month]));
+
+        if ($buyerName) {
+            $query->andWhere(['mst_customer.name' => $buyerName]);
+        }
+
+        $models = $query->all();
+
+        // Optimasi: Bulk fetch data MKL BJ untuk semua SC yang terpilih sekaligus
+        $scIds = \yii\helpers\ArrayHelper::getColumn($models, 'id');
+        if (!empty($scIds)) {
+            $mklBjQtys = (new \yii\db\Query())
+                ->select(['trn_wo.sc_id', 'SUM(inspecting_mkl_bj_items.qty) as total_qty'])
+                ->from('inspecting_mkl_bj_items')
+                ->innerJoin('inspecting_mkl_bj', 'inspecting_mkl_bj_items.inspecting_id = inspecting_mkl_bj.id')
+                ->innerJoin('trn_wo', 'inspecting_mkl_bj.wo_id = trn_wo.id')
+                ->where(['trn_wo.sc_id' => $scIds])
+                ->andWhere(['in', 'inspecting_mkl_bj.status', [InspectingMklBj::STATUS_POSTED, InspectingMklBj::STATUS_DELIVERED]])
+                ->groupBy('trn_wo.sc_id')
+                ->indexBy('sc_id')
+                ->all();
+
+            foreach ($models as $model) {
+                $model->mklBjQtyInjected = isset($mklBjQtys[$model->id]) ? (float)$mklBjQtys[$model->id]['total_qty'] : 0;
+            }
+        }
+
+        return $this->renderAjax('_sc_detail_by_month', [
+            'models' => $models,
+            'month' => $month,
+            'currentYear' => $currentYear,
+            'buyerName' => $buyerName,
+        ]);
     }
 
 

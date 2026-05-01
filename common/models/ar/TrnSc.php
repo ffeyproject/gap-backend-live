@@ -7,6 +7,13 @@ use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
 use yii\helpers\Html;
+use common\models\ar\TrnKirimBuyer;
+use common\models\ar\TrnKirimBuyerHeader;
+use common\models\ar\InspectingMklBj;
+use common\models\ar\InspectingMklBjItems;
+use common\models\ar\TrnMo;
+use common\models\ar\TrnWo;
+use common\models\ar\TrnInspecting;
 
 /**
  * This is the model class for table "trn_sc".
@@ -414,6 +421,14 @@ class TrnSc extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTrnKirimBuyers()
+    {
+        return $this->hasMany(TrnKirimBuyer::className(), ['sc_id' => 'id']);
+    }
+
+    /**
      * @return string
      */
     public function getDirekturName()
@@ -616,6 +631,11 @@ class TrnSc extends \yii\db\ActiveRecord
     }
 
     /**
+     * @var float|null Untuk optimasi dashboard agar tidak kueri berulang dalam loop.
+     */
+    public $mklBjQtyInjected = null;
+
+    /**
      * @throws Exception
      */
     public function getHiddenFormTokenField() {
@@ -626,39 +646,155 @@ class TrnSc extends \yii\db\ActiveRecord
         return Html::hiddenInput(Yii::$app->params['form_token_param'], $token);
     }
 
+
     /**
      * @return float
      */
     public function getQtyScGreige() {
-        $qty = $this->getTrnScGreiges()->sum('qty');
-        if($qty > 0){
-            return $qty;
+        if ($this->isRelationPopulated('trnScGreiges')) {
+            $qty = 0;
+            foreach ($this->trnScGreiges as $scGreige) {
+                $qty += $scGreige->qty;
+            }
+            return (float)$qty;
         }
-
-        return 0;
+        $qty = $this->getTrnScGreiges()->sum('qty');
+        return $qty > 0 ? (float)$qty : 0;
     }
 
     /**
      * @return float
      */
     public function getQtyMoColorNotBatal() {
-        $qty = $this->getTrnMoColors()->joinWith('mo')->where(['<>', 'trn_mo.status', TrnMo::STATUS_BATAL])->sum('trn_mo_color.qty');
-        if($qty > 0){
-            return $qty;
+        if ($this->isRelationPopulated('trnMoColors')) {
+            $qty = 0;
+            foreach ($this->trnMoColors as $moColor) {
+                if ($moColor->mo->status != TrnMo::STATUS_BATAL) {
+                    $qty += $moColor->qty;
+                }
+            }
+            return (float)$qty;
         }
-
-        return 0;
+        $qty = $this->getTrnMoColors()->joinWith('mo')->where(['<>', 'trn_mo.status', TrnMo::STATUS_BATAL])->sum('trn_mo_color.qty');
+        return $qty > 0 ? (float)$qty : 0;
     }
 
     /**
      * @return float
      */
     public function getQtyWoColorNotBatal() {
+        if ($this->isRelationPopulated('trnWoColors')) {
+            $qty = 0;
+            foreach ($this->trnWoColors as $woColor) {
+                if ($woColor->wo->status != TrnWo::STATUS_BATAL) {
+                    $qty += $woColor->qty;
+                }
+            }
+            return (float)$qty;
+        }
         $qty = $this->getTrnWoColors()->joinWith('wo')->where(['<>', 'trn_wo.status', TrnWo::STATUS_BATAL])->sum('trn_wo_color.qty');
-        if($qty > 0){
-            return $qty;
+        return $qty > 0 ? (float)$qty : 0;
+    }
+
+    /**
+     * @return float
+     */
+    public function getQtyFinish() {
+        $qty = 0;
+        foreach ($this->trnScGreiges as $scGreige) {
+            $qty += $scGreige->qtyFinish;
+        }
+        return (float)$qty;
+    }
+
+    /**
+     * @return float
+     */
+    public function getQtyFinishToMeter() {
+        $qty = 0;
+        foreach ($this->trnScGreiges as $scGreige) {
+            $qty += $scGreige->qtyFinishToMeter;
+        }
+        return (float)$qty;
+    }
+
+    /**
+     * @return float
+     */
+    public function getQtyFinishToYard() {
+        $qty = 0;
+        foreach ($this->trnScGreiges as $scGreige) {
+            $qty += $scGreige->qtyFinishToYard;
+        }
+        return (float)$qty;
+    }
+
+    /**
+     * @return float
+     */
+    public function getQtyInspected() {
+        $qty = 0;
+        foreach ($this->trnInspectings as $inspecting) {
+            if ($inspecting->status == TrnInspecting::STATUS_APPROVED || $inspecting->status == TrnInspecting::STATUS_DELIVERED) {
+                if ($inspecting->isRelationPopulated('inspectingItems')) {
+                    foreach ($inspecting->inspectingItems as $item) {
+                        $qty += $item->qty;
+                    }
+                } else {
+                    $qty += $inspecting->getInspectingItems()->sum('qty');
+                }
+            }
         }
 
-        return 0;
+        if ($this->mklBjQtyInjected !== null) {
+            $mklBjQty = $this->mklBjQtyInjected;
+        } else {
+            $mklBjQty = InspectingMklBjItems::find()
+                ->innerJoin('inspecting_mkl_bj', 'inspecting_mkl_bj_items.inspecting_id = inspecting_mkl_bj.id')
+                ->innerJoin('trn_wo', 'inspecting_mkl_bj.wo_id = trn_wo.id')
+                ->where(['trn_wo.sc_id' => $this->id])
+                ->andWhere(['in', 'inspecting_mkl_bj.status', [InspectingMklBj::STATUS_POSTED, InspectingMklBj::STATUS_DELIVERED]])
+                ->sum('qty');
+        }
+
+        $qty += ($mklBjQty > 0 ? (float)$mklBjQty : 0);
+
+        return (float)$qty;
+    }
+
+    /**
+     * @return float
+     */
+    /**
+     * @return float
+     */
+    public function getQtyKirim() {
+        $qty = 0;
+        foreach ($this->trnKirimBuyers as $kirimBuyer) {
+            if ($kirimBuyer->header->status == TrnKirimBuyerHeader::STATUS_POSTED) {
+                $qty += $kirimBuyer->qtyKirim;
+            }
+        }
+        return (float)$qty;
+    }
+
+    /**
+     * @return string
+     */
+    public function getScUnitName() {
+        if (!empty($this->trnScGreiges)) {
+            $scGreige = $this->trnScGreiges[0];
+            switch ($scGreige->price_param) {
+                case TrnScGreige::PRICE_PARAM_PER_METER:
+                    return 'Meter';
+                case TrnScGreige::PRICE_PARAM_PER_YARD:
+                    return 'Yard';
+                case TrnScGreige::PRICE_PARAM_PER_KILOGRAM:
+                    return 'Kg';
+                default:
+                    return $scGreige->greigeGroup->unitName;
+            }
+        }
+        return '-';
     }
 }
