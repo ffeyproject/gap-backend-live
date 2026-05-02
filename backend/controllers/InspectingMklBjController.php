@@ -647,30 +647,43 @@ class InspectingMklBjController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT){
+        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_POSTED){
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        $model->status = $model::STATUS_POSTED;
-        if(empty($model->no_urut)){
-            $model->setNomor();
-            $model->save(false, ['status', 'no_urut', 'no']);
-
-            // $inspectingItems = $model->getItems()->orderBy('id ASC')->all();
-            // foreach ($inspectingItems as $iI) {
-            //     $stock = $this->findItemInStock($iI->id);
-            //     $stock->trans_from = 'MKL';
-            //     $stock->id_from = $iI->inspecting_id;
-            //     $stock->qr_code = $iI->qr_code;
-            //     $stock->qr_code_desc = $iI->qr_code_desc;
-            //     $stock->save();
-            // }
-        }else{
-            $model->save(false, ['status']);
+        $postedItemIds = Yii::$app->request->post('postedItemIds');
+        if (empty($postedItemIds)) {
+            Yii::$app->session->setFlash('error', 'Pilih setidaknya satu item untuk dikirim.');
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        Yii::$app->session->setFlash('success', 'Posting berhasil.');
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // Update selected items to is_posted = true
+            InspectingMklBjItems::updateAll(['is_posted' => true], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
+
+            if ($model->status == $model::STATUS_DRAFT) {
+                $model->status = $model::STATUS_POSTED;
+                if(empty($model->no_urut)){
+                    $model->setNomor();
+                    if (!$model->save(false, ['status', 'no_urut', 'no'])) {
+                        throw new HttpException(500, 'Gagal update status header.');
+                    }
+                }else{
+                    if (!$model->save(false, ['status'])) {
+                        throw new HttpException(500, 'Gagal update status header.');
+                    }
+                }
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Posting berhasil.');
+        } catch (\Throwable $t) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal: ' . $t->getMessage());
+        }
+
         return $this->redirect(['view', 'id' => $model->id]);
     }
 

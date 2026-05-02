@@ -25,7 +25,7 @@ class PenerimaanInspectingController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new TrnInspectingSearch(['status'=>TrnInspecting::STATUS_APPROVED]);
+        $searchModel = new TrnInspectingSearch(['penerimaanMode' => true]);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
@@ -58,55 +58,49 @@ class PenerimaanInspectingController extends Controller
      */
     public function actionTerima($id)
     {
+        $model = $this->findModel($id);
+        if($model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_DELIVERED){
+            Yii::$app->session->setFlash('error', 'Status tidak valid.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $nullAttributes = array_keys(array_filter($model->inspectingItems, function($value) {
+            return $value->qr_code === null && $value->is_head == 1;
+        }));
+
+        if(count($nullAttributes) > 0){
+            Yii::$app->session->setFlash('error', 'Qr code belum di cetak, silahkan generate terlebih dahulu.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $modelPenerimaan = new PenerimaanPackingForm();
+
         if(Yii::$app->request->isAjax){
-            Yii::$app->response->format = Response::FORMAT_JSON;
-
-            $model = $this->findModel($id);
-
-            if($model->status != $model::STATUS_APPROVED){
-                Yii::$app->session->setFlash('error', 'Status tidak valid.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-
-            $nullAttributes = array_keys(array_filter($model->inspectingItems, function($value) {
-                return $value->qr_code === null && $value->is_head == 1;
-            }));
-
-            if(count($nullAttributes) > 0){
-                Yii::$app->session->setFlash('error', 'Qr code belum di cetak, silahkan generate terlebih dahulu.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-
-            $modelPenerimaan = new PenerimaanPackingForm();
             if($modelPenerimaan->load(Yii::$app->request->post())){
-                if($modelPenerimaan->validate()){
-                    $model->status = $model::STATUS_DELIVERED;
-                    $model->delivered_by = Yii::$app->user->id;
-                    $model->delivered_at = time();
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                $selectedItems = [];
+                foreach (Yii::$app->request->post() as $key => $value) {
+                    if (strpos($key, 'cbItms-') === 0 && $value == 1) {
+                        $selectedItems[] = (int)str_replace('cbItms-', '', $key);
+                    }
+                }
 
+                if($modelPenerimaan->validate()){
                     $transaction = Yii::$app->db->beginTransaction();
                     try{
-                        if(!$model->save(false, ['status', 'delivered_by', 'delivered_at'])){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal, coba lagi. (1)');
-                        }
-
-                        // ===============================
-                        // UPDATE STATUS KARTU PROSES DYEING
-                        // ===============================
-                        if (!empty($model->kartu_process_dyeing_id)) {
-                            $kp = $model->kartuProcessDyeing;
-                            if ($kp !== null) {
-                                $kp->status = \common\models\ar\TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI;
-                                $kp->updated_at = time();
-                                $kp->updated_by = Yii::$app->user->id;
-                                $kp->save(false, ['status', 'updated_at', 'updated_by']);
-                            }
-                        }
                         $rollsQty = [];
-                        foreach ($model->getInspectingItems()->orderBy('id ASC')->all() as $index=>$item) {
-                            if(!empty($item->join_piece)) {
+                        $itemsToProcess = $model->getInspectingItems()->where(['is_head' => 1])->orderBy('id ASC');
+                        if(!empty($selectedItems)){
+                            $itemsToProcess->andWhere(['id' => $selectedItems]);
+                        }
 
+                        foreach ($itemsToProcess->all() as $index=>$item) {
+                            // Cek apakah item ini sudah pernah diterima
+                            if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
+                                continue;
+                            }
+
+                            if(!empty($item->join_piece)) {
                                 if ($item->grade_up <> NULL) {
                                     if(isset($rollsQty[$item->grade_up.'_'.$item->join_piece])) {
                                         $rollsQty[$item->grade_up.'_'.$item->join_piece]['qty'] += $item->qty_sum;
@@ -134,7 +128,6 @@ class PenerimaanInspectingController extends Controller
                                         ];
                                     }
                                 }
-
                             } else {
                                 $rollsQty[] = [
                                     'qty'=>$item->qty_sum,
@@ -176,6 +169,40 @@ class PenerimaanInspectingController extends Controller
                                 if(!$modelStock->save(false)){
                                     $transaction->rollBack();
                                     throw new HttpException(500, 'Gagal, coba lagi. (2)');
+                                }
+                            }
+                        }
+
+                        // Cek apakah semua item sudah diterima
+                        $allReceived = true;
+                        foreach ($model->inspectingItems as $item) {
+                            if($item->is_head == 1){
+                                if(!\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
+                                    $allReceived = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if($allReceived){
+                            $model->status = $model::STATUS_DELIVERED;
+                            $model->delivered_by = Yii::$app->user->id;
+                            $model->delivered_at = time();
+                            if(!$model->save(false, ['status', 'delivered_by', 'delivered_at'])){
+                                $transaction->rollBack();
+                                throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                            }
+
+                            // ===============================
+                            // UPDATE STATUS KARTU PROSES DYEING
+                            // ===============================
+                            if (!empty($model->kartu_process_dyeing_id)) {
+                                $kp = $model->kartuProcessDyeing;
+                                if ($kp !== null) {
+                                    $kp->status = \common\models\ar\TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI;
+                                    $kp->updated_at = time();
+                                    $kp->updated_by = Yii::$app->user->id;
+                                    $kp->save(false, ['status', 'updated_at', 'updated_by']);
                                 }
                             }
                         }
@@ -243,6 +270,9 @@ class PenerimaanInspectingController extends Controller
             $model->status = $model::STATUS_DRAFT;
             $model->approved_by = null;
             $model->approved_at = null;
+
+            // Reset is_posted for all items
+            \common\models\ar\InspectingItem::updateAll(['is_posted' => false], ['inspecting_id' => $model->id]);
 
             if($model->save(false, ['delivered_at', 'delivery_reject_note', 'status', 'approved_by', 'approved_at']) !== false){
                 return true;

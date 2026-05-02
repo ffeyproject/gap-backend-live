@@ -77,7 +77,19 @@ if($model->kartu_process_dyeing_id !== null){
 <div class="inspecting-view">
     <p>
         <?php
-        if($model->status == $model::STATUS_APPROVED){
+        $anyReceived = false;
+        $allReceived = true;
+        foreach ($model->inspectingItems as $item) {
+            if($item->is_head == 1){
+                if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
+                    $anyReceived = true;
+                }else{
+                    $allReceived = false;
+                }
+            }
+        }
+
+        if(!$allReceived){
             echo Html::a('Terima', ['terima', 'id' => $model->id], [
                 'class' => 'btn btn-success',
                 'title' => 'Penerimaan Packing',
@@ -86,7 +98,9 @@ if($model->kartu_process_dyeing_id !== null){
                 'data-title' => 'Penerimaan Packing'
             ]);
             echo ' ';
+        }
 
+        if(!$anyReceived && $model->status == $model::STATUS_APPROVED){
             echo Html::a('Tolak', ['tolak', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'onclick' => 'rejectInspect(event);',

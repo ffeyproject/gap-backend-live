@@ -68,7 +68,19 @@ $joinPieces = [
 <div class="inspecting-view">
     <p>
         <?php
-        if($model->status == $model::STATUS_POSTED){
+        $anyReceived = false;
+        $allReceived = true;
+        foreach ($model->items as $item) {
+            if($item->is_head == 1){
+                if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                    $anyReceived = true;
+                }else{
+                    $allReceived = false;
+                }
+            }
+        }
+
+        if(!$allReceived){
             echo Html::a('Terima', ['terima', 'id' => $model->id], [
                 'class' => 'btn btn-success',
                 'title' => 'Penerimaan Packing Makloon Dan Barang Jadi',
@@ -77,7 +89,9 @@ $joinPieces = [
                 'data-title' => 'Penerimaan Packing Makloon Dan Barang Jadi'
             ]);
             echo ' ';
+        }
 
+        if(!$anyReceived && $model->status == $model::STATUS_POSTED){
             echo Html::a('Tolak', ['tolak', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'onclick' => 'rejectInspect(event);',
@@ -153,6 +167,7 @@ $joinPieces = [
                         <th>Grade A+</th>
                         <th>Grade A*</th>
                         <th>Grade Putih</th>
+                        <th>Tandai</th>
                         <th>Keterangan</th>
                     </tr>
                 </thead>
@@ -167,6 +182,7 @@ $joinPieces = [
                                 ->exists();
 
                             $items = $itemsQuery
+                                ->where(['is_posted' => true])
                                 ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                                 ->all();
                         ?>
@@ -336,6 +352,26 @@ $joinPieces = [
                                         echo '0';
                                     }
                                 }
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                            $headId = $item->id;
+                            if($item['is_head'] != 1 && !empty($item['join_piece'])){
+                                $head = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id'=>$item->inspecting_id, 'join_piece'=>$item['join_piece'], 'is_head'=>1])->one();
+                                if($head){
+                                    $headId = $head->id;
+                                }
+                            }
+
+                            $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$headId, 'trans_from'=>'MKL'])->exists();
+                            if($isReceived){
+                                echo '<span class="label label-success">Received</span>';
+                            }else{
+                                if($item['is_head'] == 1){
+                                    echo '<input type="checkbox" name="cbItms-'.$item->id.'" value="1" checked>';
+                                }
+                            }
                             ?>
                         </td>
                         <td><?=$item['note']?></td>

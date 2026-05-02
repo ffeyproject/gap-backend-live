@@ -72,6 +72,8 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
 
     <p>
         <?php
+        $hasDraftItems = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+
         switch ($model->status){
             case $model::STATUS_DRAFT:
                 echo Html::a('Upgrade', ['upgrade', 'id' => $model->id], ['class' => 'btn btn-success']).' ';
@@ -83,21 +85,36 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             'method' => 'post',
                         ],
                     ]).' ';
-                echo Html::a('Posting', ['posting', 'id' => $model->id], [
-                    'class' => 'btn btn-warning',
-                    'data' => [
-                        'confirm' => 'Are you sure you want to posting this item?',
-                        'method' => 'post',
-                    ],
-                ]).' ';
-                echo Html::a('Hapus Semua Defect', ['hapus-semua-defect', 'id' => $model->id], [
-                    'class' => 'btn btn-danger',
-                    'data' => [
-                        'confirm' => 'Apakah Anda yakin ingin menghapus semua defect dari inspeksi ini?',
-                        'method' => 'post',
-                    ],
-                ]);
                 break;
+        }
+
+        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_POSTED) {
+            if ($hasDraftItems) {
+                $isAnyPrinted = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
+                if($isAnyPrinted){
+                    echo Html::button('Posting', [
+                        'class' => 'btn btn-warning',
+                        'onclick' => 'postingItems()'
+                    ]).' ';
+                }else{
+                    echo Html::a('Posting', 'javascript:void(0)', [
+                        'class' => 'btn btn-warning',
+                        'disabled' => 'disabled',
+                        'title' => 'Cetak QR Code terlebih dahulu untuk dapat melakukan posting.',
+                        'onclick' => 'alert("Cetak QR Code terlebih dahulu untuk dapat melakukan posting."); return false;'
+                    ]).' ';
+                }
+            }
+        }
+
+        if ($model->status == $model::STATUS_DRAFT) {
+            echo Html::a('Hapus Semua Defect', ['hapus-semua-defect', 'id' => $model->id], [
+                'class' => 'btn btn-danger',
+                'data' => [
+                    'confirm' => 'Apakah Anda yakin ingin menghapus semua defect dari inspeksi ini?',
+                    'method' => 'post',
+                ],
+            ]);
         }
 
         echo ' '.Html::a('Print', ['print', 'id' => $model->id], ['class' => 'btn btn-default']);
@@ -144,6 +161,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
     </div>
 
     <!--Items-->
+    <?= Html::beginForm(['posting', 'id' => $model->id], 'post', ['id' => 'posting-form']) ?>
     <div class="box">
         <div class="box-header with-border">
             <div class="box-tools pull-left">
@@ -187,6 +205,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>QR Code ID</th>
                         <th>ID Barang</th>
                         <th>Qr-Code Print at</th>
+                        <th>Pilih</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -402,68 +421,36 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         }
                         ?>
                         </td>
-                        <!-- <td>
-                            <?php 
-                                if ($item['is_head'] == 1) {
-                                    $options = $item->inspecting->wo->scGreige->lebar_kain;
-                                    switch ($options) {
-                                        case TrnScGreige::LEBAR_KAIN_44:
-                                            $lebarKain = 44;
-                                            break;
-                                        case TrnScGreige::LEBAR_KAIN_58:
-                                            $lebarKain = 58;
-                                            break;
-                                        case TrnScGreige::LEBAR_KAIN_64:
-                                            $lebarKain = 64;
-                                            break;
-                                        case TrnScGreige::LEBAR_KAIN_66:
-                                            $lebarKain = 66;
-                                            break;
-                                        default:
-                                            $lebarKain = 0;
-                                    }
-
-                                    $totalPoint = 0;
-
-                                    $inspectingId = $item->inspecting_id;
-                                    $joinPiece = $item->join_piece;
-                                    $totalPoint = $item->getTotalPoints($inspectingId, $joinPiece);
-
-                                    $qty = $item['qty_sum'];
-                                    $satuan = MstGreigeGroup::unitOptions()[$model->satuan] ?? '';
-
-                                    if ($qty != 0 && $qty != null && $lebarKain != 0) {
-                                        if ($satuan == 'Yard') {
-                                            
-                                            $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty);
-                                        } elseif ($satuan == 'Meter') {
-                                            $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
-                                        } elseif ($satuan == 'Kilogram') {
-                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
-                                        }
-
-                                        echo number_format($result, 2);
-                                    } else {
-                                        echo '';
-                                    }
-                                } else {
-                                    echo '';
-                                }
-                            ?>
-                        </td> -->
-
                         <td><?=$item['note']?></td>
                         <td style="width: 100px;">
                             <?php 
                                 $printed = $item['qr_print_at'] ? 'qrPrint btn btn-success center-block' : 'qrPrint btn btn-default center-block';
                                 if ($item['is_head'] == 1) {
-                                    echo ' '.Html::a('PRINT '.'<span><i class="fa fa-qrcode"></i></span>', ['qr', 'id' => $item['id']], ['class' => $printed, 'id' => 'qrPrint'.$item['id']]);
+                                    echo ' '.Html::a('PRINT '.'<span><i class="fa fa-qrcode"></i></span>', ['qr', 'id' => $item['id']], ['class' => $printed, 'id' => 'qrPrint'.$item['id'], 'target' => '_blank']);
                                 }
                             ?>
                         </td>
                         <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                         <td><?= $item['id'] ?></td>
                         <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                        <td>
+                            <?php
+                                if ($item['is_head'] == 1) {
+                                    if ($item['is_posted']) {
+                                        echo '<span class="label label-success">Posted</span>';
+                                    } else {
+                                        echo Html::checkbox('postedItemIds[]', false, [
+                                            'value' => $item['id'], 
+                                            'class' => 'check-item',
+                                            'style' => $item['qr_print_at'] ? '' : 'display:none;'
+                                        ]);
+                                        if (!$item['qr_print_at']) {
+                                            echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
+                                        }
+                                    }
+                                }
+                            ?>
+                        </td>
                     </tr>
                     <?php endforeach;?>
                 </tbody>
@@ -489,6 +476,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             <p><strong>Susut: <?=Yii::$app->formatter->asDecimal($susutM)?> M (<?=$susutPcnt?>%)</strong></p>
         </div>
     </div>
+    <?= Html::endForm() ?>
     <!--Items-->
 </div>
 
@@ -726,42 +714,67 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
     </div>
 </div>
 <!-- JavaScript to handle the click event and append parameters -->
-<?php $this->registerJs('
-    $("#qrPrintLink").on("click", function(e) {
+<?php
+    $this->registerJsVar('inspectionId', $model->id);
+    $this->registerJs('
+    window.postingItems = function() {
+        if ($(".check-item:checked").length === 0) {
+            alert("Pilih setidaknya satu item untuk dikirim.");
+            return;
+        }
+        if (confirm("Apakah Anda yakin ingin memposting item yang dipilih?")) {
+            localStorage.removeItem("checked_items_" + inspectionId);
+            $("#posting-form").submit();
+        }
+    };
+
+    function updateLocalStorage() {
+        var checkedIds = [];
+        $(".check-item:checked").each(function() {
+            checkedIds.push($(this).val());
+        });
+        localStorage.setItem("checked_items_" + inspectionId, JSON.stringify(checkedIds));
+    }
+
+    var saved = localStorage.getItem("checked_items_" + inspectionId);
+    if (saved) {
+        var ids = JSON.parse(saved);
+        ids.forEach(function(id) {
+            var cb = $(".check-item[value=\"" + id + "\"]");
+            if(cb.length){
+                cb.show().prop("checked", true);
+                cb.closest("tr").find(".label-print-dulu").hide();
+            }
+        });
+    }
+
+    $(document).on("click", "#qrPrintLink", function(e) {
         e.preventDefault();
-
-        // Get selected values from combo box or checkbox
-        var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param8Value = $("#param8Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-
-
-        // Determine the URL based on checkbox status
+        var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0";
+        var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0";
+        var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0";
+        var param8Value = $("#param8Checkbox").is(":checked") ? "1" : "0";
         var theView = (param1Value == 0 && param2Value == 0) ? "qr-all-without-attribute" : "qr-all";
-
-        // Build the URL with the selected values
         var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value + "&param8=" + param8Value;
-
         var replacedUrl = url.replace(/replace/, theView);
-
-        // Redirect to the new URL
-        window.location.href = replacedUrl;
+        window.open(replacedUrl, "_blank");
     });
 
-    $(".qrPrint").on("click", function(e) {
+    $(document).on("click", ".qrPrint", function(e) {
         e.preventDefault();
-
-        // Get selected values from combo box or checkbox
-        var param3Value = $("#param3Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param4Value = $("#param4Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param5Value = $("#param5Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param7Value = $("#param7Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-
-        // Build the URL with the selected values
+        var row = $(this).closest("tr");
+        row.find(".check-item").show().prop("checked", true);
+        row.find(".label-print-dulu").hide();
+        updateLocalStorage();
+        var param3Value = $("#param3Checkbox").is(":checked") ? "1" : "0";
+        var param4Value = $("#param4Checkbox").is(":checked") ? "1" : "0";
+        var param5Value = $("#param5Checkbox").is(":checked") ? "1" : "0";
+        var param7Value = $("#param7Checkbox").is(":checked") ? "1" : "0";
         var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value + "&param7=" + param7Value;
+        window.open(url, "_blank");
+    });
 
-        // Redirect to the new URL
-        window.location.href = url;
+    $(document).on("change", ".check-item", function() {
+        updateLocalStorage();
     });
 '); ?>

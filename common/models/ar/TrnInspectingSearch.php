@@ -19,6 +19,7 @@ class TrnInspectingSearch extends TrnInspecting
     public $kpdNo;
     public $kppNo;
     public $memoRepairNo;
+    public $penerimaanMode = false;
 
     public function rules()
     {
@@ -109,6 +110,24 @@ class TrnInspectingSearch extends TrnInspecting
             }
         }
 
+        if ($this->penerimaanMode) {
+            $query->andWhere([
+                'OR',
+                ['trn_inspecting.status' => TrnInspecting::STATUS_APPROVED],
+                [
+                    'AND',
+                    ['trn_inspecting.status' => TrnInspecting::STATUS_DELIVERED],
+                    'EXISTS (
+                        SELECT 1 FROM inspecting_item 
+                        LEFT JOIN trn_gudang_jadi ON trn_gudang_jadi.id_from = inspecting_item.id AND trn_gudang_jadi.trans_from = \'INS\'
+                        WHERE inspecting_item.inspecting_id = trn_inspecting.id AND trn_gudang_jadi.id IS NULL
+                    )'
+                ]
+            ]);
+        }else{
+            $query->andFilterWhere(['trn_inspecting.status' => $this->status]);
+        }
+
         // Filter lainnya
         $query->andFilterWhere([
             'trn_inspecting.id' => $this->id,
@@ -120,7 +139,6 @@ class TrnInspectingSearch extends TrnInspecting
             'trn_inspecting.memo_repair_id' => $this->memo_repair_id,
             'trn_inspecting.jenis_process' => $this->jenis_process,
             'trn_inspecting.no_urut' => $this->no_urut,
-            'trn_inspecting.status' => $this->status,
             'trn_inspecting.jenis_inspek' => $this->jenis_inspek,
             'trn_inspecting.no_memo' => $this->no_memo,
             'trn_inspecting.unit' => $this->unit,

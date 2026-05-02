@@ -988,29 +988,44 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT){
+        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED){
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        //anggap saja sudah disetujui (bypass)
-        $model->status = $model::STATUS_APPROVED;
-        $model->approved_by = Yii::$app->user->id;
-        $model->approved_at = time();
-        $model->setNomor();
+        $postedItemIds = Yii::$app->request->post('postedItemIds');
+        if (empty($postedItemIds)) {
+            Yii::$app->session->setFlash('error', 'Pilih setidaknya satu item untuk dikirim.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            if(!$flag = $model->save(false, ['status', 'approved_by', 'approved_at', 'no_urut', 'no'])){
-                $transaction->rollBack();
-                Yii::$app->session->setFlash('error', 'Posting gagal, coba lagi.');
-            }else{
+            // Update selected items to is_posted = true
+            InspectingItem::updateAll(['is_posted' => true], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
+
+            $flag = true;
+            // Set header status to APPROVED if it was DRAFT
+            if ($model->status == $model::STATUS_DRAFT) {
+                $model->status = $model::STATUS_APPROVED;
+                $model->approved_by = Yii::$app->user->id;
+                $model->approved_at = time();
+                $model->setNomor();
+                if (!$flag = $model->save(false, ['status', 'approved_by', 'approved_at', 'no_urut', 'no'])) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Gagal update status header.');
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
+            }
+
+            if($flag){
                 if($model->memo_repair_id !== null){
                     $modelMemoRepair = $model->memoRepair;
                     $modelMemoRepair->status = $modelMemoRepair::STATUS_INSPECTED;
                     if (!($flag = $modelMemoRepair->save(false, ['status']))) {
                         $transaction->rollBack();
-                        Yii::$app->session->setFlash('error', '2');
+                        Yii::$app->session->setFlash('error', 'Gagal update status memo repair.');
+                        return $this->redirect(['view', 'id' => $model->id]);
                     }
                 }else{
                     switch ($model->jenis_process){
@@ -1019,7 +1034,8 @@ class TrnInspectingController extends Controller
                             $modelKartuProses->status = $modelKartuProses::STATUS_PERIKSA_PENGIRIMAN;
                             if (!($flag = $modelKartuProses->save(false, ['status']))) {
                                 $transaction->rollBack();
-                                Yii::$app->session->setFlash('error', '2');
+                                Yii::$app->session->setFlash('error', 'Gagal update status kartu proses dyeing.');
+                                return $this->redirect(['view', 'id' => $model->id]);
                             }
                             break;
                         case TrnScGreige::PROCESS_PRINTING:
@@ -1027,12 +1043,10 @@ class TrnInspectingController extends Controller
                             $modelKartuProses->status = $modelKartuProses::STATUS_INSPECTED;
                             if (!($flag = $modelKartuProses->save(false, ['status']))) {
                                 $transaction->rollBack();
-                                Yii::$app->session->setFlash('error', '2');
+                                Yii::$app->session->setFlash('error', 'Gagal update status kartu proses printing.');
+                                return $this->redirect(['view', 'id' => $model->id]);
                             }
                             break;
-                        default:
-                            $transaction->rollBack();
-                            Yii::$app->session->setFlash('error', 'Jenis proses tidak didukung.');
                     }
                 }
             }

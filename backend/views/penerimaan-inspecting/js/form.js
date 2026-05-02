@@ -1,9 +1,16 @@
 $('#penerimaanPackingForm').on('beforeSubmit', function () {
     var $yiiform = $(this);
+    var data = $yiiform.serializeArray();
+
+    // Add checkboxes from the main page
+    $('input[name^="cbItms-"]:checked').each(function() {
+        data.push({name: this.name, value: 1});
+    });
+
     $.ajax({
         type: $yiiform.attr('method'),
         url: $yiiform.attr('action'),
-        data: $yiiform.serializeArray(),
+        data: data,
         beforeSend: function(jqXHR, settings){
             $('.modal-content').block({
                 message: '<h1>Processing</h1>',

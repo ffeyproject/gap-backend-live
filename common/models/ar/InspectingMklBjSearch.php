@@ -23,6 +23,7 @@ class InspectingMklBjSearch extends InspectingMklBj
     public $to_tgl_inspeksi;
     public $from_tgl_kirim;
     public $to_tgl_kirim;
+    public $penerimaanMode = false;
 
     /**
      * {@inheritdoc}
@@ -129,6 +130,24 @@ class InspectingMklBjSearch extends InspectingMklBj
             }
         }
 
+        if ($this->penerimaanMode) {
+            $query->andWhere([
+                'OR',
+                ['inspecting_mkl_bj.status' => InspectingMklBj::STATUS_POSTED],
+                [
+                    'AND',
+                    ['inspecting_mkl_bj.status' => InspectingMklBj::STATUS_DELIVERED],
+                    'EXISTS (
+                        SELECT 1 FROM inspecting_mkl_bj_items 
+                        LEFT JOIN trn_gudang_jadi ON trn_gudang_jadi.id_from = inspecting_mkl_bj_items.id AND trn_gudang_jadi.trans_from = \'MKL\'
+                        WHERE inspecting_mkl_bj_items.inspecting_id = inspecting_mkl_bj.id AND trn_gudang_jadi.id IS NULL
+                    )'
+                ]
+            ]);
+        }else{
+            $query->andFilterWhere(['inspecting_mkl_bj.status' => $this->status]);
+        }
+
         // filter lainnya
         $query->andFilterWhere([
             'inspecting_mkl_bj.id' => $this->id,
@@ -138,7 +157,6 @@ class InspectingMklBjSearch extends InspectingMklBj
             'inspecting_mkl_bj.jenis_inspek' => $this->jenis_inspek,
             'inspecting_mkl_bj.no_memo' => $this->no_memo,
             'inspecting_mkl_bj.satuan' => $this->satuan,
-            'inspecting_mkl_bj.status' => $this->status,
         ]);
 
         $query->andFilterWhere(['ilike', 'inspecting_mkl_bj.no', $this->no])

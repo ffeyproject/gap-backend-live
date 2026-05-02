@@ -94,6 +94,7 @@ $joinPieces = [
                         ->exists();
 
                     $items = $itemsQuery
+                        ->where(['is_posted' => true])
                         ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                         ->all();
                 ?>
@@ -266,7 +267,26 @@ $joinPieces = [
                             }
                         ?>
                     </td>
-                    <td><input type="checkbox" name="cbItms-<?=$item->id?>"></td>
+                    <td>
+                        <?php
+                        $headId = $item->id;
+                        if($item['is_head'] != 1 && !empty($item['join_piece'])){
+                            $head = \common\models\ar\InspectingItem::find()->where(['inspecting_id'=>$item->inspecting_id, 'join_piece'=>$item['join_piece'], 'is_head'=>1])->one();
+                            if($head){
+                                $headId = $head->id;
+                            }
+                        }
+
+                        $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$headId, 'trans_from'=>'INS'])->exists();
+                        if($isReceived){
+                            echo '<span class="label label-success">Received</span>';
+                        }else{
+                            if($item['is_head'] == 1){
+                                echo '<input type="checkbox" name="cbItms-'.$item->id.'" value="1" checked>';
+                            }
+                        }
+                        ?>
+                    </td>
                     <td>
                         <?php
                         echo $item['note'] . ' '. Html::a('<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>',

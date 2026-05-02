@@ -116,6 +116,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Qr-Data</th>
                     <th>ID Barang</th>
                     <th>Qr-Code Print at</th>
+                    <th>Pilih</th>
                 </tr>
             </thead>
 
@@ -393,13 +394,31 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <?php 
                             $printed = $item['qr_print_at'] ? 'qrPrint btn btn-success center-block' : 'qrPrint btn btn-default center-block';
                             if ($item['is_head'] == 1) {
-                                echo ' '.Html::a('PRINT '.'<span><i class="fa fa-qrcode"></i></span>', ['qr', 'id' => $item['id']], ['class' => $printed, 'id' => 'qrPrint'.$item['id']]);
+                                echo ' '.Html::a('PRINT '.'<span><i class="fa fa-qrcode"></i></span>', ['qr', 'id' => $item['id']], ['class' => $printed, 'id' => 'qrPrint'.$item['id'], 'target' => '_blank']);
                             }
                         ?>
                     </td>
                     <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                     <td><?=$item['id']?></td>
                     <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                    <td>
+                        <?php
+                            if ($item['is_head'] == 1) {
+                                if ($item['is_posted']) {
+                                    echo '<span class="label label-success">Posted</span>';
+                                } else {
+                                    echo Html::checkbox('postedItemIds[]', false, [
+                                        'value' => $item['id'], 
+                                        'class' => 'check-item',
+                                        'style' => $item['qr_print_at'] ? '' : 'display:none;'
+                                    ]);
+                                    if (!$item['qr_print_at']) {
+                                        echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
+                                    }
+                                }
+                            }
+                        ?>
+                    </td>
                 </tr>
                 <?php endforeach;?>
                 </body>
@@ -659,41 +678,3 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         </div>
     </div>
 </div>
-<!-- JavaScript to handle the click event and append parameters -->
-<?php $this->registerJs('
-    $("#qrPrintLink").on("click", function(e) {
-        e.preventDefault();
-
-        // Get selected values from combo box or checkbox
-        var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param8Value = $("#param8Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-
-        // Determine the URL based on checkbox status
-        var theView = (param1Value == 0 && param2Value == 0) ? "qr-all-without-attribute" : "qr-all";
-
-        // Build the URL with the selected values
-        var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value + "&param8=" + param8Value;
-
-        var replacedUrl = url.replace(/replace/, theView);
-
-        // Redirect to the new URL
-        window.location.href = replacedUrl;
-    });
-
-    $(".qrPrint").on("click", function(e) {
-        e.preventDefault();
-
-        // Get selected values from combo box or checkbox
-        var param3Value = $("#param3Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param4Value = $("#param4Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-        var param5Value = $("#param5Checkbox").is(":checked") ? "1" : "0"; // Use 1 for checked, 0 for unchecked
-
-        // Build the URL with the selected values
-        var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value;
-
-        // Redirect to the new URL
-        window.location.href = url;
-    });
-'); ?>

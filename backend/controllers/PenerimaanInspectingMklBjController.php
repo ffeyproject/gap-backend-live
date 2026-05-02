@@ -25,7 +25,7 @@ class PenerimaanInspectingMklBjController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new InspectingMklBjSearch(['status'=>InspectingMklBj::STATUS_POSTED]);
+        $searchModel = new InspectingMklBjSearch(['penerimaanMode' => true]);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
@@ -73,41 +73,48 @@ class PenerimaanInspectingMklBjController extends Controller
      */
     public function actionTerima($id)
     {
+        $model = $this->findModel($id);
+        if($model->status != $model::STATUS_POSTED && $model->status != $model::STATUS_DELIVERED){
+            Yii::$app->session->setFlash('error', 'Status tidak valid.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $nullAttributes = array_keys(array_filter($model->items, function($value) {
+            return $value->qr_code === null && $value->is_head == 1;
+        }));
+
+        if(count($nullAttributes) > 0){
+            Yii::$app->session->setFlash('error', 'Qr code belum di cetak, silahkan generate terlebih dahulu.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $modelPenerimaan = new PenerimaanPackingForm();
+
         if(Yii::$app->request->isAjax){
-            Yii::$app->response->format = Response::FORMAT_JSON;
-
-            $model = $this->findModel($id);
-
-            if($model->status != $model::STATUS_POSTED){
-                Yii::$app->session->setFlash('error', 'Status tidak valid.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-
-            $nullAttributes = array_keys(array_filter($model->items, function($value) {
-                return $value->qr_code === null && $value->is_head == 1;
-            }));
-
-            if(count($nullAttributes) > 0){
-                Yii::$app->session->setFlash('error', 'Qr code belum di cetak, silahkan generate terlebih dahulu.');
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-
-            $modelPenerimaan = new PenerimaanPackingForm();
             if($modelPenerimaan->load(Yii::$app->request->post())){
-                if($modelPenerimaan->validate()){
-                    $model->status = $model::STATUS_DELIVERED;
-                    $model->delivered_by = Yii::$app->user->id;
-                    $model->delivered_at = time();
+                Yii::$app->response->format = Response::FORMAT_JSON;
+                $selectedItems = [];
+                foreach (Yii::$app->request->post() as $key => $value) {
+                    if (strpos($key, 'cbItms-') === 0 && $value == 1) {
+                        $selectedItems[] = (int)str_replace('cbItms-', '', $key);
+                    }
+                }
 
+                if($modelPenerimaan->validate()){
                     $transaction = Yii::$app->db->beginTransaction();
                     try{
-                        if(!$flag = $model->save(false, ['status', 'delivered_by', 'delivered_at'])){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                        $rollsQty = [];
+                        $itemsToProcess = $model->getItems()->where(['is_head' => 1])->orderBy('id ASC');
+                        if(!empty($selectedItems)){
+                            $itemsToProcess->andWhere(['id' => $selectedItems]);
                         }
 
-                        $rollsQty = [];
-                        foreach ($model->getItems()->orderBy('id ASC')->all() as $index=>$item) {
+                        foreach ($itemsToProcess->all() as $index=>$item) {
+                            // Cek apakah item ini sudah pernah diterima
+                            if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                                continue;
+                            }
+
                             if(!empty($item->join_piece)) {
                                 if ($item->grade_up <> NULL) {
                                     if(isset($rollsQty[$item->grade_up.'_'.$item->join_piece])) {
@@ -148,6 +155,7 @@ class PenerimaanInspectingMklBjController extends Controller
                             }
                         }
 
+                        $flag = false;
                         foreach ($rollsQty as $rollQty) {
                             if($rollQty['qty'] > 0){
                                 $modelStock = new TrnGudangJadi([
@@ -175,10 +183,29 @@ class PenerimaanInspectingMklBjController extends Controller
                             }
                         }
 
-                        if($flag){
-                            $transaction->commit();
-                            return ['success' => true];
+                        // Cek apakah semua item sudah diterima
+                        $allReceived = true;
+                        foreach ($model->items as $item) {
+                            if($item->is_head == 1){
+                                if(!\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                                    $allReceived = false;
+                                    break;
+                                }
+                            }
                         }
+
+                        if($allReceived){
+                            $model->status = $model::STATUS_DELIVERED;
+                            $model->delivered_by = Yii::$app->user->id;
+                            $model->delivered_at = time();
+                            if(!$model->save(false, ['status', 'delivered_by', 'delivered_at'])){
+                                $transaction->rollBack();
+                                throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                            }
+                        }
+
+                        $transaction->commit();
+                        return ['success' => true];
                     }catch (\Throwable $t){
                         $transaction->rollBack();
                         throw $t;
@@ -238,6 +265,9 @@ class PenerimaanInspectingMklBjController extends Controller
             $model->delivered_at = null;
             $model->delivery_reject_note = Json::encode($note);
             $model->status = $model::STATUS_DRAFT;
+
+            // Reset is_posted for all items
+            \common\models\ar\InspectingMklBjItems::updateAll(['is_posted' => false], ['inspecting_id' => $model->id]);
 
             if($model->save(false, ['delivered_at', 'delivery_reject_note', 'status']) !== false){
                 return true;
