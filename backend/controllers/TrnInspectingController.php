@@ -988,7 +988,7 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED){
+        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_DELIVERED){
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -1853,6 +1853,30 @@ class TrnInspectingController extends Controller
      * @throws \setasign\Fpdi\PdfParser\Type\PdfTypeException
      * @throws \yii\base\InvalidConfigException
      */
+    public function actionUnpostItem($id)
+    {
+        $item = \common\models\ar\InspectingItem::findOne($id);
+        if (!$item) {
+            throw new \yii\web\NotFoundHttpException('Item tidak ditemukan.');
+        }
+
+        // Cek apakah sudah di gudang jadi
+        $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from' => $item->id, 'trans_from' => 'INS'])->exists();
+        if ($isReceived) {
+            \Yii::$app->session->setFlash('error', 'Item sudah diterima di Gudang Jadi, tidak bisa di-unpost.');
+            return $this->redirect(['view', 'id' => $item->inspecting_id]);
+        }
+
+        $item->is_posted = false;
+        if ($item->save(false, ['is_posted'])) {
+            \Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
+        } else {
+            \Yii::$app->session->setFlash('error', 'Gagal unpost item.');
+        }
+
+        return $this->redirect(['view', 'id' => $item->inspecting_id]);
+    }
+
     public function actionPrint($id)
     {
         $model = $this->findModel($id);

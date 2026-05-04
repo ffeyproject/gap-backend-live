@@ -17,6 +17,58 @@ $this->params['breadcrumbs'][] = ['label' => 'Inspectings', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
 echo Dialog::widget(['overrideYiiConfirm' => true]);
+?>
+
+<style>
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+.loader-content {
+    text-align: center;
+}
+.premium-loader {
+    width: 80px;
+    height: 80px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.loader-text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.2rem;
+    color: #2c3e50;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<div id="loading-overlay">
+    <div class="loader-content">
+        <div class="premium-loader"></div>
+        <div class="loader-text">MEMPROSES DATA...</div>
+    </div>
+</div>
+
+<?php
 
 if($model->kartu_process_dyeing_id !== null){
     $kartuProses = $model->kartuProcessDyeing;
@@ -68,7 +120,12 @@ if($model->kartu_process_dyeing_id !== null){
 <div class="inspecting-view">
     <p>
         <?php
-        $hasDraftItems = \common\models\ar\InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+        $hasItemsToPost = \common\models\ar\InspectingItem::find()
+            ->alias('it')
+            ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'INS\'')
+            ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1])
+            ->andWhere(['gj.id' => null])
+            ->exists();
 
         switch ($model->status){
             case $model::STATUS_DRAFT:
@@ -84,10 +141,13 @@ if($model->kartu_process_dyeing_id !== null){
                 break;
         }
 
-        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_APPROVED) {
-            if ($hasDraftItems) {
+        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_APPROVED || $model->status == $model::STATUS_DELIVERED) {
+            if ($hasItemsToPost) {
                 $isAnyPrinted = \common\models\ar\InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
-                if($isAnyPrinted){
+                // Jika semua sudah di-post tapi belum semua di gudang, kita tetap izinkan tombol posting muncul jika ada item yang belum dipost.
+                // Tapi user minta munculkan KEMBALI jika belum semua di gudang.
+                // Jadi kita cek apakah ada item yang belum di-post.
+                if($isAnyPrinted || \common\models\ar\InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->exists()){
                     echo Html::button('Posting', [
                         'class' => 'btn btn-warning',
                         'onclick' => 'postingItems()'
@@ -169,6 +229,11 @@ if (saved) {
 $(document).on("click", "#qrPrintLink", function(e) {
     e.preventDefault();
 
+    $(".check-item").show().prop("checked", true);
+    $(".label-print-dulu").hide();
+    $("#check_all_items").prop("checked", true);
+    updateLocalStorage();
+
     var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0";
     var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0";
     var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0";
@@ -179,6 +244,8 @@ $(document).on("click", "#qrPrintLink", function(e) {
     var replacedUrl = url.replace(/replace/, theView);
 
     window.open(replacedUrl, "_blank");
+    $("#loading-overlay").css("display", "flex");
+    location.reload();
 });
 
 $(document).on("click", ".qrPrint", function(e) {
@@ -196,9 +263,17 @@ $(document).on("click", ".qrPrint", function(e) {
     var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value;
 
     window.open(url, "_blank");
+    $("#loading-overlay").css("display", "flex");
+    location.reload();
 });
 
 $(document).on("change", ".check-item", function() {
+    updateLocalStorage();
+});
+
+$(document).on("change", "#check_all_items", function() {
+    var isChecked = $(this).is(":checked");
+    $(".check-item").prop("checked", isChecked);
     updateLocalStorage();
 });
 ');

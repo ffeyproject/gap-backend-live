@@ -84,11 +84,16 @@ $joinPieces = [
 ];
 
 $inspectingItems = $model->getItems()
+    ->alias('it')
+    ->select(['it.*', 'gj.id AS gj_id'])
+    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+    ->where(['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]])
     ->orderBy([
-        new \yii\db\Expression("CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END"),
-        'no_urut' => SORT_ASC,
-        'id' => SORT_ASC,
+        new \yii\db\Expression("CASE WHEN it.no_urut IS NULL THEN 1 ELSE 0 END"),
+        'it.no_urut' => SORT_ASC,
+        'it.id' => SORT_ASC,
     ])
+    ->asArray()
     ->all();
     
 $indexLimit = round(count($inspectingItems) / 2);
@@ -230,7 +235,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?>
+                                                <?= $packingNumber . $item['join_piece']; ?><?=$item['gj_id'] ? ' (V)' : ''?>
                                             </td>
                                             <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center;">
@@ -419,7 +424,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?>
+                                                <?= $packingNumber . $item['join_piece']; ?><?=$item['gj_id'] ? ' (V)' : ''?>
                                             </td>
                                             <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center">
@@ -733,3 +738,5 @@ $susutPcnt = (($perBatch-$totalM) / $perBatch) * 100;
         </tr>
     </tbody>
 </table>
+
+<p>Keterangan: (V) = Sudah diterima di Gudang Jadi</p>

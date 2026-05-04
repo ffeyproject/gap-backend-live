@@ -116,7 +116,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Qr-Data</th>
                     <th>ID Barang</th>
                     <th>Qr-Code Print at</th>
-                    <th>Pilih</th>
+                    <th>Pilih <?= Html::checkbox('check_all_items', false, ['id' => 'check_all_items']) ?></th>
                 </tr>
             </thead>
 
@@ -404,16 +404,28 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <td>
                         <?php
                             if ($item['is_head'] == 1) {
-                                if ($item['is_posted']) {
-                                    echo '<span class="label label-success">Posted</span>';
+                                $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists();
+                                if ($isReceived) {
+                                    echo '<span class="label label-success">Diterima Gudang Jadi</span>';
                                 } else {
-                                    echo Html::checkbox('postedItemIds[]', false, [
-                                        'value' => $item['id'], 
-                                        'class' => 'check-item',
-                                        'style' => $item['qr_print_at'] ? '' : 'display:none;'
-                                    ]);
-                                    if (!$item['qr_print_at']) {
-                                        echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
+                                    if ($item['is_posted']) {
+                                        echo '<span class="label label-warning">Posted</span> ';
+                                        echo Html::a('<i class="fa fa-undo"></i> Unpost', ['unpost-item', 'id' => $item['id']], [
+                                            'class' => 'btn btn-xs btn-danger',
+                                            'data-confirm' => 'Apakah Anda yakin ingin membatalkan posting item ini?',
+                                            'data-method' => 'post',
+                                            'title' => 'Unpost Item'
+                                        ]);
+                                    } else {
+                                        echo Html::checkbox('postedItemIds[]', false, [
+                                            'value' => $item['id'], 
+                                            'class' => 'check-item',
+                                            'style' => $item['qr_print_at'] ? '' : 'display:none;'
+                                        ]);
+                                        
+                                        if (!$item['qr_print_at']) {
+                                            echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
+                                        }
                                     }
                                 }
                             }

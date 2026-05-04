@@ -692,6 +692,30 @@ class InspectingMklBjController extends Controller
      * @return mixed
      * @throws NotFoundHttpException
      */
+    public function actionUnpostItem($id)
+    {
+        $item = InspectingMklBjItems::findOne($id);
+        if (!$item) {
+            throw new NotFoundHttpException('Item tidak ditemukan.');
+        }
+
+        // Cek apakah sudah di gudang jadi
+        $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from' => $item->id, 'trans_from' => 'MKL'])->exists();
+        if ($isReceived) {
+            Yii::$app->session->setFlash('error', 'Item sudah diterima di Gudang Jadi, tidak bisa di-unpost.');
+            return $this->redirect(['view', 'id' => $item->inspecting_id]);
+        }
+
+        $item->is_posted = false;
+        if ($item->save(false, ['is_posted'])) {
+            Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Gagal unpost item.');
+        }
+
+        return $this->redirect(['view', 'id' => $item->inspecting_id]);
+    }
+
     public function actionPrint($id)
     {
         $model = $this->findModel($id);

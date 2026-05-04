@@ -19,6 +19,58 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
 
 $perBatch = $model->wo->greige->group->qty_per_batch;
 $formatter = Yii::$app->formatter;
+?>
+
+<style>
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+.loader-content {
+    text-align: center;
+}
+.premium-loader {
+    width: 80px;
+    height: 80px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.loader-text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 1.2rem;
+    color: #2c3e50;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<div id="loading-overlay">
+    <div class="loader-content">
+        <div class="premium-loader"></div>
+        <div class="loader-text">MEMPROSES DATA...</div>
+    </div>
+</div>
+
+<?php
 
 $totalQtyGrade = [
     InspectingMklBjItems::GRADE_A => 0,
@@ -205,7 +257,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>QR Code ID</th>
                         <th>ID Barang</th>
                         <th>Qr-Code Print at</th>
-                        <th>Pilih</th>
+                        <th>Pilih <?= Html::checkbox('check_all_items', false, ['id' => 'check_all_items']) ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -436,8 +488,17 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <td>
                             <?php
                                 if ($item['is_head'] == 1) {
-                                    if ($item['is_posted']) {
-                                        echo '<span class="label label-success">Posted</span>';
+                                    $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item['id'], 'trans_from'=>'MKL'])->exists();
+                                    if ($isReceived) {
+                                        echo '<span class="label label-success">Diterima Gudang Jadi</span>';
+                                    } else if ($item['is_posted']) {
+                                        echo '<span class="label label-warning">Posted</span> ';
+                                        echo Html::a('<i class="fa fa-undo"></i> Unpost', ['unpost-item', 'id' => $item['id']], [
+                                            'class' => 'btn btn-xs btn-danger',
+                                            'data-confirm' => 'Apakah Anda yakin ingin membatalkan posting item ini?',
+                                            'data-method' => 'post',
+                                            'title' => 'Unpost Item'
+                                        ]);
                                     } else {
                                         echo Html::checkbox('postedItemIds[]', false, [
                                             'value' => $item['id'], 
@@ -750,6 +811,12 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
 
     $(document).on("click", "#qrPrintLink", function(e) {
         e.preventDefault();
+
+        $(".check-item").show().prop("checked", true);
+        $(".label-print-dulu").hide();
+        $("#check_all_items").prop("checked", true);
+        updateLocalStorage();
+
         var param1Value = $("#param1Checkbox").is(":checked") ? "1" : "0";
         var param2Value = $("#param2Checkbox").is(":checked") ? "1" : "0";
         var param6Value = $("#param6Checkbox").is(":checked") ? "1" : "0";
@@ -758,6 +825,8 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         var url = $(this).attr("href") + "&param1=" + param1Value + "&param2=" + param2Value + "&param6=" + param6Value + "&param8=" + param8Value;
         var replacedUrl = url.replace(/replace/, theView);
         window.open(replacedUrl, "_blank");
+        $("#loading-overlay").css("display", "flex");
+        location.reload();
     });
 
     $(document).on("click", ".qrPrint", function(e) {
@@ -772,9 +841,17 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         var param7Value = $("#param7Checkbox").is(":checked") ? "1" : "0";
         var url = $(this).attr("href") + "&param3=" + param3Value + "&param4=" + param4Value + "&param5=" + param5Value + "&param7=" + param7Value;
         window.open(url, "_blank");
+        $("#loading-overlay").css("display", "flex");
+        location.reload();
     });
 
     $(document).on("change", ".check-item", function() {
+        updateLocalStorage();
+    });
+
+    $(document).on("change", "#check_all_items", function() {
+        var isChecked = $(this).is(":checked");
+        $(".check-item").prop("checked", isChecked);
         updateLocalStorage();
     });
 '); ?>
