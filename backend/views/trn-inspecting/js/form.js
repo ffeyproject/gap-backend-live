@@ -69,6 +69,7 @@ $(document).ready(function () {
   // Ambil nilai max no_urut dari tabel
   let nextNoUrut = getNextNoUrutFromTable();
   $("#inspectingitemsform-no_urut").val(nextNoUrut);
+  $("#inspectingitemsform-grade").val("1").trigger("change");
 });
 
 // ========================
@@ -339,6 +340,7 @@ $("#InspectingFormItem").on("afterInit", function () {
     $("#ItemCounter").html(itemTable.rows().data().length);
 
     $("#InspectingFormItem").get(0).reset();
+    $("#inspectingitemsform-grade").val("1").trigger("change");
     $("#inspectingitemsform-no_urut").val(getNextNoUrutFromTable());
     $("#inspectingitemsform-ukuran").focus();
 

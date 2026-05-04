@@ -12,6 +12,10 @@ function getNextNoUrutFromTable() {
   return maxUrut + 1;
 }
 
+$(document).ready(function () {
+  $("#inspectingmklbjitems-grade").val("1").trigger("change");
+});
+
 // === Inisialisasi DataTable ===
 var itemTable = $("#InspectingItemTable").DataTable({
   data: inspectingItems,
@@ -252,6 +256,7 @@ $("#InspectingFormItem").on("afterInit", function () {
 
     // Reset form item dan isi otomatis no urut berikutnya
     $("#InspectingFormItem").get(0).reset();
+    $("#inspectingmklbjitems-grade").val("1").trigger("change");
     $("#inspectingmklbjitems-no_urut").val(getNextNoUrutFromTable());
     $("#inspectingmklbjitems-qty").focus();
 

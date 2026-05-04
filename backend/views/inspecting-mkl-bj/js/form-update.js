@@ -225,7 +225,7 @@ $("#InspectingFormItem").on("beforeSubmit", function () {
 
     // Reset form input
     $("#InspectingFormItem").get(0).reset();
-    $("#inspectingmklbjitems-grade").val(null).trigger('change');
+    $("#inspectingmklbjitems-grade").val("1").trigger('change');
     $("#inspectingmklbjitems-defect").val(null).trigger('change');
 
     // Isi otomatis no urut berikutnya
@@ -233,6 +233,10 @@ $("#InspectingFormItem").on("beforeSubmit", function () {
     $("#inspectingmklbjitems-qty").focus();
 
     return false;
+});
+
+$(document).ready(function () {
+    $("#inspectingmklbjitems-grade").val("1").trigger("change");
 });
 
 // ========================

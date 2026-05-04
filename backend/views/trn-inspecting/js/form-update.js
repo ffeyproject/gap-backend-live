@@ -213,6 +213,7 @@ $("#InspectingFormItem").on("afterInit", function () {
 
     // Reset form input
     $("#InspectingFormItem").get(0).reset();
+    $("#inspectingitemsform-grade").val("1").trigger("change");
 
     // Isi otomatis no urut berikutnya (hanya jika user tidak isi manual)
     $("#inspectingitemsform-no_urut").val(getNextNoUrutFromTable());
@@ -220,6 +221,10 @@ $("#InspectingFormItem").on("afterInit", function () {
 
     return false;
   });
+});
+
+$(document).ready(function () {
+    $("#inspectingitemsform-grade").val("1").trigger("change");
 });
 
 // ========================
