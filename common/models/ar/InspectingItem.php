@@ -53,6 +53,7 @@ class InspectingItem extends \yii\db\ActiveRecord
             [['inspecting_id', 'grade', 'qty'], 'required'],
             [['inspecting_id', 'grade', 'join_piece'], 'default', 'value' => null],
             [['inspecting_id', 'grade', 'no_urut'], 'integer'],
+            [['posted_at'], 'safe'],
             [['no_urut'], 'default', 'value' => null],
             [['qty'], 'number'],
             [['note'], 'string'],
@@ -73,6 +74,7 @@ class InspectingItem extends \yii\db\ActiveRecord
             'join_piece' => 'Join Piece',
             'qty' => 'Qty',
             'note' => 'Note',
+            'posted_at' => 'Posted At',
         ];
     }
 

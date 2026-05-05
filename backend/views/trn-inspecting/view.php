@@ -148,6 +148,12 @@ if($model->kartu_process_dyeing_id !== null){
                 // Tapi user minta munculkan KEMBALI jika belum semua di gudang.
                 // Jadi kita cek apakah ada item yang belum di-post.
                 if($isAnyPrinted || \common\models\ar\InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->exists()){
+                    echo Html::textInput('postingDateVisible', $model->date, [
+                        'type' => 'date', 
+                        'id' => 'posting-date-input', 
+                        'style' => 'width: 150px; display: inline-block; vertical-align: middle; margin-right: 5px;', 
+                        'class' => 'form-control'
+                    ]);
                     echo Html::button('Posting', [
                         'class' => 'btn btn-warning',
                         'onclick' => 'postingItems()'
@@ -173,7 +179,7 @@ if($model->kartu_process_dyeing_id !== null){
             ]);
         }
 
-        echo ' '.Html::a('Print', ['print', 'id' => $model->id], ['class' => 'btn btn-default']);
+        echo ' '.Html::a('Print', ['print', 'id' => $model->id], ['class' => 'btn btn-default', 'target' => '_blank']);
         ?>
     </p>
 
@@ -201,6 +207,12 @@ window.postingItems = function() {
     if (confirm("Apakah Anda yakin ingin memposting item yang dipilih?")) {
         // Clear saved selections after posting
         localStorage.removeItem("checked_items_" + inspectionId);
+        
+        var date = $("#posting-date-input").val();
+        if(date){
+            $("#posting-form").append("<input type=\"hidden\" name=\"postingDate\" value=\"" + date + "\">");
+        }
+        
         $("#posting-form").submit();
     }
 };

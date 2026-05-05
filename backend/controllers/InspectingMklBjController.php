@@ -658,10 +658,11 @@ class InspectingMklBjController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
+        $postingDate = Yii::$app->request->post('postingDate', $model->tgl_kirim);
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            // Update selected items to is_posted = true
-            InspectingMklBjItems::updateAll(['is_posted' => true], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
+            // Update selected items to is_posted = true and record the posting date
+            InspectingMklBjItems::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
 
             if ($model->status == $model::STATUS_DRAFT) {
                 $model->status = $model::STATUS_POSTED;
@@ -707,7 +708,8 @@ class InspectingMklBjController extends Controller
         }
 
         $item->is_posted = false;
-        if ($item->save(false, ['is_posted'])) {
+        $item->posted_at = null;
+        if ($item->save(false, ['is_posted', 'posted_at'])) {
             Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
         } else {
             Yii::$app->session->setFlash('error', 'Gagal unpost item.');

@@ -85,6 +85,11 @@ $inspectingItems = $model->getInspectingItems()
     ->orderBy(new \yii\db\Expression('COALESCE(it.no_urut, it.id) ASC'))
     ->asArray()
     ->all();
+
+$postedDates = array_unique(array_filter(array_column($inspectingItems, 'posted_at')));
+sort($postedDates);
+$tglKirimHeader = empty($postedDates) ? $model->date : implode(', ', $postedDates);
+
 $indexLimit = round(count($inspectingItems) / 2);
 ?>
 
@@ -106,7 +111,7 @@ $indexLimit = round(count($inspectingItems) / 2);
         <tr>
             <td>Tgl. Kirim</td>
             <td width="1%">:</td>
-            <td><?=$model->date?></td>
+            <td><?=$tglKirimHeader?></td>
             <td>&nbsp;</td>
             <td>No. Lot</td>
             <td>:</td>
@@ -172,6 +177,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             <th class="bordered" style="width: 40px; text-align: center;" rowspan="2">
                                                 No.</th>
                                             <th class="bordered" style="text-align: center;" colspan="8">Grade</th>
+                                            <th class="bordered" style="text-align: center;" rowspan="2">Tgl. Kirim</th>
                                             <th class="bordered" style="text-align: center;" rowspan="2">Keterangan</th>
                                         </tr>
                                         <tr>
@@ -361,6 +367,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                                 ?>
                                             </td>
 
+                                            <td class="bordered" style="text-align: center;"><?=$item['posted_at']?></td>
                                             <td class="bordered" style="text-align: center;"><?=$item['note']?></td>
                                         </tr>
                                         <?php endforeach;?>
@@ -374,6 +381,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             <th class="bordered" style="width: 40px; text-align: center;" rowspan="2">
                                                 No.</th>
                                             <th class="bordered" style="text-align: center;" colspan="8">Grade</th>
+                                            <th class="bordered" style="text-align: center;" rowspan="2">Tgl. Kirim</th>
                                             <th class="bordered" style="text-align: center;" rowspan="2">Keterangan</th>
                                         </tr>
                                         <tr>
@@ -565,12 +573,13 @@ $indexLimit = round(count($inspectingItems) / 2);
                                                 ?>
                                             </td>
 
+                                            <td class="bordered" style="text-align: center"><?=$item['posted_at']?></td>
                                             <td class="bordered" style="text-align: center"><?=$item['note']?></td>
                                         </tr>
                                         <?php endforeach;?>
                                         <?php
                                             if (count($inspectingItems) % 2 !== 0) {
-                                                echo '<tr><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td></tr>';
+                                                echo '<tr><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td></tr>';
                                             }
                                         ?>
                                     </tbody>

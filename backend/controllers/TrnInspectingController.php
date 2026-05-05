@@ -999,10 +999,11 @@ class TrnInspectingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
+        $postingDate = Yii::$app->request->post('postingDate', $model->date);
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            // Update selected items to is_posted = true
-            InspectingItem::updateAll(['is_posted' => true], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
+            // Update selected items to is_posted = true and record the posting date
+            InspectingItem::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
 
             $flag = true;
             // Set header status to APPROVED if it was DRAFT
@@ -1868,7 +1869,8 @@ class TrnInspectingController extends Controller
         }
 
         $item->is_posted = false;
-        if ($item->save(false, ['is_posted'])) {
+        $item->posted_at = null;
+        if ($item->save(false, ['is_posted', 'posted_at'])) {
             \Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
         } else {
             \Yii::$app->session->setFlash('error', 'Gagal unpost item.');

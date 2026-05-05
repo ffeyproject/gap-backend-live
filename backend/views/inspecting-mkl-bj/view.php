@@ -144,6 +144,12 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             if ($hasDraftItems) {
                 $isAnyPrinted = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
                 if($isAnyPrinted){
+                    echo Html::textInput('postingDateVisible', $model->tgl_kirim, [
+                        'type' => 'date', 
+                        'id' => 'posting-date-input', 
+                        'style' => 'width: 150px; display: inline-block; vertical-align: middle; margin-right: 5px;', 
+                        'class' => 'form-control'
+                    ]);
                     echo Html::button('Posting', [
                         'class' => 'btn btn-warning',
                         'onclick' => 'postingItems()'
@@ -169,7 +175,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             ]);
         }
 
-        echo ' '.Html::a('Print', ['print', 'id' => $model->id], ['class' => 'btn btn-default']);
+        echo ' '.Html::a('Print', ['print', 'id' => $model->id], ['class' => 'btn btn-default', 'target' => '_blank']);
         ?>
     </p>
 
@@ -257,6 +263,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <th>QR Code ID</th>
                         <th>ID Barang</th>
                         <th>Qr-Code Print at</th>
+                        <th>Tgl Posting</th>
                         <th>Pilih <?= Html::checkbox('check_all_items', false, ['id' => 'check_all_items']) ?></th>
                     </tr>
                 </thead>
@@ -272,8 +279,14 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             ->exists();
 
                         $items = $itemsQuery
+                            ->with(['defectInspectingItems.mstKodeDefect'])
                             ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                             ->all();
+                            
+                        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+                            ->select('id_from')
+                            ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($items, 'id'), 'trans_from' => 'MKL'])
+                            ->column();
                     ?>
                     <?php foreach ($items as $index => $item): ?>
                     <?php
@@ -485,10 +498,11 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                         <td><?= $item['id'] ?></td>
                         <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                        <td><?=$item['posted_at'] ? $item['posted_at'] : '-'?></td>
                         <td>
                             <?php
                                 if ($item['is_head'] == 1) {
-                                    $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item['id'], 'trans_from'=>'MKL'])->exists();
+                                    $isReceived = in_array($item['id'], $receivedItemIds);
                                     if ($isReceived) {
                                         echo '<span class="label label-success">Diterima Gudang Jadi</span>';
                                     } else if ($item['is_posted']) {
@@ -783,10 +797,16 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             alert("Pilih setidaknya satu item untuk dikirim.");
             return;
         }
-        if (confirm("Apakah Anda yakin ingin memposting item yang dipilih?")) {
-            localStorage.removeItem("checked_items_" + inspectionId);
-            $("#posting-form").submit();
-        }
+            if (confirm("Apakah Anda yakin ingin memposting item yang dipilih?")) {
+                localStorage.removeItem("checked_items_" + inspectionId);
+                
+                var date = $("#posting-date-input").val();
+                if(date){
+                    $("#posting-form").append("<input type=\"hidden\" name=\"postingDate\" value=\"" + date + "\">");
+                }
+                
+                $("#posting-form").submit();
+            }
     };
 
     function updateLocalStorage() {

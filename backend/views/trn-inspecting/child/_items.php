@@ -116,6 +116,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <th>Qr-Data</th>
                     <th>ID Barang</th>
                     <th>Qr-Code Print at</th>
+                    <th>Tgl Posting</th>
                     <th>Pilih <?= Html::checkbox('check_all_items', false, ['id' => 'check_all_items']) ?></th>
                 </tr>
             </thead>
@@ -131,8 +132,14 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         ->exists();
 
                     $items = $itemsQuery
+                        ->with(['defectInspectingItems.mstKodeDefect'])
                         ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                         ->all();
+                        
+                    $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+                        ->select('id_from')
+                        ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($items, 'id'), 'trans_from' => 'INS'])
+                        ->column();
                 ?>
                 <?php foreach ($items as $index => $item): ?>
                 <?php
@@ -401,10 +408,11 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                     <td><?=$item['id']?></td>
                     <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
+                    <td><?=$item['posted_at'] ? $item['posted_at'] : '-'?></td>
                     <td>
                         <?php
                             if ($item['is_head'] == 1) {
-                                $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists();
+                                $isReceived = in_array($item->id, $receivedItemIds);
                                 if ($isReceived) {
                                     echo '<span class="label label-success">Diterima Gudang Jadi</span>';
                                 } else {

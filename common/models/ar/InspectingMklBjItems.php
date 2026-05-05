@@ -72,6 +72,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             [['defect', 'lot_no'], 'safe'],
             ['join_piece', 'match', 'pattern' => '/^[A-Z]{1,2}$/'],
             [['inspecting_id'], 'integer'],
+            [['posted_at'], 'safe'],
             [['no_urut'], 'default', 'value' => null],
             [['no_urut'], 'integer'],
             ['grade', 'in', 'range' => [self::GRADE_A, self::GRADE_B, self::GRADE_C, self::GRADE_PK, self::GRADE_SAMPLE, self::GRADE_A_PLUS, self::GRADE_A_ASTERISK, self::GRADE_PUTIH, self::GRADE_D]],
@@ -96,6 +97,7 @@ class InspectingMklBjItems extends \yii\db\ActiveRecord
             'join_piece' => 'Join Piece',
             'qty' => 'Qty',
             'note' => 'Note',
+            'posted_at' => 'Posted At',
             'gradeName' => 'Grade',
         ];
     }
