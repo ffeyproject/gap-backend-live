@@ -77,13 +77,28 @@ if($model->kartu_process_dyeing_id !== null){
 <div class="inspecting-view">
     <p>
         <?php
+        $receivedIds = \common\models\ar\TrnGudangJadi::find()
+            ->select('id_from')
+            ->where(['trans_from' => 'INS'])
+            ->andWhere(['id_from' => \yii\helpers\ArrayHelper::getColumn($model->inspectingItems, 'id')])
+            ->column();
+
+        $joinPieceHasReceived = [];
+        foreach ($model->inspectingItems as $ii) {
+            if (!empty($ii->join_piece) && in_array($ii->id, $receivedIds)) {
+                $joinPieceHasReceived[$ii->join_piece] = true;
+            }
+        }
+
         $anyReceived = false;
         $allReceived = true;
         foreach ($model->inspectingItems as $item) {
             if($item->is_head == 1){
-                if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
+                $isGroupReceived = in_array($item->id, $receivedIds) || (!empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece]));
+
+                if ($isGroupReceived) {
                     $anyReceived = true;
-                }else{
+                } else if($item->qty > 0){
                     $allReceived = false;
                 }
             }

@@ -278,7 +278,7 @@ $joinPieces = [
                         }
 
                         $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$headId, 'trans_from'=>'INS'])->exists();
-                        if($isReceived){
+                        if($isReceived || $item['qty'] <= 0){
                             echo '<span class="label label-success">Received</span>';
                         }else{
                             if($item['is_head'] == 1){

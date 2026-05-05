@@ -59,7 +59,7 @@ class PenerimaanInspectingController extends Controller
     public function actionTerima($id)
     {
         $model = $this->findModel($id);
-        if($model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_DELIVERED){
+        if($model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_APPROVED_PARTIAL){
             Yii::$app->session->setFlash('error', 'Status tidak valid.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -177,7 +177,7 @@ class PenerimaanInspectingController extends Controller
                         $allReceived = true;
                         foreach ($model->inspectingItems as $item) {
                             if($item->is_head == 1){
-                                if(!\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
+                                if($item->qty > 0 && !\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'INS'])->exists()){
                                     $allReceived = false;
                                     break;
                                 }
@@ -248,7 +248,7 @@ class PenerimaanInspectingController extends Controller
             Yii::$app->response->format = Response::FORMAT_JSON;
             $model = $this->findModel($id);
 
-            if($model->status != $model::STATUS_APPROVED){
+            if($model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_APPROVED_PARTIAL){
                 Yii::$app->session->setFlash('error', 'Status tidak valid.');
                 return $this->redirect(['view', 'id' => $model->id]);
             }

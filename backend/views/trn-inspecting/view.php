@@ -141,7 +141,7 @@ if($model->kartu_process_dyeing_id !== null){
                 break;
         }
 
-        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_APPROVED || $model->status == $model::STATUS_DELIVERED) {
+        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_APPROVED || $model->status == $model::STATUS_APPROVED_PARTIAL || $model->status == $model::STATUS_DELIVERED) {
             if ($hasItemsToPost) {
                 $isAnyPrinted = \common\models\ar\InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
                 // Jika semua sudah di-post tapi belum semua di gudang, kita tetap izinkan tombol posting muncul jika ada item yang belum dipost.

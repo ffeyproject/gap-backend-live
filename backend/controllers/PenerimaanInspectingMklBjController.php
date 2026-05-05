@@ -74,7 +74,7 @@ class PenerimaanInspectingMklBjController extends Controller
     public function actionTerima($id)
     {
         $model = $this->findModel($id);
-        if($model->status != $model::STATUS_POSTED && $model->status != $model::STATUS_DELIVERED){
+        if($model->status != $model::STATUS_POSTED && $model->status != $model::STATUS_POSTED_PARTIAL){
             Yii::$app->session->setFlash('error', 'Status tidak valid.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -187,7 +187,7 @@ class PenerimaanInspectingMklBjController extends Controller
                         $allReceived = true;
                         foreach ($model->items as $item) {
                             if($item->is_head == 1){
-                                if(!\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                                if($item->qty > 0 && !\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
                                     $allReceived = false;
                                     break;
                                 }
@@ -245,7 +245,7 @@ class PenerimaanInspectingMklBjController extends Controller
             Yii::$app->response->format = Response::FORMAT_JSON;
             $model = $this->findModel($id);
 
-            if($model->status != $model::STATUS_POSTED){
+            if($model->status != $model::STATUS_POSTED && $model->status != $model::STATUS_POSTED_PARTIAL){
                 Yii::$app->session->setFlash('error', 'Status tidak valid.');
                 return $this->redirect(['view', 'id' => $model->id]);
             }

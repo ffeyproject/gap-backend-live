@@ -988,7 +988,7 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_DELIVERED){
+        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED && $model->status != $model::STATUS_APPROVED_PARTIAL && $model->status != $model::STATUS_DELIVERED){
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -1005,13 +1005,20 @@ class TrnInspectingController extends Controller
             // Update selected items to is_posted = true and record the posting date
             InspectingItem::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
 
+            // Check if all items are posted
+            $totalItemsCount = InspectingItem::find()->where(['inspecting_id' => $model->id])->count();
+            $postedItemsCount = InspectingItem::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->count();
+
+            $newStatus = ($postedItemsCount == $totalItemsCount) ? $model::STATUS_APPROVED : $model::STATUS_APPROVED_PARTIAL;
+
             $flag = true;
-            // Set header status to APPROVED if it was DRAFT
-            if ($model->status == $model::STATUS_DRAFT) {
-                $model->status = $model::STATUS_APPROVED;
+            if ($model->status != $newStatus) {
+                if ($model->status == $model::STATUS_DRAFT) {
+                    $model->setNomor();
+                }
+                $model->status = $newStatus;
                 $model->approved_by = Yii::$app->user->id;
                 $model->approved_at = time();
-                $model->setNomor();
                 if (!$flag = $model->save(false, ['status', 'approved_by', 'approved_at', 'no_urut', 'no'])) {
                     $transaction->rollBack();
                     Yii::$app->session->setFlash('error', 'Gagal update status header.');

@@ -68,13 +68,28 @@ $joinPieces = [
 <div class="inspecting-view">
     <p>
         <?php
+        $receivedIds = \common\models\ar\TrnGudangJadi::find()
+            ->select('id_from')
+            ->where(['trans_from' => 'MKL'])
+            ->andWhere(['id_from' => \yii\helpers\ArrayHelper::getColumn($model->items, 'id')])
+            ->column();
+
+        $joinPieceHasReceived = [];
+        foreach ($model->items as $ii) {
+            if (!empty($ii->join_piece) && in_array($ii->id, $receivedIds)) {
+                $joinPieceHasReceived[$ii->join_piece] = true;
+            }
+        }
+
         $anyReceived = false;
         $allReceived = true;
         foreach ($model->items as $item) {
             if($item->is_head == 1){
-                if(\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                $isGroupReceived = in_array($item->id, $receivedIds) || (!empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece]));
+
+                if ($isGroupReceived) {
                     $anyReceived = true;
-                }else{
+                } else if($item->qty > 0){
                     $allReceived = false;
                 }
             }
@@ -365,7 +380,7 @@ $joinPieces = [
                             }
 
                             $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$headId, 'trans_from'=>'MKL'])->exists();
-                            if($isReceived){
+                            if($isReceived || $item['qty'] <= 0){
                                 echo '<span class="label label-success">Received</span>';
                             }else{
                                 if($item['is_head'] == 1){

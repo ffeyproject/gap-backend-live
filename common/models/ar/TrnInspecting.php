@@ -65,11 +65,18 @@ class TrnInspecting extends \yii\db\ActiveRecord
     const STATUS_POSTED = 2;//langsung bypass jadi approved
     const STATUS_APPROVED = 3;//sudah bisa diterima oleh gudang jadi dan selesai di verpacking
     const STATUS_DELIVERED = 4;//Diterima oleh gudang jadi
+    const STATUS_APPROVED_PARTIAL = 5;//Selesai verpacking sebagian
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Selesai Inspek', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Selesai Verpacking', self::STATUS_DELIVERED => 'Diterima Gudang Jadi'];
+        return [
+            self::STATUS_DRAFT => 'Selesai Inspek',
+            self::STATUS_POSTED => 'Posted',
+            self::STATUS_APPROVED => 'Selesai Verpacking',
+            self::STATUS_DELIVERED => 'Diterima Gudang Jadi',
+            self::STATUS_APPROVED_PARTIAL => 'Selesai Verpacking Partial'
+        ];
     }
 
     const FRESH_INSPEKSI = 1;
@@ -107,7 +114,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             [['date', 'tanggal_inspeksi'], 'date', 'format'=>'php:Y-m-d'],
 
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
-            ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_APPROVED, self::STATUS_DELIVERED]],
+            ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_APPROVED, self::STATUS_DELIVERED, self::STATUS_APPROVED_PARTIAL]],
 
             ['jenis_inspek', 'default', 'value'=>self::FRESH_INSPEKSI],
             ['jenis_inspek', 'required'],

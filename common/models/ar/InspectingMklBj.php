@@ -49,12 +49,17 @@ use common\models\ar\MstK3l;
  */
 class InspectingMklBj extends \yii\db\ActiveRecord
 {
-    const STATUS_DRAFT = 1;const STATUS_POSTED = 2; const STATUS_DELIVERED = 3;//Diterima oleh gudang jadi
+    const STATUS_DRAFT = 1;const STATUS_POSTED = 2; const STATUS_DELIVERED = 3; const STATUS_POSTED_PARTIAL = 4;//Diterima oleh gudang jadi
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_DELIVERED => 'Diterima Gudang Jadi'];
+        return [
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_POSTED => 'Posted',
+            self::STATUS_DELIVERED => 'Diterima Gudang Jadi',
+            self::STATUS_POSTED_PARTIAL => 'Posted Partial'
+        ];
     }
 
     const JENIS_MAKLOON_PROSES=1; const JENIS_MAKLOON_FIINISH=2; const JENIS_BARANG_JADI=3; const JENIS_FRESH=4;
@@ -114,7 +119,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             [['no_memo', 'note'], 'string', 'max' => 255],
 
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
-            ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED]],
+            ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED, self::STATUS_POSTED_PARTIAL]],
 
             ['jenis', 'in', 'range' => [self::JENIS_MAKLOON_PROSES, self::JENIS_MAKLOON_FIINISH, self::JENIS_BARANG_JADI, self::JENIS_FRESH]],
             ['jenis_inspek', 'in', 'range' => [self::FRESH_INSPEKSI, self::RE_INSPEKSI, self::HASIL_PERBAIKAN]],

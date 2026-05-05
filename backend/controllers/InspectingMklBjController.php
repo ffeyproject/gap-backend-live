@@ -647,7 +647,7 @@ class InspectingMklBjController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_POSTED){
+        if($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_POSTED && $model->status != $model::STATUS_POSTED_PARTIAL){
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diposting.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -664,17 +664,19 @@ class InspectingMklBjController extends Controller
             // Update selected items to is_posted = true and record the posting date
             InspectingMklBjItems::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
 
-            if ($model->status == $model::STATUS_DRAFT) {
-                $model->status = $model::STATUS_POSTED;
-                if(empty($model->no_urut)){
+            // Check if all items are posted
+            $totalItemsCount = InspectingMklBjItems::find()->where(['inspecting_id' => $model->id])->count();
+            $postedItemsCount = InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->count();
+
+            $newStatus = ($postedItemsCount == $totalItemsCount) ? $model::STATUS_POSTED : $model::STATUS_POSTED_PARTIAL;
+
+            if ($model->status != $newStatus) {
+                if ($model->status == $model::STATUS_DRAFT) {
                     $model->setNomor();
-                    if (!$model->save(false, ['status', 'no_urut', 'no'])) {
-                        throw new HttpException(500, 'Gagal update status header.');
-                    }
-                }else{
-                    if (!$model->save(false, ['status'])) {
-                        throw new HttpException(500, 'Gagal update status header.');
-                    }
+                }
+                $model->status = $newStatus;
+                if (!$model->save(false, ['status', 'no_urut', 'no'])) {
+                    throw new HttpException(500, 'Gagal update status header.');
                 }
             }
 

@@ -136,10 +136,21 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                         ->all();
                         
-                    $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+                        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
                         ->select('id_from')
                         ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($items, 'id'), 'trans_from' => 'INS'])
                         ->column();
+
+                    $joinPieceToHeadId = [];
+                    $joinPieceHasReceived = [];
+                    foreach ($items as $ii) {
+                        if ($ii->is_head == 1 && !empty($ii->join_piece)) {
+                            $joinPieceToHeadId[$ii->join_piece] = $ii->id;
+                        }
+                        if (!empty($ii->join_piece) && in_array($ii->id, $receivedItemIds)) {
+                            $joinPieceHasReceived[$ii->join_piece] = true;
+                        }
+                    }
                 ?>
                 <?php foreach ($items as $index => $item): ?>
                 <?php
@@ -411,29 +422,33 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     <td><?=$item['posted_at'] ? $item['posted_at'] : '-'?></td>
                     <td>
                         <?php
-                            if ($item['is_head'] == 1) {
-                                $isReceived = in_array($item->id, $receivedItemIds);
-                                if ($isReceived) {
-                                    echo '<span class="label label-success">Diterima Gudang Jadi</span>';
-                                } else {
-                                    if ($item['is_posted']) {
-                                        echo '<span class="label label-warning">Posted</span> ';
+                            $isReceived = in_array($item->id, $receivedItemIds) || $item->qty <= 0;
+                            if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
+                                $isReceived = true;
+                            }
+
+                            if ($isReceived) {
+                                echo '<span class="label label-success">Diterima Gudang Jadi</span>';
+                            } else {
+                                if ($item['is_posted']) {
+                                    echo '<span class="label label-warning">Posted</span> ';
+                                    if ($item['is_head'] == 1) {
                                         echo Html::a('<i class="fa fa-undo"></i> Unpost', ['unpost-item', 'id' => $item['id']], [
                                             'class' => 'btn btn-xs btn-danger',
                                             'data-confirm' => 'Apakah Anda yakin ingin membatalkan posting item ini?',
                                             'data-method' => 'post',
                                             'title' => 'Unpost Item'
                                         ]);
-                                    } else {
-                                        echo Html::checkbox('postedItemIds[]', false, [
-                                            'value' => $item['id'], 
-                                            'class' => 'check-item',
-                                            'style' => $item['qr_print_at'] ? '' : 'display:none;'
-                                        ]);
-                                        
-                                        if (!$item['qr_print_at']) {
-                                            echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
-                                        }
+                                    }
+                                } else if ($item['is_head'] == 1) {
+                                    echo Html::checkbox('postedItemIds[]', false, [
+                                        'value' => $item['id'], 
+                                        'class' => 'check-item',
+                                        'style' => $item['qr_print_at'] ? '' : 'display:none;'
+                                    ]);
+                                    
+                                    if (!$item['qr_print_at']) {
+                                        echo '<small class="text-muted label-print-dulu">Print QR dulu</small>';
                                     }
                                 }
                             }

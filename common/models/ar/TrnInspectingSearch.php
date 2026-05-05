@@ -114,15 +114,7 @@ class TrnInspectingSearch extends TrnInspecting
             $query->andWhere([
                 'OR',
                 ['trn_inspecting.status' => TrnInspecting::STATUS_APPROVED],
-                [
-                    'AND',
-                    ['trn_inspecting.status' => TrnInspecting::STATUS_DELIVERED],
-                    'EXISTS (
-                        SELECT 1 FROM inspecting_item 
-                        LEFT JOIN trn_gudang_jadi ON trn_gudang_jadi.id_from = inspecting_item.id AND trn_gudang_jadi.trans_from = \'INS\'
-                        WHERE inspecting_item.inspecting_id = trn_inspecting.id AND trn_gudang_jadi.id IS NULL
-                    )'
-                ]
+                ['trn_inspecting.status' => TrnInspecting::STATUS_APPROVED_PARTIAL],
             ]);
         }else{
             $query->andFilterWhere(['trn_inspecting.status' => $this->status]);
