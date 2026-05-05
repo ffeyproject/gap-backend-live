@@ -194,6 +194,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     <tbody>
                                         <?php foreach ($inspectingItems as $index=>$item):?>
                                         <?php
+                                        $item['qty'] = $item['gj_id'] ? 0 : $item['qty'];
+
                                         if ($index == $indexLimit) {
                                             break;
                                         }
@@ -398,6 +400,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     <tbody>
                                         <?php foreach ($inspectingItems as $index=>$item):?>
                                         <?php
+                                        $item['qty'] = $item['gj_id'] ? 0 : $item['qty'];
+
                                         if ($index < $indexLimit) {
                                             continue;
                                         } elseif($index > (count($inspectingItems))) {
