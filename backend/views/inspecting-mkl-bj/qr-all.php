@@ -7,8 +7,11 @@ include "../components/phpqrcode/qrlib.php";
 $formatter = Yii::$app->formatter;
 ?>
 
-<table>
-    <?php foreach ($model as $m): ?>
+<?php foreach ($model as $index => $m): ?>
+    <?php if ($index > 0): ?>
+        <pagebreak />
+    <?php endif; ?>
+<table style="width: 100%; border-collapse: collapse;">
     <tbody>
         <?php 
       $completeQrCode = '['.$m['qr_code'].']'.$m['qr_code_desc'];
@@ -87,6 +90,6 @@ $formatter = Yii::$app->formatter;
                 <p style="font-family: Calibri; font-size: 13px;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
             </td>
         </tr>
-        <?php endforeach; ?>
     </tbody>
 </table>
+<?php endforeach; ?>

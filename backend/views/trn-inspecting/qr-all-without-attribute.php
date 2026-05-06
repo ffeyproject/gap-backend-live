@@ -7,8 +7,11 @@ include "../components/phpqrcode/qrlib.php";
 $formatter = Yii::$app->formatter;
 ?>
 
-<table>
-    <?php foreach ($model as $m): ?>
+<?php foreach ($model as $index => $m): ?>
+    <?php if ($index > 0): ?>
+        <pagebreak />
+    <?php endif; ?>
+<table style="width: 100%; border-collapse: collapse;">
     <tbody>
         <?php 
         // Direktori QR absolute (Windows & Linux kompatibel)
@@ -94,6 +97,6 @@ $formatter = Yii::$app->formatter;
 
             </td>
         </tr>
-        <?php endforeach; ?>
     </tbody>
 </table>
+<?php endforeach; ?>
