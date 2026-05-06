@@ -127,6 +127,13 @@ if($model->kartu_process_dyeing_id !== null){
             ->andWhere(['gj.id' => null])
             ->exists();
 
+        $hasPostedItemsNotReceived = \common\models\ar\InspectingItem::find()
+            ->alias('it')
+            ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'INS\'')
+            ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1, 'it.is_posted' => true])
+            ->andWhere(['gj.id' => null])
+            ->exists();
+
         switch ($model->status){
             case $model::STATUS_DRAFT:
                 echo Html::a('Upgrade', ['upgrade', 'id' => $model->id], ['class' => 'btn btn-success']).' ';
@@ -138,6 +145,11 @@ if($model->kartu_process_dyeing_id !== null){
                         'method' => 'post',
                     ],
                 ]).' ';
+                break;
+            default:
+                if ($hasPostedItemsNotReceived) {
+                    echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';
+                }
                 break;
         }
 

@@ -126,6 +126,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         <?php
         $hasDraftItems = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
 
+        $hasPostedItemsNotReceived = \common\models\ar\InspectingMklBjItems::find()
+            ->alias('it')
+            ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+            ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1, 'it.is_posted' => true])
+            ->andWhere(['gj.id' => null])
+            ->exists();
+
         switch ($model->status){
             case $model::STATUS_DRAFT:
                 echo Html::a('Upgrade', ['upgrade', 'id' => $model->id], ['class' => 'btn btn-success']).' ';
@@ -137,6 +144,11 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             'method' => 'post',
                         ],
                     ]).' ';
+                break;
+            default:
+                if ($hasPostedItemsNotReceived) {
+                    echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';
+                }
                 break;
         }
 

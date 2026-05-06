@@ -602,7 +602,14 @@ class TrnInspectingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->status != $model::STATUS_DRAFT) {
+        $hasPostedItemsNotReceived = \common\models\ar\InspectingItem::find()
+            ->alias('it')
+            ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'INS\'')
+            ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1, 'it.is_posted' => true])
+            ->andWhere(['gj.id' => null])
+            ->exists();
+
+        if ($model->status != $model::STATUS_DRAFT && !$hasPostedItemsNotReceived) {
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diupdate.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -657,7 +664,24 @@ class TrnInspectingController extends Controller
             ->orderBy(new \yii\db\Expression('COALESCE(no_urut, id) ASC'))
             ->all();
 
+        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+            ->select('id_from')
+            ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($inspectItems, 'id'), 'trans_from' => 'INS'])
+            ->column();
+
+        $joinPieceHasReceived = [];
+        foreach ($inspectItems as $ii) {
+            if (!empty($ii->join_piece) && in_array($ii->id, $receivedItemIds)) {
+                $joinPieceHasReceived[$ii->join_piece] = true;
+            }
+        }
+
         foreach ($inspectItems as $item) {
+            $isReceived = in_array($item->id, $receivedItemIds) || $item->qty <= 0;
+            if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
+                $isReceived = true;
+            }
+
             $items[] = [
                 'id'         => $item->id,
                 'no_urut'    => $item->no_urut,
@@ -671,6 +695,7 @@ class TrnInspectingController extends Controller
                 'join_piece' => $item->join_piece,
                 'keterangan' => $item->note,
                 'qr_code'    => $item->qr_code,
+                'is_received' => $isReceived,
             ];
         }
 

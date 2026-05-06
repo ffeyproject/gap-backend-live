@@ -43,7 +43,10 @@ var itemTable = $("#InspectingItemTable").DataTable({
     {
       data: null,
       className: "text-center",
-      render: function () {
+      render: function (data, type, row) {
+        if (row.is_received) {
+          return `<span class="label label-success" style="font-size: 10px;">Diterima Gudang Jadi</span>`;
+        }
         return `
           <div class="btn-group">
             <button class="btn btn-xs btn-warning editItemData" title="Edit">

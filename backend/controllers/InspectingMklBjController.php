@@ -216,6 +216,18 @@ class InspectingMklBjController extends Controller
         $model = $this->findModel($id);
         $modelItem = new InspectingMklBjItems();
 
+        $hasPostedItemsNotReceived = \common\models\ar\InspectingMklBjItems::find()
+            ->alias('it')
+            ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+            ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1, 'it.is_posted' => true])
+            ->andWhere(['gj.id' => null])
+            ->exists();
+
+        if ($model->status != $model::STATUS_DRAFT && !$hasPostedItemsNotReceived) {
+            Yii::$app->session->setFlash('error', 'Status tidak valid untuk diupdate.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
         // Ambil item dengan urutan no_urut ASC (NULL terakhir)
         $items = ArrayHelper::toArray(
             $model->getItems()
@@ -238,10 +250,30 @@ class InspectingMklBjController extends Controller
                     'defect',
                     'note',
                     'is_head',
-                    'qr_code',
                 ],
             ]
         );
+
+        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+            ->select('id_from')
+            ->where(['id_from' => array_column($items, 'id'), 'trans_from' => 'MKL'])
+            ->column();
+
+        $joinPieceHasReceived = [];
+        foreach ($items as $ii) {
+            if (!empty($ii['join_piece']) && in_array($ii['id'], $receivedItemIds)) {
+                $joinPieceHasReceived[$ii['join_piece']] = true;
+            }
+        }
+
+        foreach ($items as &$it) {
+            $isReceived = in_array($it['id'], $receivedItemIds) || $it['qty'] <= 0;
+            if (!$isReceived && !empty($it['join_piece']) && isset($joinPieceHasReceived[$it['join_piece']])) {
+                $isReceived = true;
+            }
+            $it['is_received'] = $isReceived;
+        }
+        unset($it);
 
         if (Yii::$app->request->isAjax) {
             Yii::$app->response->format = Response::FORMAT_JSON;
