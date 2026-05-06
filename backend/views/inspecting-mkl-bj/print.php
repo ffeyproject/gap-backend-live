@@ -83,11 +83,32 @@ $joinPieces = [
     InspectingItem::GRADE_A_ASTERISK => [],
 ];
 
-$inspectingItems = $model->getItems()
+$postedJoinPieces = $model->getItems()
+    ->alias('it')
+    ->select('it.join_piece')
+    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+    ->where(['and',
+        ['it.is_head' => 1],
+        ['not', ['it.join_piece' => null]],
+        ['<>', 'it.join_piece', '']
+    ])
+    ->andWhere(['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]])
+    ->column();
+
+$postedJoinPieces = array_unique(array_filter($postedJoinPieces));
+
+$query = $model->getItems()
     ->alias('it')
     ->select(['it.*', 'gj.id AS gj_id'])
-    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
-    ->where(['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]])
+    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'');
+
+$whereClause = ['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]];
+if (!empty($postedJoinPieces)) {
+    $whereClause[] = ['in', 'it.join_piece', $postedJoinPieces];
+}
+
+$inspectingItems = $query
+    ->where($whereClause)
     ->orderBy([
         new \yii\db\Expression("CASE WHEN it.no_urut IS NULL THEN 1 ELSE 0 END"),
         'it.no_urut' => SORT_ASC,
@@ -95,6 +116,13 @@ $inspectingItems = $model->getItems()
     ])
     ->asArray()
     ->all();
+
+$receivedJoinPieces = [];
+foreach ($inspectingItems as $item) {
+    if ($item['gj_id'] !== null && !empty($item['join_piece'])) {
+        $receivedJoinPieces[$item['join_piece']] = true;
+    }
+}
 
 $postedDates = array_unique(array_filter(array_column($inspectingItems, 'posted_at')));
 sort($postedDates);
@@ -205,13 +233,13 @@ $indexLimit = round(count($inspectingItems) / 2);
                                         $packingNumber = 1;
                                         foreach ($inspectingItems as $index=>$item):?>
                                         <?php
-                                        $item['qty'] = $item['gj_id'] ? 0 : $item['qty'];
-
                                         if ($index == $indexLimit) {
                                             break;
                                         }
                                     ?>
                                         <?php
+                                        $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
+
                                         if($item['qty'] > 0){
                                             // akumulasi hanya berlaku jika qty > 0
                                             if ($item['grade_up'] <> NULL) {
@@ -239,10 +267,11 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             }
 
                                         }
+                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?><?=$item['gj_id'] ? ' (V)' : ''?>
+                                                <?= $packingNumber . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
                                             </td>
                                             <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center;">
@@ -396,8 +425,6 @@ $indexLimit = round(count($inspectingItems) / 2);
                                         <?php 
                                         foreach ($inspectingItems as $index=>$item):?>
                                         <?php
-                                        $item['qty'] = $item['gj_id'] ? 0 : $item['qty'];
-
                                         if ($index < $indexLimit) {
                                             continue;
                                         } elseif($index > (count($inspectingItems))) {
@@ -405,6 +432,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                         }
                                     ?>
                                         <?php
+                                        $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
+
                                         if($item['qty'] > 0){
                                             // akumulasi hanya berlaku jika qty > 0
                                             if ($item['grade_up'] <> NULL) {
@@ -432,10 +461,11 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             }
 
                                         }
+                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?><?=$item['gj_id'] ? ' (V)' : ''?>
+                                                <?= $packingNumber . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
                                             </td>
                                             <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center">
