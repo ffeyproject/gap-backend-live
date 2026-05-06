@@ -155,7 +155,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
         if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_POSTED || $model->status == $model::STATUS_POSTED_PARTIAL) {
             if ($hasDraftItems) {
                 $isAnyPrinted = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
-                if($isAnyPrinted){
+                if($isAnyPrinted || \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->exists()){
                     echo Html::textInput('postingDateVisible', $model->tgl_kirim, [
                         'type' => 'date', 
                         'id' => 'posting-date-input', 
