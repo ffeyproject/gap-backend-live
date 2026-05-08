@@ -81,7 +81,6 @@ class KartuProcessDyeingProcessSearch extends KartuProcessDyeingProcess
 
 
         if (!empty($this->dateRange)) {
-            $dataProvider->pagination = false;
             $this->from_date = substr($this->dateRange, 0, 10); // Tanggal awal
             $this->to_date = substr($this->dateRange, 14); // Tanggal akhir
         

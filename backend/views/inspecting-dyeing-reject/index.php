@@ -34,6 +34,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'date:date',
             'untuk_bagian',
             'pcs',
+            'total_qty',
             //'keterangan',
             'penerima',
             'mengetahui',

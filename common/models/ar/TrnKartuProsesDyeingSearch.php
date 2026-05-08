@@ -27,6 +27,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $dateRangeReadyColour;
     public $dateReangeTopingMatching;
     public $shift;
+    public $woMonth;
 
     /**
      * {@inheritdoc}
@@ -36,7 +37,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth'], 'safe'],
             [['toping_matching','ready_colour'], 'boolean'],
         ];
     }
@@ -162,8 +163,15 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             if($this->from_date == $this->to_date){
                 $query->andFilterWhere(['trn_wo.date' => $this->from_date]);
             }else{
-                $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date, $this->to_date]);
+                 $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date, $this->to_date]);
             }
+        }
+
+        if (!empty($this->woMonth)) {
+            $currentYear = date('Y');
+            $query->andWhere(new Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month"), [
+                ':wo_month' => "{$currentYear}-{$this->woMonth}"
+            ]);
         }
 
         if(!empty($this->openDateRange)){

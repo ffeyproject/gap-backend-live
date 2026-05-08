@@ -56,6 +56,7 @@ $formatter = Yii::$app->formatter;
         <th style="text-align: center;">YARD</th>
         <th style="text-align: center;">WARNA</th>
         <th style="text-align: center;">PCS</th>
+        <th style="text-align: center;">TOTAL QTY</th>
         <th style="text-align: center;">KETERANGAN</th>
     </tr>
     </thead>
@@ -76,6 +77,7 @@ $formatter = Yii::$app->formatter;
         </td>
         <td><?=$model->kartuProses->woColor->moColor->color?></td>
         <td><?=$formatter->asDecimal($model->pcs)?></td>
+        <td><?=$model->total_qty !== null ? $formatter->asDecimal($model->total_qty) : '-'?></td>
         <td><?=$model->keterangan?></td>
     </tr>
     </tbody>

@@ -21,6 +21,7 @@ use yii\db\Expression;
  * @property string|null $pengirim
  * @property int $created_at
  * @property int $created_by
+ * @property float|null $total_qty
  *
  * @property TrnKartuProsesDyeing $kartuProses
  * @property string $kartuProsesNo
@@ -44,6 +45,7 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
             [['kartu_proses_id', 'date', 'untuk_bagian', 'pcs', 'keterangan', 'penerima', 'mengetahui', 'pengirim'], 'required'],
             [['kartu_proses_id', 'no_urut', 'created_at', 'created_by'], 'default', 'value' => null],
             [['kartu_proses_id', 'no_urut', 'created_at', 'created_by'], 'integer'],
+            [['total_qty'], 'number'],
             [['date'], 'safe'],
             [['no', 'untuk_bagian', 'pcs', 'keterangan', 'penerima', 'mengetahui', 'pengirim'], 'string', 'max' => 255],
             [
@@ -80,6 +82,7 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
             'pengirim' => 'Pengirim',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
+            'total_qty' => 'Total Qty',
             'kartuProsesNo' => 'Nomor Kartu Proses',
         ];
     }

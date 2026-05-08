@@ -12,9 +12,11 @@ use yii\widgets\ActiveForm;
         <?php $form = ActiveForm::begin(['id'=>'InspectingDyeingRejectForm']); ?>
 
         <div class="row">
-            <div class="col-md-8"><?= $form->field($model, 'untuk_bagian')->textInput(['maxlength' => true]) ?></div>
+            <div class="col-md-6"><?= $form->field($model, 'untuk_bagian')->textInput(['maxlength' => true]) ?></div>
 
-            <div class="col-md-4"><?= $form->field($model, 'pcs', ['enableClientValidation' => false])->input('number', ['maxlength' => true]) ?></div>
+            <div class="col-md-3"><?= $form->field($model, 'pcs', ['enableClientValidation' => false])->input('number', ['maxlength' => true]) ?></div>
+
+            <div class="col-md-3"><?= $form->field($model, 'total_qty', ['enableClientValidation' => false])->input('number', ['step' => 'any']) ?></div>
         </div>
 
         <div class="row">

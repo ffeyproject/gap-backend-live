@@ -18,6 +18,7 @@ class InspectingDyeingRejectSearch extends InspectingDyeingReject
     {
         return [
             [['id', 'kartu_proses_id', 'no_urut', 'created_at', 'created_by'], 'integer'],
+            [['total_qty'], 'number'],
             [['no', 'date', 'untuk_bagian', 'pcs', 'keterangan', 'penerima', 'mengetahui', 'pengirim'], 'safe'],
         ];
     }
@@ -56,12 +57,12 @@ class InspectingDyeingRejectSearch extends InspectingDyeingReject
             return $dataProvider;
         }
 
-        // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
             'kartu_proses_id' => $this->kartu_proses_id,
             'no_urut' => $this->no_urut,
             'date' => $this->date,
+            'total_qty' => $this->total_qty,
             'created_at' => $this->created_at,
             'created_by' => $this->created_by,
         ]);

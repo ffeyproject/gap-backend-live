@@ -28,6 +28,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             'date:date',
                             'untuk_bagian',
                             'pcs:decimal',
+                            'total_qty:decimal',
                             'keterangan',
                         ],
                     ]) ?>

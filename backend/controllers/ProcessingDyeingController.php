@@ -74,10 +74,228 @@ class ProcessingDyeingController extends Controller
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
 
+        $statusRekap = Yii::$app->request->get('status_rekap', 'on_process');
+        
+        // Jika belum memilih bulan, kosongkan data table terlebih dahulu
+        if (empty($searchModel->woMonth)) {
+            $dataProvider->query->andWhere('1=0');
+        } else {
+            if ($statusRekap === 'selesai') {
+                $dataProvider->query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
+            } else {
+                $dataProvider->query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
+            }
+        }
+
         return $this->render('rekap', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'statusRekap' => $statusRekap,
         ]);
+    }
+
+    /**
+     * Export rekap data for a specific WO month to Excel (CSV format).
+     * @param string $woMonth
+     * @param string $status_rekap
+     */
+    public function actionExportExcel($woMonth, $status_rekap = 'on_process')
+    {
+        $searchModel = new TrnKartuProsesDyeingSearch();
+        $searchModel->woMonth = $woMonth;
+        $dataProvider = $searchModel->search([]);
+        
+        $query = $dataProvider->query;
+        $query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
+        
+        if ($status_rekap === 'selesai') {
+            $query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
+        } else {
+            $query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
+        }
+        
+        $dataProvider->pagination = false;
+        $models = $dataProvider->getModels();
+        
+        $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".csv";
+        
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        $output = fopen('php://output', 'w');
+        
+        // Output UTF-8 BOM for Excel compatibility
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+        
+        $additionalProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['>', 'id', 11])
+            ->orderBy('order')
+            ->all();
+
+        $headers = [
+            'ID', 'Tanggal', 'Buyer', 'No. WO', 'Tgl. WO', 'Motif', 
+            'Tgl. Kirim', 'Hand', 'Note', 'T. Finish', 'Warna', 'NK', 
+            'Panjang', 'Panjang Greige', 'Greige', 'Berat Greige', 'Pcs', 'Terakhir Proses',
+            'Tgl. Buka / Shift', 'Washing / Shift', 'Relaxing / Shift', 
+            'Scutcher Relaxing / Shift', 'Preset / Shift', 'WR / Shift', 
+            'C WR / Shift', 'DYEING / Shift', 'SCUTCHER DYEING / Shift', 
+            'SETTING / Shift', 'RESIN FINISH / Shift'
+        ];
+
+        foreach ($additionalProcesses as $proc) {
+            $headers[] = $proc->nama_proses . ' / Shift';
+        }
+
+        $headers[] = 'Panjang Jadi';
+        $headers[] = 'Pack';
+
+        fputcsv($output, $headers, ';');
+        
+        foreach ($models as $model) {
+            /* @var $model TrnKartuProsesDyeing */
+            $id = $model->id;
+            $tanggal = $model->date;
+            $buyer = $model->sc ? $model->sc->customerName : '';
+            $woNo = $model->wo ? $model->wo->no : '';
+            $woDate = $model->wo ? $model->wo->date : '';
+            $motif = $model->wo ? $model->wo->greigeNamaKain : '';
+            $tglKirim = $model->wo ? $model->wo->tgl_kirim : '';
+            $hand = ($model->wo && $model->wo->handling) ? $model->wo->handling->name : '';
+            
+            $note = '';
+            if ($model->wo && !empty($model->wo->note)) {
+                $rawNote = $model->wo->note;
+                $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $rawNote = strip_tags($rawNote);
+                $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
+                $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
+                $rawNote = trim($rawNote);
+                $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+            }
+            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard).'Y') : '';
+            $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
+            $nk = $model->nomor_kartu;
+            $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
+            $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+            $greige = $model->wo ? $model->wo->greigeNamaKain : '';
+            $beratGreige = $model->berat;
+            $pcs = $model->getTrnKartuProsesDyeingItems()->count();
+            
+            $lastProcess = (new \yii\db\Query())
+                ->select(['m.nama_proses'])
+                ->from('kartu_process_dyeing_process k')
+                ->innerJoin('mst_process_dyeing m', 'k.process_id = m.id')
+                ->where(['k.kartu_process_id' => $model->id])
+                ->andWhere(['is not', 'k.value', null])
+                ->andWhere(['<>', 'k.value', ''])
+                ->orderBy(['m.order' => SORT_DESC])
+                ->one();
+            $terakhirProses = $lastProcess !== false ? $lastProcess['nama_proses'] : '-';
+            
+            // Fetch all process values in a single high-performance query
+            $processes = (new \yii\db\Query())
+                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                ->where(['kartu_process_id' => $model->id])
+                ->all();
+            
+            $processData = [];
+            foreach ($processes as $pc) {
+                $processData[$pc['process_id']] = \yii\helpers\Json::decode($pc['value']);
+            }
+            
+            $processStrings = [];
+            for ($pid = 1; $pid <= 11; $pid++) {
+                $tg = '-';
+                $sh = '-';
+                if (isset($processData[$pid])) {
+                    $v = $processData[$pid];
+                    if (isset($v['tanggal'])) {
+                        $tg = $v['tanggal'];
+                    }
+                    if (isset($v['shift_group'])) {
+                        $sh = $v['shift_group'];
+                    }
+                }
+                $processStrings[$pid] = $tg . ' / ' . $sh;
+            }
+
+            $additionalProcessStrings = [];
+            foreach ($additionalProcesses as $proc) {
+                $tg = '-';
+                $sh = '-';
+                if (isset($processData[$proc->id])) {
+                    $v = $processData[$proc->id];
+                    if (isset($v['tanggal'])) {
+                        $tg = $v['tanggal'];
+                    }
+                    if (isset($v['shift_group'])) {
+                        $sh = $v['shift_group'];
+                    }
+                }
+                $additionalProcessStrings[] = $tg . ' / ' . $sh;
+            }
+            
+            $panjangJadi = 0;
+            if (isset($processData[11]) && isset($processData[11]['panjang_jadi'])) {
+                $panjangJadi = $processData[11]['panjang_jadi'];
+            }
+            
+            $packDates = [];
+            
+            // Ambil riwayat dari ActionLogKartuDyeing untuk mencakup seluruh data historis masa lalu
+            $logs = \common\models\ar\ActionLogKartuDyeing::find()
+                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+                
+            foreach ($logs as $index => $log) {
+                $dateFormatted = date('Y-m-d', strtotime($log->created_at));
+                $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
+            }
+            
+            if (empty($packDates)) {
+                if (!empty($model->approved_history)) {
+                    $history = \yii\helpers\Json::decode($model->approved_history);
+                    if (is_array($history)) {
+                        foreach ($history as $index => $h) {
+                            if (isset($h['time'])) {
+                                $dateFormatted = date('Y-m-d', $h['time']);
+                                $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (empty($packDates) && !empty($model->approved_at)) {
+                $packDates[] = 'Persetujuan Ke-1: ' . date('Y-m-d', $model->approved_at);
+            }
+            $pack = implode(', ', $packDates);
+            
+            $row = [
+                $id, $tanggal, $buyer, $woNo, $woDate, $motif,
+                $tglKirim, $hand, $note, $tFinish, $warna, $nk,
+                $panjang, $panjangGreige, $greige, $beratGreige, $pcs, $terakhirProses,
+                $processStrings[1], $processStrings[2], $processStrings[3],
+                $processStrings[4], $processStrings[5], $processStrings[6],
+                $processStrings[7], $processStrings[8], $processStrings[9],
+                $processStrings[10], $processStrings[11]
+            ];
+
+            foreach ($additionalProcessStrings as $aps) {
+                $row[] = $aps;
+            }
+
+            $row[] = $panjangJadi;
+            $row[] = $pack;
+
+            fputcsv($output, $row, ';');
+        }
+        
+        fclose($output);
+        exit();
     }
 
     /**
@@ -423,7 +641,18 @@ class ProcessingDyeingController extends Controller
         $model->status = $model::STATUS_APPROVED;
         $model->approved_at = time();
         $model->approved_by = Yii::$app->user->id;
-        $model->save(false, ['status', 'approved_at', 'approved_by']);
+
+        $history = [];
+        if (!empty($model->approved_history)) {
+            $history = Json::decode($model->approved_history);
+        }
+        $history[] = [
+            'time' => $model->approved_at,
+            'by' => $model->approved_by,
+        ];
+        $model->approved_history = Json::encode($history);
+
+        $model->save(false, ['status', 'approved_at', 'approved_by', 'approved_history']);
 
         $this->logKartuDyeing(
             'masuk_verpacking',

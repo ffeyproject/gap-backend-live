@@ -113,6 +113,12 @@ $moduleId = $controller->module->id;
                                 'url' => ['/mst-process-printing/index'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'mst-process-printing'
                             ],
+                            [
+                                'label'=>'Mesin Processing',
+                                'icon' => 'circle-o',
+                                'url' => ['/mst-mesin-processing/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'mst-mesin-processing'
+                            ],
                         ]
                     ],
                     [
