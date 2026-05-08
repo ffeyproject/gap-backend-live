@@ -129,22 +129,17 @@ class ProcessingDyeingController extends Controller
         // Output UTF-8 BOM for Excel compatibility
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
         
-        $additionalProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['>', 'id', 11])
+        $masterProcesses = \common\models\ar\MstProcessDyeing::find()
             ->orderBy('order')
             ->all();
 
         $headers = [
             'ID', 'Tanggal', 'Buyer', 'No. WO', 'Tgl. WO', 'Motif', 
             'Tgl. Kirim', 'Hand', 'Note', 'T. Finish', 'Warna', 'NK', 
-            'Panjang', 'Panjang Greige', 'Greige', 'Berat Greige', 'Pcs', 'Terakhir Proses',
-            'Tgl. Buka / Shift', 'Washing / Shift', 'Relaxing / Shift', 
-            'Scutcher Relaxing / Shift', 'Preset / Shift', 'WR / Shift', 
-            'C WR / Shift', 'DYEING / Shift', 'SCUTCHER DYEING / Shift', 
-            'SETTING / Shift', 'RESIN FINISH / Shift'
+            'Panjang', 'Panjang Greige', 'Greige', 'Berat Greige', 'Pcs', 'Terakhir Proses'
         ];
 
-        foreach ($additionalProcesses as $proc) {
+        foreach ($masterProcesses as $proc) {
             $headers[] = $proc->nama_proses . ' / Shift';
         }
 
@@ -206,23 +201,7 @@ class ProcessingDyeingController extends Controller
             }
             
             $processStrings = [];
-            for ($pid = 1; $pid <= 11; $pid++) {
-                $tg = '-';
-                $sh = '-';
-                if (isset($processData[$pid])) {
-                    $v = $processData[$pid];
-                    if (isset($v['tanggal'])) {
-                        $tg = $v['tanggal'];
-                    }
-                    if (isset($v['shift_group'])) {
-                        $sh = $v['shift_group'];
-                    }
-                }
-                $processStrings[$pid] = $tg . ' / ' . $sh;
-            }
-
-            $additionalProcessStrings = [];
-            foreach ($additionalProcesses as $proc) {
+            foreach ($masterProcesses as $proc) {
                 $tg = '-';
                 $sh = '-';
                 if (isset($processData[$proc->id])) {
@@ -234,7 +213,7 @@ class ProcessingDyeingController extends Controller
                         $sh = $v['shift_group'];
                     }
                 }
-                $additionalProcessStrings[] = $tg . ' / ' . $sh;
+                $processStrings[] = $tg . ' / ' . $sh;
             }
             
             $panjangJadi = 0;
@@ -277,15 +256,11 @@ class ProcessingDyeingController extends Controller
             $row = [
                 $id, $tanggal, $buyer, $woNo, $woDate, $motif,
                 $tglKirim, $hand, $note, $tFinish, $warna, $nk,
-                $panjang, $panjangGreige, $greige, $beratGreige, $pcs, $terakhirProses,
-                $processStrings[1], $processStrings[2], $processStrings[3],
-                $processStrings[4], $processStrings[5], $processStrings[6],
-                $processStrings[7], $processStrings[8], $processStrings[9],
-                $processStrings[10], $processStrings[11]
+                $panjang, $panjangGreige, $greige, $beratGreige, $pcs, $terakhirProses
             ];
 
-            foreach ($additionalProcessStrings as $aps) {
-                $row[] = $aps;
+            foreach ($processStrings as $ps) {
+                $row[] = $ps;
             }
 
             $row[] = $panjangJadi;
@@ -855,6 +830,8 @@ class ProcessingDyeingController extends Controller
                 throw new NotFoundHttpException('WO dengan nomor yang dimasukan tidak ditemukan.');
             }
 
+            $oldWoNo = $model->wo ? $model->wo->no : '-';
+
             $model->wo_id = $wo->id;
             $model->wo_color_id = TrnWoColor::find()->select('id')->where(['wo_id'=>$wo->id])->asArray()->one()['id'];
             $model->mo_id = $wo->mo_id;
@@ -866,6 +843,12 @@ class ProcessingDyeingController extends Controller
             $model->t_density_lusi = $wo->handling->densiti_lusi;
             $model->t_density_pakan = $wo->handling->densiti_pakan;
             $model->save(false, ['wo_id','wo_color_id', 'mo_id', 'sc_id', 'handling', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan']);
+
+            $this->logKartuDyeing(
+                'ganti_wo',
+                $model->id,
+                "Mengubah WO dari '{$oldWoNo}' menjadi '{$wo->no}'"
+            );
 
             return true;
         }
@@ -897,8 +880,19 @@ class ProcessingDyeingController extends Controller
                 throw new ForbiddenHttpException('Keterangan kosong, tidak bisa diproses.');
             }
 
+            $oldColor = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '-';
+
             $model->wo_color_id = $post;
             $model->save(false, ['wo_color_id']);
+
+            $newWoColor = TrnWoColor::findOne($post);
+            $newColor = ($newWoColor && $newWoColor->moColor) ? $newWoColor->moColor->color : '-';
+
+            $this->logKartuDyeing(
+                'ganti_warna',
+                $model->id,
+                "Mengubah Warna dari '{$oldColor}' menjadi '{$newColor}'"
+            );
 
             return true;
         }

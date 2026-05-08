@@ -101,6 +101,8 @@ $formatter = Yii::$app->formatter;
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/persetujuan', ['model' => $model]);?>
 
+    <?php echo $this->render('child/history', ['model' => $model]);?>
+
     <?php
     switch ($model->status){
         case $model::STATUS_DELIVERED:
