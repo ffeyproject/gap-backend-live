@@ -250,6 +250,7 @@ class InspectingMklBjController extends Controller
                     'defect',
                     'note',
                     'is_head',
+                    'qr_code',
                 ],
             ]
         );
