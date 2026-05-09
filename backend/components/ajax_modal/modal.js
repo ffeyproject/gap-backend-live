@@ -1,5 +1,8 @@
 $(ajaxModalId).on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
+    if (!button || button.length === 0 || !button.attr('href')) {
+        return;
+    }
     var modal = $(this);
     var title = button.data('title');
     var href = button.attr('href');

@@ -319,36 +319,4 @@ var greigeId = undefined;
 var greigeGrade = undefined;
 JS;
 //$this->registerJsVar('actionUrl', $actionUrl);
-$this->registerJs($js.$this->render('js/index.js'), View::POS_END);
-$jsFixSelectAll = <<<JS
-function rebindGridCheckboxes() {
-    var grid = $('#StockGreigeGrid');
-    var selectAll = grid.find('.select-on-check-all');
-    var checkboxes = grid.find('input[name="selection[]"]');
-
-    // Rebind "select all" behaviour
-    selectAll.off('change').on('change', function() {
-        var checked = $(this).is(':checked');
-        checkboxes.prop('checked', checked).trigger('change');
-    });
-
-    // Rebind child checkbox behaviour
-    checkboxes.off('change').on('change', function() {
-        var total = checkboxes.length;
-        var checked = checkboxes.filter(':checked').length;
-        selectAll.prop('checked', total === checked);
-    });
-}
-
-// Initial load
-$(function() {
-    rebindGridCheckboxes();
-});
-
-// Rebind after PJAX reload
-$(document).on('pjax:end', function() {
-    rebindGridCheckboxes();
-});
-JS;
-
-$this->registerJs($jsFixSelectAll, View::POS_END);
+$this->registerJs($js.$this->render('js/index.js'), View::POS_END);
