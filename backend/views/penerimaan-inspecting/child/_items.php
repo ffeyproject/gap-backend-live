@@ -93,6 +93,16 @@ $joinPieces = [
                         ->andWhere(['IS NOT', 'no_urut', null])
                         ->exists();
 
+                    $allOriginalItems = \common\models\ar\InspectingItem::find()
+                        ->where(['inspecting_id' => $inspectingId])
+                        ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
+                        ->all();
+
+                    $originalIndexMap = [];
+                    foreach ($allOriginalItems as $idx => $origItem) {
+                        $originalIndexMap[$origItem->id] = $idx + 1;
+                    }
+
                     $items = $itemsQuery
                         ->where(['is_posted' => true])
                         ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
@@ -130,7 +140,7 @@ $joinPieces = [
                     }
                 ?>
                 <tr>
-                    <td><?=($index+1).$item['join_piece']?></td>
+                    <td><?=($originalIndexMap[$item['id']] ?? ($index+1)).$item['join_piece']?></td>
                     <td>
                         <?php
                             if ($item['grade_up'] <> NULL) {

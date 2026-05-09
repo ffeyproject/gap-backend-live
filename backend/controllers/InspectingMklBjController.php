@@ -694,8 +694,26 @@ class InspectingMklBjController extends Controller
         $postingDate = Yii::$app->request->post('postingDate', $model->tgl_kirim);
         $transaction = Yii::$app->db->beginTransaction();
         try {
+            // Get the join pieces of the selected head items
+            $selectedJoinPieces = InspectingMklBjItems::find()
+                ->select('join_piece')
+                ->where(['id' => $postedItemIds, 'inspecting_id' => $model->id])
+                ->andWhere(['IS NOT', 'join_piece', null])
+                ->andWhere(['<>', 'join_piece', ''])
+                ->column();
+
+            // Find all item IDs that are either in the selected head items or have the same join_piece
+            $allItemIdsToPost = $postedItemIds;
+            if (!empty($selectedJoinPieces)) {
+                $siblingItemIds = InspectingMklBjItems::find()
+                    ->select('id')
+                    ->where(['inspecting_id' => $model->id, 'join_piece' => $selectedJoinPieces])
+                    ->column();
+                $allItemIdsToPost = array_unique(array_merge($postedItemIds, $siblingItemIds));
+            }
+
             // Update selected items to is_posted = true and record the posting date
-            InspectingMklBjItems::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $postedItemIds, 'inspecting_id' => $model->id]);
+            InspectingMklBjItems::updateAll(['is_posted' => true, 'posted_at' => $postingDate], ['id' => $allItemIdsToPost, 'inspecting_id' => $model->id]);
 
             // Check if all items are posted
             $totalItemsCount = InspectingMklBjItems::find()->where(['inspecting_id' => $model->id])->count();
@@ -735,20 +753,33 @@ class InspectingMklBjController extends Controller
             throw new NotFoundHttpException('Item tidak ditemukan.');
         }
 
-        // Cek apakah sudah di gudang jadi
-        $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from' => $item->id, 'trans_from' => 'MKL'])->exists();
-        if ($isReceived) {
-            Yii::$app->session->setFlash('error', 'Item sudah diterima di Gudang Jadi, tidak bisa di-unpost.');
-            return $this->redirect(['view', 'id' => $item->inspecting_id]);
+        // Get all items in the same joint
+        $allItemIds = [$item->id];
+        if (!empty($item->join_piece)) {
+            $siblingItems = InspectingMklBjItems::find()
+                ->where(['inspecting_id' => $item->inspecting_id, 'join_piece' => $item->join_piece])
+                ->all();
+            foreach ($siblingItems as $sibling) {
+                // Check if any of the siblings are already in Gudang Jadi
+                $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from' => $sibling->id, 'trans_from' => 'MKL'])->exists();
+                if ($isReceived) {
+                    Yii::$app->session->setFlash('error', 'Salah satu item dalam joint ini sudah diterima di Gudang Jadi, tidak bisa di-unpost.');
+                    return $this->redirect(['view', 'id' => $item->inspecting_id]);
+                }
+                $allItemIds[] = $sibling->id;
+            }
+        } else {
+            // Check single item
+            $isReceived = \common\models\ar\TrnGudangJadi::find()->where(['id_from' => $item->id, 'trans_from' => 'MKL'])->exists();
+            if ($isReceived) {
+                Yii::$app->session->setFlash('error', 'Item sudah diterima di Gudang Jadi, tidak bisa di-unpost.');
+                return $this->redirect(['view', 'id' => $item->inspecting_id]);
+            }
         }
 
-        $item->is_posted = false;
-        $item->posted_at = null;
-        if ($item->save(false, ['is_posted', 'posted_at'])) {
-            Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
-        } else {
-            Yii::$app->session->setFlash('error', 'Gagal unpost item.');
-        }
+        $allItemIds = array_unique($allItemIds);
+        InspectingMklBjItems::updateAll(['is_posted' => false, 'posted_at' => null], ['id' => $allItemIds, 'inspecting_id' => $item->inspecting_id]);
+        Yii::$app->session->setFlash('success', 'Item berhasil di-unpost.');
 
         return $this->redirect(['view', 'id' => $item->inspecting_id]);
     }
