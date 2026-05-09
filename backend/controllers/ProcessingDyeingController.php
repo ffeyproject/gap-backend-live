@@ -602,8 +602,19 @@ class ProcessingDyeingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if($model->status != $model::STATUS_DELIVERED){
-            Yii::$app->session->setFlash('error', 'Status Kartu proses tidak valid.');
+        $activeChildCards = TrnKartuProsesDyeing::find()
+            ->where([
+                'kartu_proses_id' => $model->id,
+                'status' => TrnKartuProsesDyeing::STATUS_DELIVERED
+            ])
+            ->all();
+
+        $canApprove = ($model->status == $model::STATUS_DELIVERED) || 
+                      ($model->status == $model::STATUS_APPROVED && !empty($activeChildCards)) ||
+                      ($model->status == $model::STATUS_BATAL && !empty($activeChildCards));
+
+        if (!$canApprove) {
+            Yii::$app->session->setFlash('error', 'Status Kartu proses tidak valid untuk disetujui.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -613,29 +624,118 @@ class ProcessingDyeingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }*/
 
-        $model->status = $model::STATUS_APPROVED;
-        $model->approved_at = time();
-        $model->approved_by = Yii::$app->user->id;
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $isFirstApproval = ($model->status != $model::STATUS_APPROVED);
 
-        $history = [];
-        if (!empty($model->approved_history)) {
-            $history = Json::decode($model->approved_history);
+            if ($isFirstApproval) {
+                $model->status = $model::STATUS_APPROVED;
+                $model->approved_at = time();
+                $model->approved_by = Yii::$app->user->id;
+            }
+
+            // Determine approval note and prepare history entry
+            $approveChildIds = Yii::$app->request->post('approve_child_ids', []);
+            $approvedChildNames = [];
+
+            // Approve chosen split child cards - merge their rolls back to parent!
+            if (!empty($approveChildIds)) {
+                foreach ($approveChildIds as $childId) {
+                    $child = TrnKartuProsesDyeing::findOne($childId);
+                    if ($child && $child->status == TrnKartuProsesDyeing::STATUS_DELIVERED) {
+                        $approvedChildNames[] = $child->nomor_kartu;
+
+                        // 1. Transfer all items of this split card back to the parent card
+                        foreach ($child->trnKartuProsesDyeingItems as $item) {
+                            $item->kartu_process_id = $model->id;
+                            if (!$item->save(false)) {
+                                throw new \Exception("Gagal mengembalikan item dari kartu split {$child->nomor_kartu} ke kartu induk.");
+                            }
+                        }
+
+                        // 2. Set the split child card status to STATUS_APPROVED and record approved details
+                        $child->status = TrnKartuProsesDyeing::STATUS_APPROVED;
+                        $child->approved_at = time();
+                        $child->approved_by = Yii::$app->user->id;
+                        
+                        $childHistory = [];
+                        if (!empty($child->approved_history)) {
+                            $childHistory = Json::decode($child->approved_history);
+                        }
+                        $childHistory[] = [
+                            'time' => $child->approved_at,
+                            'by' => $child->approved_by,
+                            'note' => "Disetujui & digabungkan kembali ke induk {$model->nomor_kartu}"
+                        ];
+                        $child->approved_history = Json::encode($childHistory);
+
+                        // Save child status and history (keep child note completely untouched!)
+                        if (!$child->save(false, ['status', 'approved_at', 'approved_by', 'approved_history'])) {
+                            throw new \Exception("Gagal memproses persetujuan kartu split {$child->nomor_kartu}.");
+                        }
+
+                        $this->logKartuDyeing(
+                            'split_approved',
+                            $child->id,
+                            "Kartu split disetujui dan item digabungkan kembali ke kartu induk '{$model->nomor_kartu}'"
+                        );
+
+                        // Log "masuk_verpacking" entry for EACH approved split child card on the parent card!
+                        $this->logKartuDyeing(
+                            'masuk_verpacking',
+                            $model->id,
+                            "Kartu Split {$child->nomor_kartu} disetujui & masuk verpacking"
+                        );
+                    }
+                }
+            }
+
+            // Log "masuk_verpacking" for standard first approval if there are no split children
+            if ($isFirstApproval && empty($approvedChildNames)) {
+                $this->logKartuDyeing(
+                    'masuk_verpacking',
+                    $model->id,
+                    "Kartu Proses {$model->nomor_kartu} disetujui & masuk verpacking"
+                );
+            }
+
+            // Always append to parent's approved_history
+            $history = [];
+            if (!empty($model->approved_history)) {
+                $history = Json::decode($model->approved_history);
+            }
+
+            if (!empty($approvedChildNames)) {
+                $appNote = "Menyetujui Kartu Split: " . implode(', ', $approvedChildNames);
+            } else {
+                $appNote = "Persetujuan Kartu Induk";
+            }
+
+            $history[] = [
+                'time' => time(),
+                'by' => Yii::$app->user->id,
+                'note' => $appNote
+            ];
+            $model->approved_history = Json::encode($history);
+
+            // Save the parent model (original note remains untouched!)
+            if ($isFirstApproval) {
+                if (!$model->save(false, ['status', 'approved_at', 'approved_by', 'approved_history'])) {
+                    throw new \Exception('Gagal menyetujui kartu induk.');
+                }
+            } else {
+                if (!$model->save(false, ['approved_history'])) {
+                    throw new \Exception('Gagal memperbarui riwayat persetujuan kartu induk.');
+                }
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Berhasil disetujui, proses bisa dilanjutkan ke tahap inspecting.');
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal menyetujui kartu proses: ' . $e->getMessage());
         }
-        $history[] = [
-            'time' => $model->approved_at,
-            'by' => $model->approved_by,
-        ];
-        $model->approved_history = Json::encode($history);
 
-        $model->save(false, ['status', 'approved_at', 'approved_by', 'approved_history']);
-
-        $this->logKartuDyeing(
-            'masuk_verpacking',
-            $model->id,
-            'Kartu Proses Dyeing disetujui'
-        );
-
-        Yii::$app->session->setFlash('success', 'Berhasil disetujui, proses bisa dilanjutkan ke tahap inspecting.');
         return $this->redirect(['view', 'id' => $model->id]);
     }
 
@@ -898,6 +998,147 @@ class ProcessingDyeingController extends Controller
         }
 
         throw new MethodNotAllowedHttpException('Method not allowed.');
+    }
+
+    /**
+     * Splits an existing TrnKartuProsesDyeing model into two child cards.
+     * @param integer $id
+     * @return mixed
+     * @throws ForbiddenHttpException
+     * @throws HttpException
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionSplit($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->status != $model::STATUS_DELIVERED) {
+            throw new ForbiddenHttpException('Kartu proses tidak valid, tidak bisa di-split.');
+        }
+
+        if (Yii::$app->request->isPost) {
+            $selectedItemIds = Yii::$app->request->post('selected_items', []);
+            $allItems = $model->trnKartuProsesDyeingItems;
+            $allItemIds = array_map(function($item) { return $item->id; }, $allItems);
+
+            if (empty($selectedItemIds)) {
+                Yii::$app->session->setFlash('error', 'Anda harus memilih setidaknya satu item untuk dipindahkan ke kartu split.');
+                return $this->render('split', [
+                    'model' => $model,
+                    'items' => $allItems,
+                ]);
+            }
+
+            $remainingItemIds = array_diff($allItemIds, $selectedItemIds);
+            if (empty($remainingItemIds)) {
+                Yii::$app->session->setFlash('error', 'Anda harus menyisakan setidaknya satu item pada kartu induk (jangan pilih semua item).');
+                return $this->render('split', [
+                    'model' => $model,
+                    'items' => $allItems,
+                ]);
+            }
+
+            // Parse parent nomor_kartu (e.g., "1/26" -> "1S1/26" & "1S2/26")
+            $nomor_kartu = $model->nomor_kartu;
+            $parts = explode('/', $nomor_kartu);
+            $part1 = $parts[0];
+            $part2 = isset($parts[1]) ? '/' . $parts[1] : '';
+
+            // Find the next two available split suffixes (S1, S2, etc.)
+            $seq = 1;
+            $s1_nomor = '';
+            while (true) {
+                $s1_nomor = $part1 . 'S' . $seq . $part2;
+                $exists = TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $s1_nomor])->exists();
+                if (!$exists) {
+                    break;
+                }
+                $seq++;
+            }
+
+            $seq2 = $seq + 1;
+            $s2_nomor = '';
+            while (true) {
+                $s2_nomor = $part1 . 'S' . $seq2 . $part2;
+                $exists = TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $s2_nomor])->exists();
+                if (!$exists) {
+                    break;
+                }
+                $seq2++;
+            }
+
+            $db = Yii::$app->db;
+            $transaction = $db->beginTransaction();
+            try {
+                $attributes = $model->attributes;
+                unset($attributes['id']);
+                unset($attributes['created_at']);
+                unset($attributes['created_by']);
+                unset($attributes['updated_at']);
+                unset($attributes['updated_by']);
+
+                // Create split child card S1 (selected items)
+                $s1 = new TrnKartuProsesDyeing();
+                $s1->attributes = $attributes;
+                $s1->nomor_kartu = $s1_nomor;
+                $s1->kartu_proses_id = $model->id;
+                $s1->status = TrnKartuProsesDyeing::STATUS_DELIVERED;
+                $s1->setNomor();
+                if (!$s1->save()) {
+                    throw new \Exception('Gagal membuat kartu split pertama: ' . implode(', ', $s1->getFirstErrors()));
+                }
+
+                // Create split child card S2 (remaining items)
+                $s2 = new TrnKartuProsesDyeing();
+                $s2->attributes = $attributes;
+                $s2->nomor_kartu = $s2_nomor;
+                $s2->kartu_proses_id = $model->id;
+                $s2->status = TrnKartuProsesDyeing::STATUS_DELIVERED;
+                $s2->setNomor();
+                if (!$s2->save()) {
+                    throw new \Exception('Gagal membuat kartu split kedua: ' . implode(', ', $s2->getFirstErrors()));
+                }
+
+                // Move selected items to S1
+                foreach ($selectedItemIds as $itemId) {
+                    $item = TrnKartuProsesDyeingItem::findOne($itemId);
+                    if ($item && $item->kartu_process_id == $model->id) {
+                        $item->kartu_process_id = $s1->id;
+                        if (!$item->save(false)) {
+                            throw new \Exception('Gagal memindahkan item ke kartu split pertama.');
+                        }
+                    }
+                }
+
+                // Move remaining items to S2
+                foreach ($remainingItemIds as $itemId) {
+                    $item = TrnKartuProsesDyeingItem::findOne($itemId);
+                    if ($item && $item->kartu_process_id == $model->id) {
+                        $item->kartu_process_id = $s2->id;
+                        if (!$item->save(false)) {
+                            throw new \Exception('Gagal memindahkan item ke kartu split kedua.');
+                        }
+                    }
+                }
+                // Log the action
+                $this->logKartuDyeing('split', $model->id, "Kartu di-split menjadi {$s1_nomor} dan {$s2_nomor}.");
+                $this->logKartuDyeing('split_child', $s1->id, "Kartu split terbentuk dari induk '{$model->nomor_kartu}'");
+                $this->logKartuDyeing('split_child', $s2->id, "Kartu split terbentuk dari induk '{$model->nomor_kartu}'");
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', "Kartu proses berhasil di-split menjadi {$s1_nomor} dan {$s2_nomor}. Keduanya dalam status DELIVERED.");
+                return $this->redirect(['view', 'id' => $model->id]);
+
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Gagal memproses split kartu: ' . $e->getMessage());
+            }
+        }
+
+        return $this->render('split', [
+            'model' => $model,
+            'items' => $model->trnKartuProsesDyeingItems,
+        ]);
     }
 
     /**

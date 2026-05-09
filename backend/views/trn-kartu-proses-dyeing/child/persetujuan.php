@@ -66,6 +66,13 @@ $approvedDataProvider = new ArrayDataProvider([
 
                 'time:datetime',
                 [
+                    'attribute' => 'note',
+                    'label' => 'Keterangan',
+                    'value' => function($data) {
+                        return isset($data['note']) ? $data['note'] : 'Persetujuan Kartu';
+                    }
+                ],
+                [
                     'label'=>'by',
                     'value'=>function($data){
                         $user = \common\models\User::findOne($data['by']);

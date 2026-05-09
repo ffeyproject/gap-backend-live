@@ -29,33 +29,109 @@ $formatter = Yii::$app->formatter;
                 'onclick' => 'memoPg(event, "Memo Penggantian Greige");',
                 'title' => 'Buat Memo Penggantian Greige'
             ]) ?>
+        <?php endif; ?>
 
-        <?= Html::a('Setujui Dan Teruskan Ke Inspecting', ['approve', 'id' => $model->id], [
-                'class' => 'btn btn-warning',
-                'data' => [
-                    'confirm' => 'Are you sure you want to approve this item?',
-                    'method' => 'post',
-                ],
-            ]) ?>
-        <?= Html::a('Batalkan Kartu Proses', ['batal', 'id' => $model->id], [
-                'class' => 'btn btn-danger',
-                'data' => [
-                    'confirm' => 'Are you sure you want to batalkan this item?',
-                    'method' => 'post',
-                ],
-            ]) ?>
+        <?php
+        $activeChildCards = \common\models\ar\TrnKartuProsesDyeing::find()
+            ->where([
+                'kartu_proses_id' => $model->id,
+                'status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED
+            ])
+            ->all();
+        
+        $showApproveButton = ($model->status == $model::STATUS_DELIVERED) || ($model->status == $model::STATUS_APPROVED && !empty($activeChildCards));
+        ?>
 
-        <?=Html::a('Ganti WO', ['ganti-wo', 'id' => $model->id], [
-                'class' => 'btn btn-warning',
-                'onclick' => 'gantiWo(event);',
-                'title' => 'Ganti WO Kartu Proses: '.$model->id
-            ]);?>
+        <?php if ($showApproveButton): ?>
+            <?php if (!empty($activeChildCards)): ?>
+                <?= Html::button('Setujui Dan Teruskan Ke Inspecting', [
+                    'class' => 'btn btn-warning',
+                    'data-toggle' => 'modal',
+                    'data-target' => '#modal-approve-split',
+                    'title' => 'Setujui Dan Teruskan Ke Inspecting'
+                ]) ?>
+            <?php else: ?>
+                <?= Html::a('Setujui Dan Teruskan Ke Inspecting', ['approve', 'id' => $model->id], [
+                    'class' => 'btn btn-warning',
+                    'data' => [
+                        'confirm' => 'Are you sure you want to approve this item?',
+                        'method' => 'post',
+                    ],
+                ]) ?>
+            <?php endif; ?>
+        <?php endif; ?>
 
-        <?=Html::a('Ganti Warna', ['ganti-warna', 'id' => $model->id], [
-                'class' => 'btn btn-info',
-                'onclick' => 'gantiWarna(event);',
-                'title' => 'Ganti Warna Kartu Proses: '.$model->id
-            ]);?>
+        <?php
+        if (!empty($activeChildCards)):
+            \yii\bootstrap\Modal::begin([
+                'header' => '<h4><strong>Setujui Kartu Proses & Split Card</strong></h4>',
+                'id' => 'modal-approve-split',
+            ]);
+        ?>
+            <?php $form = \yii\widgets\ActiveForm::begin([
+                'action' => ['approve', 'id' => $model->id],
+                'method' => 'post',
+            ]); ?>
+                <p class="text-info" style="font-weight: 600; font-size: 14px;">
+                    💡 Kartu proses induk ini memiliki beberapa kartu split yang belum diterima. Silakan centang kartu split mana saja yang ingin disetujui dan diteruskan ke inspecting bersama dengan kartu induk:
+                </p>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e4e7eb;">
+                    <!-- Parent Card is shown as checked and disabled -->
+                    <div class="checkbox" style="margin-top: 0; margin-bottom: 12px;">
+                        <label style="font-weight: 700; color: #2f3542;">
+                            <input type="checkbox" checked disabled> 
+                            🏢 Kartu Induk: <?= Html::encode($model->nomor_kartu) ?> (Status: <?= Html::encode($model::statusOptions()[$model->status] ?? '') ?>)
+                        </label>
+                    </div>
+                    
+                    <hr style="margin: 10px 0; border-top: 1px solid #dfe4ea;">
+                    
+                    <?php foreach ($activeChildCards as $child): ?>
+                        <div class="checkbox" style="margin-bottom: 8px;">
+                            <label style="font-weight: 600; color: #57606f;">
+                                <input type="checkbox" name="approve_child_ids[]" value="<?= $child->id ?>" checked> 
+                                ✂️ Kartu Split: <strong style="color: #2f3542;"><?= Html::encode($child->nomor_kartu) ?></strong> (Status: <?= Html::encode($child::statusOptions()[$child->status] ?? 'Unknown') ?> - <?= count($child->trnKartuProsesDyeingItems) ?> Rolls)
+                            </label>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="form-group text-right" style="margin-bottom: 0;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <?= Html::submitButton('⚡ Setujui Semua yang Terpilih', ['class' => 'btn btn-success', 'style' => 'font-weight: 700;']) ?>
+                </div>
+            <?php \yii\widgets\ActiveForm::end(); ?>
+        <?php 
+            \yii\bootstrap\Modal::end(); 
+        endif;
+        ?>
+
+        <?php if($model->status == $model::STATUS_DELIVERED):?>
+            <?= Html::a('Batalkan Kartu Proses', ['batal', 'id' => $model->id], [
+                    'class' => 'btn btn-danger',
+                    'data' => [
+                        'confirm' => 'Are you sure you want to batalkan this item?',
+                        'method' => 'post',
+                    ],
+                ]) ?>
+
+            <?=Html::a('Ganti WO', ['ganti-wo', 'id' => $model->id], [
+                    'class' => 'btn btn-warning',
+                    'onclick' => 'gantiWo(event);',
+                    'title' => 'Ganti WO Kartu Proses: '.$model->id
+                ]);?>
+
+            <?=Html::a('Ganti Warna', ['ganti-warna', 'id' => $model->id], [
+                    'class' => 'btn btn-info',
+                    'onclick' => 'gantiWarna(event);',
+                    'title' => 'Ganti Warna Kartu Proses: '.$model->id
+                ]);?>
+
+            <?=Html::a('Split Kartu', ['split', 'id' => $model->id], [
+                    'class' => 'btn bg-purple',
+                    'title' => 'Split Kartu Proses: '.$model->id
+                ]);?>
         <?php endif;?>
 
         <?=Html::a('Ganti Ke Kartu PFP', ['ganti-ke-pfp', 'id' => $model->id], [
@@ -99,10 +175,6 @@ $formatter = Yii::$app->formatter;
 
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/items_processing', ['model' => $model]);?>
 
-    <?php echo $this->render('/trn-kartu-proses-dyeing/child/persetujuan', ['model' => $model]);?>
-
-    <?php echo $this->render('child/history', ['model' => $model]);?>
-
     <?php
     switch ($model->status){
         case $model::STATUS_DELIVERED:
@@ -116,6 +188,12 @@ $formatter = Yii::$app->formatter;
             echo '';
     }
     ?>
+
+    <?php echo $this->render('child/split_history', ['model' => $model]);?>
+
+    <?php echo $this->render('/trn-kartu-proses-dyeing/child/persetujuan', ['model' => $model]);?>
+
+    <?php echo $this->render('child/history', ['model' => $model]);?>
 </div>
 
 <?php
