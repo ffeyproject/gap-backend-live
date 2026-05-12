@@ -72,6 +72,7 @@ class ProcessingDyeingController extends Controller
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         $dataProvider->query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
 
         $statusRekap = Yii::$app->request->get('status_rekap', 'on_process');
@@ -82,7 +83,7 @@ class ProcessingDyeingController extends Controller
         } else {
             if ($statusRekap === 'selesai') {
                 $dataProvider->query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
-            } else {
+            } elseif ($statusRekap === 'on_process') {
                 $dataProvider->query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
             }
         }
@@ -104,57 +105,267 @@ class ProcessingDyeingController extends Controller
         $searchModel = new TrnKartuProsesDyeingSearch();
         $searchModel->woMonth = $woMonth;
         $dataProvider = $searchModel->search([]);
+        $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         
         $query = $dataProvider->query;
         $query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
         
         if ($status_rekap === 'selesai') {
             $query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
-        } else {
+        } elseif ($status_rekap === 'on_process') {
             $query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
         }
         
         $dataProvider->pagination = false;
         $models = $dataProvider->getModels();
         
-        $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".csv";
+        $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".xls";
         
-        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
-        
-        $output = fopen('php://output', 'w');
-        
-        // Output UTF-8 BOM for Excel compatibility
-        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
         
         $masterProcesses = \common\models\ar\MstProcessDyeing::find()
             ->orderBy('order')
             ->all();
 
-        $headers = [
-            'ID', 'Tanggal', 'Buyer', 'No. WO', 'Tgl. WO', 'Motif', 
-            'Tgl. Kirim', 'Hand', 'Note', 'T. Finish', 'Warna', 'NK', 
-            'Panjang', 'Panjang Greige', 'Greige', 'Berat Greige', 'Pcs', 'Terakhir Proses'
+        $hiddenColsStr = Yii::$app->request->get('hidden_cols', '');
+        $hiddenCols = !empty($hiddenColsStr) ? explode(',', $hiddenColsStr) : [];
+        if (in_array('col-wodaterange', $hiddenCols)) {
+            $hiddenCols[] = 'col-wodaterange-2';
+        }
+
+        $allHeaders = [
+            'col-id' => 'ID',
+            'col-wodaterange' => 'Tgl. WO',
+            'col-buyer' => 'Buyer',
+            'col-wono' => 'No. WO',
+            'col-motif' => 'Motif',
+            'col-tgl--kirim' => 'Tgl. Kirim',
+            'col-hand' => 'Hand',
+            'col-t--finish' => 'T. Finish',
+            'col-panjang' => 'Panjang',
+            'col-warna' => 'Warna',
+            'col-nomor-kartu' => 'NK',
+            'col-note' => 'Note',
+            'col-memo' => 'Memo Perubahan',
+            'col-panjang-greige' => 'Panjang Greige',
+            'col-berat-greige' => 'Berat Greige',
+            'col-pcs' => 'Pcs',
+            'col-terakhir-proses' => 'Terakhir Proses',
         ];
 
         foreach ($masterProcesses as $proc) {
-            $headers[] = $proc->nama_proses . ' / Shift';
+            $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+            $allHeaders[$colKey] = $proc->nama_proses . ' / Shift';
         }
 
-        $headers[] = 'Panjang Jadi';
-        $headers[] = 'Pack';
+        $allHeaders['col-panjang-jadi'] = 'Panjang Jadi';
+        $allHeaders['col-pack'] = 'Pack';
 
-        fputcsv($output, $headers, ';');
+        // Localized Indonesian date formatting helper
+        $formatIndoDate = function($dateValue) {
+            if (empty($dateValue)) {
+                return '';
+            }
+            if (is_numeric($dateValue)) {
+                $time = (int)$dateValue;
+            } else {
+                $time = strtotime($dateValue);
+            }
+            if (!$time) {
+                return $dateValue;
+            }
+            $day = date('d', $time);
+            $monthNum = (int)date('m', $time);
+            $year = date('Y', $time);
+            $indoMonths = [
+                1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+                5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agt',
+                9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+            ];
+            $monthName = isset($indoMonths[$monthNum]) ? $indoMonths[$monthNum] : date('M', $time);
+            return "{$day}-{$monthName}-{$year}";
+        };
+
+        // Output XML Spreadsheet 2003
+        echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+        echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        echo ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+        echo ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+        echo ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        echo ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+        
+                echo ' <Styles>' . "\n";
+        echo '  <Style ss:ID="Default" ss:Name="Normal">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior/>' . "\n";
+        echo '   <NumberFormat/>' . "\n";
+        echo '   <Protection/>' . "\n";
+        echo '  </Style>' . "\n";
+        echo '  <Style ss:ID="Header">' . "\n";
+        echo '   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Bold="1" ss:Color="#222222"/>' . "\n";
+        echo '   <Interior ss:Color="#ECF0F5" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        // Row shading styles
+        echo '  <Style ss:ID="RowPackFilled">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior ss:Color="#FFFDE7" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="RowTopingFilled">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior ss:Color="#FFF3E0" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="RowDyeingFilled">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior ss:Color="#E3F2FD" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="RowPinkFilled">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior ss:Color="#FCE4EC" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        // Column-specific highlight styles
+        echo '  <Style ss:ID="ColDyeingStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#5D4037"/>' . "\n";
+        echo '   <Interior ss:Color="#FFF8E1" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="ColResinStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#0D47A1"/>' . "\n";
+        echo '   <Interior ss:Color="#BBDEFB" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="ColHeatCutPackStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#1B5E20"/>' . "\n";
+        echo '   <Interior ss:Color="#C8E6C9" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="ColPresetSettingStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#880E4F"/>' . "\n";
+        echo '   <Interior ss:Color="#F8BBD0" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="ColTopingRcStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#E65100"/>' . "\n";
+        echo '   <Interior ss:Color="#FFE0B2" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
+        echo '  <Style ss:ID="ColNomorKartuGreenStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Bold="1" ss:Color="#1B5E20"/>' . "\n";
+        echo '   <Interior ss:Color="#C8E6C9" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+        echo ' </Styles>' . "\n";
+        
+        echo ' <Worksheet ss:Name="Rekap">' . "\n";
+        echo '  <Table>' . "\n";
+        
+        // Output headers row
+        echo '   <Row ss:Height="25" ss:StyleID="Header">' . "\n";
+        foreach ($allHeaders as $colKey => $headerLabel) {
+            if (!in_array($colKey, $hiddenCols)) {
+                $cleanLabel = htmlspecialchars(trim(strip_tags($headerLabel)), ENT_QUOTES | ENT_XML1, 'UTF-8');
+                echo '    <Cell><Data ss:Type="String">' . $cleanLabel . '</Data></Cell>' . "\n";
+            }
+        }
+        echo '   </Row>' . "\n";
         
         foreach ($models as $model) {
             /* @var $model TrnKartuProsesDyeing */
             $id = $model->id;
-            $tanggal = $model->date;
-            $buyer = $model->sc ? $model->sc->customerName : '';
+            $tanggal = $model->wo ? $model->wo->date : '';
+            $buyer = $model->sc ? $model->sc->customerCode : '';
             $woNo = $model->wo ? $model->wo->no : '';
-            $woDate = $model->wo ? $model->wo->date : '';
             $motif = $model->wo ? $model->wo->greigeNamaKain : '';
             $tglKirim = $model->wo ? $model->wo->tgl_kirim : '';
             $hand = ($model->wo && $model->wo->handling) ? $model->wo->handling->name : '';
@@ -169,12 +380,32 @@ class ProcessingDyeingController extends Controller
                 $rawNote = trim($rawNote);
                 $note = preg_replace("/\n{2,}/", "\n", $rawNote);
             }
+
+            // Memo Perubahan
+            $memos = $model->wo ? $model->wo->trnWoMemos : [];
+            $memoHtml = '';
+            if (!empty($memos)) {
+                $memoTexts = [];
+                foreach ($memos as $memoModel) {
+                    $mText = $memoModel->memo;
+                    $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $mText = strip_tags($mText);
+                    $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
+                    $mText = trim($mText);
+                    if (!empty($mText)) {
+                        $memoTexts[] = 'No. ' . $memoModel->no . ': ' . $mText;
+                    }
+                }
+                if (!empty($memoTexts)) {
+                    $memoHtml = implode('; ', $memoTexts);
+                }
+            }
+
             $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard).'Y') : '';
             $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
             $nk = $model->nomor_kartu;
             $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
             $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
-            $greige = $model->wo ? $model->wo->greigeNamaKain : '';
             $beratGreige = $model->berat;
             $pcs = $model->getTrnKartuProsesDyeingItems()->count();
             
@@ -200,20 +431,40 @@ class ProcessingDyeingController extends Controller
                 $processData[$pc['process_id']] = \yii\helpers\Json::decode($pc['value']);
             }
             
-            $processStrings = [];
+            $rowData = [
+                'col-id' => $id,
+                'col-wodaterange' => $formatIndoDate($tanggal),
+                'col-buyer' => $buyer,
+                'col-wono' => $woNo,
+                'col-motif' => $motif,
+                'col-tgl--kirim' => $formatIndoDate($tglKirim),
+                'col-hand' => $hand,
+                'col-note' => $note,
+                'col-memo' => $memoHtml,
+                'col-t--finish' => $tFinish,
+                'col-warna' => $warna,
+                'col-nomor-kartu' => $nk,
+                'col-panjang' => $panjang,
+                'col-panjang-greige' => $panjangGreige,
+                'col-berat-greige' => $beratGreige,
+                'col-pcs' => $pcs,
+                'col-terakhir-proses' => $terakhirProses,
+            ];
+
             foreach ($masterProcesses as $proc) {
                 $tg = '-';
                 $sh = '-';
                 if (isset($processData[$proc->id])) {
                     $v = $processData[$proc->id];
-                    if (isset($v['tanggal'])) {
-                        $tg = $v['tanggal'];
+                    if (isset($v['tanggal']) && !empty($v['tanggal'])) {
+                        $tg = $formatIndoDate($v['tanggal']);
                     }
                     if (isset($v['shift_group'])) {
                         $sh = $v['shift_group'];
                     }
                 }
-                $processStrings[] = $tg . ' / ' . $sh;
+                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+                $rowData[$colKey] = $tg . ' / ' . $sh;
             }
             
             $panjangJadi = 0;
@@ -230,7 +481,7 @@ class ProcessingDyeingController extends Controller
                 ->all();
                 
             foreach ($logs as $index => $log) {
-                $dateFormatted = date('Y-m-d', strtotime($log->created_at));
+                $dateFormatted = $formatIndoDate($log->created_at);
                 $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
             }
             
@@ -240,7 +491,7 @@ class ProcessingDyeingController extends Controller
                     if (is_array($history)) {
                         foreach ($history as $index => $h) {
                             if (isset($h['time'])) {
-                                $dateFormatted = date('Y-m-d', $h['time']);
+                                $dateFormatted = $formatIndoDate($h['time']);
                                 $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
                             }
                         }
@@ -249,27 +500,171 @@ class ProcessingDyeingController extends Controller
             }
             
             if (empty($packDates) && !empty($model->approved_at)) {
-                $packDates[] = 'Persetujuan Ke-1: ' . date('Y-m-d', $model->approved_at);
+                $packDates[] = 'Persetujuan Ke-1: ' . $formatIndoDate($model->approved_at);
             }
             $pack = implode(', ', $packDates);
             
-            $row = [
-                $id, $tanggal, $buyer, $woNo, $woDate, $motif,
-                $tglKirim, $hand, $note, $tFinish, $warna, $nk,
-                $panjang, $panjangGreige, $greige, $beratGreige, $pcs, $terakhirProses
-            ];
+            $rowData['col-panjang-jadi'] = $panjangJadi;
+            $rowData['col-pack'] = $pack;
 
-            foreach ($processStrings as $ps) {
-                $row[] = $ps;
+            // Compute row and cell-specific background coloring styles exactly matched with web UI
+            $isPackFilled = !empty($packDates) || !empty($model->approved_at);
+
+            $isOrangeFilled = false;
+            if (!$isPackFilled) {
+                $orangeProcessIds = \yii\helpers\ArrayHelper::getColumn(
+                    \common\models\ar\MstProcessDyeing::find()
+                        ->where(['nama_proses' => [
+                            'Toping 1', 'Toping 2', 'Toping 3', 'Toping 4',
+                            'Cuci Ulang',
+                            'RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5',
+                            'S-RC 1', 'S-RC 2', 'S-RC 3', 'S-RC 4'
+                        ]])
+                        ->all(),
+                    'id'
+                );
+                if (!empty($orangeProcessIds)) {
+                    foreach ($orangeProcessIds as $pId) {
+                        if (isset($processData[$pId])) {
+                            $v = $processData[$pId];
+                            if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                                $isOrangeFilled = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
-            $row[] = $panjangJadi;
-            $row[] = $pack;
+            $isDyeingFilled = false;
+            if (!$isPackFilled && !$isOrangeFilled) {
+                $dyeingProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Dyeing']);
+                if ($dyeingProcess !== null && isset($processData[$dyeingProcess->id])) {
+                    $v = $processData[$dyeingProcess->id];
+                    if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                        $isDyeingFilled = true;
+                    }
+                }
+            }
 
-            fputcsv($output, $row, ';');
+            $isPinkFilled = false;
+            if (!$isPackFilled && !$isOrangeFilled && !$isDyeingFilled) {
+                $pinkProcessIds = \yii\helpers\ArrayHelper::getColumn(
+                    \common\models\ar\MstProcessDyeing::find()
+                        ->where(['nama_proses' => ['Preset', 'Setting']])
+                        ->all(),
+                    'id'
+                );
+                if (!empty($pinkProcessIds)) {
+                    foreach ($pinkProcessIds as $pId) {
+                        if (isset($processData[$pId])) {
+                            $v = $processData[$pId];
+                            if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                                $isPinkFilled = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            $rowStyleID = 'Default';
+            if ($isPackFilled) {
+                $rowStyleID = 'RowPackFilled';
+            } elseif ($isOrangeFilled) {
+                $rowStyleID = 'RowTopingFilled';
+            } elseif ($isDyeingFilled) {
+                $rowStyleID = 'RowDyeingFilled';
+            } elseif ($isPinkFilled) {
+                $rowStyleID = 'RowPinkFilled';
+            }
+
+            // Cell-specific relaxing/scutcher highlight for NK column
+            $hasRelax = false;
+            $hasScutcher = false;
+            $relaxProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Relaxing']);
+            $scutcherProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Scutcher Relaxing']);
+            if ($relaxProcess !== null && isset($processData[$relaxProcess->id])) {
+                $v = $processData[$relaxProcess->id];
+                if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                    $hasRelax = true;
+                }
+            }
+            if ($scutcherProcess !== null && isset($processData[$scutcherProcess->id])) {
+                $v = $processData[$scutcherProcess->id];
+                if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                    $hasScutcher = true;
+                }
+            }
+            $isNkHighlighted = ($hasRelax && $hasScutcher);
+
+            // Process column custom highlights
+            $processHighlightStyles = [];
+            foreach ($masterProcesses as $proc) {
+                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+                $hasVal = false;
+                if (isset($processData[$proc->id])) {
+                    $v = $processData[$proc->id];
+                    if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                        $hasVal = true;
+                    }
+                }
+                if ($hasVal) {
+                    $nama = $proc->nama_proses;
+                    if ($nama === 'Dyeing') {
+                        $processHighlightStyles[$colKey] = 'ColDyeingStyle';
+                    } elseif ($nama === 'Resin Finish') {
+                        $processHighlightStyles[$colKey] = 'ColResinStyle';
+                    } elseif ($nama === 'Heat Cut') {
+                        $processHighlightStyles[$colKey] = 'ColHeatCutPackStyle';
+                    } elseif (in_array($nama, ['Preset', 'Setting'])) {
+                        $processHighlightStyles[$colKey] = 'ColPresetSettingStyle';
+                    } elseif (in_array($nama, [
+                        'Toping 1', 'Toping 2', 'Toping 3', 'Toping 4',
+                        'Cuci Ulang',
+                        'RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5',
+                        'S-RC 1', 'S-RC 2', 'S-RC 3', 'S-RC 4'
+                    ])) {
+                        $processHighlightStyles[$colKey] = 'ColTopingRcStyle';
+                    }
+                }
+            }
+
+            echo '   <Row ss:StyleID="' . $rowStyleID . '">' . "\n";
+            foreach ($allHeaders as $colKey => $headerLabel) {
+                if (!in_array($colKey, $hiddenCols)) {
+                    $val = isset($rowData[$colKey]) ? $rowData[$colKey] : '';
+                    
+                    $cellStyleAttr = '';
+                    if ($colKey === 'col-nomor-kartu' && $isNkHighlighted) {
+                        $cellStyleAttr = ' ss:StyleID="ColNomorKartuGreenStyle"';
+                    } elseif ($colKey === 'col-pack' && $isPackFilled) {
+                        $cellStyleAttr = ' ss:StyleID="ColHeatCutPackStyle"';
+                    } elseif (isset($processHighlightStyles[$colKey])) {
+                        $cellStyleAttr = ' ss:StyleID="' . $processHighlightStyles[$colKey] . '"';
+                    }
+                    
+                    if (is_numeric($val) && strpos($val, '0') !== 0) {
+                        echo '    <Cell' . $cellStyleAttr . '><Data ss:Type="Number">' . $val . '</Data></Cell>' . "\n";
+                    } else {
+                        $valCleaned = htmlspecialchars($val, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                        echo '    <Cell' . $cellStyleAttr . '><Data ss:Type="String">' . $valCleaned . '</Data></Cell>' . "\n";
+                    }
+                }
+            }
+            echo '   </Row>' . "\n";
         }
         
-        fclose($output);
+        echo '  </Table>' . "\n";
+        echo '  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' . "\n";
+        echo '   <Selected/>' . "\n";
+        echo '   <FreezePanes/>' . "\n";
+        echo '   <SplitHorizontal>1</SplitHorizontal>' . "\n";
+        echo '   <TopRowBottomPane>1</TopRowBottomPane>' . "\n";
+        echo '   <ActivePane>2</ActivePane>' . "\n";
+        echo '  </WorksheetOptions>' . "\n";
+        echo ' </Worksheet>' . "\n";
+        echo '</Workbook>' . "\n";
         exit();
     }
 

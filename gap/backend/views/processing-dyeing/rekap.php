@@ -35,9 +35,11 @@ $this->params['breadcrumbs'][] = $this->title;
 
             'id',
             [
-                'attribute' => 'dateRange',
-                'label' => 'Tanggal',
-                'value' => 'date',
+                'attribute' => 'woDateRange',
+                'label' => 'Tgl. WO',
+                'value' => function($data){
+                    return $data->wo ? $data->wo->date : null;
+                },
                 'format' => 'date',
                 'filterType' => GridView::FILTER_DATE_RANGE,
                 'filterWidgetOptions' => [
@@ -54,7 +56,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Buyer',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->sc->customerName;
+                    return $data->sc ? $data->sc->customerCode : '';
                 },
             ],
             [
@@ -93,14 +95,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $data->wo->handling->name;
                 },
             ],
-            [
-                'label'=>'Note',
-                'value'=>function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->note;
-                },
-                'format'=>'html'
-            ],
+
             [
                 'label'=>'T. Finish',
                 'value'=>function($data){
@@ -132,13 +127,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 },
                 'format'=>'decimal'
             ],
-            [
-                'label'=>'Greige',
-                'value'=>function($data){
-                    /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->greigeNamaKain;
-                },
-            ],
+
             [
                 'label'=>'Berat Greige',
                 'value'=>function($data){

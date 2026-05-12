@@ -83,32 +83,11 @@ $joinPieces = [
     InspectingItem::GRADE_A_ASTERISK => [],
 ];
 
-$postedJoinPieces = $model->getItems()
-    ->alias('it')
-    ->select('it.join_piece')
-    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
-    ->where(['and',
-        ['it.is_head' => 1],
-        ['not', ['it.join_piece' => null]],
-        ['<>', 'it.join_piece', '']
-    ])
-    ->andWhere(['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]])
-    ->column();
-
-$postedJoinPieces = array_unique(array_filter($postedJoinPieces));
-
-$query = $model->getItems()
+$inspectingItems = $model->getItems()
     ->alias('it')
     ->select(['it.*', 'gj.id AS gj_id'])
-    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'');
-
-$whereClause = ['or', ['it.is_posted' => true], ['not', ['gj.id' => null]]];
-if (!empty($postedJoinPieces)) {
-    $whereClause[] = ['in', 'it.join_piece', $postedJoinPieces];
-}
-
-$inspectingItems = $query
-    ->where($whereClause)
+    ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+    ->where(['it.is_posted' => true])
     ->orderBy([
         new \yii\db\Expression("CASE WHEN it.no_urut IS NULL THEN 1 ELSE 0 END"),
         'it.no_urut' => SORT_ASC,
@@ -230,7 +209,6 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     </thead>
                                     <tbody>
                                         <?php 
-                                        $packingNumber = 1;
                                         foreach ($inspectingItems as $index=>$item):?>
                                         <?php
                                         if ($index == $indexLimit) {
@@ -271,9 +249,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
+                                                <?= $item['no_urut'] . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
                                             </td>
-                                            <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center;">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {
@@ -465,9 +442,8 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
-                                                <?= $packingNumber . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
+                                                <?= $item['no_urut'] . $item['join_piece']; ?><?=$isReceived ? ' (V)' : ''?>
                                             </td>
-                                            <?php $packingNumber++; ?>
                                             <td class="bordered" style="text-align: center">
                                                 <?php
                                                     if ($item['grade_up'] <> NULL) {

@@ -66,6 +66,7 @@ class ProcessingDyeingController extends Controller
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         $dataProvider->query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
 
         return $this->render('rekap', [
