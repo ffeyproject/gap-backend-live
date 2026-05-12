@@ -1228,17 +1228,18 @@ function applyColumnVisibility() {
     // Sesuaikan colspan baris Note
     updateNoteColspan();
 
-    // Update URL Export Excel dengan list kolom tersembunyi
+    // Update URL Export Excel dengan list kolom tersembunyi dan parameter anti-cache
     var btnExport = $('#btn-export-excel');
     if (btnExport.length > 0) {
         var baseHref = btnExport.attr('href');
         if (baseHref) {
-            // Bersihkan parameter hidden_cols lama jika ada
-            var cleanHref = baseHref.replace(/&hidden_cols=[^&]*/, '');
+            // Bersihkan parameter hidden_cols dan _t lama jika ada
+            var cleanHref = baseHref.replace(/&hidden_cols=[^&]*/g, '').replace(/&_t=[^&]*/g, '');
+            var timestamp = Date.now();
             if (hiddenColumns.length > 0) {
-                btnExport.attr('href', cleanHref + '&hidden_cols=' + hiddenColumns.join(','));
+                btnExport.attr('href', cleanHref + '&hidden_cols=' + hiddenColumns.join(',') + '&_t=' + timestamp);
             } else {
-                btnExport.attr('href', cleanHref);
+                btnExport.attr('href', cleanHref + '&_t=' + timestamp);
             }
         }
     }
@@ -1272,13 +1273,13 @@ $('.kartu-proses-dyeing-index').on('change', '.col-toggle-checkbox', function() 
 
     localStorage.setItem('rekap_dyeing_hidden_columns', JSON.stringify(hiddenColumns));
 
-    // Sesuaikan colspan baris Note
-    updateNoteColspan();
-
     // Update status checkbox "Pilih Semua"
     var totalCheckboxes = $('.col-toggle-checkbox').length;
     var checkedCheckboxes = $('.col-toggle-checkbox:checked').length;
     $('#toggle-all-columns').prop('checked', totalCheckboxes === checkedCheckboxes);
+
+    // Menerapkan perubahan visibilitas dan meng-update URL link export
+    applyColumnVisibility();
 });
 
 // Toggle semua kolom (Pilih Semua)
@@ -1300,8 +1301,8 @@ $('.kartu-proses-dyeing-index').on('change', '#toggle-all-columns', function() {
 
     localStorage.setItem('rekap_dyeing_hidden_columns', JSON.stringify(hiddenColumns));
     
-    // Sesuaikan colspan baris Note
-    updateNoteColspan();
+    // Menerapkan perubahan visibilitas dan meng-update URL link export
+    applyColumnVisibility();
 });
 JS;
 

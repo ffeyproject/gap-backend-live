@@ -123,6 +123,8 @@ class ProcessingDyeingController extends Controller
         
         header('Content-Type: application/vnd.ms-excel; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Cache-Control: post-check=0, pre-check=0', false);
         header('Pragma: no-cache');
         header('Expires: 0');
         
@@ -148,8 +150,6 @@ class ProcessingDyeingController extends Controller
             'col-panjang' => 'Panjang',
             'col-warna' => 'Warna',
             'col-nomor-kartu' => 'NK',
-            'col-note' => 'Note',
-            'col-memo' => 'Memo Perubahan',
             'col-panjang-greige' => 'Panjang Greige',
             'col-berat-greige' => 'Berat Greige',
             'col-pcs' => 'Pcs',
@@ -188,6 +188,218 @@ class ProcessingDyeingController extends Controller
             $monthName = isset($indoMonths[$monthNum]) ? $indoMonths[$monthNum] : date('M', $time);
             return "{$day}-{$monthName}-{$year}";
         };
+
+        // Calculate columns and prepare data list first
+        $visibleCols = [];
+        foreach ($allHeaders as $colKey => $headerLabel) {
+            if (!in_array($colKey, $hiddenCols)) {
+                $visibleCols[] = $colKey;
+            }
+        }
+
+        $rowDataList = [];
+        foreach ($models as $idx => $model) {
+            $id = $model->id;
+            $tanggal = $model->wo ? $model->wo->date : '';
+            $buyer = $model->sc ? $model->sc->customerCode : '';
+            $woNo = $model->wo ? $model->wo->no : '';
+            $motif = $model->wo ? $model->wo->greigeNamaKain : '';
+            $tglKirim = $model->wo ? $model->wo->tgl_kirim : '';
+            $hand = ($model->wo && $model->wo->handling) ? $model->wo->handling->name : '';
+            
+            $note = '';
+            if ($model->wo && !empty($model->wo->note)) {
+                $rawNote = $model->wo->note;
+                $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $rawNote = strip_tags($rawNote);
+                $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
+                $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
+                $rawNote = trim($rawNote);
+                $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+            }
+
+            // Memo Perubahan
+            $memos = $model->wo ? $model->wo->trnWoMemos : [];
+            $memoHtml = '';
+            if (!empty($memos)) {
+                $memoTexts = [];
+                foreach ($memos as $memoModel) {
+                    $mText = $memoModel->memo;
+                    $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $mText = strip_tags($mText);
+                    $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
+                    $mText = trim($mText);
+                    if (!empty($mText)) {
+                        $memoTexts[] = 'No. ' . $memoModel->no . ': ' . $mText;
+                    }
+                }
+                if (!empty($memoTexts)) {
+                    $memoHtml = implode('; ', $memoTexts);
+                }
+            }
+
+            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard).'Y') : '';
+            $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
+            $nk = $model->nomor_kartu;
+            $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
+            $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+            $beratGreige = $model->berat;
+            $pcs = $model->getTrnKartuProsesDyeingItems()->count();
+            
+            $lastProcess = (new \yii\db\Query())
+                ->select(['m.nama_proses'])
+                ->from('kartu_process_dyeing_process k')
+                ->innerJoin('mst_process_dyeing m', 'k.process_id = m.id')
+                ->where(['k.kartu_process_id' => $model->id])
+                ->andWhere(['is not', 'k.value', null])
+                ->andWhere(['<>', 'k.value', ''])
+                ->orderBy(['m.order' => SORT_DESC])
+                ->one();
+            $terakhirProses = $lastProcess !== false ? $lastProcess['nama_proses'] : '-';
+            
+            // Fetch all process values in a single high-performance query
+            $processes = (new \yii\db\Query())
+                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                ->where(['kartu_process_id' => $model->id])
+                ->all();
+            
+            $processData = [];
+            foreach ($processes as $pc) {
+                $processData[$pc['process_id']] = \yii\helpers\Json::decode($pc['value']);
+            }
+            
+            $rowVals = [
+                'col-id' => $id,
+                'col-wodaterange' => $formatIndoDate($tanggal),
+                'col-buyer' => $buyer,
+                'col-wono' => $woNo,
+                'col-motif' => $motif,
+                'col-tgl--kirim' => $formatIndoDate($tglKirim),
+                'col-hand' => $hand,
+                'col-note' => $note,
+                'col-memo' => $memoHtml,
+                'col-t--finish' => $tFinish,
+                'col-warna' => $warna,
+                'col-nomor-kartu' => $nk,
+                'col-panjang' => $panjang,
+                'col-panjang-greige' => $panjangGreige,
+                'col-berat-greige' => $beratGreige,
+                'col-pcs' => $pcs,
+                'col-terakhir-proses' => $terakhirProses,
+            ];
+
+            foreach ($masterProcesses as $proc) {
+                $tg = '-';
+                $sh = '-';
+                if (isset($processData[$proc->id])) {
+                    $v = $processData[$proc->id];
+                    if (isset($v['tanggal']) && !empty($v['tanggal'])) {
+                        $tg = $formatIndoDate($v['tanggal']);
+                    }
+                    if (isset($v['shift_group'])) {
+                        $sh = $v['shift_group'];
+                    }
+                }
+                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+                $rowVals[$colKey] = $tg . ' / ' . $sh;
+            }
+            
+            $panjangJadi = 0;
+            if (isset($processData[11]) && isset($processData[11]['panjang_jadi'])) {
+                $panjangJadi = $processData[11]['panjang_jadi'];
+            }
+            
+            $packDates = [];
+            $logs = \common\models\ar\ActionLogKartuDyeing::find()
+                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+                
+            foreach ($logs as $lIdx => $log) {
+                $dateFormatted = $formatIndoDate($log->created_at);
+                $packDates[] = 'Persetujuan Ke-' . ($lIdx + 1) . ': ' . $dateFormatted;
+            }
+            
+            if (empty($packDates)) {
+                if (!empty($model->approved_history)) {
+                    $history = \yii\helpers\Json::decode($model->approved_history);
+                    if (is_array($history)) {
+                        foreach ($history as $lIdx => $h) {
+                            if (isset($h['time'])) {
+                                $dateFormatted = $formatIndoDate($h['time']);
+                                $packDates[] = 'Persetujuan Ke-' . ($lIdx + 1) . ': ' . $dateFormatted;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (empty($packDates) && !empty($model->approved_at)) {
+                $packDates[] = 'Persetujuan Ke-1: ' . $formatIndoDate($model->approved_at);
+            }
+            $pack = implode(', ', $packDates);
+            
+            $rowVals['col-panjang-jadi'] = $panjangJadi;
+            $rowVals['col-pack'] = $pack;
+
+            $rowDataList[$idx] = [
+                'model' => $model,
+                'processData' => $processData,
+                'packDates' => $packDates,
+                'rowData' => $rowVals,
+            ];
+        }
+
+        // Calculate hierarchical vertical merges
+        $mergeMap = [];
+        $numRows = count($rowDataList);
+        $mergeCols = [
+            'col-id',
+            'col-wodaterange',
+            'col-buyer',
+            'col-wono',
+            'col-motif',
+            'col-tgl--kirim',
+            'col-hand',
+            'col-t--finish',
+            'col-panjang'
+        ];
+
+        foreach ($mergeCols as $colKey) {
+            $r = 0;
+            while ($r < $numRows) {
+                $startVal = $rowDataList[$r]['rowData'][$colKey];
+                $startWo = $rowDataList[$r]['rowData']['col-wono'];
+                
+                $span = 1;
+                if (!empty($startWo) && $startVal !== '' && $startVal !== null && $startVal !== '-') {
+                    for ($nextR = $r + 1; $nextR < $numRows; $nextR++) {
+                        $nextVal = $rowDataList[$nextR]['rowData'][$colKey];
+                        $nextWo = $rowDataList[$nextR]['rowData']['col-wono'];
+                        
+                        if ($nextVal === $startVal && $nextWo === $startWo) {
+                            $span++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                
+                if ($span > 1) {
+                    $mergeMap[$r][$colKey] = [
+                        'MergeDown' => $span - 1,
+                        'IsFirst' => true
+                    ];
+                    for ($k = 1; $k < $span; $k++) {
+                        $mergeMap[$r + $k][$colKey] = [
+                            'MergeDown' => 0,
+                            'IsFirst' => false
+                        ];
+                    }
+                }
+                $r += $span;
+            }
+        }
 
         // Output XML Spreadsheet 2003
         echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
@@ -345,10 +557,62 @@ class ProcessingDyeingController extends Controller
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Bold="1" ss:Color="#1B5E20"/>' . "\n";
         echo '   <Interior ss:Color="#C8E6C9" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
+        echo '  <Style ss:ID="NoteStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:Horizontal="Left" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#9C27B0" ss:Bold="1"/>' . "\n";
+        echo '   <Interior ss:Color="#FAFAFA" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+        
+        echo '  <Style ss:ID="MemoStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:Horizontal="Left" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#1565C0"/>' . "\n";
+        echo '   <Interior ss:Color="#FAFAFA" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+        
+        echo '  <Style ss:ID="NoteRowStyle">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Interior ss:Color="#FAFAFA" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+
         echo ' </Styles>' . "\n";
         
         echo ' <Worksheet ss:Name="Rekap">' . "\n";
-        echo '  <Table>' . "\n";
+        $noteRowsCount = 0;
+        $numRows = count($rowDataList);
+        for ($i = 0; $i < $numRows; $i++) {
+            $rowItem = $rowDataList[$i];
+            $currentWoNo = $rowItem['rowData']['col-wono'];
+            $nextRowItem = isset($rowDataList[$i + 1]) ? $rowDataList[$i + 1] : null;
+            $nextWoNo = $nextRowItem ? $nextRowItem['rowData']['col-wono'] : null;
+            
+            if ($currentWoNo !== $nextWoNo) {
+                if ($rowItem['model']->wo && !empty($rowItem['model']->wo->note)) {
+                    $noteRowsCount++;
+                }
+            }
+        }
+
+        $expandedColumnCount = count($visibleCols);
+        $expandedRowCount = count($rowDataList) + 1 + $noteRowsCount; // +1 for Header row, plus Note/Memo rows
+        echo '  <Table ss:ExpandedColumnCount="' . $expandedColumnCount . '" ss:ExpandedRowCount="' . $expandedRowCount . '">' . "\n";
         
         // Output headers row
         echo '   <Row ss:Height="25" ss:StyleID="Header">' . "\n";
@@ -359,153 +623,12 @@ class ProcessingDyeingController extends Controller
             }
         }
         echo '   </Row>' . "\n";
-        
-        foreach ($models as $model) {
-            /* @var $model TrnKartuProsesDyeing */
-            $id = $model->id;
-            $tanggal = $model->wo ? $model->wo->date : '';
-            $buyer = $model->sc ? $model->sc->customerCode : '';
-            $woNo = $model->wo ? $model->wo->no : '';
-            $motif = $model->wo ? $model->wo->greigeNamaKain : '';
-            $tglKirim = $model->wo ? $model->wo->tgl_kirim : '';
-            $hand = ($model->wo && $model->wo->handling) ? $model->wo->handling->name : '';
-            
-            $note = '';
-            if ($model->wo && !empty($model->wo->note)) {
-                $rawNote = $model->wo->note;
-                $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                $rawNote = strip_tags($rawNote);
-                $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
-                $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
-                $rawNote = trim($rawNote);
-                $note = preg_replace("/\n{2,}/", "\n", $rawNote);
-            }
 
-            // Memo Perubahan
-            $memos = $model->wo ? $model->wo->trnWoMemos : [];
-            $memoHtml = '';
-            if (!empty($memos)) {
-                $memoTexts = [];
-                foreach ($memos as $memoModel) {
-                    $mText = $memoModel->memo;
-                    $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $mText = strip_tags($mText);
-                    $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
-                    $mText = trim($mText);
-                    if (!empty($mText)) {
-                        $memoTexts[] = 'No. ' . $memoModel->no . ': ' . $mText;
-                    }
-                }
-                if (!empty($memoTexts)) {
-                    $memoHtml = implode('; ', $memoTexts);
-                }
-            }
-
-            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard).'Y') : '';
-            $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
-            $nk = $model->nomor_kartu;
-            $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
-            $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
-            $beratGreige = $model->berat;
-            $pcs = $model->getTrnKartuProsesDyeingItems()->count();
-            
-            $lastProcess = (new \yii\db\Query())
-                ->select(['m.nama_proses'])
-                ->from('kartu_process_dyeing_process k')
-                ->innerJoin('mst_process_dyeing m', 'k.process_id = m.id')
-                ->where(['k.kartu_process_id' => $model->id])
-                ->andWhere(['is not', 'k.value', null])
-                ->andWhere(['<>', 'k.value', ''])
-                ->orderBy(['m.order' => SORT_DESC])
-                ->one();
-            $terakhirProses = $lastProcess !== false ? $lastProcess['nama_proses'] : '-';
-            
-            // Fetch all process values in a single high-performance query
-            $processes = (new \yii\db\Query())
-                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                ->where(['kartu_process_id' => $model->id])
-                ->all();
-            
-            $processData = [];
-            foreach ($processes as $pc) {
-                $processData[$pc['process_id']] = \yii\helpers\Json::decode($pc['value']);
-            }
-            
-            $rowData = [
-                'col-id' => $id,
-                'col-wodaterange' => $formatIndoDate($tanggal),
-                'col-buyer' => $buyer,
-                'col-wono' => $woNo,
-                'col-motif' => $motif,
-                'col-tgl--kirim' => $formatIndoDate($tglKirim),
-                'col-hand' => $hand,
-                'col-note' => $note,
-                'col-memo' => $memoHtml,
-                'col-t--finish' => $tFinish,
-                'col-warna' => $warna,
-                'col-nomor-kartu' => $nk,
-                'col-panjang' => $panjang,
-                'col-panjang-greige' => $panjangGreige,
-                'col-berat-greige' => $beratGreige,
-                'col-pcs' => $pcs,
-                'col-terakhir-proses' => $terakhirProses,
-            ];
-
-            foreach ($masterProcesses as $proc) {
-                $tg = '-';
-                $sh = '-';
-                if (isset($processData[$proc->id])) {
-                    $v = $processData[$proc->id];
-                    if (isset($v['tanggal']) && !empty($v['tanggal'])) {
-                        $tg = $formatIndoDate($v['tanggal']);
-                    }
-                    if (isset($v['shift_group'])) {
-                        $sh = $v['shift_group'];
-                    }
-                }
-                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
-                $rowData[$colKey] = $tg . ' / ' . $sh;
-            }
-            
-            $panjangJadi = 0;
-            if (isset($processData[11]) && isset($processData[11]['panjang_jadi'])) {
-                $panjangJadi = $processData[11]['panjang_jadi'];
-            }
-            
-            $packDates = [];
-            
-            // Ambil riwayat dari ActionLogKartuDyeing untuk mencakup seluruh data historis masa lalu
-            $logs = \common\models\ar\ActionLogKartuDyeing::find()
-                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
-                ->orderBy(['created_at' => SORT_ASC])
-                ->all();
-                
-            foreach ($logs as $index => $log) {
-                $dateFormatted = $formatIndoDate($log->created_at);
-                $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
-            }
-            
-            if (empty($packDates)) {
-                if (!empty($model->approved_history)) {
-                    $history = \yii\helpers\Json::decode($model->approved_history);
-                    if (is_array($history)) {
-                        foreach ($history as $index => $h) {
-                            if (isset($h['time'])) {
-                                $dateFormatted = $formatIndoDate($h['time']);
-                                $packDates[] = 'Persetujuan Ke-' . ($index + 1) . ': ' . $dateFormatted;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (empty($packDates) && !empty($model->approved_at)) {
-                $packDates[] = 'Persetujuan Ke-1: ' . $formatIndoDate($model->approved_at);
-            }
-            $pack = implode(', ', $packDates);
-            
-            $rowData['col-panjang-jadi'] = $panjangJadi;
-            $rowData['col-pack'] = $pack;
+        foreach ($rowDataList as $idx => $rowItem) {
+            $model = $rowItem['model'];
+            $processData = $rowItem['processData'];
+            $packDates = $rowItem['packDates'];
+            $rowData = $rowItem['rowData'];
 
             // Compute row and cell-specific background coloring styles exactly matched with web UI
             $isPackFilled = !empty($packDates) || !empty($model->approved_at);
@@ -630,29 +753,85 @@ class ProcessingDyeingController extends Controller
                 }
             }
 
-            echo '   <Row ss:StyleID="' . $rowStyleID . '">' . "\n";
-            foreach ($allHeaders as $colKey => $headerLabel) {
-                if (!in_array($colKey, $hiddenCols)) {
-                    $val = isset($rowData[$colKey]) ? $rowData[$colKey] : '';
-                    
-                    $cellStyleAttr = '';
-                    if ($colKey === 'col-nomor-kartu' && $isNkHighlighted) {
-                        $cellStyleAttr = ' ss:StyleID="ColNomorKartuGreenStyle"';
-                    } elseif ($colKey === 'col-pack' && $isPackFilled) {
-                        $cellStyleAttr = ' ss:StyleID="ColHeatCutPackStyle"';
-                    } elseif (isset($processHighlightStyles[$colKey])) {
-                        $cellStyleAttr = ' ss:StyleID="' . $processHighlightStyles[$colKey] . '"';
-                    }
-                    
-                    if (is_numeric($val) && strpos($val, '0') !== 0) {
-                        echo '    <Cell' . $cellStyleAttr . '><Data ss:Type="Number">' . $val . '</Data></Cell>' . "\n";
-                    } else {
-                        $valCleaned = htmlspecialchars($val, ENT_QUOTES | ENT_XML1, 'UTF-8');
-                        echo '    <Cell' . $cellStyleAttr . '><Data ss:Type="String">' . $valCleaned . '</Data></Cell>' . "\n";
-                    }
+            echo '   <Row>' . "\n";
+            $excelColIndex = 1;
+            foreach ($visibleCols as $colKey) {
+                $isMerged = isset($mergeMap[$idx][$colKey]);
+                $isFirst = $isMerged ? $mergeMap[$idx][$colKey]['IsFirst'] : true;
+                $mergeSpans = $isMerged ? $mergeMap[$idx][$colKey]['MergeDown'] : 0;
+                
+                if (!$isFirst) {
+                    $excelColIndex++;
+                    continue;
                 }
+                
+                $val = isset($rowData[$colKey]) ? $rowData[$colKey] : '';
+                
+                $cellAttrs = ' ss:Index="' . $excelColIndex . '"';
+                if ($mergeSpans > 0) {
+                    $cellAttrs .= ' ss:MergeDown="' . $mergeSpans . '"';
+                }
+                
+                // Determine style ID dynamically at cell-level to prevent row/cell merging conflicts in Excel
+                $cellStyleName = '';
+                if ($colKey === 'col-nomor-kartu' && $isNkHighlighted) {
+                    $cellStyleName = 'ColNomorKartuGreenStyle';
+                } elseif ($colKey === 'col-pack' && $isPackFilled) {
+                    $cellStyleName = 'ColHeatCutPackStyle';
+                } elseif (isset($processHighlightStyles[$colKey])) {
+                    $cellStyleName = $processHighlightStyles[$colKey];
+                } elseif ($rowStyleID !== 'Default') {
+                    $cellStyleName = $rowStyleID;
+                }
+                
+                if (!empty($cellStyleName)) {
+                    $cellAttrs .= ' ss:StyleID="' . $cellStyleName . '"';
+                }
+                
+                if (is_numeric($val) && strpos($val, '0') !== 0) {
+                    echo '    <Cell' . $cellAttrs . '><Data ss:Type="Number">' . $val . '</Data></Cell>' . "\n";
+                } else {
+                    $valCleaned = htmlspecialchars($val, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                    echo '    <Cell' . $cellAttrs . '><Data ss:Type="String">' . $valCleaned . '</Data></Cell>' . "\n";
+                }
+                $excelColIndex++;
             }
             echo '   </Row>' . "\n";
+            
+            // Print Note/Memo row if WO number changes and there is a note (exactly matching the web UI afterRow logic)
+            $nextRowItem = isset($rowDataList[$idx + 1]) ? $rowDataList[$idx + 1] : null;
+            $currentWoNo = $rowData['col-wono'];
+            $nextWoNo = $nextRowItem ? $nextRowItem['rowData']['col-wono'] : null;
+            
+            if ($currentWoNo !== $nextWoNo) {
+                if ($model->wo && !empty($model->wo->note)) {
+                    echo '   <Row ss:Height="30">' . "\n";
+                    
+                    // Column 1 (ID): Empty cell
+                    echo '    <Cell ss:Index="1" ss:StyleID="NoteRowStyle"><Data ss:Type="String"></Data></Cell>' . "\n";
+                    
+                    // Column 2: Note container. We use ss:MergeAcross="3" (to span columns 2, 3, 4, 5)
+                    $noteVal = isset($rowData['col-note']) ? $rowData['col-note'] : '';
+                    $cleanNoteVal = 'Note: ' . htmlspecialchars($noteVal, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                    echo '    <Cell ss:Index="2" ss:MergeAcross="3" ss:StyleID="NoteStyle"><Data ss:Type="String">' . $cleanNoteVal . '</Data></Cell>' . "\n";
+                    
+                    // Column 6: Memo container. We use ss:MergeAcross="5" (to span columns 6, 7, 8, 9, 10, 11)
+                    $memoVal = isset($rowData['col-memo']) ? $rowData['col-memo'] : '';
+                    if (!empty($memoVal)) {
+                        $cleanMemoVal = 'Memo Perubahan WO: ' . htmlspecialchars($memoVal, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                    } else {
+                        $cleanMemoVal = 'Tidak ada Memo Perubahan WO';
+                    }
+                    echo '    <Cell ss:Index="6" ss:MergeAcross="5" ss:StyleID="MemoStyle"><Data ss:Type="String">' . $cleanMemoVal . '</Data></Cell>' . "\n";
+                    
+                    // Remaining columns (index 12 to count($visibleCols)) are printed as empty cells
+                    $totalCols = count($visibleCols);
+                    for ($c = 12; $c <= $totalCols; $c++) {
+                        echo '    <Cell ss:Index="' . $c . '" ss:StyleID="NoteRowStyle"><Data ss:Type="String"></Data></Cell>' . "\n";
+                    }
+                    echo '   </Row>' . "\n";
+                }
+            }
         }
         
         echo '  </Table>' . "\n";
