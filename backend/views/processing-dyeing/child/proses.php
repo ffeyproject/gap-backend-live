@@ -16,6 +16,8 @@ use yii\i18n\Formatter;
 /* @var $processesUlang array*/
 /* @var $formatter Formatter */
 
+unset($attrsLabels['use_jetblack']);
+
 $this->registerCss('
     .ctn-disable{background-color:black;}
     .table-sticky-container {
@@ -56,10 +58,37 @@ $this->registerCss('
                     </thead>
                     <tbody>
                     <?php
+                    $jetblackHasValue = false;
+                    foreach ($processModels as $item) {
+                        if ($item->use_jetblack) {
+                            $pcModel = KartuProcessDyeingProcess::findOne(['kartu_process_id' => $model->id, 'process_id' => $item->id]);
+                            if ($pcModel !== null) {
+                                $jetblackHasValue = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    $firstJetblack = true;
                     foreach ($processModels as $item){
-                        echo '<tr>';
+                        if ($item->use_jetblack) {
+                            if ($firstJetblack) {
+                                $colCount = count($attrsLabels) + 1; // including 'Ulang' column
+                                $chevronClass = $jetblackHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="jetblack-header-row" style="background-color: #3c8dbc; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="jetblack-icon"></i> <strong>PROSES JETBLACK (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstJetblack = false;
+                            }
+                            $rowStyle = $jetblackHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="jetblack-row" ' . $rowStyle . '>';
+                        } else {
+                            echo '<tr>';
+                        }
                         foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan'])){
+                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan', 'use_jetblack'])){
                                 if($key !== 'nama_proses'){
                                     if($value){
                                         echo '<td>';
@@ -167,3 +196,15 @@ JS;
 
 $js = $jsStr.$this->renderFile(Yii::$app->controller->viewPath.'/child/js/proses.js');
 $this->registerJs($js, $this::POS_END);
+
+$this->registerJs("
+    $(document).on('click', '.jetblack-header-row', function() {
+        $('.jetblack-row').toggle();
+        var icon = $('#jetblack-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+");

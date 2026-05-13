@@ -16,6 +16,8 @@ use yii\i18n\Formatter;
 /* @var $processesUlang array*/
 /* @var $formatter Formatter */
 
+unset($attrsLabels['use_jetblack']);
+
 $this->registerCss('.ctn-disable{background-color:black;}');
 ?>
 
@@ -44,7 +46,7 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                     foreach ($processModels as $item){
                         echo '<tr>';
                         foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan'])){
+                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan', 'use_jetblack'])){
                                 if($key !== 'nama_proses'){
                                     if($value){
                                         echo '<td>';

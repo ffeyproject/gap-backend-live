@@ -50,6 +50,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     'panjang_jadi:boolean',
                     'info_kualitas:boolean',
                     'gangguan_produksi:boolean',
+                    'use_jetblack:boolean',
                     'created_at:datetime',
                     'created_by',
                     'updated_at:datetime',

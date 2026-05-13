@@ -146,49 +146,7 @@ $gridColumns = [
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
-    [
-        'label'=>'Tgl. Kirim',
-        'value'=>function($data) use ($formatIndoDate) {
-            return $formatIndoDate($data->wo->tgl_kirim);
-        },
-        'format'=>'raw',
-        'group' => true,
-        'subGroupOf' => 3,
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label'=>'Hand',
-        'value'=>function($data){
-            return $data->wo->handling->name;
-        },
-        'group' => true,
-        'subGroupOf' => 3,
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
 
-    [
-        'label'=>'T. Finish',
-        'value'=>function($data){
-            return Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y';
-        },
-        'group' => true,
-        'subGroupOf' => 3,
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label'=>'Panjang',
-        'value'=>function($data){
-            return $data->wo->colorQtyBatchToMeter;
-        },
-        'format'=>'decimal',
-        'group' => true,
-        'subGroupOf' => 3,
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
     [
         'label'=>'Warna',
         'value'=>function($data){
@@ -287,6 +245,7 @@ $gridColumns = [
 
 // Query and append all processes from master process dynamically
 $masterProcesses = \common\models\ar\MstProcessDyeing::find()
+    ->where(['use_jetblack' => false])
     ->orderBy('order')
     ->all();
 
@@ -306,8 +265,20 @@ foreach ($masterProcesses as $proc) {
     $isHeatCut = ($proc->nama_proses === 'Heat Cut');
     
     $gridColumns[] = [
-        'label' => $proc->nama_proses . ' / Shift',
+        'label' => $proc->nama_proses,
+        'headerOptions' => [
+            'style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center; vertical-align: middle;',
+        ],
         'contentOptions' => function($model, $key, $index, $column) use ($proc, $isDyeing, $isOrange, $isPink, $isResinFinish, $isHeatCut) {
+            $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
+                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
+                ->exists();
+            $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at));
+            
+            if ($isPackFilled) {
+                return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
+            }
+
             $hasData = false;
             $pc = (new \yii\db\Query())
                 ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
@@ -340,9 +311,9 @@ foreach ($masterProcesses as $proc) {
                     $bgColor = '#e0e0e0'; // Grey for any other filled processes
                     $textColor = '#333333';
                 }
-                return ['style' => "background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
+                return ['style' => "width: 130px; min-width: 130px; max-width: 130px; background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
             }
-            return [];
+            return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center;'];
         },
         'value' => function($data) use ($proc, $formatIndoDate) {
             $tg = '-';
@@ -394,7 +365,7 @@ $gridColumns[] = [
             ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
             ->exists();
         if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at)) {
-            return ['style' => 'background-color: #c8e6c9 !important; color: #1b5e20 !important; font-weight: bold; text-align: center;'];
+            return ['style' => 'background-color: #fffde7 !important; color: #333333 !important; font-weight: bold; text-align: center;'];
         }
         return [];
     },
@@ -628,32 +599,8 @@ $columnToggleDropdown .= '</ul></div>';
                 }
             }
 
-            // 4. Determine if Preset or Setting is filled (Pink)
+            // 4. Determine if Preset or Setting is filled (Pink) - Disabled per user request
             $isPinkFilled = false;
-            if (!$isPackFilled && !$isOrangeFilled && !$isDyeingFilled) {
-                $pinkProcessIds = \yii\helpers\ArrayHelper::getColumn(
-                    \common\models\ar\MstProcessDyeing::find()
-                        ->where(['nama_proses' => ['Preset', 'Setting']])
-                        ->all(),
-                    'id'
-                );
-                if (!empty($pinkProcessIds)) {
-                    $hasPink = (new \yii\db\Query())
-                        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                        ->where(['kartu_process_id' => $model->id, 'process_id' => $pinkProcessIds])
-                        ->andWhere(['not', ['value' => null]])
-                        ->andWhere(['not', ['value' => '']])
-                        ->all();
-                    
-                    foreach ($hasPink as $pc) {
-                        $v = \yii\helpers\Json::decode($pc['value']);
-                        if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
-                            $isPinkFilled = true;
-                            break;
-                        }
-                    }
-                }
-            }
 
             $classes = [];
             if ($isPackFilled) {
@@ -675,7 +622,7 @@ $columnToggleDropdown .= '</ul></div>';
             }
             return !empty($classes) ? ['class' => implode(' ', $classes)] : [];
         },
-        'afterRow' => function($model, $key, $index, $grid) use ($gridColumns) {
+        'afterRow' => function($model, $key, $index, $grid) use ($gridColumns, $formatIndoDate) {
             $models = $grid->dataProvider->getModels();
             $nextModel = isset($models[$index + 1]) ? $models[$index + 1] : null;
             
@@ -684,14 +631,17 @@ $columnToggleDropdown .= '</ul></div>';
             
 
             if ($currentWoId !== $nextWoId) {
-                if ($model->wo && !empty($model->wo->note)) {
-                    $rawNote = $model->wo->note;
-                    $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $rawNote = strip_tags($rawNote);
-                    $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
-                    $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
-                    $rawNote = trim($rawNote);
-                    $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+                if ($model->wo) {
+                    $note = '';
+                    if (!empty($model->wo->note)) {
+                        $rawNote = $model->wo->note;
+                        $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $rawNote = strip_tags($rawNote);
+                        $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
+                        $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
+                        $rawNote = trim($rawNote);
+                        $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+                    }
                     
                     // Determine if this is also the end of a Buyer group (to add a thick border)
                     $currentBuyer = $model->sc ? $model->sc->customerName : null;
@@ -704,11 +654,28 @@ $columnToggleDropdown .= '</ul></div>';
                     $html .= '<td class="col-serial" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none;">&nbsp;</td>';
                     $html .= '<td class="col-id" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none;">&nbsp;</td>';
                     
-                    // Column 2 to 5: Note
+                    // Column 2 to 5: Note and WO Metadata
                     $html .= '<td colspan="4" class="col-note-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
-                    $html .= '<div style="font-size: 11px; color: #e05e5e; line-height: 1.4;">';
-                    $html .= '<strong>Note:</strong><br>' . nl2br(\yii\helpers\Html::encode($note));
+                    
+                    // Metadata block
+                    $tglKirimVal = $formatIndoDate($model->wo->tgl_kirim);
+                    $handVal = $model->wo->handling ? $model->wo->handling->name : '-';
+                    $tFinishVal = \Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish, 1) .'M / '. \Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard, 1).'Y';
+                    $panjangVal = \Yii::$app->formatter->asDecimal($model->wo->colorQtyBatchToMeter) . ' M';
+                    
+                    $metaStr = implode(', ', array_filter([$tglKirimVal, $handVal, $tFinishVal, $panjangVal], function($val) {
+                        return $val !== '' && $val !== null;
+                    }));
+
+                    $html .= '<div style="font-size: 11px; margin-bottom: 5px; line-height: 1.5; color: #555; font-weight: bold;">';
+                    $html .= \yii\helpers\Html::encode($metaStr);
                     $html .= '</div>';
+                    
+                    if (!empty($note)) {
+                        $html .= '<div style="border-top: 1px solid #ddd; padding-top: 4px; margin-top: 4px; font-size: 11px; color: #e05e5e; line-height: 1.4;">';
+                        $html .= '<strong>Note:</strong><br>' . nl2br(\yii\helpers\Html::encode($note));
+                        $html .= '</div>';
+                    }
                     $html .= '</td>';
                     
                     // Column 6 to 11: Memo Perubahan
@@ -753,7 +720,33 @@ $columnToggleDropdown .= '</ul></div>';
                             $colKey = 'col-column-' . $i;
                         }
                         
-                        $html .= '<td class="' . $colKey . '" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none;">&nbsp;</td>';
+                        // Evaluate contentOptions of the column to follow its color styling
+                        $cellStyle = '';
+                        $cellClass = '';
+                        if (isset($col['contentOptions'])) {
+                            if (is_callable($col['contentOptions'])) {
+                                $options = call_user_func($col['contentOptions'], $model, $key, $index, $grid);
+                            } else {
+                                $options = $col['contentOptions'];
+                            }
+                            if (isset($options['style'])) {
+                                $cellStyle = $options['style'];
+                            }
+                            if (isset($options['class'])) {
+                                $cellClass = $options['class'];
+                            }
+                        }
+                        
+                        $finalStyle = $borderStyle . ' border-top: none;';
+                        if (!empty($cellStyle)) {
+                            $finalStyle .= ' ' . $cellStyle;
+                        } else {
+                            $finalStyle .= ' background-color: #fafafa !important;';
+                        }
+                        
+                        $finalClass = trim($colKey . ' ' . $cellClass);
+                        
+                        $html .= '<td class="' . $finalClass . '" style="' . $finalStyle . '">&nbsp;</td>';
                     }
                     
                     $html .= '</tr>';
@@ -819,33 +812,17 @@ $columnToggleDropdown .= '</ul></div>';
     width: 150px !important; min-width: 150px !important; max-width: 150px !important;
     left: 405px !important;
 }
-.col-tgl--kirim {
-    width: 95px !important; min-width: 95px !important; max-width: 95px !important;
-    left: 555px !important;
-}
-.col-hand {
-    width: 80px !important; min-width: 80px !important; max-width: 80px !important;
-    left: 650px !important;
-}
-.col-t--finish {
-    width: 110px !important; min-width: 110px !important; max-width: 110px !important;
-    left: 730px !important;
-}
-.col-panjang {
-    width: 80px !important; min-width: 80px !important; max-width: 80px !important;
-    left: 840px !important;
-}
 .col-warna {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
-    left: 920px !important;
+    left: 555px !important;
 }
 .col-nomor-kartu {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
-    left: 1020px !important;
+    left: 655px !important;
 }
 
 /* Horizontal Sticky Behavior for Frozen Columns */
-.col-serial, .col-id, .col-wodaterange, .col-buyer, .col-wono, .col-motif, .col-tgl--kirim, .col-hand, .col-t--finish, .col-panjang, .col-warna, .col-nomor-kartu {
+.col-serial, .col-id, .col-wodaterange, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu {
     position: sticky !important;
     z-index: 5 !important;
 }
@@ -1045,7 +1022,7 @@ $columnToggleDropdown .= '</ul></div>';
     position: sticky !important;
     left: 555px !important;
     z-index: 6 !important;
-    width: 565px !important; min-width: 565px !important; max-width: 565px !important;
+    width: 200px !important; min-width: 200px !important; max-width: 200px !important;
 }
 
 /* 1. Paksa semua border luar dan dalam tampil tegas, hilangkan efek hilangnya garis vertikal akibat grouping Kartik */
@@ -1191,18 +1168,135 @@ $('.kartu-proses-dyeing-index').on('click', '#dropdownColumnToggle + .dropdown-m
     e.stopPropagation();
 });
 
-// Fungsi menyesuaikan colspan dari container Note sesuai dengan jumlah kolom (Tgl. WO, Buyer, No. WO, Motif) yang terlihat
-function updateNoteColspan() {
-    var count = 0;
-    if ($('.col-wodaterange:first').is(':visible')) count++;
-    if ($('.col-buyer:first').is(':visible')) count++;
-    if ($('.col-wono:first').is(':visible')) count++;
-    if ($('.col-motif:first').is(':visible')) count++;
+// Fungsi menyesuaikan colspan dari container Memo dan Note sesuai dengan jumlah kolom yang terlihat
+function updateColspans() {
+    // Note container (Tgl. WO, Buyer, No. WO, Motif)
+    var noteCount = 0;
+    if ($('.col-wodaterange:first').is(':visible')) noteCount++;
+    if ($('.col-buyer:first').is(':visible')) noteCount++;
+    if ($('.col-wono:first').is(':visible')) noteCount++;
+    if ($('.col-motif:first').is(':visible')) noteCount++;
     
-    if (count === 0) {
+    if (noteCount === 0) {
         $('.col-note-container').hide();
     } else {
-        $('.col-note-container').show().attr('colspan', count);
+        $('.col-note-container').show().attr('colspan', noteCount);
+    }
+    
+    // Memo container (Warna, NK, Panjang Greige, Berat Greige, Pcs, Terakhir Proses)
+    var memoCount = 0;
+    if ($('.col-warna:first').is(':visible')) memoCount++;
+    if ($('.col-nomor-kartu:first').is(':visible')) memoCount++;
+    if ($('.col-panjang-greige:first').is(':visible')) memoCount++;
+    if ($('.col-berat-greige:first').is(':visible')) memoCount++;
+    if ($('.col-pcs:first').is(':visible')) memoCount++;
+    if ($('.col-terakhir-proses:first').is(':visible')) memoCount++;
+    
+    if (memoCount === 0) {
+        $('.col-memo-container').hide();
+    } else {
+        $('.col-memo-container').show().attr('colspan', memoCount);
+    }
+
+    // --- Dynamic Sticky Left Offset Calculation ---
+    var serialVisible = $('.col-serial:first').is(':visible');
+    var serialWidth = serialVisible ? 50 : 0;
+    if (serialVisible) {
+        $('.col-serial').each(function() {
+            this.style.setProperty('left', '0px', 'important');
+        });
+    }
+
+    var idVisible = $('.col-id:first').is(':visible');
+    var idWidth = idVisible ? 60 : 0;
+    if (idVisible) {
+        $('.col-id').each(function() {
+            this.style.setProperty('left', serialWidth + 'px', 'important');
+        });
+    }
+
+    var noteLeft = serialWidth + idWidth;
+
+    var wDateVisible = $('.col-wodaterange:first').is(':visible');
+    var wDateWidth = wDateVisible ? 100 : 0;
+    if (wDateVisible) {
+        $('.col-wodaterange').each(function() {
+            this.style.setProperty('left', noteLeft + 'px', 'important');
+        });
+    }
+
+    var buyerVisible = $('.col-buyer:first').is(':visible');
+    var buyerWidth = buyerVisible ? 80 : 0;
+    if (buyerVisible) {
+        $('.col-buyer').each(function() {
+            this.style.setProperty('left', (noteLeft + wDateWidth) + 'px', 'important');
+        });
+    }
+
+    var wonoVisible = $('.col-wono:first').is(':visible');
+    var wonoWidth = wonoVisible ? 115 : 0;
+    if (wonoVisible) {
+        $('.col-wono').each(function() {
+            this.style.setProperty('left', (noteLeft + wDateWidth + buyerWidth) + 'px', 'important');
+        });
+    }
+
+    var motifVisible = $('.col-motif:first').is(':visible');
+    var motifWidth = motifVisible ? 150 : 0;
+    if (motifVisible) {
+        $('.col-motif').each(function() {
+            this.style.setProperty('left', (noteLeft + wDateWidth + buyerWidth + wonoWidth) + 'px', 'important');
+        });
+    }
+
+    var noteTotalWidth = wDateWidth + buyerWidth + wonoWidth + motifWidth;
+    if (noteTotalWidth > 0) {
+        $('.col-note-container').each(function() {
+            this.style.setProperty('left', noteLeft + 'px', 'important');
+            this.style.setProperty('width', noteTotalWidth + 'px', 'important');
+            this.style.setProperty('min-width', noteTotalWidth + 'px', 'important');
+            this.style.setProperty('max-width', noteTotalWidth + 'px', 'important');
+        });
+    }
+
+    var memoLeft = noteLeft + noteTotalWidth;
+
+    var warnaVisible = $('.col-warna:first').is(':visible');
+    var warnaWidth = warnaVisible ? 100 : 0;
+    if (warnaVisible) {
+        $('.col-warna').each(function() {
+            this.style.setProperty('left', memoLeft + 'px', 'important');
+        });
+    }
+
+    var nkVisible = $('.col-nomor-kartu:first').is(':visible');
+    var nkWidth = nkVisible ? 100 : 0;
+    if (nkVisible) {
+        $('.col-nomor-kartu').each(function() {
+            this.style.setProperty('left', (memoLeft + warnaWidth) + 'px', 'important');
+        });
+    }
+
+    var pGreigeVisible = $('.col-panjang-greige:first').is(':visible');
+    var pGreigeWidth = pGreigeVisible ? 100 : 0;
+
+    var bGreigeVisible = $('.col-berat-greige:first').is(':visible');
+    var bGreigeWidth = bGreigeVisible ? 90 : 0;
+
+    var pcsVisible = $('.col-pcs:first').is(':visible');
+    var pcsWidth = pcsVisible ? 50 : 0;
+
+    var tProsesVisible = $('.col-terakhir-proses:first').is(':visible');
+    var tProsesWidth = tProsesVisible ? 120 : 0;
+
+    var memoTotalWidth = warnaWidth + nkWidth + pGreigeWidth + bGreigeWidth + pcsWidth + tProsesWidth;
+    if (memoTotalWidth > 0) {
+        $('.col-memo-container').each(function() {
+            this.style.setProperty('left', memoLeft + 'px', 'important');
+            this.style.setProperty('width', memoTotalWidth + 'px', 'important');
+            this.style.setProperty('min-width', memoTotalWidth + 'px', 'important');
+            this.style.setProperty('max-width', memoTotalWidth + 'px', 'important');
+        });
     }
 }
 
@@ -1225,8 +1319,8 @@ function applyColumnVisibility() {
         $('#toggle-all-columns').prop('checked', false);
     }
 
-    // Sesuaikan colspan baris Note
-    updateNoteColspan();
+    // Sesuaikan colspan baris Note dan Memo
+    updateColspans();
 
     // Update URL Export Excel dengan list kolom tersembunyi dan parameter anti-cache
     var btnExport = $('#btn-export-excel');

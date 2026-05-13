@@ -129,6 +129,7 @@ class ProcessingDyeingController extends Controller
         header('Expires: 0');
         
         $masterProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['use_jetblack' => false])
             ->orderBy('order')
             ->all();
 
@@ -144,10 +145,6 @@ class ProcessingDyeingController extends Controller
             'col-buyer' => 'Buyer',
             'col-wono' => 'No. WO',
             'col-motif' => 'Motif',
-            'col-tgl--kirim' => 'Tgl. Kirim',
-            'col-hand' => 'Hand',
-            'col-t--finish' => 'T. Finish',
-            'col-panjang' => 'Panjang',
             'col-warna' => 'Warna',
             'col-nomor-kartu' => 'NK',
             'col-panjang-greige' => 'Panjang Greige',
@@ -158,7 +155,7 @@ class ProcessingDyeingController extends Controller
 
         foreach ($masterProcesses as $proc) {
             $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
-            $allHeaders[$colKey] = $proc->nama_proses . ' / Shift';
+            $allHeaders[$colKey] = $proc->nama_proses;
         }
 
         $allHeaders['col-panjang-jadi'] = 'Panjang Jadi';
@@ -238,7 +235,7 @@ class ProcessingDyeingController extends Controller
                 }
             }
 
-            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard).'Y') : '';
+            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish, 1) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard, 1).'Y') : '';
             $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
             $nk = $model->nomor_kartu;
             $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
@@ -358,11 +355,7 @@ class ProcessingDyeingController extends Controller
             'col-wodaterange',
             'col-buyer',
             'col-wono',
-            'col-motif',
-            'col-tgl--kirim',
-            'col-hand',
-            'col-t--finish',
-            'col-panjang'
+            'col-motif'
         ];
 
         foreach ($mergeCols as $colKey) {
@@ -604,7 +597,7 @@ class ProcessingDyeingController extends Controller
             $nextWoNo = $nextRowItem ? $nextRowItem['rowData']['col-wono'] : null;
             
             if ($currentWoNo !== $nextWoNo) {
-                if ($rowItem['model']->wo && !empty($rowItem['model']->wo->note)) {
+                if ($rowItem['model']->wo) {
                     $noteRowsCount++;
                 }
             }
@@ -613,6 +606,27 @@ class ProcessingDyeingController extends Controller
         $expandedColumnCount = count($visibleCols);
         $expandedRowCount = count($rowDataList) + 1 + $noteRowsCount; // +1 for Header row, plus Note/Memo rows
         echo '  <Table ss:ExpandedColumnCount="' . $expandedColumnCount . '" ss:ExpandedRowCount="' . $expandedRowCount . '">' . "\n";
+        
+        // Output column widths (all process columns set to uniform 110 width)
+        $columnWidths = [
+            'col-id' => 50,
+            'col-wodaterange' => 90,
+            'col-buyer' => 80,
+            'col-wono' => 110,
+            'col-motif' => 130,
+            'col-warna' => 100,
+            'col-nomor-kartu' => 100,
+            'col-panjang-greige' => 100,
+            'col-berat-greige' => 90,
+            'col-pcs' => 50,
+            'col-terakhir-proses' => 120,
+            'col-panjang-jadi' => 100,
+            'col-pack' => 200,
+        ];
+        foreach ($visibleCols as $colKey) {
+            $w = isset($columnWidths[$colKey]) ? $columnWidths[$colKey] : 110;
+            echo '   <Column ss:Width="' . $w . '"/>' . "\n";
+        }
         
         // Output headers row
         echo '   <Row ss:Height="25" ss:StyleID="Header">' . "\n";
@@ -670,26 +684,8 @@ class ProcessingDyeingController extends Controller
                 }
             }
 
+            // Determine if Preset or Setting is filled (Pink) - Disabled per user request
             $isPinkFilled = false;
-            if (!$isPackFilled && !$isOrangeFilled && !$isDyeingFilled) {
-                $pinkProcessIds = \yii\helpers\ArrayHelper::getColumn(
-                    \common\models\ar\MstProcessDyeing::find()
-                        ->where(['nama_proses' => ['Preset', 'Setting']])
-                        ->all(),
-                    'id'
-                );
-                if (!empty($pinkProcessIds)) {
-                    foreach ($pinkProcessIds as $pId) {
-                        if (isset($processData[$pId])) {
-                            $v = $processData[$pId];
-                            if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
-                                $isPinkFilled = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
 
             $rowStyleID = 'Default';
             if ($isPackFilled) {
@@ -774,10 +770,10 @@ class ProcessingDyeingController extends Controller
                 
                 // Determine style ID dynamically at cell-level to prevent row/cell merging conflicts in Excel
                 $cellStyleName = '';
-                if ($colKey === 'col-nomor-kartu' && $isNkHighlighted) {
+                if ($isPackFilled) {
+                    $cellStyleName = 'RowPackFilled';
+                } elseif ($colKey === 'col-nomor-kartu' && $isNkHighlighted) {
                     $cellStyleName = 'ColNomorKartuGreenStyle';
-                } elseif ($colKey === 'col-pack' && $isPackFilled) {
-                    $cellStyleName = 'ColHeatCutPackStyle';
                 } elseif (isset($processHighlightStyles[$colKey])) {
                     $cellStyleName = $processHighlightStyles[$colKey];
                 } elseif ($rowStyleID !== 'Default') {
@@ -804,21 +800,36 @@ class ProcessingDyeingController extends Controller
             $nextWoNo = $nextRowItem ? $nextRowItem['rowData']['col-wono'] : null;
             
             if ($currentWoNo !== $nextWoNo) {
-                if ($model->wo && !empty($model->wo->note)) {
-                    echo '   <Row ss:Height="30">' . "\n";
+                if ($model->wo) {
+                    echo '   <Row ss:Height="45">' . "\n";
                     
                     // Column 1 (ID): Empty cell
                     echo '    <Cell ss:Index="1" ss:StyleID="NoteRowStyle"><Data ss:Type="String"></Data></Cell>' . "\n";
                     
-                    // Column 2: Note container. We use ss:MergeAcross="3" (to span columns 2, 3, 4, 5)
+                    // Column 2: Note container with WO Metadata. We use ss:MergeAcross="3" (to span columns 2, 3, 4, 5)
+                    $tglKirim = isset($rowData['col-tgl--kirim']) ? $rowData['col-tgl--kirim'] : '';
+                    $hand = isset($rowData['col-hand']) ? $rowData['col-hand'] : '';
+                    $tFinish = isset($rowData['col-t--finish']) ? $rowData['col-t--finish'] : '';
+                    $panjang = isset($rowData['col-panjang']) ? $rowData['col-panjang'] : '';
                     $noteVal = isset($rowData['col-note']) ? $rowData['col-note'] : '';
-                    $cleanNoteVal = 'Note: ' . htmlspecialchars($noteVal, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                    
+                    $metaString = implode(', ', array_filter([$tglKirim, $hand, $tFinish, $panjang . ' M'], function($val) {
+                        return $val !== '' && $val !== null;
+                    }));
+                    
+                    if (!empty($noteVal)) {
+                        $metaString .= "\n\nNote:\n" . $noteVal;
+                    }
+                    
+                    $cleanNoteVal = htmlspecialchars($metaString, ENT_QUOTES | ENT_XML1, 'UTF-8');
                     echo '    <Cell ss:Index="2" ss:MergeAcross="3" ss:StyleID="NoteStyle"><Data ss:Type="String">' . $cleanNoteVal . '</Data></Cell>' . "\n";
                     
                     // Column 6: Memo container. We use ss:MergeAcross="5" (to span columns 6, 7, 8, 9, 10, 11)
                     $memoVal = isset($rowData['col-memo']) ? $rowData['col-memo'] : '';
                     if (!empty($memoVal)) {
-                        $cleanMemoVal = 'Memo Perubahan WO: ' . htmlspecialchars($memoVal, ENT_QUOTES | ENT_XML1, 'UTF-8');
+                        $memoValClean = strip_tags($memoVal);
+                        $memoValClean = html_entity_decode($memoValClean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $cleanMemoVal = 'Memo Perubahan WO: ' . htmlspecialchars($memoValClean, ENT_QUOTES | ENT_XML1, 'UTF-8');
                     } else {
                         $cleanMemoVal = 'Tidak ada Memo Perubahan WO';
                     }
@@ -863,8 +874,26 @@ class ProcessingDyeingController extends Controller
                 );*/
 
         $model = $this->findModel($id);
+        $moJetBlack = ($model->mo !== null && $model->mo->jet_black);
+        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false])->orderBy('order')->all();
+        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true])->orderBy('order')->all();
 
-        $processModels = MstProcessDyeing::find()->orderBy('order')->all();
+        $processModels = [];
+        $resinFinishIndex = -1;
+        foreach ($nonJetblackProcesses as $proc) {
+            $processModels[] = $proc;
+            if (trim($proc->nama_proses) === 'Resin Finish') {
+                $resinFinishIndex = count($processModels);
+            }
+        }
+
+        if ($moJetBlack && !empty($jetblackProcesses)) {
+            if ($resinFinishIndex !== -1) {
+                array_splice($processModels, $resinFinishIndex, 0, $jetblackProcesses);
+            } else {
+                $processModels = array_merge($processModels, $jetblackProcesses);
+            }
+        }
 
         $attrsLabels = [];
         if($processModels !== null){

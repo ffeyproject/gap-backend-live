@@ -30,6 +30,7 @@ use Yii;
  * @property int|null $created_by
  * @property int|null $updated_at
  * @property int|null $updated_by
+ * @property bool $use_jetblack
  *
  * @property KartuProcessCelupProcess[] $kartuProcessCelupProcesses
  * @property TrnKartuProsesCelup[] $kartuProcesses
@@ -55,7 +56,8 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             [['order', 'nama_proses'], 'required'],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi'], 'boolean'],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'use_jetblack'], 'boolean'],
+            [['use_jetblack'], 'default', 'value' => false],
             [['nama_proses'], 'string', 'max' => 255],
         ];
     }
@@ -89,6 +91,7 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
+            'use_jetblack' => 'Use Jetblack',
         ];
     }
 

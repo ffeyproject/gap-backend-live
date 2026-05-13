@@ -19,7 +19,7 @@ class MstProcessDyeingSearch extends MstProcessDyeing
         return [
             [['id', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['order', 'max_pengulangan', 'nama_proses'], 'safe'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi'], 'boolean'],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'use_jetblack'], 'boolean'],
         ];
     }
 
@@ -83,6 +83,7 @@ class MstProcessDyeingSearch extends MstProcessDyeing
             'panjang_jadi' => $this->panjang_jadi,
             'info_kualitas' => $this->info_kualitas,
             'gangguan_produksi' => $this->gangguan_produksi,
+            'use_jetblack' => $this->use_jetblack,
             'created_at' => $this->created_at,
             'created_by' => $this->created_by,
             'updated_at' => $this->updated_at,

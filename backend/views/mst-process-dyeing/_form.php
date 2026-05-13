@@ -55,6 +55,8 @@ use yii\widgets\ActiveForm;
                     <?= $form->field($model, 'info_kualitas')->checkbox() ?>
 
                     <?= $form->field($model, 'gangguan_produksi')->checkbox() ?>
+
+                    <?= $form->field($model, 'use_jetblack')->checkbox() ?>
                 </div>
             </div>
         </div>

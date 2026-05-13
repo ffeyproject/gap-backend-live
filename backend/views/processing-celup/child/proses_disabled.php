@@ -13,6 +13,8 @@ use yii\i18n\Formatter;
 /* @var $processesUlang array*/
 /* @var $formatter Formatter */
 
+unset($attrsLabels['use_jetblack']);
+
 $this->registerCss('.ctn-disable{background-color:black;}');
 $disabledCol = '<button class="btn btn-xs btn-danger btn-flat btn-block" disabled="disabled">-</button>';
 $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat btn-block', 'disabled'=>'disabled']);
@@ -42,7 +44,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                     foreach ($processModels as $item){
                         echo '<tr>';
                         foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan'])){
+                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan', 'use_jetblack'])){
                                 if($key !== 'nama_proses'){
                                     if($value){
                                         echo '<td>';
