@@ -89,8 +89,6 @@ $gridColumns = [
     ['class' => 'kartik\grid\SerialColumn'],
     [
         'attribute' => 'id',
-        'group' => true,
-        'subGroupOf' => 3,
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
@@ -111,17 +109,15 @@ $gridColumns = [
                 ]
             ]
         ],
-        'group' => true,
-        'subGroupOf' => 3,
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
+        'attribute' => 'customerName',
         'label'=>'Buyer',
         'value'=>function($data){
             return $data->sc ? $data->sc->customerCode : '';
         },
-        'group' => true,
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
@@ -131,23 +127,21 @@ $gridColumns = [
         'value'=>function($data){
             return $data->wo->no;
         },
-        'group' => true,
-        'subGroupOf' => 3,
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
+        'attribute' => 'motif',
         'label'=>'Motif',
         'value'=>function($data){
             return $data->wo->greigeNamaKain;
         },
-        'group' => true,
-        'subGroupOf' => 3,
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
 
     [
+        'attribute' => 'warna',
         'label'=>'Warna',
         'value'=>function($data){
             return $data->woColor->moColor->color;
@@ -159,6 +153,13 @@ $gridColumns = [
         'attribute' => 'nomor_kartu',
         'label'=>'NK',
         'contentOptions' => function($model, $key, $index, $column) {
+            $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
+                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
+                ->exists();
+            if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at)) {
+                return ['style' => 'font-weight: bold; text-align: center;'];
+            }
+
             $relaxProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Relaxing']);
             $scutcherProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Scutcher Relaxing']);
             
@@ -197,9 +198,15 @@ $gridColumns = [
             return [];
         },
         'value'=>function($data){
-            return $data->nomor_kartu;
+            $viewUrl = \yii\helpers\Url::to(['/processing-dyeing/view', 'id' => $data->id]);
+            $icon = \yii\helpers\Html::a('<i class="glyphicon glyphicon-eye-open"></i>', $viewUrl, [
+                'target' => '_blank',
+                'title' => 'Lihat Detail',
+                'style' => 'margin-left: 8px; color: #0288d1;'
+            ]);
+            return \yii\helpers\Html::encode($data->nomor_kartu) . ' ' . $icon;
         },
-        'format'=>'html',
+        'format'=>'raw',
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
@@ -266,6 +273,36 @@ foreach ($masterProcesses as $proc) {
     
     $gridColumns[] = [
         'label' => $proc->nama_proses,
+        'attribute' => 'processDates[' . $proc->id . ']',
+        'filterType' => GridView::FILTER_DATE_RANGE,
+        'filterWidgetOptions' => [
+            'convertFormat' => true,
+            'pluginOptions' => [
+                'locale' => [
+                    'format' => 'Y-m-d',
+                    'separator' => ' to ',
+                ],
+                'autoUpdateInput' => false,
+            ],
+            'pluginEvents' => [
+                'apply.daterangepicker' => "function(ev, picker) {
+                    var currentVisibleInput = this;
+                    $('.process-date-filter').not(currentVisibleInput).each(function() {
+                        $(this).val('');
+                        $(this).closest('td').find('input').val('');
+                    });
+                    $(this).val(picker.startDate.format('YYYY-MM-DD') + ' to ' + picker.endDate.format('YYYY-MM-DD')).trigger('change');
+                }",
+                'cancel.daterangepicker' => "function(ev, picker) {
+                    $(this).val('').trigger('change');
+                }",
+            ],
+            'options' => [
+                'class' => 'form-control process-date-filter',
+                'placeholder' => 'Cari Tgl...',
+                'style' => 'text-align: center; font-size: 11px;',
+            ],
+        ],
         'headerOptions' => [
             'style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center; vertical-align: middle;',
         ],
@@ -318,6 +355,7 @@ foreach ($masterProcesses as $proc) {
         'value' => function($data) use ($proc, $formatIndoDate) {
             $tg = '-';
             $sh = '-';
+            $mc = '-';
             $pc = (new \yii\db\Query())
                 ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                 ->where(['kartu_process_id' => $data->id, 'process_id' => $proc->id])
@@ -331,11 +369,118 @@ foreach ($masterProcesses as $proc) {
                 if (isset($v['shift_group']) && !empty($v['shift_group'])) {
                     $sh = $v['shift_group'];
                 }
+                if (isset($v['no_mesin']) && !empty($v['no_mesin'])) {
+                    $mc = $v['no_mesin'];
+                }
             }
 
-            return $tg . ' / ' . $sh;
+            return $tg . ' / ' . $sh . ' / ' . $mc;
         }
     ];
+
+    if ($proc->nama_proses === 'Resin Finish') {
+        $jetblackProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['use_jetblack' => true])
+            ->orderBy('order')
+            ->all();
+        foreach ($jetblackProcesses as $jbProc) {
+            $isJbPink = ($jbProc->nama_proses === 'Setting-2');
+            $gridColumns[] = [
+                'label' => $jbProc->nama_proses,
+                'attribute' => 'processDates[' . $jbProc->id . ']',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'convertFormat' => true,
+                    'pluginOptions' => [
+                        'locale' => [
+                            'format' => 'Y-m-d',
+                            'separator' => ' to ',
+                        ],
+                        'autoUpdateInput' => false,
+                    ],
+                    'pluginEvents' => [
+                        'apply.daterangepicker' => "function(ev, picker) {
+                            var currentVisibleInput = this;
+                            $('.process-date-filter').not(currentVisibleInput).each(function() {
+                                $(this).val('');
+                                $(this).closest('td').find('input').val('');
+                            });
+                            $(this).val(picker.startDate.format('YYYY-MM-DD') + ' to ' + picker.endDate.format('YYYY-MM-DD')).trigger('change');
+                        }",
+                        'cancel.daterangepicker' => "function(ev, picker) {
+                            $(this).val('').trigger('change');
+                        }",
+                    ],
+                    'options' => [
+                        'class' => 'form-control process-date-filter',
+                        'placeholder' => 'Cari Tgl...',
+                        'style' => 'text-align: center; font-size: 11px;',
+                    ],
+                ],
+                'headerOptions' => [
+                    'style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center; vertical-align: middle;',
+                ],
+                'contentOptions' => function($model, $key, $index, $column) use ($jbProc, $isJbPink) {
+                    $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
+                        ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
+                        ->exists();
+                    $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at));
+                    
+                    if ($isPackFilled) {
+                        return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
+                    }
+
+                    $hasData = false;
+                    $pc = (new \yii\db\Query())
+                        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                        ->where(['kartu_process_id' => $model->id, 'process_id' => $jbProc->id])
+                        ->one();
+                    if ($pc !== false && !empty($pc['value'])) {
+                        $v = \yii\helpers\Json::decode($pc['value']);
+                        if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
+                            $hasData = true;
+                        }
+                    }
+                    
+                    if ($hasData) {
+                        if ($isJbPink) {
+                            $bgColor = '#f8bbd0'; // Pink
+                            $textColor = '#880e4f'; // Dark Pink text
+                        } else {
+                            $bgColor = '#e0e0e0'; // Grey
+                            $textColor = '#333333';
+                        }
+                        return ['style' => "width: 130px; min-width: 130px; max-width: 130px; background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
+                    }
+                    return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center;'];
+                },
+                'value' => function($data) use ($jbProc, $formatIndoDate) {
+                    $tg = '-';
+                    $sh = '-';
+                    $mc = '-';
+                    $pc = (new \yii\db\Query())
+                        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                        ->where(['kartu_process_id' => $data->id, 'process_id' => $jbProc->id])
+                        ->one();
+
+                    if ($pc !== false) {
+                        $v = \yii\helpers\Json::decode($pc['value']);
+                        if (isset($v['tanggal']) && !empty($v['tanggal'])) {
+                            $tg = $formatIndoDate($v['tanggal']);
+                        }
+                        if (isset($v['shift_group']) && !empty($v['shift_group'])) {
+                            $sh = $v['shift_group'];
+                        }
+                        if (isset($v['no_mesin']) && !empty($v['no_mesin'])) {
+                            $mc = $v['no_mesin'];
+                        }
+                    }
+
+                    return $tg . ' / ' . $sh . ' / ' . $mc;
+                }
+            ];
+        }
+    }
 }
 
 // Append final columns (Panjang Jadi, Pack)
@@ -413,7 +558,8 @@ foreach ($gridColumns as $index => &$col) {
         $colKey = 'col-serial';
         $colLabel = 'No. Seri';
     } elseif (isset($col['attribute'])) {
-        $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $col['attribute']));
+        $attrForClass = $col['attribute'] === 'customerName' ? 'buyer' : $col['attribute'];
+        $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $attrForClass));
         $colLabel = isset($col['label']) ? $col['label'] : \yii\helpers\Inflector::camel2words($col['attribute']);
     } elseif (isset($col['label'])) {
         $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $col['label']));
@@ -545,12 +691,13 @@ $columnToggleDropdown .= '</ul></div>';
                 $isPackFilled = true;
             }
 
-            // 2. Determine if any Orange process is filled
-            $isOrangeFilled = false;
+            // 2. Determine if any Perbaikan process is filled (Red)
+            $isPerbaikanFilled = false;
             if (!$isPackFilled) {
-                $orangeProcessIds = \yii\helpers\ArrayHelper::getColumn(
+                $perbaikanProcessIds = \yii\helpers\ArrayHelper::getColumn(
                     \common\models\ar\MstProcessDyeing::find()
                         ->where(['nama_proses' => [
+                            'Perbaikan JB',
                             'Toping 1', 'Toping 2', 'Toping 3', 'Toping 4',
                             'Cuci Ulang',
                             'RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5',
@@ -563,27 +710,27 @@ $columnToggleDropdown .= '</ul></div>';
                     'id'
                 );
                 
-                if (!empty($orangeProcessIds)) {
-                    $hasOrange = (new \yii\db\Query())
+                if (!empty($perbaikanProcessIds)) {
+                    $hasPerbaikan = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                        ->where(['kartu_process_id' => $model->id, 'process_id' => $orangeProcessIds])
+                        ->where(['kartu_process_id' => $model->id, 'process_id' => $perbaikanProcessIds])
                         ->andWhere(['not', ['value' => null]])
                         ->andWhere(['not', ['value' => '']])
                         ->all();
                     
-                    foreach ($hasOrange as $pc) {
+                    foreach ($hasPerbaikan as $pc) {
                         $v = \yii\helpers\Json::decode($pc['value']);
                         if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
-                            $isOrangeFilled = true;
+                            $isPerbaikanFilled = true;
                             break;
                         }
                     }
                 }
             }
 
-            // 3. Determine if Dyeing is filled
+            // 3. Determine if Dyeing is filled (Blue)
             $isDyeingFilled = false;
-            if (!$isPackFilled && !$isOrangeFilled) {
+            if (!$isPackFilled && !$isPerbaikanFilled) {
                 $dyeingProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Dyeing']);
                 if ($dyeingProcess !== null) {
                     $pc = (new \yii\db\Query())
@@ -605,8 +752,8 @@ $columnToggleDropdown .= '</ul></div>';
             $classes = [];
             if ($isPackFilled) {
                 $classes[] = 'row-pack-filled';
-            } elseif ($isOrangeFilled) {
-                $classes[] = 'row-toping-filled';
+            } elseif ($isPerbaikanFilled) {
+                $classes[] = 'row-perbaikan-filled';
             } elseif ($isDyeingFilled) {
                 $classes[] = 'row-dyeing-filled';
             } elseif ($isPinkFilled) {
@@ -698,7 +845,7 @@ $columnToggleDropdown .= '</ul></div>';
                         }
                     }
                     
-                    $html .= '<td colspan="6" class="col-memo-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
+                    $html .= '<td colspan="2" class="col-memo-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
                     $html .= '<div style="font-size: 11px; color: #1565c0; line-height: 1.4;">';
                     if (!empty($memoHtml)) {
                         $html .= '<strong>Memo Perubahan WO:</strong><br>' . $memoHtml;
@@ -708,7 +855,7 @@ $columnToggleDropdown .= '</ul></div>';
                     $html .= '</div>';
                     $html .= '</td>';
                     
-                    for ($i = 12; $i < count($gridColumns); $i++) {
+                    for ($i = 8; $i < count($gridColumns); $i++) {
                         $col = $gridColumns[$i];
                         if (isset($col['class']) && $col['class'] === 'kartik\grid\SerialColumn') {
                             $colKey = 'col-serial';
@@ -895,40 +1042,40 @@ $columnToggleDropdown .= '</ul></div>';
     background-color: #bbdefb !important;
 }
 
-/* --- ROW TOPING FILLED (ORANGE) SHADING --- */
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td {
-    background-color: #fff3e0 !important;
+/* --- ROW PERBAIKAN FILLED (RED) SHADING --- */
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td {
+    background-color: #ffebee !important;
 }
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-serial,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-id,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-wodaterange,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-buyer,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-wono,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-motif,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-tgl--kirim,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-hand,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-t--finish,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-panjang,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-toping-filled > td.col-nomor-kartu {
-    background-color: #fff3e0 !important;
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-serial,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-id,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-wodaterange,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-buyer,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-wono,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-motif,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-tgl--kirim,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-hand,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-t--finish,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-panjang,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-warna,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr.row-perbaikan-filled > td.col-nomor-kartu {
+    background-color: #ffebee !important;
 }
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td {
-    background-color: #ffe0b2 !important;
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td {
+    background-color: #ffcdd2 !important;
 }
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-serial,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-id,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-wodaterange,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-buyer,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-wono,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-motif,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-tgl--kirim,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-hand,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-t--finish,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-panjang,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-warna,
-.kartu-proses-dyeing-index .table tbody tr.row-toping-filled:hover td.col-nomor-kartu {
-    background-color: #ffe0b2 !important;
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-serial,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-id,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-wodaterange,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-buyer,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-wono,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-motif,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-tgl--kirim,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-hand,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-t--finish,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-panjang,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-warna,
+.kartu-proses-dyeing-index .table tbody tr.row-perbaikan-filled:hover td.col-nomor-kartu {
+    background-color: #ffcdd2 !important;
 }
 
 /* --- ROW PACK FILLED (YELLOW) SHADING --- */
@@ -1183,14 +1330,10 @@ function updateColspans() {
         $('.col-note-container').show().attr('colspan', noteCount);
     }
     
-    // Memo container (Warna, NK, Panjang Greige, Berat Greige, Pcs, Terakhir Proses)
+    // Memo container (Warna, NK)
     var memoCount = 0;
     if ($('.col-warna:first').is(':visible')) memoCount++;
     if ($('.col-nomor-kartu:first').is(':visible')) memoCount++;
-    if ($('.col-panjang-greige:first').is(':visible')) memoCount++;
-    if ($('.col-berat-greige:first').is(':visible')) memoCount++;
-    if ($('.col-pcs:first').is(':visible')) memoCount++;
-    if ($('.col-terakhir-proses:first').is(':visible')) memoCount++;
     
     if (memoCount === 0) {
         $('.col-memo-container').hide();
@@ -1277,19 +1420,7 @@ function updateColspans() {
         });
     }
 
-    var pGreigeVisible = $('.col-panjang-greige:first').is(':visible');
-    var pGreigeWidth = pGreigeVisible ? 100 : 0;
-
-    var bGreigeVisible = $('.col-berat-greige:first').is(':visible');
-    var bGreigeWidth = bGreigeVisible ? 90 : 0;
-
-    var pcsVisible = $('.col-pcs:first').is(':visible');
-    var pcsWidth = pcsVisible ? 50 : 0;
-
-    var tProsesVisible = $('.col-terakhir-proses:first').is(':visible');
-    var tProsesWidth = tProsesVisible ? 120 : 0;
-
-    var memoTotalWidth = warnaWidth + nkWidth + pGreigeWidth + bGreigeWidth + pcsWidth + tProsesWidth;
+    var memoTotalWidth = warnaWidth + nkWidth;
     if (memoTotalWidth > 0) {
         $('.col-memo-container').each(function() {
             this.style.setProperty('left', memoLeft + 'px', 'important');
@@ -1397,6 +1528,17 @@ $('.kartu-proses-dyeing-index').on('change', '#toggle-all-columns', function() {
     
     // Menerapkan perubahan visibilitas dan meng-update URL link export
     applyColumnVisibility();
+});
+
+// Otomatis membersihkan input filter tanggal proses di kolom lain saat satu filter diisi/difokuskan/dibuka
+$(document).on('mousedown click focus show.daterangepicker input', '.process-date-filter', function(e) {
+    var currentInput = this;
+    $('.process-date-filter').each(function() {
+        if (this !== currentInput) {
+            $(this).val('');
+            $(this).closest('td').find('input').val('');
+        }
+    });
 });
 JS;
 

@@ -28,6 +28,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $dateReangeTopingMatching;
     public $shift;
     public $woMonth;
+    public $processDates = [];
 
     /**
      * {@inheritdoc}
@@ -36,10 +37,53 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     {
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
-            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift'], 'safe'],
+            [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift', 'processDates'], 'safe'],
             [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth'], 'safe'],
             [['toping_matching','ready_colour'], 'boolean'],
         ];
+    }
+
+    public function isAttributeActive($attribute)
+    {
+        if (strpos($attribute, 'processDates[') === 0) {
+            return true;
+        }
+        return parent::isAttributeActive($attribute);
+    }
+
+    public function canGetProperty($name, $checkVars = true, $checkBehaviors = true)
+    {
+        if (strpos($name, 'processDates[') === 0) {
+            return true;
+        }
+        return parent::canGetProperty($name, $checkVars, $checkBehaviors);
+    }
+
+    public function canSetProperty($name, $checkVars = true, $checkBehaviors = true)
+    {
+        if (strpos($name, 'processDates[') === 0) {
+            return true;
+        }
+        return parent::canSetProperty($name, $checkVars, $checkBehaviors);
+    }
+
+    public function __get($name)
+    {
+        if (preg_match('/^processDates\[(\d+)\]$/', $name, $matches)) {
+            $pId = $matches[1];
+            return isset($this->processDates[$pId]) ? $this->processDates[$pId] : null;
+        }
+        return parent::__get($name);
+    }
+
+    public function __set($name, $value)
+    {
+        if (preg_match('/^processDates\[(\d+)\]$/', $name, $matches)) {
+            $pId = $matches[1];
+            $this->processDates[$pId] = $value;
+            return;
+        }
+        parent::__set($name, $value);
     }
 
     /**
@@ -60,10 +104,31 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
      */
     public function search($params)
     {
+        $this->load($params);
+
+        $activeProcessId = 1;
+        $activeProcessDate = null;
+        if (!empty($this->processDates) && is_array($this->processDates)) {
+            foreach ($this->processDates as $pId => $dateVal) {
+                if (!empty($dateVal)) {
+                    $activeProcessId = (int)$pId;
+                    $activeProcessDate = $dateVal;
+                }
+            }
+            foreach ($this->processDates as $pId => $dateVal) {
+                if ((int)$pId !== $activeProcessId) {
+                    $this->processDates[$pId] = null;
+                }
+            }
+        } elseif (!empty($this->openDateRange)) {
+            $activeProcessId = 1;
+            $activeProcessDate = $this->openDateRange;
+            $this->processDates[1] = $this->openDateRange;
+        }
+
         $query = TrnKartuProsesDyeing::find();
-        // $query->joinWith(['wo.greige']);
-        $query->joinWith(['wo.greige', 'kartuProcessDyeingProcesses kpd' => function($query) {
-            $query->onCondition(['kpd.process_id' => 1]);
+        $query->joinWith(['wo.greige', 'kartuProcessDyeingProcesses kpd' => function($query) use ($activeProcessId) {
+            $query->onCondition(['kpd.process_id' => $activeProcessId]);
         }]);    
         $query->joinWith(['mo.scGreige.sc.marketing as mkt']);
         $query->joinWith(['sc.cust as cust']);
@@ -77,7 +142,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'created_at' => SORT_DESC,
+                    'trn_kartu_proses_dyeing.wo_id' => SORT_DESC,
+                    'warna' => SORT_ASC,
                 ]
             ],
         ]);
@@ -123,8 +189,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         ];
 
         $dataProvider->sort->attributes['customerName'] = [
-            'asc' => ['cust.name' => SORT_ASC],
-            'desc' => ['cust.name' => SORT_DESC],
+            'asc' => ['cust.cust_no' => SORT_ASC],
+            'desc' => ['cust.cust_no' => SORT_DESC],
         ];
 
         $dataProvider->sort->attributes['warna'] = [
@@ -133,11 +199,11 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         ];
 
         $dataProvider->sort->attributes['woNo'] = [
-            'asc' => ['trn_wo.no' => SORT_ASC],
-            'desc' => ['trn_wo.no' => SORT_DESC],
+            'asc' => ['trn_wo.no' => SORT_ASC, 'moColor.color' => SORT_ASC],
+            'desc' => ['trn_wo.no' => SORT_DESC, 'moColor.color' => SORT_ASC],
         ];
 
-        $this->load($params);
+
 
         if (!$this->validate()) {
             // uncomment the following line if you do not want to return any records when validation fails
@@ -174,9 +240,9 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ]);
         }
 
-        if(!empty($this->openDateRange)){
-            $this->from_date = substr($this->openDateRange, 0, 10);
-            $this->to_date = substr($this->openDateRange, 14);
+        if(!empty($activeProcessDate)){
+            $this->from_date = substr($activeProcessDate, 0, 10);
+            $this->to_date = substr($activeProcessDate, 14);
 
             if($this->from_date == $this->to_date){
                 $query->andWhere(new Expression("CAST(kpd.value AS jsonb)->>'tanggal' = :from_date"))
@@ -240,7 +306,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         }
         
         $isFiltering = false;
-        if (!empty($this->openDateRange)) {
+        if (!empty($activeProcessDate)) {
             $isFiltering = true;
         }
         // grid filtering conditions
@@ -276,7 +342,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ->andFilterWhere(['ilike', 'mkt.full_name', $this->marketingName])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
             ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->motif])
-            ->andFilterWhere(['ilike', 'cust.name', $this->customerName])
+            ->andFilterWhere(['ilike', 'cust.cust_no', $this->customerName])
             ->andFilterWhere(['ilike', 'moColor.color', $this->warna])
         ;
 

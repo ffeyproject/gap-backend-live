@@ -129,7 +129,6 @@ class ProcessingDyeingController extends Controller
         header('Expires: 0');
         
         $masterProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['use_jetblack' => false])
             ->orderBy('order')
             ->all();
 
@@ -451,7 +450,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
-        echo '   <Interior ss:Color="#FFF3E0" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#FFEbee" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="RowDyeingFilled">' . "\n";
@@ -652,10 +651,14 @@ class ProcessingDyeingController extends Controller
                 $orangeProcessIds = \yii\helpers\ArrayHelper::getColumn(
                     \common\models\ar\MstProcessDyeing::find()
                         ->where(['nama_proses' => [
+                            'Perbaikan JB',
                             'Toping 1', 'Toping 2', 'Toping 3', 'Toping 4',
                             'Cuci Ulang',
                             'RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5',
-                            'S-RC 1', 'S-RC 2', 'S-RC 3', 'S-RC 4'
+                            'Toping Level',
+                            'Celup Rayon',
+                            'Tarik Ulang',
+                            'RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4'
                         ]])
                         ->all(),
                     'id'
@@ -715,7 +718,7 @@ class ProcessingDyeingController extends Controller
                     $hasScutcher = true;
                 }
             }
-            $isNkHighlighted = ($hasRelax && $hasScutcher);
+            $isNkHighlighted = (!$isPackFilled && $hasRelax && $hasScutcher);
 
             // Process column custom highlights
             $processHighlightStyles = [];
@@ -736,13 +739,17 @@ class ProcessingDyeingController extends Controller
                         $processHighlightStyles[$colKey] = 'ColResinStyle';
                     } elseif ($nama === 'Heat Cut') {
                         $processHighlightStyles[$colKey] = 'ColHeatCutPackStyle';
-                    } elseif (in_array($nama, ['Preset', 'Setting'])) {
+                    } elseif (in_array($nama, ['Preset', 'Setting', 'Setting-2'])) {
                         $processHighlightStyles[$colKey] = 'ColPresetSettingStyle';
                     } elseif (in_array($nama, [
+                        'Perbaikan JB',
                         'Toping 1', 'Toping 2', 'Toping 3', 'Toping 4',
                         'Cuci Ulang',
                         'RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5',
-                        'S-RC 1', 'S-RC 2', 'S-RC 3', 'S-RC 4'
+                        'Toping Level',
+                        'Celup Rayon',
+                        'Tarik Ulang',
+                        'RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4'
                     ])) {
                         $processHighlightStyles[$colKey] = 'ColTopingRcStyle';
                     }
