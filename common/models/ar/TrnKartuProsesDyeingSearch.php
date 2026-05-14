@@ -142,11 +142,16 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'trn_kartu_proses_dyeing.wo_id' => SORT_DESC,
+                    'wo_id' => SORT_DESC,
                     'warna' => SORT_ASC,
                 ]
             ],
         ]);
+
+        $dataProvider->sort->attributes['wo_id'] = [
+            'asc' => ['trn_kartu_proses_dyeing.wo_id' => SORT_ASC],
+            'desc' => ['trn_kartu_proses_dyeing.wo_id' => SORT_DESC],
+        ];
 
          $dataProvider->sort->attributes['shift'] = [
             'asc' => [

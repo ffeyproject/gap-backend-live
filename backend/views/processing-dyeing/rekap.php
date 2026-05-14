@@ -631,6 +631,7 @@ $columnToggleDropdown .= '</ul></div>';
         'filterModel' => $searchModel,
         'panel' => [
             'type' => 'default',
+            'heading' => '<h3 class="panel-title"><i class="glyphicon glyphicon-list-alt"></i> Daftar Rekap Processing Dyeing</h3>',
             'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap'], ['class' => 'btn btn-default']) . ' ' .
                         Html::dropDownList(
                             'woMonthDropdown',
