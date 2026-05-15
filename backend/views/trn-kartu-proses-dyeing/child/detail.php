@@ -22,7 +22,7 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
 ?>
 
 <div class="row">
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="box">
             <div class="box-header with-border">
                 <h3 class="box-title">CATATAN PROSES</h3>
@@ -48,7 +48,7 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <div class="box">
             <div class="box-header with-border">
                 <h3 class="box-title">KONSTRUKSI GREIGE</h3>
@@ -75,6 +75,54 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
     </div>
 
     <div class="col-md-3">
+        <div class="box">
+            <div class="box-header with-border">
+                <h3 class="box-title">KETERANGAN MESIN</h3>
+            </div>
+            <div class="box-body">
+                <?php
+                $greigeName = $model->wo->greige->nama_kain;
+                $mesin = \common\models\ar\MstMesinProcessing::find()
+                    ->where(['ilike', 'nama_mesin', $greigeName])
+                    ->one();
+                
+                if ($mesin) {
+                    echo DetailView::widget([
+                        'model' => $mesin,
+                        'attributes' => [
+                            [
+                                'attribute' => 'id',
+                                'label' => '--- RELAX ---',
+                                'value' => ' ',
+                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                            ],
+                            'relax_mesin',
+                            'relax_jenis_nozzle',
+                            'relax_ukuran_nozzle',
+                            'relax_catatan:ntext',
+                            [
+                                'attribute' => 'id',
+                                'label' => '--- CELUP ---',
+                                'value' => ' ',
+                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                            ],
+                            'celup_mesin',
+                            'celup_jenis_nozzle',
+                            'celup_ukuran_nozzle',
+                            'celup_catatan:ntext',
+                        ],
+                    ]);
+                } else {
+                    echo '<p class="text-muted">Tidak ada data mesin untuk motif ini.</p>';
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-2">
         <div class="box">
             <div class="box-header with-border">
                 <h3 class="box-title">TARGET HASIL JADI</h3>
@@ -163,7 +211,7 @@ $handling = MstHandling::find()->where(['greige_id'=>$model->wo->greige_id, 'nam
                         ],
                         [
                             'label'=>'Buyer',
-                            'value'=>$model->sc->customerName
+                            'value'=>$model->sc->customerCode
                             //'value'=>$model->wo->mo->sc->customerName
                         ],
                         [
