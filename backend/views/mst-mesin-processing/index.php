@@ -30,14 +30,17 @@ $this->params['breadcrumbs'][] = $this->title;
 
             [
                 'attribute' => 'nama_mesin',
+                'label' => 'Nama Motif',
                 'format' => 'raw',
                 'value' => function($data){
-                    return Html::a($data['nama_mesin'], ['view', 'id' => $data['id']]);
+                    $namaMesinStr = is_array($data['nama_mesin']) ? implode(', ', $data['nama_mesin']) : $data['nama_mesin'];
+                    return Html::a(Html::encode($namaMesinStr), ['view', 'id' => $data['id']]);
                 }
             ],
-            'jenis_mesin',
-            'jenis_nozzle',
-            'ukuran_nozzle',
+            'relax_mesin',
+            'relax_jenis_nozzle',
+            'celup_mesin',
+            'celup_jenis_nozzle',
 
             ['class' => 'kartik\grid\ActionColumn'],
         ],

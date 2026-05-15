@@ -2150,45 +2150,54 @@ class ProcessingDyeingController extends Controller
         $currentYear = date('Y');
         $woMonthStr = "{$currentYear}-{$searchModel->woMonth}";
         
-        $missingColorsQuery = \common\models\ar\TrnWoColor::find()
+        $woColorsQuery = \common\models\ar\TrnWoColor::find()
             ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust'])
-            ->leftJoin('trn_kartu_proses_dyeing', 'trn_kartu_proses_dyeing.wo_color_id = trn_wo_color.id')
-            ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]))
-            ->andWhere(['trn_kartu_proses_dyeing.id' => null]);
+            ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]));
             
         if (!empty($searchModel->woNo)) {
-            $missingColorsQuery->andFilterWhere(['ilike', 'trn_wo.no', $searchModel->woNo]);
+            $woColorsQuery->andFilterWhere(['ilike', 'trn_wo.no', $searchModel->woNo]);
         }
         if (!empty($searchModel->motif)) {
-            $missingColorsQuery->andFilterWhere(['ilike', 'mst_greige.nama_kain', $searchModel->motif]);
+            $woColorsQuery->andFilterWhere(['ilike', 'mst_greige.nama_kain', $searchModel->motif]);
         }
         if (!empty($searchModel->warna)) {
-            $missingColorsQuery->andFilterWhere(['ilike', 'mo_color.color', $searchModel->warna]);
+            $woColorsQuery->andFilterWhere(['ilike', 'mo_color.color', $searchModel->warna]);
         }
         if (!empty($searchModel->customerName)) {
-            $missingColorsQuery->andFilterWhere(['ilike', 'mst_customer.cust_no', $searchModel->customerName]);
+            $woColorsQuery->andFilterWhere(['ilike', 'mst_customer.cust_no', $searchModel->customerName]);
         }
         
-        $missingColors = $missingColorsQuery->all();
+        $woColors = $woColorsQuery->all();
         
-        foreach ($missingColors as $mc) {
-            $dummy = new \common\models\ar\TrnKartuProsesDyeing();
-            $dummy->wo_id = $mc->wo_id;
-            $dummy->wo_color_id = $mc->id;
-            if ($mc->wo) {
-                $dummy->sc_id = $mc->wo->sc_id;
-                $dummy->mo_id = $mc->wo->mo_id;
-                $dummy->sc_greige_id = $mc->wo->sc_greige_id;
-                $dummy->populateRelation('wo', $mc->wo);
-                if ($mc->wo->sc) {
-                    $dummy->populateRelation('sc', $mc->wo->sc);
-                }
-            }
-            $dummy->status = 0;
-            $dummy->nomor_kartu = '-';
-            $dummy->populateRelation('woColor', $mc);
+        foreach ($woColors as $mc) {
+            $targetQty = (int) $mc->qty;
+            if ($targetQty <= 0) continue;
             
-            $models[] = $dummy;
+            $existingCount = \common\models\ar\TrnKartuProsesDyeing::find()
+                ->where(['wo_color_id' => $mc->id])
+                ->count();
+                
+            $missingCount = $targetQty - $existingCount;
+            
+            for ($i = 0; $i < $missingCount; $i++) {
+                $dummy = new \common\models\ar\TrnKartuProsesDyeing();
+                $dummy->wo_id = $mc->wo_id;
+                $dummy->wo_color_id = $mc->id;
+                if ($mc->wo) {
+                    $dummy->sc_id = $mc->wo->sc_id;
+                    $dummy->mo_id = $mc->wo->mo_id;
+                    $dummy->sc_greige_id = $mc->wo->sc_greige_id;
+                    $dummy->populateRelation('wo', $mc->wo);
+                    if ($mc->wo->sc) {
+                        $dummy->populateRelation('sc', $mc->wo->sc);
+                    }
+                }
+                $dummy->status = 0;
+                $dummy->nomor_kartu = '-';
+                $dummy->populateRelation('woColor', $mc);
+                
+                $models[] = $dummy;
+            }
         }
         
         usort($models, function($a, $b) {

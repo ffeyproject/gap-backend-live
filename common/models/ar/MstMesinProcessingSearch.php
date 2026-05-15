@@ -18,7 +18,7 @@ class MstMesinProcessingSearch extends MstMesinProcessing
     {
         return [
             [['id'], 'integer'],
-            [['nama_mesin', 'jenis_mesin', 'jenis_nozzle', 'ukuran_nozzle'], 'safe'],
+            [['nama_mesin', 'relax_mesin', 'relax_jenis_nozzle', 'relax_ukuran_nozzle', 'celup_mesin', 'celup_jenis_nozzle', 'celup_ukuran_nozzle'], 'safe'],
         ];
     }
 
@@ -49,20 +49,20 @@ class MstMesinProcessingSearch extends MstMesinProcessing
         $this->load($params);
 
         if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
             return $dataProvider;
         }
 
-        // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
         ]);
 
         $query->andFilterWhere(['ilike', 'nama_mesin', $this->nama_mesin])
-            ->andFilterWhere(['ilike', 'jenis_mesin', $this->jenis_mesin])
-            ->andFilterWhere(['ilike', 'jenis_nozzle', $this->jenis_nozzle])
-            ->andFilterWhere(['ilike', 'ukuran_nozzle', $this->ukuran_nozzle]);
+            ->andFilterWhere(['ilike', 'relax_mesin', $this->relax_mesin])
+            ->andFilterWhere(['ilike', 'relax_jenis_nozzle', $this->relax_jenis_nozzle])
+            ->andFilterWhere(['ilike', 'relax_ukuran_nozzle', $this->relax_ukuran_nozzle])
+            ->andFilterWhere(['ilike', 'celup_mesin', $this->celup_mesin])
+            ->andFilterWhere(['ilike', 'celup_jenis_nozzle', $this->celup_jenis_nozzle])
+            ->andFilterWhere(['ilike', 'celup_ukuran_nozzle', $this->celup_ukuran_nozzle]);
 
         return $dataProvider;
     }

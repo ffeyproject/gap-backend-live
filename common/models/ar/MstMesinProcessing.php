@@ -10,9 +10,14 @@ use yii\helpers\ArrayHelper;
  *
  * @property int $id
  * @property string $nama_mesin
- * @property string|null $jenis_mesin
- * @property string|null $jenis_nozzle
- * @property string|null $ukuran_nozzle
+ * @property string|null $relax_mesin
+ * @property string|null $relax_jenis_nozzle
+ * @property string|null $relax_ukuran_nozzle
+ * @property string|null $relax_catatan
+ * @property string|null $celup_mesin
+ * @property string|null $celup_jenis_nozzle
+ * @property string|null $celup_ukuran_nozzle
+ * @property string|null $celup_catatan
  */
 class MstMesinProcessing extends \yii\db\ActiveRecord
 {
@@ -31,8 +36,28 @@ class MstMesinProcessing extends \yii\db\ActiveRecord
     {
         return [
             [['nama_mesin'], 'required'],
-            [['nama_mesin', 'jenis_mesin', 'jenis_nozzle', 'ukuran_nozzle'], 'string', 'max' => 255],
+            [['relax_catatan', 'celup_catatan'], 'string'],
+            [['relax_mesin', 'relax_jenis_nozzle', 'relax_ukuran_nozzle', 'celup_mesin', 'celup_jenis_nozzle', 'celup_ukuran_nozzle'], 'string', 'max' => 255],
+            [['nama_mesin'], 'safe'],
         ];
+    }
+
+    public function beforeSave($insert)
+    {
+        if (is_array($this->nama_mesin)) {
+            $this->nama_mesin = implode(', ', $this->nama_mesin);
+        }
+        return parent::beforeSave($insert);
+    }
+
+    public function afterFind()
+    {
+        parent::afterFind();
+        if (!empty($this->nama_mesin)) {
+            $this->nama_mesin = array_map('trim', explode(',', $this->nama_mesin));
+        } else {
+            $this->nama_mesin = [];
+        }
     }
 
     /**
@@ -42,10 +67,15 @@ class MstMesinProcessing extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'nama_mesin' => 'Nama Mesin',
-            'jenis_mesin' => 'Jenis Mesin',
-            'jenis_nozzle' => 'Jenis Nozzle',
-            'ukuran_nozzle' => 'Ukuran Nozzle',
+            'nama_mesin' => 'Nama Motif',
+            'relax_mesin' => 'Mesin',
+            'relax_jenis_nozzle' => 'Jenis Nozzle',
+            'relax_ukuran_nozzle' => 'Ukuran Nozzle',
+            'relax_catatan' => 'Catatan',
+            'celup_mesin' => 'Mesin',
+            'celup_jenis_nozzle' => 'Jenis Nozzle',
+            'celup_ukuran_nozzle' => 'Ukuran Nozzle',
+            'celup_catatan' => 'Catatan',
         ];
     }
 

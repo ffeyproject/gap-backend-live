@@ -50,10 +50,33 @@ $greigesData = ArrayHelper::map($availableGreiges, 'id', 'nama_kain');
                         'model' => $model,
                         'attributes' => [
                             'id',
-                            'nama_mesin',
-                            'jenis_mesin',
-                            'jenis_nozzle',
-                            'ukuran_nozzle',
+                            [
+                                'attribute' => 'nama_mesin',
+                                'label' => 'Nama Motif',
+                                'value' => is_array($model->nama_mesin) ? implode(', ', $model->nama_mesin) : $model->nama_mesin,
+                            ],
+                            [
+                                'attribute' => 'id',
+                                'label' => '--- RELAX ---',
+                                'value' => ' ',
+                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                            ],
+                            'relax_mesin',
+                            'relax_jenis_nozzle',
+                            'relax_ukuran_nozzle',
+                            'relax_catatan:ntext',
+                            [
+                                'attribute' => 'id',
+                                'label' => '--- CELUP ---',
+                                'value' => ' ',
+                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                            ],
+                            'celup_mesin',
+                            'celup_jenis_nozzle',
+                            'celup_ukuran_nozzle',
+                            'celup_catatan:ntext',
                         ],
                     ]) ?>
                 </div>
