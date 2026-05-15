@@ -3,9 +3,10 @@
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\MstMesinProcessing */
 
-$this->title = 'Update Mesin Processing: ' . $model->nama_mesin;
+$namaMesinStr = is_array($model->nama_mesin) ? implode(', ', $model->nama_mesin) : $model->nama_mesin;
+$this->title = 'Update Mesin Processing: ' . $namaMesinStr;
 $this->params['breadcrumbs'][] = ['label' => 'Mesin Processing', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->nama_mesin, 'url' => ['view', 'id' => $model->id]];
+$this->params['breadcrumbs'][] = ['label' => $namaMesinStr, 'url' => ['view', 'id' => $model->id]];
 $this->params['breadcrumbs'][] = 'Update';
 ?>
 

@@ -10,147 +10,125 @@ use common\models\ar\MstGreige;
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\MstMesinProcessing */
 
-$this->title = $model->nama_mesin;
+$namaMesinStr = is_array($model->nama_mesin) ? implode(', ', $model->nama_mesin) : $model->nama_mesin;
+$this->title = $namaMesinStr;
 $this->params['breadcrumbs'][] = ['label' => 'Mesin Processing', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
 echo Dialog::widget(['overrideYiiConfirm' => true]);
 
-// Get already forbidden greige IDs to exclude them from dropdown
-$alreadyForbiddenIds = ArrayHelper::getColumn($model->forbiddenGreiges, 'greige_id');
-$availableGreiges = MstGreige::find()
-    ->where(['not in', 'id', $alreadyForbiddenIds])
-    ->andWhere(['aktif' => true])
-    ->orderBy('nama_kain')
-    ->all();
-$greigesData = ArrayHelper::map($availableGreiges, 'id', 'nama_kain');
+
 ?>
 
 <div class="mst-mesin-processing-view">
-
-    <p>
-        <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
-            'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
-                'method' => 'post',
-            ],
-        ]) ?>
-    </p>
+    <div class="row" style="margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap;">
+        <div class="col-md-8">
+            <h1 style="margin-top: 0; font-weight: 700; color: #2c3e50; font-size: 28px;">
+                <i class="fa fa-industry text-primary" style="margin-right: 10px;"></i> <?= Html::encode($namaMesinStr) ?>
+            </h1>
+            <p class="text-muted" style="font-size: 14px; margin-left: 40px;">
+                <i class="fa fa-info-circle"></i> Master Data Detail untuk Mesin Processing - ID: #<?= $model->id ?>
+            </p>
+        </div>
+        <div class="col-md-4 text-right">
+            <?= Html::a('<i class="fa fa-edit"></i> Update', ['update', 'id' => $model->id], [
+                'class' => 'btn btn-primary', 
+                'style'=>'border-radius: 8px; padding: 8px 20px; font-weight: 600; box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);'
+            ]) ?>
+            <?= Html::a('<i class="fa fa-trash"></i> Delete', ['delete', 'id' => $model->id], [
+                'class' => 'btn btn-danger',
+                'style'=>'border-radius: 8px; padding: 8px 20px; font-weight: 600; box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2); margin-left: 5px;',
+                'data' => [
+                    'confirm' => 'Are you sure you want to delete this item?',
+                    'method' => 'post',
+                ],
+            ]) ?>
+        </div>
+    </div>
 
     <div class="row">
-        <div class="col-md-5">
-            <div class="box box-primary">
-                <div class="box-header with-border">
-                    <h3 class="box-title">Detail Mesin</h3>
+        <!-- Relax Section -->
+        <div class="col-md-6">
+            <div class="box box-solid box-info" style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.08); border: none;">
+                <div class="box-header" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 18px;">
+                    <h3 class="box-title" style="font-weight: 700; font-size: 18px; letter-spacing: 0.5px;">
+                        <i class="fa fa-refresh" style="margin-right: 8px;"></i> KATEGORI: RELAX
+                    </h3>
                 </div>
-                <div class="box-body">
+                <div class="box-body" style="padding: 25px; background: #fff;">
                     <?= DetailView::widget([
                         'model' => $model,
+                        'options' => ['class' => 'table table-hover detail-view', 'style'=>'margin-bottom: 0; border: none;'],
                         'attributes' => [
-                            'id',
                             [
-                                'attribute' => 'nama_mesin',
-                                'label' => 'Nama Motif',
-                                'value' => is_array($model->nama_mesin) ? implode(', ', $model->nama_mesin) : $model->nama_mesin,
+                                'attribute' => 'relax_mesin',
+                                'label' => 'Mesin',
+                                'captionOptions' => ['style' => 'width: 35%; font-weight: 600; color: #7f8c8d; border-top: none;'],
+                                'contentOptions' => ['style' => 'border-top: none; font-weight: 500;']
                             ],
                             [
-                                'attribute' => 'id',
-                                'label' => '--- RELAX ---',
-                                'value' => ' ',
-                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
-                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'attribute' => 'relax_jenis_nozzle',
+                                'label' => 'Jenis Nozzle',
+                                'contentOptions' => ['style' => 'font-weight: 500;']
                             ],
-                            'relax_mesin',
-                            'relax_jenis_nozzle',
-                            'relax_ukuran_nozzle',
-                            'relax_catatan:ntext',
                             [
-                                'attribute' => 'id',
-                                'label' => '--- CELUP ---',
-                                'value' => ' ',
-                                'contentOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
-                                'captionOptions' => ['style' => 'background-color: #f9f9f9; font-weight: bold;'],
+                                'attribute' => 'relax_ukuran_nozzle',
+                                'label' => 'Ukuran Nozzle',
+                                'contentOptions' => ['style' => 'font-weight: 500;']
                             ],
-                            'celup_mesin',
-                            'celup_jenis_nozzle',
-                            'celup_ukuran_nozzle',
-                            'celup_catatan:ntext',
+                            [
+                                'attribute' => 'relax_catatan',
+                                'label' => 'Catatan',
+                                'format' => 'ntext',
+                                'contentOptions' => ['style' => 'font-style: italic; color: #5a6772; background: #fcfdfd; border-radius: 4px; padding: 10px;']
+                            ],
                         ],
                     ]) ?>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-7">
-            <div class="box box-danger">
-                <div class="box-header with-border">
-                    <h3 class="box-title"><i class="fa fa-ban text-danger"></i> Greige yang Tidak Boleh Digunakan</h3>
+        <!-- Celup Section -->
+        <div class="col-md-6">
+            <div class="box box-solid box-success" style="border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.08); border: none;">
+                <div class="box-header" style="background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 18px;">
+                    <h3 class="box-title" style="font-weight: 700; font-size: 18px; letter-spacing: 0.5px;">
+                        <i class="fa fa-tint" style="margin-right: 8px;"></i> KATEGORI: CELUP
+                    </h3>
                 </div>
-                <div class="box-body">
-                    
-                    <!-- Form Multi-Insert Forbidden Greiges -->
-                    <div class="well">
-                        <h4>Tambah Greige Terlarang</h4>
-                        <?= Html::beginForm(['view', 'id' => $model->id], 'post') ?>
-                        <div class="form-group">
-                            <?= Select2::widget([
-                                'name' => 'forbidden_greige_ids',
-                                'data' => $greigesData,
-                                'options' => [
-                                    'placeholder' => 'Pilih satu atau beberapa kain greige...',
-                                    'multiple' => true,
-                                ],
-                                'pluginOptions' => [
-                                    'allowClear' => true,
-                                ],
-                            ]) ?>
-                        </div>
-                        <div class="form-group">
-                            <?= Html::submitButton('<i class="glyphicon glyphicon-plus"></i> Tambahkan ke Daftar Terlarang', ['class' => 'btn btn-danger btn-block']) ?>
-                        </div>
-                        <?= Html::endForm() ?>
-                    </div>
-
-                    <!-- Daftar Greige Terlarang -->
-                    <table class="table table-bordered table-striped table-hover">
-                        <thead>
-                            <tr class="danger">
-                                <th style="width: 50px;" class="text-center">No</th>
-                                <th>Nama Kain Greige</th>
-                                <th>Alias</th>
-                                <th style="width: 80px;" class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($model->forbiddenGreiges)): ?>
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Semua kain greige diperbolehkan untuk mesin ini.</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php $no = 1; foreach ($model->forbiddenGreiges as $forbidden): ?>
-                                    <tr>
-                                        <td class="text-center"><?= $no++ ?></td>
-                                        <td><?= Html::encode($forbidden->greige->nama_kain) ?></td>
-                                        <td><?= Html::encode($forbidden->greige->alias) ?></td>
-                                        <td class="text-center">
-                                            <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-forbidden-greige', 'id' => $forbidden->id], [
-                                                'class' => 'btn btn-danger btn-xs',
-                                                'title' => 'Hapus dari daftar terlarang',
-                                                'data-method' => 'post',
-                                                'data-confirm' => 'Yakin ingin memperbolehkan kain greige ini kembali pada mesin?',
-                                            ]) ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-
+                <div class="box-body" style="padding: 25px; background: #fff;">
+                    <?= DetailView::widget([
+                        'model' => $model,
+                        'options' => ['class' => 'table table-hover detail-view', 'style'=>'margin-bottom: 0; border: none;'],
+                        'attributes' => [
+                            [
+                                'attribute' => 'celup_mesin',
+                                'label' => 'Mesin',
+                                'captionOptions' => ['style' => 'width: 35%; font-weight: 600; color: #7f8c8d; border-top: none;'],
+                                'contentOptions' => ['style' => 'border-top: none; font-weight: 500;']
+                            ],
+                            [
+                                'attribute' => 'celup_jenis_nozzle',
+                                'label' => 'Jenis Nozzle',
+                                'contentOptions' => ['style' => 'font-weight: 500;']
+                            ],
+                            [
+                                'attribute' => 'celup_ukuran_nozzle',
+                                'label' => 'Ukuran Nozzle',
+                                'contentOptions' => ['style' => 'font-weight: 500;']
+                            ],
+                            [
+                                'attribute' => 'celup_catatan',
+                                'label' => 'Catatan',
+                                'format' => 'ntext',
+                                'contentOptions' => ['style' => 'font-style: italic; color: #5a6772; background: #fcfdfd; border-radius: 4px; padding: 10px;']
+                            ],
+                        ],
+                    ]) ?>
                 </div>
             </div>
         </div>
     </div>
+
 
 </div>
