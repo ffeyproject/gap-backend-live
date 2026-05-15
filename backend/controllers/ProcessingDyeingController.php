@@ -73,7 +73,6 @@ class ProcessingDyeingController extends Controller
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
-        $dataProvider->query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
 
         $statusRekap = Yii::$app->request->get('status_rekap', 'on_process');
         
@@ -82,9 +81,24 @@ class ProcessingDyeingController extends Controller
             $dataProvider->query->andWhere('1=0');
         } else {
             if ($statusRekap === 'selesai') {
-                $dataProvider->query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
+                $dataProvider->query->andWhere(['in', 'trn_kartu_proses_dyeing.status', [
+                    TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED, TrnKartuProsesDyeing::STATUS_GANTI_GREIGE,
+                    TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED, TrnKartuProsesDyeing::STATUS_BATAL, TrnKartuProsesDyeing::STATUS_ROLLING_PACKING,
+                    TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING, TrnKartuProsesDyeing::STATUS_FOLDED_PACKING, TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI,
+                    TrnKartuProsesDyeing::STATUS_PERIKSA_PENGIRIMAN, TrnKartuProsesDyeing::STATUS_CLOSE, TrnKartuProsesDyeing::STATUS_SELVEDGE_PACKING
+                ]]);
             } elseif ($statusRekap === 'on_process') {
-                $dataProvider->query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
+                $dataProvider->query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
+            } elseif ($statusRekap === 'semua') {
+                $dataProvider->pagination = false;
+                $models = $dataProvider->getModels();
+                $models = $this->appendMissingWoColors($models, $searchModel);
+                $dataProvider = new \yii\data\ArrayDataProvider([
+                    'allModels' => $models,
+                    'pagination' => [
+                        'pageSize' => 20,
+                    ],
+                ]);
             }
         }
 
@@ -108,16 +122,24 @@ class ProcessingDyeingController extends Controller
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         
         $query = $dataProvider->query;
-        $query->andWhere(['>', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
         
         if ($status_rekap === 'selesai') {
-            $query->andWhere(['is not', 'trn_kartu_proses_dyeing.approved_at', null]);
+            $query->andWhere(['in', 'trn_kartu_proses_dyeing.status', [
+                TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED, TrnKartuProsesDyeing::STATUS_GANTI_GREIGE,
+                TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED, TrnKartuProsesDyeing::STATUS_BATAL, TrnKartuProsesDyeing::STATUS_ROLLING_PACKING,
+                TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING, TrnKartuProsesDyeing::STATUS_FOLDED_PACKING, TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI,
+                TrnKartuProsesDyeing::STATUS_PERIKSA_PENGIRIMAN, TrnKartuProsesDyeing::STATUS_CLOSE, TrnKartuProsesDyeing::STATUS_SELVEDGE_PACKING
+            ]]);
         } elseif ($status_rekap === 'on_process') {
-            $query->andWhere(['is', 'trn_kartu_proses_dyeing.approved_at', null]);
+            $query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
         }
         
         $dataProvider->pagination = false;
         $models = $dataProvider->getModels();
+        
+        if ($status_rekap === 'semua') {
+            $models = $this->appendMissingWoColors($models, $searchModel);
+        }
         
         $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".xls";
         
@@ -234,10 +256,13 @@ class ProcessingDyeingController extends Controller
                 }
             }
 
-            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish, 1) .'M / '. Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard, 1).'Y') : '';
+            $cleanNum = function($val) {
+                return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+            };
+            $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinish), 1) .'M / '. Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinishToYard), 1).'Y') : '';
             $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
             $nk = $model->nomor_kartu;
-            $panjang = $model->wo ? $model->wo->colorQtyBatchToMeter : 0;
+            $panjang = $model->wo ? $cleanNum($model->wo->colorQtyBatchToMeter) : 0;
             $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
             $beratGreige = $model->berat;
             $pcs = $model->getTrnKartuProsesDyeingItems()->count();
@@ -2116,4 +2141,67 @@ class ProcessingDyeingController extends Controller
         }
     }
 
+    private function appendMissingWoColors($models, $searchModel)
+    {
+        if (empty($searchModel->woMonth)) {
+            return $models;
+        }
+        
+        $currentYear = date('Y');
+        $woMonthStr = "{$currentYear}-{$searchModel->woMonth}";
+        
+        $missingColorsQuery = \common\models\ar\TrnWoColor::find()
+            ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust'])
+            ->leftJoin('trn_kartu_proses_dyeing', 'trn_kartu_proses_dyeing.wo_color_id = trn_wo_color.id')
+            ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]))
+            ->andWhere(['trn_kartu_proses_dyeing.id' => null]);
+            
+        if (!empty($searchModel->woNo)) {
+            $missingColorsQuery->andFilterWhere(['ilike', 'trn_wo.no', $searchModel->woNo]);
+        }
+        if (!empty($searchModel->motif)) {
+            $missingColorsQuery->andFilterWhere(['ilike', 'mst_greige.nama_kain', $searchModel->motif]);
+        }
+        if (!empty($searchModel->warna)) {
+            $missingColorsQuery->andFilterWhere(['ilike', 'mo_color.color', $searchModel->warna]);
+        }
+        if (!empty($searchModel->customerName)) {
+            $missingColorsQuery->andFilterWhere(['ilike', 'mst_customer.cust_no', $searchModel->customerName]);
+        }
+        
+        $missingColors = $missingColorsQuery->all();
+        
+        foreach ($missingColors as $mc) {
+            $dummy = new \common\models\ar\TrnKartuProsesDyeing();
+            $dummy->wo_id = $mc->wo_id;
+            $dummy->wo_color_id = $mc->id;
+            if ($mc->wo) {
+                $dummy->sc_id = $mc->wo->sc_id;
+                $dummy->mo_id = $mc->wo->mo_id;
+                $dummy->sc_greige_id = $mc->wo->sc_greige_id;
+                $dummy->populateRelation('wo', $mc->wo);
+                if ($mc->wo->sc) {
+                    $dummy->populateRelation('sc', $mc->wo->sc);
+                }
+            }
+            $dummy->status = 0;
+            $dummy->nomor_kartu = '-';
+            $dummy->populateRelation('woColor', $mc);
+            
+            $models[] = $dummy;
+        }
+        
+        usort($models, function($a, $b) {
+            $woA = $a->wo ? $a->wo->no : '';
+            $woB = $b->wo ? $b->wo->no : '';
+            if ($woA === $woB) {
+                $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                return strcmp($colA, $colB);
+            }
+            return strcmp($woA, $woB);
+        });
+        
+        return $models;
+    }
 }

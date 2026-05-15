@@ -85,6 +85,24 @@ $formatIndoDate = function($dateValue) {
     return "{$day}-{$monthName}-{$year}";
 };
 
+$formatProcessDate = function($dateValue) {
+    if (empty($dateValue)) {
+        return '';
+    }
+    
+    if (is_numeric($dateValue)) {
+        $time = (int)$dateValue;
+    } else {
+        $time = strtotime($dateValue);
+    }
+    
+    if (!$time) {
+        return $dateValue;
+    }
+    
+    return date('j/n/y', $time);
+};
+
 $gridColumns = [
     ['class' => 'kartik\grid\SerialColumn'],
     [
@@ -156,7 +174,7 @@ $gridColumns = [
             $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
                 ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
                 ->exists();
-            if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at)) {
+            if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16])) {
                 return ['style' => 'font-weight: bold; text-align: center;'];
             }
 
@@ -304,16 +322,16 @@ foreach ($masterProcesses as $proc) {
             ],
         ],
         'headerOptions' => [
-            'style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center; vertical-align: middle;',
+            'style' => 'text-align: center; vertical-align: middle;',
         ],
         'contentOptions' => function($model, $key, $index, $column) use ($proc, $isDyeing, $isOrange, $isPink, $isResinFinish, $isHeatCut) {
             $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
                 ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
                 ->exists();
-            $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at));
+            $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]));
             
             if ($isPackFilled) {
-                return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
+                return ['style' => 'background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
             }
 
             $hasData = false;
@@ -348,11 +366,11 @@ foreach ($masterProcesses as $proc) {
                     $bgColor = '#e0e0e0'; // Grey for any other filled processes
                     $textColor = '#333333';
                 }
-                return ['style' => "width: 130px; min-width: 130px; max-width: 130px; background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
+                return ['style' => "background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
             }
-            return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center;'];
+            return ['style' => 'text-align: center;'];
         },
-        'value' => function($data) use ($proc, $formatIndoDate) {
+        'value' => function($data) use ($proc, $formatProcessDate) {
             $tg = '-';
             $sh = '-';
             $mc = '-';
@@ -364,7 +382,7 @@ foreach ($masterProcesses as $proc) {
             if ($pc !== false) {
                 $v = \yii\helpers\Json::decode($pc['value']);
                 if (isset($v['tanggal']) && !empty($v['tanggal'])) {
-                    $tg = $formatIndoDate($v['tanggal']);
+                    $tg = $formatProcessDate($v['tanggal']);
                 }
                 if (isset($v['shift_group']) && !empty($v['shift_group'])) {
                     $sh = $v['shift_group'];
@@ -374,7 +392,7 @@ foreach ($masterProcesses as $proc) {
                 }
             }
 
-            return $tg . ' / ' . $sh . ' / ' . $mc;
+            return $tg . '-' . $sh . '-' . $mc;
         }
     ];
 
@@ -418,16 +436,16 @@ foreach ($masterProcesses as $proc) {
                     ],
                 ],
                 'headerOptions' => [
-                    'style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center; vertical-align: middle;',
+                    'style' => 'text-align: center; vertical-align: middle;',
                 ],
                 'contentOptions' => function($model, $key, $index, $column) use ($jbProc, $isJbPink) {
                     $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
                         ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
                         ->exists();
-                    $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at));
+                    $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]));
                     
                     if ($isPackFilled) {
-                        return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
+                        return ['style' => 'background-color: #fffde7 !important; color: #333333 !important; text-align: center;'];
                     }
 
                     $hasData = false;
@@ -450,11 +468,11 @@ foreach ($masterProcesses as $proc) {
                             $bgColor = '#e0e0e0'; // Grey
                             $textColor = '#333333';
                         }
-                        return ['style' => "width: 130px; min-width: 130px; max-width: 130px; background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
+                        return ['style' => "background-color: {$bgColor} !important; color: {$textColor} !important; font-weight: bold; text-align: center;"];
                     }
-                    return ['style' => 'width: 130px; min-width: 130px; max-width: 130px; text-align: center;'];
+                    return ['style' => 'text-align: center;'];
                 },
-                'value' => function($data) use ($jbProc, $formatIndoDate) {
+                'value' => function($data) use ($jbProc, $formatProcessDate) {
                     $tg = '-';
                     $sh = '-';
                     $mc = '-';
@@ -466,7 +484,7 @@ foreach ($masterProcesses as $proc) {
                     if ($pc !== false) {
                         $v = \yii\helpers\Json::decode($pc['value']);
                         if (isset($v['tanggal']) && !empty($v['tanggal'])) {
-                            $tg = $formatIndoDate($v['tanggal']);
+                            $tg = $formatProcessDate($v['tanggal']);
                         }
                         if (isset($v['shift_group']) && !empty($v['shift_group'])) {
                             $sh = $v['shift_group'];
@@ -476,7 +494,7 @@ foreach ($masterProcesses as $proc) {
                         }
                     }
 
-                    return $tg . ' / ' . $sh . ' / ' . $mc;
+                    return $tg . '-' . $sh . '-' . $mc;
                 }
             ];
         }
@@ -509,7 +527,7 @@ $gridColumns[] = [
         $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
             ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
             ->exists();
-        if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at)) {
+        if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16])) {
             return ['style' => 'background-color: #fffde7 !important; color: #333333 !important; font-weight: bold; text-align: center;'];
         }
         return [];
@@ -688,7 +706,7 @@ $columnToggleDropdown .= '</ul></div>';
             $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
                 ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
                 ->exists();
-            if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at)) {
+            if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16])) {
                 $isPackFilled = true;
             }
 
@@ -806,17 +824,25 @@ $columnToggleDropdown .= '</ul></div>';
                     $html .= '<td colspan="4" class="col-note-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
                     
                     // Metadata block
-                    $tglKirimVal = $formatIndoDate($model->wo->tgl_kirim);
-                    $handVal = $model->wo->handling ? $model->wo->handling->name : '-';
-                    $tFinishVal = \Yii::$app->formatter->asDecimal($model->wo->colorQtyFinish, 1) .'M / '. \Yii::$app->formatter->asDecimal($model->wo->colorQtyFinishToYard, 1).'Y';
-                    $panjangVal = \Yii::$app->formatter->asDecimal($model->wo->colorQtyBatchToMeter) . ' M';
+                    $cleanNum = function($val) {
+                        return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+                    };
+                    $tglKirimRaw = $formatIndoDate($model->wo->tgl_kirim);
+                    $handRaw = $model->wo->handling ? $model->wo->handling->name : '-';
+                    $tFinishRaw = \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinish), 1) .'M / '. \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinishToYard), 1).'Y';
+                    $panjangRaw = \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyBatchToMeter)) . ' M';
+                    
+                    $tglKirimVal = ($tglKirimRaw !== '' && $tglKirimRaw !== null) ? \yii\helpers\Html::encode($tglKirimRaw) : null;
+                    $handVal = ($handRaw !== '' && $handRaw !== null) ? \yii\helpers\Html::encode($handRaw) : null;
+                    $tFinishVal = ($tFinishRaw !== '' && $tFinishRaw !== null) ? '<span style="color: #6a1b9a;">' . \yii\helpers\Html::encode($tFinishRaw) . '</span>' : null;
+                    $panjangVal = ($panjangRaw !== '' && $panjangRaw !== null) ? '<span style="color: #00695c;">' . \yii\helpers\Html::encode($panjangRaw) . '</span>' : null;
                     
                     $metaStr = implode(', ', array_filter([$tglKirimVal, $handVal, $tFinishVal, $panjangVal], function($val) {
                         return $val !== '' && $val !== null;
                     }));
 
                     $html .= '<div style="font-size: 11px; margin-bottom: 5px; line-height: 1.5; color: #555; font-weight: bold;">';
-                    $html .= \yii\helpers\Html::encode($metaStr);
+                    $html .= $metaStr;
                     $html .= '</div>';
                     
                     if (!empty($note)) {
