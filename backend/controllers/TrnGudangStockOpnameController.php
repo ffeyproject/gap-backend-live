@@ -831,6 +831,136 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
+    public function actionMigrasiWjl()
+    {
+        $greige_id = Yii::$app->request->post('greige_id');
+        if (empty($greige_id)) {
+            Yii::$app->session->setFlash('error', 'Motif (Greige) harus dipilih.');
+            return $this->redirect(['index-duplicate']);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $mstGreige = MstGreige::findOne($greige_id);
+            if (!$mstGreige) {
+                throw new \Exception("Motif tidak ditemukan.");
+            }
+
+            $opnameIdsQuery = TrnStockGreigeOpname::find()
+                ->select('stock_greige_id')
+                ->where(['greige_id' => $greige_id])
+                ->andWhere(['not', ['stock_greige_id' => null]]);
+
+            // Cari semua stock greige WJL dengan greige_id tsb yang VALID dan TIDAK ADA di opname
+            $stocksToOut = TrnStockGreige::find()
+                ->where([
+                    'greige_id' => $greige_id,
+                    'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
+                    'status' => TrnStockGreige::STATUS_VALID
+                ])
+                ->andWhere(['not in', 'id', $opnameIdsQuery])
+                ->all();
+
+            $count = 0;
+            $totalQty = 0;
+
+            foreach ($stocksToOut as $stock) {
+                $stock->status = TrnStockGreige::STATUS_KELUAR_GUDANG;
+                $stock->note = ($stock->note ? $stock->note . ', ' : '') . 'Migrasi WJL - Keluar otomatis karena tidak ada di stock opname';
+                if (!$stock->save(false, ['status', 'note'])) {
+                    throw new \Exception("Gagal update status TrnStockGreige ID: {$stock->id}");
+                }
+                $count++;
+                $totalQty += (float)$stock->panjang_m;
+            }
+
+            // Recalculate actual stock based on TrnStockGreige directly to ensure 100% accuracy
+            $actualStock = TrnStockGreige::find()
+                ->where([
+                    'greige_id' => $greige_id,
+                    'status' => TrnStockGreige::STATUS_VALID,
+                    'jenis_gudang' => TrnStockGreige::JG_FRESH
+                ])
+                ->sum('panjang_m');
+
+            // Available = actual stock - booked_wo
+            $mstGreige->available = (float)$actualStock - (float)$mstGreige->booked_wo;
+            
+            // Stock = actual stock + booked
+            $mstGreige->stock = (float)$actualStock + (float)$mstGreige->booked;
+            
+            if (!$mstGreige->save(false, ['stock', 'available'])) {
+                throw new \Exception("Gagal update stok MstGreige");
+            }
+
+            // Simpan history migrasi
+            $history = new \common\models\ar\HistoryMigrasiWjl();
+            $history->greige_id = $greige_id;
+            $history->total_qty_out = $totalQty;
+            $history->jumlah_roll_out = $count;
+            $history->created_at = time();
+            $history->created_by = Yii::$app->user->id ?? null;
+            if (!$history->save(false)) {
+                throw new \Exception("Gagal menyimpan history migrasi");
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', "Proses migrasi untuk motif {$mstGreige->nama_kain} berhasil. {$count} data stock greige diubah menjadi OUT dengan total qty {$totalQty}.");
+
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', "Gagal proses migrasi: " . $e->getMessage());
+        }
+
+        return $this->redirect(['index-duplicate']);
+    }
+
+    public function actionHistoryMigrasiWjl()
+    {
+        if (Yii::$app->request->isAjax) {
+            $query = \common\models\ar\HistoryMigrasiWjl::find()
+                ->joinWith(['greige']) 
+                ->orderBy(['created_at' => SORT_DESC]);
+
+            $dataProvider = new \yii\data\ActiveDataProvider([
+                'query' => $query,
+                'pagination' => ['pageSize' => 50],
+            ]);
+
+            return $this->renderAjax('history-migrasi-wjl', [
+                'dataProvider' => $dataProvider,
+            ]);
+        }
+        throw new \yii\web\ForbiddenHttpException('Hanya AJAX request yang diizinkan.');
+    }
+
+    public function actionLookupGreigeWjl($q = null, $id = null)
+    {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => ['id' => '', 'text' => '']];
+        if (!is_null($q)) {
+            $query = new \yii\db\Query;
+            $query->select([
+                    'mst_greige.id', 
+                    "CONCAT(mst_greige.nama_kain, ' (Alias: ', COALESCE(mst_greige.alias, '-'), ')') AS text"
+                ])
+                ->from('mst_greige')
+                ->innerJoin('trn_stock_greige_opname', 'trn_stock_greige_opname.greige_id = mst_greige.id')
+                ->where(['trn_stock_greige_opname.asal_greige' => \common\models\ar\TrnStockGreige::ASAL_GREIGE_WJL])
+                ->andWhere(['ilike', 'mst_greige.nama_kain', $q])
+                ->distinct()
+                ->limit(20);
+            $command = $query->createCommand();
+            $data = $command->queryAll();
+            $out['results'] = array_values($data);
+        }
+        elseif ($id > 0) {
+            $model = \common\models\ar\MstGreige::findOne($id);
+            $out['results'] = ['id' => $id, 'text' => $model->nama_kain . ' (Alias: ' . ($model->alias ?? '-') . ')'];
+        }
+        return $out;
+    }
+
     public function actionLaporanGreigeOpname()
     {
         $query = (new \yii\db\Query())

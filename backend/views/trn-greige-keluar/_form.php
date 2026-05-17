@@ -8,6 +8,8 @@ use kartik\widgets\Select2;
 use yii\helpers\Html;
 use kartik\widgets\ActiveForm;
 use yii\web\View;
+use yii\web\JsExpression;
+use yii\helpers\Url;
 
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\TrnGreigeKeluar */
@@ -49,14 +51,35 @@ if (!$model->isNewRecord) {
                 <div class="box-body">
 
                     <?= $form->field($model, 'jenis')->widget(Select2::classname(), [
-                        'data' => array_filter(TrnGreigeKeluar::jenisOptions(), function ($key) {
-                            return $key !== TrnGreigeKeluar::JENIS_MAKLOON;
-                        }, ARRAY_FILTER_USE_KEY),
+                        'data' => TrnGreigeKeluar::jenisOptions(),
                         'options' => ['placeholder' => 'Pilih ...'],
                         'pluginOptions' => [
                             'allowClear' => true,
                         ],
                     ]) ?>
+
+                    <?php
+                    $wo = $model->wo_id === null ? '' : $model->wo->no;
+                    echo $form->field($model, 'wo_id')->widget(Select2::class, [
+                        'initValueText' => $wo, // set the initial display text
+                        'options' => ['placeholder' => 'Cari WO...', 'id' => 'select-wo'],
+                        'pluginOptions' => [
+                            'allowClear' => true,
+                            'minimumInputLength' => 3,
+                            'language' => [
+                                'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+                            ],
+                            'ajax' => [
+                                'url' => Url::to(['ajax/lookup-wo-makloon']),
+                                'dataType' => 'json',
+                                'data' => new JsExpression('function(params) { return {q:params.term}; }')
+                            ],
+                            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+                            'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
+                            'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
+                        ],
+                    ])->label('Nomor Working Order');
+                    ?>
 
                     <?= $form->field($model, 'destinasi')->textInput(['maxlength' => true]) ?>
 

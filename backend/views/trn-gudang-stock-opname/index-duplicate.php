@@ -4,6 +4,10 @@ use yii\helpers\Html;
 use kartik\grid\GridView;
 use yii\widgets\Pjax;
 use yii\widgets\ActiveForm;
+use yii\bootstrap\Modal;
+use kartik\widgets\Select2;
+use yii\web\JsExpression;
+use yii\helpers\Url;
 
 $this->title = 'Data Duplikasi Stock Greige Opname';
 $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
@@ -21,19 +25,103 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
 
     <?= Html::hiddenInput('ids', '', ['id' => 'bulk-duplicate-ids']) ?>
 
-    <p>
-        <?= Html::button('<i class="glyphicon glyphicon-plus"></i> Migrasi Ke Stock', [
+    <div class="alert alert-info">
+        <h4><i class="glyphicon glyphicon-info-sign"></i> Panduan Penggunaan Migrasi Stock</h4>
+        <ol>
+            <li>Check terlebih dahulu stock greige dan available pada master greige yang akan di migrasi. (Cek di halaman <?= Html::a('Master Greige', ['/mst-greige/index'], ['target' => '_blank', 'class' => 'alert-link']) ?>)</li>
+            <li>Klik button Migrasi sesuai dengan asal greigenya.</li>
+            <li>Pilih greige yang akan di migrasi sesuai dengan nomer 1.</li>
+            <li>Klik button "Proses Migrasi" pada pop-up. Setelah proses selesai, refresh halaman Master Greige (pada point nomer 1) maka data Stock dan Available akan berubah menyesuaikan.</li>
+            <li>Check history migrasi untuk memastikan greige yang sudah di migrasi.</li>
+        </ol>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <!-- <?= Html::button('<i class="glyphicon glyphicon-plus"></i> Migrasi Ke Stock', [
             'class' => 'btn btn-info',
             'id' => 'btn-duplicate-bulk'
-        ]) ?>
+        ]) ?> -->
 
         <?= Html::button('<i class="glyphicon glyphicon-log-out"></i> Keluar Stock Opname', [
             'class' => 'btn btn-danger',
-            'id' => 'btn-keluar-bulk'
+            'id' => 'btn-keluar-bulk',
+            'style' => 'margin-right: 5px;'
         ]) ?>
-    </p>
+
+        <div class="btn-group" role="group">
+            <?= Html::button('<i class="glyphicon glyphicon-random"></i> Migrasi Stock Water Jet Loom', [
+                'class' => 'btn btn-warning',
+                'id' => 'btn-migrasi-wjl',
+                'data-toggle' => 'modal',
+                'data-target' => '#modal-migrasi-wjl',
+            ]) ?>
+
+            <?= Html::button('<i class="glyphicon glyphicon-time"></i> History Migrasi Wjl', [
+                'class' => 'btn btn-default',
+                'id' => 'btn-history-migrasi',
+                'data-toggle' => 'modal',
+                'data-target' => '#modal-history-migrasi',
+            ]) ?>
+        </div>
+    </div>
 
     <?php ActiveForm::end(); ?>
+
+    <?php
+    Modal::begin([
+        'id' => 'modal-migrasi-wjl',
+        'header' => '<h4>Migrasi Stock Water Jet Loom</h4>',
+        'options' => [
+            'tabindex' => false, // important for Select2 to work inside modal
+        ],
+    ]);
+    
+    $formMigrasi = ActiveForm::begin([
+        'id' => 'form-migrasi-wjl',
+        'action' => ['migrasi-wjl'],
+        'method' => 'post',
+    ]);
+    
+    echo '<div class="form-group">';
+    echo '<label>Nama Motif (Greige) Water Jet Loom</label>';
+    echo Select2::widget([
+        'name' => 'greige_id',
+        'options' => ['placeholder' => 'Cari Motif (Greige)...', 'id' => 'migrasi-greige-id'],
+        'pluginOptions' => [
+            'allowClear' => true,
+            'minimumInputLength' => 3,
+            'language' => [
+                'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+            ],
+            'ajax' => [
+                'url' => Url::to(['lookup-greige-wjl']),
+                'dataType' => 'json',
+                'data' => new JsExpression('function(params) { return {q:params.term}; }')
+            ],
+            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+            'templateResult' => new JsExpression('function(greige) { return greige.text; }'),
+            'templateSelection' => new JsExpression('function (greige) { return greige.text; }'),
+        ],
+    ]);
+    echo '</div>';
+    
+    echo '<div class="form-group">';
+    echo Html::submitButton('Proses Migrasi', ['class' => 'btn btn-success', 'data-confirm' => 'Yakin ingin memproses migrasi untuk motif ini?']);
+    echo '</div>';
+    
+    ActiveForm::end();
+    Modal::end();
+    ?>
+
+    <?php
+    Modal::begin([
+        'id' => 'modal-history-migrasi',
+        'header' => '<h4>History Migrasi Stock Water Jet Loom</h4>',
+        'size' => Modal::SIZE_LARGE,
+    ]);
+    echo '<div id="history-migrasi-content"><div class="text-center"><i class="glyphicon glyphicon-refresh glyphicon-spin"></i> Loading...</div></div>';
+    Modal::end();
+    ?>
 
     <?php Pjax::begin(['id' => 'StockGreigeOpnameGrid-pjax']); ?>
     <?= GridView::widget([
@@ -52,6 +140,19 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
             'after'=>false,
         ],
         'showPageSummary'=>true,
+        'rowOptions' => function ($model, $key, $index, $grid) {
+            static $migratedGreigeIds = null;
+            if ($migratedGreigeIds === null) {
+                $migratedGreigeIds = \common\models\ar\HistoryMigrasiWjl::find()
+                    ->select('greige_id')
+                    ->column();
+            }
+            
+            if (in_array($model->greige_id, $migratedGreigeIds)) {
+                return ['class' => 'info']; 
+            }
+            return [];
+        },
         'columns' => [
             [
                 'class' => 'kartik\grid\CheckboxColumn',
@@ -170,6 +271,7 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
 // JS;
 // $this->registerJs($js);
 
+$historyUrl = \yii\helpers\Url::to(['history-migrasi-wjl']);
 $js = <<<JS
 $('#btn-duplicate-bulk').on('click', function() {
     var keys = $('#StockGreigeOpnameGrid').yiiGridView('getSelectedRows');
@@ -193,6 +295,10 @@ $('#btn-keluar-bulk').on('click', function() {
         $('#bulk-duplicate-ids').val(keys.join(','));
         $('#bulk-duplicate-form').attr('action', 'keluar-bulk').submit();
     }
+});
+
+$('#modal-history-migrasi').on('show.bs.modal', function (e) {
+    $('#history-migrasi-content').load('{$historyUrl}');
 });
 JS;
 $this->registerJs($js);

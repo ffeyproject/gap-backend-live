@@ -68,9 +68,9 @@ class TrnGreigeKeluarController extends Controller
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         
         //filter $dataProvider untuk memunculkan hanya TrnGreigeKeluar Makloon saja
-        if (!empty($dataProvider)) {
-            $dataProvider->query->andFilterWhere(['!=', 'jenis', TrnGreigeKeluar::JENIS_MAKLOON]);
-        }
+        // if (!empty($dataProvider)) {
+        //     $dataProvider->query->andFilterWhere(['!=', 'jenis', TrnGreigeKeluar::JENIS_MAKLOON]);
+        // }
 
         return $this->render('index', [
             'searchModel' => $searchModel,
