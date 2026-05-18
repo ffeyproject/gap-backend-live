@@ -87,9 +87,6 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
 
             [['note'], 'string'],
             [['no', 'destinasi', 'no_referensi'], 'string', 'max' => 255],
-            ['wo_id', 'required', 'when' => function($model) {
-                return $model->jenis === self::JENIS_MAKLOON;
-            }],
         ];
     }
 
