@@ -910,6 +910,73 @@ class TrnStockGreigeController extends Controller
         }
     }
 
+    public function actionDuplicateRetur()
+    {
+        if (!Yii::$app->request->isAjax || !Yii::$app->request->isPost) {
+            throw new \yii\web\ForbiddenHttpException('Method tidak diizinkan.');
+        }
+
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $ids = Yii::$app->request->post('ids', []);
+
+        if (empty($ids)) {
+            throw new \yii\web\BadRequestHttpException('Tidak ada item yang dipilih.');
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $updatedCount = 0;
+            foreach ($ids as $id) {
+                $stock = TrnStockGreige::findOne($id);
+                if (!$stock) {
+                    continue;
+                }
+
+                // Cek status stock fresh harus VALID (value = 2)
+                if ($stock->status != TrnStockGreige::STATUS_VALID) {
+                    continue;
+                }
+
+                // Cari stock opname terkait
+                $opname = \common\models\ar\TrnStockGreigeOpname::find()
+                    ->where(['stock_greige_id' => $stock->id])
+                    ->one();
+
+                // Jika stock opname ditemukan dan statusnya OUT / KELUAR_GUDANG (value = 5) atau status != VALID (value = 2)
+                if ($opname) {
+                    if ($opname->status == \common\models\ar\TrnStockGreigeOpname::STATUS_KELUAR_GUDANG || $opname->status != \common\models\ar\TrnStockGreigeOpname::STATUS_VALID) {
+                        $oldStatus = $opname->status;
+                        $opname->status = \common\models\ar\TrnStockGreigeOpname::STATUS_VALID;
+                        $opname->note = 'hasil retur kartu proses';
+                        if ($opname->save(false)) {
+                            // Update field stock_opname di MstGreige jika statusnya berubah dari non-valid ke valid
+                            if ($oldStatus != \common\models\ar\TrnStockGreigeOpname::STATUS_VALID) {
+                                $mstGreige = \common\models\ar\MstGreige::findOne($stock->greige_id);
+                                if ($mstGreige) {
+                                    $mstGreige->stock_opname = (float)$mstGreige->stock_opname + (float)$stock->panjang_m;
+                                    $mstGreige->save(false, ['stock_opname']);
+                                }
+                            }
+                            $updatedCount++;
+                        }
+                    }
+                }
+            }
+
+            $transaction->commit();
+            return [
+                'success' => true,
+                'message' => "Berhasil memproses $updatedCount data stock opname menjadi VALID."
+            ];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
 
   public function actionEditQty($ids)
 {

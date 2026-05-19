@@ -399,6 +399,74 @@ function duplicateStock(event) {
   }
 }
 
+function duplicateRetur(event) {
+  event.preventDefault();
+  let button = $(event.currentTarget);
+  let href = button.attr("href");
+
+  // Ambil checkbox yang terpilih
+  let keys = $("#StockGreigeGrid").yiiGridView("getSelectedRows");
+
+  if (keys.length > 0) {
+    $.confirm({
+      columnClass: "medium",
+      title: "Duplikat Stock Opname Stock Retur!",
+      content:
+        "Apakah Anda yakin ingin memproses stock opname dari data yang dipilih menjadi VALID?",
+      buttons: {
+        ya: {
+          btnClass: "btn-red",
+          action: function () {
+            $.ajax({
+              method: "POST",
+              beforeSend: function () {
+                $.blockUI({
+                  message: "<h1>Processing...</h1>",
+                  css: { border: "3px solid #a00" },
+                });
+              },
+              data: { ids: keys },
+              url: href,
+              error: function (jqXHR) {
+                $.unblockUI();
+                let errorObj;
+                try {
+                  errorObj = jQuery.parseJSON(jqXHR.responseText);
+                } catch (e) {
+                  errorObj = { name: "Error", message: jqXHR.responseText };
+                }
+                $.alert({ title: errorObj.name, content: errorObj.message });
+              },
+              success: function (response) {
+                $.unblockUI();
+                if (response.success) {
+                  $.alert({
+                    title: "Berhasil",
+                    content: response.message,
+                    buttons: {
+                      ok: function () {
+                        location.reload();
+                      },
+                    },
+                  });
+                } else {
+                  $.alert({
+                    title: "Gagal",
+                    content: response.message
+                  });
+                }
+              },
+            });
+          },
+        },
+        batal: function () {},
+      },
+    });
+  } else {
+    $.alert({ title: "Peringatan!", content: "Tidak ada item yang dipilih." });
+  }
+}
+
 function editQtyStock(event) {
   event.preventDefault();
   var keys = $("#StockGreigeGrid").yiiGridView("getSelectedRows");

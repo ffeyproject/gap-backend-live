@@ -82,6 +82,12 @@ echo AjaxModal::widget([
                     'onclick' => 'duplicateStock(event);',
                     'title' => 'Duplikat Stock ke Stock Opname'
                 ]).
+                Html::a('<i class="glyphicon glyphicon-duplicate"></i> Duplikat Stock Opname Stock Retur', ['duplicate-retur'], [
+                    'class' => 'btn btn-danger',
+                    'style' => 'margin-right:5px;',
+                    'onclick' => 'duplicateRetur(event);',
+                    'title' => 'Duplikat Stock Opname Stock Retur'
+                ]).
                 Html::a('<i class="glyphicon glyphicon-edit"></i> Edit Qty Stock & Opname', ['edit-qty'], [
                     'class' => 'btn btn-warning',
                     'style' => 'margin-right:5px;',
