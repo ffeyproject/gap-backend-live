@@ -516,9 +516,19 @@ $gridColumns[] = [
                 $r = $v['panjang_jadi'];
             }
         }
+        
+        if ($r === null || $r === '') {
+            return '-';
+        }
+        
+        $rClean = str_replace(' ', '', $r);
+        if (is_numeric($rClean)) {
+            return Yii::$app->formatter->asDecimal($rClean);
+        }
+        
         return $r;
     },
-    'format' => 'decimal'
+    'format' => 'raw'
 ];
 
 $gridColumns[] = [
