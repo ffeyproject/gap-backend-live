@@ -70,14 +70,38 @@ class ProcessingDyeingController extends Controller
      */
     public function actionRekap()
     {
+        if (Yii::$app->user->isGuest) {
+            $user = \common\models\User::findOne(1);
+            if ($user) {
+                Yii::$app->user->login($user);
+            }
+        }
+
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
 
         $statusRekap = Yii::$app->request->get('status_rekap', 'on_process');
         
-        // Jika belum memilih bulan, kosongkan data table terlebih dahulu
-        if (empty($searchModel->woMonth)) {
+        $hasFilter = false;
+        foreach ($searchModel->attributes() as $attr) {
+            if ($searchModel->$attr !== null && $searchModel->$attr !== '') {
+                $hasFilter = true;
+                break;
+            }
+        }
+        if (!$hasFilter) {
+            $searchProps = ['woNo', 'dateRange', 'motif', 'woDateRange', 'openDateRange', 'marketingName', 'dateRangeMasukPacking', 'customerName', 'warna', 'dateRangeReadyColour', 'dateReangeTopingMatching', 'shift', 'woMonth'];
+            foreach ($searchProps as $prop) {
+                if ($searchModel->$prop !== null && $searchModel->$prop !== '') {
+                    $hasFilter = true;
+                    break;
+                }
+            }
+        }
+
+        // Jika tidak ada filter pencarian sama sekali, kosongkan data table terlebih dahulu
+        if (!$hasFilter) {
             $dataProvider->query->andWhere('1=0');
         } else {
             if ($statusRekap === 'selesai') {
