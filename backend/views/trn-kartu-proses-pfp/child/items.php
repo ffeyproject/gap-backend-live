@@ -81,6 +81,10 @@ $dataProviderTubeKanan = new ActiveDataProvider([
 
                         //'id',
                         //'process_id',
+                        [
+                            'attribute' => 'stock_id',
+                            'label' => 'ID Stock',
+                        ],
                         'date:date',
                         [
                             'label' => 'No Document',
@@ -191,6 +195,10 @@ $dataProviderTubeKanan = new ActiveDataProvider([
 
                         //'id',
                         //'process_id',
+                        [
+                            'attribute' => 'stock_id',
+                            'label' => 'ID Stock',
+                        ],
                         'date:date',
                         //'mesin',
                         [

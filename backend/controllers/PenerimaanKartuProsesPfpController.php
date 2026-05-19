@@ -161,6 +161,7 @@ class PenerimaanKartuProsesPfpController extends Controller
             try {
                 $totalItem = 0;
                 $totalLenngth = 0;
+                $totalOpnamePanjang = 0;
 
                 foreach ($model->trnKartuProsesPfpItems as $trnKartuProsesPfpItem) {
                     $stockItem = $trnKartuProsesPfpItem->stock;
@@ -170,19 +171,33 @@ class PenerimaanKartuProsesPfpController extends Controller
                         throw new HttpException(500, 'Gagal, coba lagi.');
                     }
 
-                    // ✅ Tambahan logika untuk stock_opname
-                    $mstGreige = MstGreige::findOne($stockItem->greige_id);
+                    // Cari stock opname terkait
+                    $opname = \common\models\ar\TrnStockGreigeOpname::findOne(['stock_greige_id' => $stockItem->id]);
+                    if ($opname !== null) {
+                        $oldOpnameStatus = $opname->status;
+                        $opname->status = \common\models\ar\TrnStockGreigeOpname::STATUS_VALID;
+                        if ($opname->save(false)) {
+                            if ($oldOpnameStatus != \common\models\ar\TrnStockGreigeOpname::STATUS_VALID) {
+                                $totalOpnamePanjang += (float)$trnKartuProsesPfpItem->panjang_m;
+                            }
+                        }
+                    }
+
+                    $totalItem++;
+                    $totalLenngth += $trnKartuProsesPfpItem->panjang_m;
+                }
+
+                // ✅ Tambahkan kembali ke stok opname di MstGreige jika ada item opname yang kembali valid
+                if ($totalOpnamePanjang > 0) {
+                    $mstGreige = MstGreige::findOne($model->greige_id);
                     if ($mstGreige !== null) {
-                        $newStockOpname = (float)$mstGreige->stock_opname + (float)$stockItem->panjang_m;
+                        $newStockOpname = (float)$mstGreige->stock_opname + (float)$totalOpnamePanjang;
                         Yii::$app->db->createCommand()->update(
                             MstGreige::tableName(),
                             ['stock_opname' => $newStockOpname],
                             ['id' => $mstGreige->id]
                         )->execute();
                     }
-
-                    $totalItem++;
-                    $totalLenngth += $trnKartuProsesPfpItem->panjang_m;
                 }
 
                 $model->status = $model::STATUS_DRAFT;

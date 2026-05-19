@@ -185,6 +185,7 @@ class PenerimaanKartuProsesDyeingController extends Controller
             $transaction = Yii::$app->db->beginTransaction();
             try {
                 $totalPanjang = 0;
+                $totalOpnamePanjang = 0;
                 foreach ($model->trnKartuProsesDyeingItems as $trnKartuProsesDyeingItem) {
                     $stockItem = $trnKartuProsesDyeingItem->stock;
                     $stockItem->status = $stockItem::STATUS_VALID;
@@ -194,6 +195,31 @@ class PenerimaanKartuProsesDyeingController extends Controller
                     }
 
                     $totalPanjang += $trnKartuProsesDyeingItem->panjang_m;
+
+                    // Cari stock opname terkait
+                    $opname = \common\models\ar\TrnStockGreigeOpname::findOne(['stock_greige_id' => $stockItem->id]);
+                    if ($opname !== null) {
+                        $oldOpnameStatus = $opname->status;
+                        $opname->status = \common\models\ar\TrnStockGreigeOpname::STATUS_VALID;
+                        if ($opname->save(false)) {
+                            if ($oldOpnameStatus != \common\models\ar\TrnStockGreigeOpname::STATUS_VALID) {
+                                $totalOpnamePanjang += (float)$trnKartuProsesDyeingItem->panjang_m;
+                            }
+                        }
+                    }
+                }
+
+                // ✅ Tambahkan kembali ke stok opname di MstGreige jika ada item opname yang kembali valid
+                if ($totalOpnamePanjang > 0) {
+                    $mstGreige = MstGreige::findOne($model->wo->greige_id);
+                    if ($mstGreige !== null) {
+                        $newStockOpname = (float)$mstGreige->stock_opname + (float)$totalOpnamePanjang;
+                        Yii::$app->db->createCommand()->update(
+                            MstGreige::tableName(),
+                            ['stock_opname' => $newStockOpname],
+                            ['id' => $mstGreige->id]
+                        )->execute();
+                    }
                 }
 
                 $model->status = $model::STATUS_DRAFT;
@@ -267,17 +293,6 @@ class PenerimaanKartuProsesDyeingController extends Controller
                 if(!$flag = $command->execute() > 0){
                     $transaction->rollBack();
                     throw new HttpException(500, 'Gagal, coba lagi.');
-                }
-                
-                // ✅ Tambahkan kembali stok opname
-                $mstGreige = MstGreige::findOne($greigeId);
-                if ($mstGreige !== null) {
-                    $newStockOpname = (float)$mstGreige->stock_opname + (float)$totalPanjang;
-                    Yii::$app->db->createCommand()->update(
-                        MstGreige::tableName(),
-                        ['stock_opname' => $newStockOpname],
-                        ['id' => $mstGreige->id]
-                    )->execute();
                 }
 
                 if($flag){
