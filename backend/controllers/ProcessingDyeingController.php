@@ -70,13 +70,6 @@ class ProcessingDyeingController extends Controller
      */
     public function actionRekap()
     {
-        if (Yii::$app->user->isGuest) {
-            $user = \common\models\User::findOne(1);
-            if ($user) {
-                Yii::$app->user->login($user);
-            }
-        }
-
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
@@ -114,15 +107,17 @@ class ProcessingDyeingController extends Controller
             } elseif ($statusRekap === 'on_process') {
                 $dataProvider->query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
             } elseif ($statusRekap === 'semua') {
-                $dataProvider->pagination = false;
-                $models = $dataProvider->getModels();
-                $models = $this->appendMissingWoColors($models, $searchModel);
-                $dataProvider = new \yii\data\ArrayDataProvider([
-                    'allModels' => $models,
-                    'pagination' => [
-                        'pageSize' => 20,
-                    ],
-                ]);
+                if (!empty($searchModel->woMonth)) {
+                    $dataProvider->pagination = false;
+                    $models = $dataProvider->getModels();
+                    $models = $this->appendMissingWoColors($models, $searchModel);
+                    $dataProvider = new \yii\data\ArrayDataProvider([
+                        'allModels' => $models,
+                        'pagination' => [
+                            'pageSize' => 20,
+                        ],
+                    ]);
+                }
             }
         }
 
@@ -2175,7 +2170,7 @@ class ProcessingDyeingController extends Controller
         $woMonthStr = "{$currentYear}-{$searchModel->woMonth}";
         
         $woColorsQuery = \common\models\ar\TrnWoColor::find()
-            ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust'])
+            ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust', 'wo.sc.marketing mkt'])
             ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]));
             
         if (!empty($searchModel->woNo)) {
@@ -2189,6 +2184,18 @@ class ProcessingDyeingController extends Controller
         }
         if (!empty($searchModel->customerName)) {
             $woColorsQuery->andFilterWhere(['ilike', 'mst_customer.cust_no', $searchModel->customerName]);
+        }
+        if (!empty($searchModel->woDateRange)) {
+            $from_date = substr($searchModel->woDateRange, 0, 10);
+            $to_date = substr($searchModel->woDateRange, 14);
+            if ($from_date == $to_date) {
+                $woColorsQuery->andFilterWhere(['trn_wo.date' => $from_date]);
+            } else {
+                $woColorsQuery->andFilterWhere(['between', 'trn_wo.date', $from_date, $to_date]);
+            }
+        }
+        if (!empty($searchModel->marketingName)) {
+            $woColorsQuery->andFilterWhere(['ilike', 'mkt.full_name', $searchModel->marketingName]);
         }
         
         $woColors = $woColorsQuery->all();
