@@ -71,10 +71,16 @@ class ProcessingDyeingController extends Controller
     public function actionRekap()
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
+        
+        $queryParams = Yii::$app->request->queryParams;
+        if (!isset($queryParams['TrnKartuProsesDyeingSearch']['woMonth']) && !isset($queryParams['TrnKartuProsesDyeingSearch'])) {
+            $queryParams['TrnKartuProsesDyeingSearch']['woMonth'] = date('m');
+        }
+        
+        $dataProvider = $searchModel->search($queryParams);
+        $dataProvider->sort->defaultOrder = ['wo_id' => SORT_DESC];
 
-        $statusRekap = Yii::$app->request->get('status_rekap', 'on_process');
+        $statusRekap = Yii::$app->request->get('status_rekap', 'semua');
         
         $hasFilter = false;
         foreach ($searchModel->attributes() as $attr) {
@@ -115,6 +121,18 @@ class ProcessingDyeingController extends Controller
                         'allModels' => $models,
                         'pagination' => [
                             'pageSize' => 20,
+                        ],
+                        'sort' => [
+                            'attributes' => [
+                                'wo_id',
+                                'woNo' => [
+                                    'asc' => ['woNo' => SORT_ASC],
+                                    'desc' => ['woNo' => SORT_DESC],
+                                ],
+                            ],
+                            'defaultOrder' => [
+                                'wo_id' => SORT_DESC,
+                            ]
                         ],
                     ]);
                 }
@@ -2201,7 +2219,7 @@ class ProcessingDyeingController extends Controller
         $woColors = $woColorsQuery->all();
         
         foreach ($woColors as $mc) {
-            $targetQty = (int) $mc->qty;
+            $targetQty = ceil((float) $mc->qty);
             if ($targetQty <= 0) continue;
             
             $existingCount = \common\models\ar\TrnKartuProsesDyeing::find()
