@@ -105,8 +105,24 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
     ]);
     echo '</div>';
     
+    echo '<div id="migrasi-wjl-preview" style="display:none; margin-bottom:15px; padding: 10px; border: 1px solid #faebcc; border-radius: 4px; background-color: #fcf8e3; color: #8a6d3b;">
+        <strong><i class="glyphicon glyphicon-eye-open"></i> Jejak Perhitungan (Preview):</strong><br/>
+        Stock Opname saat ini (Duplikat): <b id="preview-opname-count">0</b> roll (<b id="preview-opname-qty">0</b> M).<br/>
+        Akan memigrasi/mengeluarkan <b id="preview-out-count">0</b> roll (<b id="preview-out-qty">0</b> M) stock lama.<br/>
+        <table class="table table-condensed" style="margin-top:10px; margin-bottom:0; background:transparent;">
+            <tr>
+                <th style="border-top:none;">Stock:</th>
+                <td style="border-top:none;"><s id="preview-old-stock" class="text-danger">0</s> &nbsp;&rarr;&nbsp; <b id="preview-new-stock" class="text-success">0</b></td>
+            </tr>
+            <tr>
+                <th style="border-top:none;">Available:</th>
+                <td style="border-top:none;"><s id="preview-old-avail" class="text-danger">0</s> &nbsp;&rarr;&nbsp; <b id="preview-new-avail" class="text-success">0</b></td>
+            </tr>
+        </table>
+    </div>';
+
     echo '<div class="form-group">';
-    echo Html::submitButton('Proses Migrasi', ['class' => 'btn btn-success', 'data-confirm' => 'Yakin ingin memproses migrasi untuk motif ini?']);
+    echo Html::submitButton('Proses Migrasi', ['class' => 'btn btn-success', 'data-confirm' => 'Yakin ingin memproses migrasi untuk motif ini?', 'id' => 'btn-proses-migrasi-wjl']);
     echo '</div>';
     
     ActiveForm::end();
@@ -272,6 +288,7 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
 // $this->registerJs($js);
 
 $historyUrl = \yii\helpers\Url::to(['history-migrasi-wjl']);
+$predictUrl = \yii\helpers\Url::to(['predict-migrasi-wjl']);
 $js = <<<JS
 $('#btn-duplicate-bulk').on('click', function() {
     var keys = $('#StockGreigeOpnameGrid').yiiGridView('getSelectedRows');
@@ -300,6 +317,50 @@ $('#btn-keluar-bulk').on('click', function() {
 $('#modal-history-migrasi').on('show.bs.modal', function (e) {
     $('#history-migrasi-content').load('{$historyUrl}');
 });
+
+var predictUrl = '{$predictUrl}';
+$('#migrasi-greige-id').on('change', function() {
+    var gid = $(this).val();
+    if (!gid) {
+        $('#migrasi-wjl-preview').slideUp();
+        $('#btn-proses-migrasi-wjl').prop('disabled', true);
+        return;
+    }
+    
+    // disable while loading
+    $('#btn-proses-migrasi-wjl').prop('disabled', true);
+    
+    $.ajax({
+        url: predictUrl,
+        type: 'GET',
+        data: {greige_id: gid},
+        dataType: 'json',
+        success: function(res) {
+            if (res.error) {
+                alert(res.error);
+                $('#migrasi-wjl-preview').slideUp();
+            } else {
+                $('#preview-opname-count').text(res.opname_count);
+                $('#preview-opname-qty').text(res.opname_qty);
+                $('#preview-out-count').text(res.out_count);
+                $('#preview-out-qty').text(res.out_qty);
+                $('#preview-old-stock').text(res.old_stock);
+                $('#preview-new-stock').text(res.new_stock);
+                $('#preview-old-avail').text(res.old_available);
+                $('#preview-new-avail').text(res.new_available);
+                
+                $('#migrasi-wjl-preview').slideDown();
+                
+                $('#btn-proses-migrasi-wjl').prop('disabled', false);
+            }
+        },
+        error: function() {
+            alert('Gagal mengambil preview data.');
+            $('#btn-proses-migrasi-wjl').prop('disabled', false);
+        }
+    });
+});
+
 JS;
 $this->registerJs($js);
 ?>

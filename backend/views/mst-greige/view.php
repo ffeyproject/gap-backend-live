@@ -50,7 +50,6 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                 'updated_by',
                 'aktif:boolean',
                 'stock:decimal',
-                'stock_opname:decimal',
                 'available:decimal',
                 [
                     'value' => $model->getTotalPanjangMGudangInspect(),

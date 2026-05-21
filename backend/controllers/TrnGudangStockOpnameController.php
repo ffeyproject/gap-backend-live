@@ -831,6 +831,72 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
+    public function actionPredictMigrasiWjl($greige_id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $mstGreige = MstGreige::findOne($greige_id);
+        if (!$mstGreige) {
+            return ['error' => 'Motif tidak ditemukan.'];
+        }
+
+        $opnameIdsQuery = TrnStockGreigeOpname::find()
+            ->select('stock_greige_id')
+            ->where(['greige_id' => $greige_id])
+            ->andWhere(['not', ['stock_greige_id' => null]]);
+
+        $opnameQty = (float) TrnStockGreigeOpname::find()
+            ->where(['greige_id' => $greige_id, 'status' => TrnStockGreigeOpname::STATUS_VALID])
+            ->sum('panjang_m');
+
+        $opnameCount = (int) TrnStockGreigeOpname::find()
+            ->where(['greige_id' => $greige_id, 'status' => TrnStockGreigeOpname::STATUS_VALID])
+            ->count();
+
+        $stocksToOutQty = (float) TrnStockGreige::find()
+            ->where([
+                'greige_id' => $greige_id,
+                'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
+                'status' => TrnStockGreige::STATUS_VALID
+            ])
+            ->andWhere(['not in', 'id', $opnameIdsQuery])
+            ->sum('panjang_m');
+
+        $stocksToOutCount = (int) TrnStockGreige::find()
+            ->where([
+                'greige_id' => $greige_id,
+                'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
+                'status' => TrnStockGreige::STATUS_VALID
+            ])
+            ->andWhere(['not in', 'id', $opnameIdsQuery])
+            ->count();
+
+        $currentActualStock = (float) TrnStockGreige::find()
+            ->where([
+                'greige_id' => $greige_id,
+                'status' => TrnStockGreige::STATUS_VALID,
+                'jenis_gudang' => TrnStockGreige::JG_FRESH
+            ])
+            ->sum('panjang_m');
+
+        $predictedActualStock = $currentActualStock - $stocksToOutQty;
+
+        $predictedAvailable = $predictedActualStock - (float)$mstGreige->booked_wo;
+        $predictedStock = $predictedActualStock + (float)$mstGreige->booked;
+
+        return [
+            'success' => true,
+            'old_stock' => (float)$mstGreige->stock,
+            'old_available' => (float)$mstGreige->available,
+            'out_qty' => $stocksToOutQty,
+            'out_count' => $stocksToOutCount,
+            'opname_qty' => $opnameQty,
+            'opname_count' => $opnameCount,
+            'new_stock' => $predictedStock,
+            'new_available' => $predictedAvailable,
+        ];
+    }
+
     public function actionMigrasiWjl()
     {
         $greige_id = Yii::$app->request->post('greige_id');
@@ -894,12 +960,21 @@ class TrnGudangStockOpnameController extends Controller
             }
 
             // Simpan history migrasi
-            $history = new \common\models\ar\HistoryMigrasiWjl();
-            $history->greige_id = $greige_id;
-            $history->total_qty_out = $totalQty;
-            $history->jumlah_roll_out = $count;
-            $history->created_at = time();
-            $history->created_by = Yii::$app->user->id ?? null;
+            $history = \common\models\ar\HistoryMigrasiWjl::findOne(['greige_id' => $greige_id]);
+            if ($history) {
+                $history->total_qty_out += $totalQty;
+                $history->jumlah_roll_out += $count;
+                $history->created_at = time();
+                $history->created_by = Yii::$app->user->id ?? null;
+            } else {
+                $history = new \common\models\ar\HistoryMigrasiWjl();
+                $history->greige_id = $greige_id;
+                $history->total_qty_out = $totalQty;
+                $history->jumlah_roll_out = $count;
+                $history->created_at = time();
+                $history->created_by = Yii::$app->user->id ?? null;
+            }
+            
             if (!$history->save(false)) {
                 throw new \Exception("Gagal menyimpan history migrasi");
             }
