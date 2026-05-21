@@ -103,6 +103,26 @@ $formatProcessDate = function($dateValue) {
     return date('j/n/y', $time);
 };
 
+$groupContentOptions = function($model, $key, $index, $column) {
+    $models = $column->grid->dataProvider->getModels();
+    $currentWoId = $model->wo_id;
+    $prevWoId = $index > 0 ? $models[$index - 1]->wo_id : null;
+
+    if ($currentWoId !== $prevWoId) {
+        $rowspan = 1;
+        for ($i = $index + 1; $i < count($models); $i++) {
+            if ($models[$i]->wo_id === $currentWoId) {
+                $rowspan++;
+            } else {
+                break;
+            }
+        }
+        return ['rowspan' => $rowspan, 'style' => 'vertical-align: middle; text-align: center; background-color: #fff;'];
+    } else {
+        return ['style' => 'display: none;'];
+    }
+};
+
 $gridColumns = [
     ['class' => 'kartik\grid\SerialColumn'],
     [
@@ -129,6 +149,7 @@ $gridColumns = [
         ],
         'hAlign' => 'center',
         'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
     ],
     [
         'attribute' => 'customerName',
@@ -136,8 +157,10 @@ $gridColumns = [
         'value'=>function($data){
             return $data->sc ? $data->sc->customerCode : '';
         },
+        'format' => 'raw',
         'hAlign' => 'center',
         'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
     ],
     [
         'attribute' => 'woNo',
@@ -145,8 +168,10 @@ $gridColumns = [
         'value'=>function($data){
             return $data->wo->no;
         },
+        'format' => 'raw',
         'hAlign' => 'center',
         'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
     ],
     [
         'attribute' => 'motif',
@@ -154,8 +179,10 @@ $gridColumns = [
         'value'=>function($data){
             return $data->wo->greigeNamaKain;
         },
+        'format' => 'raw',
         'hAlign' => 'center',
         'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
     ],
 
     [

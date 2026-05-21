@@ -113,6 +113,9 @@ class ProcessingDyeingController extends Controller
             } elseif ($statusRekap === 'on_process') {
                 $dataProvider->query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
             } elseif ($statusRekap === 'semua') {
+                // Only show WO that already have a number assigned
+                $dataProvider->query->andWhere(['IS NOT', 'trn_wo.no', null])
+                    ->andWhere(['!=', 'trn_wo.no', '']);
                 if (!empty($searchModel->woMonth)) {
                     $dataProvider->pagination = false;
                     $models = $dataProvider->getModels();
@@ -1156,6 +1159,30 @@ class ProcessingDyeingController extends Controller
 
             $datas[$attr] = Yii::$app->request->post('data');
 
+            if ($attr === 'no_mesin') {
+                $machineName = trim(Yii::$app->request->post('data'));
+                if (!empty($machineName)) {
+                    $exist = \common\models\ar\MstMesinProses::findOne(['nama_mesin' => $machineName]);
+                    if ($exist === null) {
+                        $newMachine = new \common\models\ar\MstMesinProses();
+                        $newMachine->nama_mesin = $machineName;
+                        $firstMapped = \common\models\ar\MstMesinProses::find()
+                            ->innerJoin('mst_process_dyeing_mesin', 'mst_mesin_proses.id = mst_process_dyeing_mesin.mst_mesin_proses_id')
+                            ->where(['mst_process_dyeing_mesin.mst_process_dyeing_id' => $proses_id])
+                            ->one();
+                        if ($firstMapped !== null) {
+                            $newMachine->model_mesin = $firstMapped->model_mesin;
+                        }
+                        if ($newMachine->save(false)) {
+                            Yii::$app->db->createCommand()->insert('mst_process_dyeing_mesin', [
+                                'mst_process_dyeing_id' => $proses_id,
+                                'mst_mesin_proses_id' => $newMachine->id
+                            ])->execute();
+                        }
+                    }
+                }
+            }
+
             $pcModel->value = Json::encode($datas);
 
             $label = $pcModel->getAttributeLabel($attr);
@@ -1171,6 +1198,18 @@ class ProcessingDyeingController extends Controller
                 case 'stop':
                     $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$mstProcessModel->id, 'attr'=>$attr], [
                         'onclick' => 'setTimeInput(event, "Waktu '.$label.' '.$mstProcessModel->nama_proses.'");',
+                        'title' => 'Set '.$label.' '.$mstProcessModel->nama_proses
+                    ]);
+                    break;
+                case 'shift_group':
+                    $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$mstProcessModel->id, 'attr'=>$attr], [
+                        'onclick' => 'setShiftGroupInput(event, "'.$label.' '.$mstProcessModel->nama_proses.'", "'.$datas[$attr].'");',
+                        'title' => 'Set '.$label.' '.$mstProcessModel->nama_proses
+                    ]);
+                    break;
+                case 'no_mesin':
+                    $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$mstProcessModel->id, 'attr'=>$attr], [
+                        'onclick' => 'setNoMesinInput(event, "'.$label.' '.$mstProcessModel->nama_proses.'", '.$mstProcessModel->id.', "'.$datas[$attr].'");',
                         'title' => 'Set '.$label.' '.$mstProcessModel->nama_proses
                     ]);
                     break;
@@ -2189,7 +2228,9 @@ class ProcessingDyeingController extends Controller
         
         $woColorsQuery = \common\models\ar\TrnWoColor::find()
             ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust', 'wo.sc.marketing mkt'])
-            ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]));
+            ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]))
+            ->andWhere(['IS NOT', 'trn_wo.no', null])
+            ->andWhere(['!=', 'trn_wo.no', '']);
             
         if (!empty($searchModel->woNo)) {
             $woColorsQuery->andFilterWhere(['ilike', 'trn_wo.no', $searchModel->woNo]);
@@ -2261,5 +2302,144 @@ class ProcessingDyeingController extends Controller
         });
         
         return $models;
+    }
+
+    public function actionGetMachinesByProcess($process_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $process = MstProcessDyeing::findOne($process_id);
+        if ($process !== null) {
+            $machines = $process->mstMesinProseses;
+            return \yii\helpers\ArrayHelper::toArray($machines, [
+                \common\models\ar\MstMesinProses::class => ['id', 'nama_mesin']
+            ]);
+        }
+        return [];
+    }
+
+    /**
+     * Rekap Proses Mesin page
+     * @return string
+     */
+    public function actionRekapProsesMesin()
+    {
+        $mesinId = Yii::$app->request->get('mesin_id');
+        $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
+
+        // Get all unique model_mesin values for the dropdown
+        $modelMesins = \common\models\ar\MstMesinProses::find()
+            ->select('model_mesin')
+            ->distinct()
+            ->where(['not', ['model_mesin' => null]])
+            ->andWhere(['not', ['model_mesin' => '']])
+            ->orderBy(['model_mesin' => SORT_ASC])
+            ->column();
+
+        // Get machines for the selected model
+        $selectedModel = Yii::$app->request->get('model_mesin', '');
+        $machines = [];
+        if ($selectedModel) {
+            $machines = \common\models\ar\MstMesinProses::find()
+                ->where(['model_mesin' => $selectedModel])
+                ->orderBy(new \yii\db\Expression("CASE WHEN nama_mesin ~ '^[0-9]+$' THEN 0 ELSE 1 END, CASE WHEN nama_mesin ~ '^[0-9]+$' THEN CAST(nama_mesin AS INTEGER) ELSE 0 END, nama_mesin"))
+                ->all();
+        }
+
+        // Get the selected machine object
+        $mesin = null;
+        if ($mesinId) {
+            $mesin = \common\models\ar\MstMesinProses::findOne($mesinId);
+        }
+
+        // Fetch kartu proses data for the selected machine on the selected date
+        $kartuData = [];
+        $rangkumanProses = [];
+        if ($mesin) {
+            // Find kartu_process_dyeing_process entries filtered at DB level
+            $query = KartuProcessDyeingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_dyeing kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', TrnKartuProsesDyeing::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => TrnKartuProsesDyeing::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"']);
+
+            $allProcessRecords = $query->all();
+
+            foreach ($allProcessRecords as $record) {
+                $values = Json::decode($record->value);
+                if (!isset($values['no_mesin']) || $values['no_mesin'] !== $mesin->nama_mesin) {
+                    continue;
+                }
+                if (!isset($values['tanggal']) || $values['tanggal'] !== $tanggal) {
+                    continue;
+                }
+
+                $kartuProses = $record->kartuProcess;
+                $process = $record->process;
+
+                $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : '-';
+
+                $kartuData[] = [
+                    'shift_group' => $shiftGroup,
+                    'no' => $kartuProses->no,
+                    'nomor_kartu' => $kartuProses->nomor_kartu,
+                    'motif' => $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '',
+                    'nk' => $kartuProses->nomor_kartu,
+                    'pcs' => $kartuProses->berat,
+                    'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
+                    'warna' => ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '',
+                    'proses' => $process ? $process->nama_proses : '',
+                    'temp' => isset($values['temp']) ? $values['temp'] : '',
+                    'speed' => isset($values['speed']) ? $values['speed'] : '',
+                    'lebar' => isset($values['lebar_jadi']) ? $values['lebar_jadi'] : '',
+                    'berat' => $kartuProses->berat,
+                    'panjang_jadi' => isset($values['panjang_jadi']) ? $values['panjang_jadi'] : '',
+                    'wo_no' => $kartuProses->wo ? $kartuProses->wo->no : '',
+                    'kartu_proses_id' => $kartuProses->id,
+                    'process_name' => $process ? $process->nama_proses : '',
+                ];
+
+                // Build rangkuman
+                $prosesName = $process ? $process->nama_proses : 'Unknown';
+                if (!isset($rangkumanProses[$prosesName])) {
+                    $rangkumanProses[$prosesName] = ['count' => 0, 'total_panjang' => 0];
+                }
+                $rangkumanProses[$prosesName]['count']++;
+                $panjangJadi = isset($values['panjang_jadi']) ? floatval($values['panjang_jadi']) : 0;
+                $rangkumanProses[$prosesName]['total_panjang'] += $panjangJadi;
+            }
+        }
+
+        // Sort by shift group
+        $shiftOrder = ['A' => 4, 'B' => 3, 'C' => 1, 'D' => 2];
+        usort($kartuData, function ($a, $b) use ($shiftOrder) {
+            $oa = isset($shiftOrder[$a['shift_group']]) ? $shiftOrder[$a['shift_group']] : 99;
+            $ob = isset($shiftOrder[$b['shift_group']]) ? $shiftOrder[$b['shift_group']] : 99;
+            return $oa - $ob;
+        });
+
+        // Fetch hambatan for this machine on this date
+        $hambatanItems = [];
+        if ($mesin) {
+            $hambatan = \common\models\ar\TrnHambatanMesin::find()
+                ->where(['mst_mesin_proses_id' => $mesin->id, 'tanggal' => $tanggal])
+                ->one();
+            if ($hambatan) {
+                $hambatanItems = $hambatan->trnHambatanMesinItems;
+            }
+        }
+
+        return $this->render('rekap-proses-mesin', [
+            'modelMesins' => $modelMesins,
+            'selectedModel' => $selectedModel,
+            'machines' => $machines,
+            'mesinId' => $mesinId,
+            'mesin' => $mesin,
+            'tanggal' => $tanggal,
+            'kartuData' => $kartuData,
+            'rangkumanProses' => $rangkumanProses,
+            'hambatanItems' => $hambatanItems,
+        ]);
     }
 }
