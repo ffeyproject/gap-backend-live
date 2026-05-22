@@ -831,7 +831,7 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
-    public function actionPredictMigrasiWjl($greige_id)
+    public function actionPredictMigrasiWjl($greige_id, $ignore_booked_wo = 0)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
@@ -881,7 +881,9 @@ class TrnGudangStockOpnameController extends Controller
 
         $predictedActualStock = $currentActualStock - $stocksToOutQty;
 
-        $predictedAvailable = $predictedActualStock - (float)$mstGreige->booked_wo;
+        $booked_wo = $ignore_booked_wo ? 0 : (float)$mstGreige->booked_wo;
+
+        $predictedAvailable = $predictedActualStock - $booked_wo;
         $predictedStock = $predictedActualStock + (float)$mstGreige->booked;
 
         return [
@@ -900,6 +902,8 @@ class TrnGudangStockOpnameController extends Controller
     public function actionMigrasiWjl()
     {
         $greige_id = Yii::$app->request->post('greige_id');
+        $ignore_booked_wo = Yii::$app->request->post('ignore_booked_wo');
+        
         if (empty($greige_id)) {
             Yii::$app->session->setFlash('error', 'Motif (Greige) harus dipilih.');
             return $this->redirect(['index-duplicate']);
@@ -950,12 +954,15 @@ class TrnGudangStockOpnameController extends Controller
                 ->sum('panjang_m');
 
             // Available = actual stock - booked_wo
+            if ($ignore_booked_wo) {
+                $mstGreige->booked_wo = 0;
+            }
             $mstGreige->available = (float)$actualStock - (float)$mstGreige->booked_wo;
             
             // Stock = actual stock + booked
             $mstGreige->stock = (float)$actualStock + (float)$mstGreige->booked;
             
-            if (!$mstGreige->save(false, ['stock', 'available'])) {
+            if (!$mstGreige->save(false, ['stock', 'available', 'booked_wo'])) {
                 throw new \Exception("Gagal update stok MstGreige");
             }
 

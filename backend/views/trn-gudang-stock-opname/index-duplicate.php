@@ -105,6 +105,10 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
     ]);
     echo '</div>';
     
+    echo '<div class="form-group" style="margin-bottom: 15px;">';
+    echo Html::checkbox('ignore_booked_wo', false, ['id' => 'ignore-booked-wo', 'label' => 'Abaikan Nilai Booked WO (Set 0)']);
+    echo '</div>';
+    
     echo '<div id="migrasi-wjl-preview" style="display:none; margin-bottom:15px; padding: 10px; border: 1px solid #faebcc; border-radius: 4px; background-color: #fcf8e3; color: #8a6d3b;">
         <strong><i class="glyphicon glyphicon-eye-open"></i> Jejak Perhitungan (Preview):</strong><br/>
         Stock Opname saat ini (Duplikat): <b id="preview-opname-count">0</b> roll (<b id="preview-opname-qty">0</b> M).<br/>
@@ -319,8 +323,9 @@ $('#modal-history-migrasi').on('show.bs.modal', function (e) {
 });
 
 var predictUrl = '{$predictUrl}';
-$('#migrasi-greige-id').on('change', function() {
-    var gid = $(this).val();
+$('#migrasi-greige-id, #ignore-booked-wo').on('change', function() {
+    var gid = $('#migrasi-greige-id').val();
+    var ignore_booked_wo = $('#ignore-booked-wo').is(':checked') ? 1 : 0;
     if (!gid) {
         $('#migrasi-wjl-preview').slideUp();
         $('#btn-proses-migrasi-wjl').prop('disabled', true);
@@ -333,7 +338,7 @@ $('#migrasi-greige-id').on('change', function() {
     $.ajax({
         url: predictUrl,
         type: 'GET',
-        data: {greige_id: gid},
+        data: {greige_id: gid, ignore_booked_wo: ignore_booked_wo},
         dataType: 'json',
         success: function(res) {
             if (res.error) {
