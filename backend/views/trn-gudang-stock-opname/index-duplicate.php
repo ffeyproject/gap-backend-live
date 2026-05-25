@@ -107,6 +107,10 @@ $this->params['breadcrumbs'][] = 'Gudang Stock Opname > ' . $this->title;
     
     echo '<div class="form-group" style="margin-bottom: 15px;">';
     echo Html::checkbox('ignore_booked_wo', false, ['id' => 'ignore-booked-wo', 'label' => 'Abaikan Nilai Booked WO (Set 0)']);
+    echo '<span id="booked-wo-val-info" style="color:red; font-weight:bold; margin-left:10px;"></span>';
+    echo '<br/>';
+    echo Html::checkbox('ignore_booked', false, ['id' => 'ignore-booked', 'label' => 'Abaikan Nilai Booked (Set 0)']);
+    echo '<span id="booked-val-info" style="color:red; font-weight:bold; margin-left:10px;"></span>';
     echo '</div>';
     
     echo '<div id="migrasi-wjl-preview" style="display:none; margin-bottom:15px; padding: 10px; border: 1px solid #faebcc; border-radius: 4px; background-color: #fcf8e3; color: #8a6d3b;">
@@ -323,9 +327,10 @@ $('#modal-history-migrasi').on('show.bs.modal', function (e) {
 });
 
 var predictUrl = '{$predictUrl}';
-$('#migrasi-greige-id, #ignore-booked-wo').on('change', function() {
+$('#migrasi-greige-id, #ignore-booked-wo, #ignore-booked').on('change', function() {
     var gid = $('#migrasi-greige-id').val();
     var ignore_booked_wo = $('#ignore-booked-wo').is(':checked') ? 1 : 0;
+    var ignore_booked = $('#ignore-booked').is(':checked') ? 1 : 0;
     if (!gid) {
         $('#migrasi-wjl-preview').slideUp();
         $('#btn-proses-migrasi-wjl').prop('disabled', true);
@@ -338,13 +343,44 @@ $('#migrasi-greige-id, #ignore-booked-wo').on('change', function() {
     $.ajax({
         url: predictUrl,
         type: 'GET',
-        data: {greige_id: gid, ignore_booked_wo: ignore_booked_wo},
+        data: {greige_id: gid, ignore_booked_wo: ignore_booked_wo, ignore_booked: ignore_booked},
         dataType: 'json',
         success: function(res) {
             if (res.error) {
                 alert(res.error);
                 $('#migrasi-wjl-preview').slideUp();
             } else {
+                var needsRefetch = false;
+                
+                if (parseFloat(res.booked_wo) < 0) {
+                    $('#booked-wo-val-info').text('(Nilai Booked WO saat ini: ' + res.booked_wo + ')');
+                    if (!ignore_booked_wo) {
+                        $('#ignore-booked-wo').prop('checked', true);
+                        $('#ignore-booked-wo').attr('checked', 'checked');
+                        needsRefetch = true;
+                    }
+                } else {
+                    $('#booked-wo-val-info').text('');
+                }
+                
+                if (parseFloat(res.booked) < 0) {
+                    $('#booked-val-info').text('(Nilai Booked saat ini: ' + res.booked + ')');
+                    if (!ignore_booked) {
+                        $('#ignore-booked').prop('checked', true);
+                        $('#ignore-booked').attr('checked', 'checked');
+                        needsRefetch = true;
+                    }
+                } else {
+                    $('#booked-val-info').text('');
+                }
+                
+                if (needsRefetch) {
+                    setTimeout(function() {
+                        $('#migrasi-greige-id').trigger('change');
+                    }, 100);
+                    return;
+                }
+                
                 $('#preview-opname-count').text(res.opname_count);
                 $('#preview-opname-qty').text(res.opname_qty);
                 $('#preview-out-count').text(res.out_count);

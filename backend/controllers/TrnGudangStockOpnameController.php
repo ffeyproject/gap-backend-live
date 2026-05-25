@@ -831,7 +831,7 @@ class TrnGudangStockOpnameController extends Controller
         return $this->redirect(['index-duplicate']);
     }
 
-    public function actionPredictMigrasiWjl($greige_id, $ignore_booked_wo = 0)
+    public function actionPredictMigrasiWjl($greige_id, $ignore_booked_wo = 0, $ignore_booked = 0)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
@@ -882,9 +882,10 @@ class TrnGudangStockOpnameController extends Controller
         $predictedActualStock = $currentActualStock - $stocksToOutQty;
 
         $booked_wo = $ignore_booked_wo ? 0 : (float)$mstGreige->booked_wo;
+        $booked = $ignore_booked ? 0 : (float)$mstGreige->booked;
 
         $predictedAvailable = $predictedActualStock - $booked_wo;
-        $predictedStock = $predictedActualStock + (float)$mstGreige->booked;
+        $predictedStock = $predictedActualStock + $booked;
 
         return [
             'success' => true,
@@ -896,6 +897,8 @@ class TrnGudangStockOpnameController extends Controller
             'opname_count' => $opnameCount,
             'new_stock' => $predictedStock,
             'new_available' => $predictedAvailable,
+            'booked' => (float)$mstGreige->booked,
+            'booked_wo' => (float)$mstGreige->booked_wo,
         ];
     }
 
@@ -903,6 +906,7 @@ class TrnGudangStockOpnameController extends Controller
     {
         $greige_id = Yii::$app->request->post('greige_id');
         $ignore_booked_wo = Yii::$app->request->post('ignore_booked_wo');
+        $ignore_booked = Yii::$app->request->post('ignore_booked');
         
         if (empty($greige_id)) {
             Yii::$app->session->setFlash('error', 'Motif (Greige) harus dipilih.');
@@ -957,12 +961,16 @@ class TrnGudangStockOpnameController extends Controller
             if ($ignore_booked_wo) {
                 $mstGreige->booked_wo = 0;
             }
+            if ($ignore_booked) {
+                $mstGreige->booked = 0;
+            }
+            
             $mstGreige->available = (float)$actualStock - (float)$mstGreige->booked_wo;
             
             // Stock = actual stock + booked
             $mstGreige->stock = (float)$actualStock + (float)$mstGreige->booked;
             
-            if (!$mstGreige->save(false, ['stock', 'available', 'booked_wo'])) {
+            if (!$mstGreige->save(false, ['stock', 'available', 'booked_wo', 'booked'])) {
                 throw new \Exception("Gagal update stok MstGreige");
             }
 
