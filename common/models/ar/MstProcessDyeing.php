@@ -40,6 +40,11 @@ use yii\behaviors\TimestampBehavior;
 class MstProcessDyeing extends \yii\db\ActiveRecord
 {
     /**
+     * @var array Selected mesin proses IDs
+     */
+    public $mesin_proses_ids = [];
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()
@@ -65,9 +70,10 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             ['order', 'number'],
             [['order', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'use_jetblack'], 'boolean'],
-            [['use_jetblack'], 'default', 'value' => false],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'use_jetblack', 'perbaikan'], 'boolean'],
+            [['use_jetblack', 'perbaikan'], 'default', 'value' => false],
             [['nama_proses'], 'string', 'max' => 255],
+            [['mesin_proses_ids'], 'safe'],
         ];
     }
 
@@ -95,12 +101,13 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             'lebar_jadi' => 'Lebar Jadi',
             'panjang_jadi' => 'Panjang Jadi',
             'info_kualitas' => 'Info Kualitas',
-            'gangguan_produksi' => 'Gangguan Produksi',
+            'gangguan_produksi' => 'Keterangan',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
             'use_jetblack' => 'Use Jetblack',
+            'perbaikan' => 'Perbaikan',
         ];
     }
 
@@ -135,5 +142,23 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
     public function getKartuProcesses()
     {
         return $this->hasMany(TrnKartuProsesDyeing::className(), ['id' => 'kartu_process_id'])->viaTable('kartu_process_dyeing_process', ['process_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMstMesinProseses()
+    {
+        return $this->hasMany(MstMesinProses::className(), ['id' => 'mst_mesin_proses_id'])
+            ->viaTable('mst_process_dyeing_mesin', ['mst_process_dyeing_id' => 'id']);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterFind()
+    {
+        parent::afterFind();
+        $this->mesin_proses_ids = \yii\helpers\ArrayHelper::getColumn($this->mstMesinProseses, 'id');
     }
 }
