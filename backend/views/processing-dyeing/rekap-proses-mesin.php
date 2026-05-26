@@ -161,6 +161,7 @@ $this->registerCss('
                                 <li><a href="#" data-col="col-panjang-greige"><input type="checkbox" checked> Pjg Greige</a></li>
                                 <li><a href="#" data-col="col-lebar"><input type="checkbox" checked> Lebar</a></li>
                                 <li><a href="#" data-col="col-berat"><input type="checkbox" checked> Berat</a></li>
+                                <li><a href="#" data-col="col-keterangan"><input type="checkbox" checked> Keterangan</a></li>
                             </ul>
                         </div>
                         <?php if ($mesin): ?>
@@ -206,6 +207,7 @@ $this->registerCss('
                         <th class="col-panjang-greige" style="min-width: 70px;">Pjg Greige</th>
                         <th class="col-lebar" style="min-width: 60px;">Lebar</th>
                         <th class="col-berat" style="min-width: 60px;">Berat</th>
+                        <th class="col-keterangan" style="min-width: 100px;">Keterangan</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -213,7 +215,7 @@ $this->registerCss('
                     $currentShift = null;
                     $totalMc = 0;
                     if (empty($kartuData)): ?>
-                        <tr><td colspan="13" class="text-center text-muted">Tidak ada data untuk mesin dan tanggal ini.</td></tr>
+                        <tr><td colspan="14" class="text-center text-muted">Tidak ada data untuk mesin dan tanggal ini.</td></tr>
                     <?php else:
                         foreach ($kartuData as $row):
                             // Use user-defined shift mapping if available, otherwise fallback
@@ -229,7 +231,7 @@ $this->registerCss('
                             // Shift divider
                             if ($currentShift !== $row['shift_group']):
                                 if ($currentShift !== null): ?>
-                                    <tr><td colspan="13" style="height: 5px; background-color: #ddd; padding: 0;"></td></tr>
+                                    <tr><td colspan="14" style="height: 5px; background-color: #ddd; padding: 0;"></td></tr>
                                 <?php endif;
                                 $currentShift = $row['shift_group'];
                             endif;
@@ -255,6 +257,7 @@ $this->registerCss('
                             <td class="col-panjang-greige"><?= Html::encode($row['panjang_greige']) ?></td>
                             <td class="col-lebar"><?= Html::encode($row['lebar']) ?></td>
                             <td class="col-berat"><?= Html::encode($row['berat']) ?></td>
+                            <td class="col-keterangan"><?= Html::encode($row['keterangan']) ?></td>
                         </tr>
                     <?php endforeach; endif; ?>
                 </tbody>

@@ -28,6 +28,7 @@ use yii\behaviors\TimestampBehavior;
  * @property bool|null $panjang_jadi
  * @property bool|null $info_kualitas
  * @property bool|null $gangguan_produksi
+ * @property bool|null $keterangan
  * @property int|null $created_at
  * @property int|null $created_by
  * @property int|null $updated_at
@@ -70,7 +71,7 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             ['order', 'number'],
             [['order', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'use_jetblack', 'perbaikan'], 'boolean'],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_group', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'keterangan', 'use_jetblack', 'perbaikan'], 'boolean'],
             [['use_jetblack', 'perbaikan'], 'default', 'value' => false],
             [['nama_proses'], 'string', 'max' => 255],
             [['mesin_proses_ids'], 'safe'],
@@ -101,7 +102,8 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             'lebar_jadi' => 'Lebar Jadi',
             'panjang_jadi' => 'Panjang Jadi',
             'info_kualitas' => 'Info Kualitas',
-            'gangguan_produksi' => 'Keterangan',
+            'gangguan_produksi' => 'Gangguan Produksi',
+            'keterangan' => 'Keterangan',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',

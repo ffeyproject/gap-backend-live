@@ -2424,6 +2424,7 @@ class ProcessingDyeingController extends Controller
                     'berat' => $kartuProses->berat,
                     'panjang_jadi' => isset($values['panjang_jadi']) ? $values['panjang_jadi'] : '',
                     'panjang_greige' => array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m')),
+                    'keterangan' => isset($values['keterangan']) ? $values['keterangan'] : '',
                     'wo_no' => $kartuProses->wo ? $kartuProses->wo->no : '',
                     'kartu_proses_id' => $kartuProses->id,
                     'process_name' => $process ? $process->nama_proses : '',

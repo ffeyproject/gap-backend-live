@@ -127,6 +127,8 @@ if (!empty($selectedModelMesin)) {
 
                     <?= $form->field($model, 'gangguan_produksi')->checkbox() ?>
 
+                    <?= $form->field($model, 'keterangan')->checkbox() ?>
+
                     <?= $form->field($model, 'use_jetblack')->checkbox() ?>
 
                     <?= $form->field($model, 'perbaikan')->checkbox() ?>
