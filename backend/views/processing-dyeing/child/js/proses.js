@@ -390,3 +390,130 @@ function setData(event, flag){
         }
     });
 }
+
+function setShiftGroupInput(event, label, currentVal){
+    event.preventDefault();
+    var button = $(event.currentTarget);
+    var href = button.attr('href');
+    var parentEl = button.parent();
+
+    $.confirm({
+        title: label,
+        content: '' +
+            '<form action="" class="formName">' +
+            '<div class="form-group">' +
+            '<label>Pilih Shift Group:</label>' +
+            '<select class="form-control kartu-proses-shift-group">' +
+                '<option value="A" ' + (currentVal === 'A' ? 'selected' : '') + '>A</option>' +
+                '<option value="B" ' + (currentVal === 'B' ? 'selected' : '') + '>B</option>' +
+                '<option value="C" ' + (currentVal === 'C' ? 'selected' : '') + '>C</option>' +
+                '<option value="D" ' + (currentVal === 'D' ? 'selected' : '') + '>D</option>' +
+            '</select>' +
+            '<div class="text-danger text-hint"></div>' +
+            '</div>' +
+            '</form>'
+        ,
+        buttons: {
+            submit: {
+                text: 'Submit',
+                btnClass : 'btn-blue',
+                action: function(){
+                    var ctn = this.$content.find('.kartu-proses-shift-group').val();
+                    if(!ctn){
+                        this.$content.find('.text-hint').html('Harap masukan '+label+ '!!');
+                        return false;
+                    }
+
+                    postingProses(href, ctn, label, parentEl);
+                }
+            },
+            batal: function () {}
+        },
+        onContentReady: function(){
+            var jc = this;
+            this.$content.find('form').on('submit', function (e) {
+                e.preventDefault();
+                jc.formSubmit.trigger('click');
+            });
+        }
+    });
+}
+
+function setNoMesinInput(event, label, processId, currentVal){
+    event.preventDefault();
+    var button = $(event.currentTarget);
+    var href = button.attr('href');
+    var parentEl = button.parent();
+    var getMachinesUrl = '/processing-dyeing/get-machines-by-process?process_id=' + processId;
+
+    $.confirm({
+        title: label,
+        content: function () {
+            var self = this;
+            return $.ajax({
+                url: getMachinesUrl,
+                dataType: 'json',
+                method: 'get'
+            }).done(function (response) {
+                var optionsHtml = '';
+                var isFoundInList = false;
+                
+                if (response.length === 0) {
+                    optionsHtml = '<option value="">(Tidak ada mesin terhubung, silahkan ketik manual)</option>';
+                } else {
+                    $.each(response, function(i, item) {
+                        var isSelected = (item.nama_mesin === currentVal);
+                        if (isSelected) {
+                            isFoundInList = true;
+                        }
+                        optionsHtml += '<option value="' + item.nama_mesin + '" ' + (isSelected ? 'selected' : '') + '>' + item.nama_mesin + '</option>';
+                    });
+                }
+                
+                var textVal = isFoundInList ? '' : currentVal;
+                
+                self.setContent('' +
+                    '<form action="" class="formName">' +
+                    '<div class="form-group">' +
+                    '<label>Pilih Mesin:</label>' +
+                    '<select class="form-control kartu-proses-mesin-select" style="margin-bottom: 10px;">' +
+                        optionsHtml +
+                    '</select>' +
+                    '<div class="text-center" style="margin-bottom: 10px; font-weight: bold;">-- ATAU KETIK MANUAL JIKA TIDAK ADA --</div>' +
+                    '<input type="text" class="form-control kartu-proses-mesin-text" value="' + textVal + '" placeholder="Ketik nama/nomor mesin manual...">' +
+                    '<div class="text-danger text-hint"></div>' +
+                    '</div>' +
+                    '</form>'
+                );
+            }).fail(function(){
+                self.setContent('Gagal mengambil data mesin.');
+            });
+        },
+        buttons: {
+            submit: {
+                text: 'Submit',
+                btnClass : 'btn-blue',
+                action: function(){
+                    var selectVal = this.$content.find('.kartu-proses-mesin-select').val();
+                    var textVal = this.$content.find('.kartu-proses-mesin-text').val();
+                    
+                    var ctn = textVal ? textVal : selectVal;
+                    if(!ctn){
+                        this.$content.find('.text-hint').html('Harap pilih atau masukan '+label+ '!!');
+                        return false;
+                    }
+
+                    postingProses(href, ctn, label, parentEl);
+                }
+            },
+            batal: function () {}
+        },
+        onContentReady: function(){
+            var jc = this;
+            this.$content.find('form').on('submit', function (e) {
+                e.preventDefault();
+                jc.formSubmit.trigger('click');
+            });
+        }
+    });
+}

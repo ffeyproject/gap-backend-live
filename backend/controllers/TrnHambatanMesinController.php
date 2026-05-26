@@ -1,0 +1,398 @@
+<?php
+
+namespace backend\controllers;
+
+use Yii;
+use common\models\ar\TrnHambatanMesin;
+use common\models\ar\TrnHambatanMesinItem;
+use common\models\ar\TrnHambatanMesinSearch;
+use yii\web\Controller;
+use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
+
+/**
+ * TrnHambatanMesinController implements the CRUD actions for TrnHambatanMesin model.
+ */
+class TrnHambatanMesinController extends Controller
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function behaviors()
+    {
+        return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Lists all TrnHambatanMesin models.
+     * @return mixed
+     */
+    public function actionIndex()
+    {
+        $searchModel = new TrnHambatanMesinSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Displays a single TrnHambatanMesin model.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionView($id)
+    {
+        return $this->render('view', [
+            'model' => $this->findModel($id),
+        ]);
+    }
+
+    /**
+     * Creates a new TrnHambatanMesin model.
+     * If creation is successful, the browser will be redirected to the 'view' page.
+     * @return mixed
+     */
+    public function actionCreate()
+    {
+        $model = new TrnHambatanMesin();
+        $model->tanggal = date('Y-m-d'); // Default to today's date
+
+        if (Yii::$app->request->isPost) {
+            $post = Yii::$app->request->post();
+            
+            if ($model->load($post)) {
+                $itemsData = $post['Items'] ?? [];
+                
+                $transaction = Yii::$app->db->beginTransaction();
+                try {
+                    if ($model->save()) {
+                        foreach ($itemsData as $itemData) {
+                            $item = new TrnHambatanMesinItem();
+                            $item->trn_hambatan_mesin_id = $model->id;
+                            $item->start_time = $itemData['start_time'] ?? '';
+                            $item->stop_time = $itemData['stop_time'] ?? '';
+                            $item->no_kartu = $itemData['no_kartu'] ?? null;
+                            $item->no_wo = $itemData['no_wo'] ?? null;
+                            $item->shift = $itemData['shift'] ?? null;
+                            $item->keterangan = $itemData['keterangan'] ?? null;
+                            
+                            if (!$item->save()) {
+                                throw new \Exception('Gagal menyimpan item hambatan: ' . implode(', ', $item->getFirstErrors()));
+                            }
+
+                            $hambatanIds = $itemData['jenis_hambatan_ids'] ?? [];
+                            if (!is_array($hambatanIds)) {
+                                $hambatanIds = [$hambatanIds];
+                            }
+                            foreach ($hambatanIds as $hambatanId) {
+                                if ($hambatanId) {
+                                    Yii::$app->db->createCommand()->insert('trn_hambatan_mesin_item_hambatan', [
+                                        'trn_hambatan_mesin_item_id' => $item->id,
+                                        'mst_jenis_hambatan_id' => $hambatanId
+                                    ])->execute();
+                                }
+                            }
+                        }
+                        
+                        $transaction->commit();
+                        Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil disimpan.');
+                        return $this->redirect(['view', 'id' => $model->id]);
+                    } else {
+                        throw new \Exception('Gagal menyimpan data hambatan.');
+                    }
+                } catch (\Exception $e) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', $e->getMessage());
+                }
+            }
+        }
+
+        return $this->render('create', [
+            'model' => $model,
+            'items' => [new TrnHambatanMesinItem()],
+        ]);
+    }
+
+    /**
+     * Updates an existing TrnHambatanMesin model.
+     * If update is successful, the browser will be redirected to the 'view' page.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionUpdate($id)
+    {
+        $model = $this->findModel($id);
+        $items = $model->trnHambatanMesinItems;
+        if (empty($items)) {
+            $items = [new TrnHambatanMesinItem()];
+        }
+
+        if (Yii::$app->request->isPost) {
+            $post = Yii::$app->request->post();
+            
+            if ($model->load($post)) {
+                $itemsData = $post['Items'] ?? [];
+                
+                $transaction = Yii::$app->db->beginTransaction();
+                try {
+                    if ($model->save()) {
+                        // Delete existing items
+                        $existingItems = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->all();
+                        foreach ($existingItems as $existingItem) {
+                            Yii::$app->db->createCommand()->delete('trn_hambatan_mesin_item_hambatan', [
+                                'trn_hambatan_mesin_item_id' => $existingItem->id
+                            ])->execute();
+                            $existingItem->delete();
+                        }
+                        
+                        foreach ($itemsData as $itemData) {
+                            $item = new TrnHambatanMesinItem();
+                            $item->trn_hambatan_mesin_id = $model->id;
+                            $item->start_time = $itemData['start_time'] ?? '';
+                            $item->stop_time = $itemData['stop_time'] ?? '';
+                            $item->no_kartu = $itemData['no_kartu'] ?? null;
+                            $item->no_wo = $itemData['no_wo'] ?? null;
+                            $item->shift = $itemData['shift'] ?? null;
+                            $item->keterangan = $itemData['keterangan'] ?? null;
+                            
+                            if (!$item->save()) {
+                                throw new \Exception('Gagal menyimpan item hambatan: ' . implode(', ', $item->getFirstErrors()));
+                            }
+
+                            $hambatanIds = $itemData['jenis_hambatan_ids'] ?? [];
+                            if (!is_array($hambatanIds)) {
+                                $hambatanIds = [$hambatanIds];
+                            }
+                            foreach ($hambatanIds as $hambatanId) {
+                                if ($hambatanId) {
+                                    Yii::$app->db->createCommand()->insert('trn_hambatan_mesin_item_hambatan', [
+                                        'trn_hambatan_mesin_item_id' => $item->id,
+                                        'mst_jenis_hambatan_id' => $hambatanId
+                                    ])->execute();
+                                }
+                            }
+                        }
+                        
+                        $transaction->commit();
+                        Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil diperbarui.');
+                        return $this->redirect(['view', 'id' => $model->id]);
+                    } else {
+                        throw new \Exception('Gagal memperbarui data hambatan.');
+                    }
+                } catch (\Exception $e) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', $e->getMessage());
+                }
+            }
+        }
+
+        return $this->render('update', [
+            'model' => $model,
+            'items' => $items,
+        ]);
+    }
+
+    /**
+     * Deletes an existing TrnHambatanMesin model.
+     * If deletion is successful, the browser will be redirected to the 'index' page.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionDelete($id)
+    {
+        $this->findModel($id)->delete();
+        Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil dihapus.');
+
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Returns machines filtered by model name
+     */
+    public function actionGetMachinesByModel()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $model_mesin = Yii::$app->request->get('model_mesin');
+        $query = \common\models\ar\MstMesinProses::find();
+        
+        if (!empty($model_mesin)) {
+            if (!is_array($model_mesin)) {
+                $model_mesin = [$model_mesin];
+            }
+            
+            $orConditions = ['or'];
+            foreach ($model_mesin as $sm) {
+                if ($sm === '_empty_') {
+                    $orConditions[] = ['or', ['model_mesin' => null], ['model_mesin' => '']];
+                } else {
+                    $orConditions[] = ['model_mesin' => $sm];
+                }
+            }
+            $query->andWhere($orConditions);
+        }
+        
+        return $query->asArray()->all();
+    }
+
+    /**
+     * Returns hambatans associated with selected machine
+     */
+    public function actionGetHambatansByMachine($machine_id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $machine = \common\models\ar\MstMesinProses::findOne($machine_id);
+        if ($machine) {
+            $hambatans = $machine->mstJenisHambatans;
+            return \yii\helpers\ArrayHelper::toArray($hambatans, [
+                \common\models\ar\MstJenisHambatan::class => ['id', 'nama']
+            ]);
+        }
+        return [];
+    }
+
+    /**
+     * Dynamic card search
+     */
+    public function actionSearchKartuProses($q = null, $id = null)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => []];
+        if (!is_null($q)) {
+            $results = [];
+            
+            // Search in Dyeing
+            $dyeing = \common\models\ar\TrnKartuProsesDyeing::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($dyeing as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Dyeing)'];
+                }
+            }
+
+            // Search in Printing
+            $printing = \common\models\ar\TrnKartuProsesPrinting::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($printing as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Printing)'];
+                }
+            }
+
+            // Search in Pfp
+            $pfp = \common\models\ar\TrnKartuProsesPfp::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($pfp as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (PFP)'];
+                }
+            }
+
+            // Search in Celup
+            $celup = \common\models\ar\TrnKartuProsesCelup::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($celup as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Celup)'];
+                }
+            }
+
+            // Search in Maklon
+            $maklon = \common\models\ar\TrnKartuProsesMaklon::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($maklon as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Maklon)'];
+                }
+            }
+
+            $out['results'] = array_values($results);
+        } elseif ($id) {
+            $out['results'] = [['id' => $id, 'text' => $id]];
+        }
+        return $out;
+    }
+
+    /**
+     * Dynamic WO search
+     */
+    public function actionSearchWo($q = null, $id = null)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => []];
+        if (!is_null($q)) {
+            $results = [];
+            
+            $wo = \common\models\ar\TrnWo::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($wo as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no']];
+                }
+            }
+
+            $out['results'] = array_values($results);
+        } elseif ($id) {
+            $out['results'] = [['id' => $id, 'text' => $id]];
+        }
+        return $out;
+    }
+
+    /**
+     * Finds the TrnHambatanMesin model based on its primary key value.
+     * If the model is not found, a 404 HTTP exception will be thrown.
+     * @param integer $id
+     * @return TrnHambatanMesin the loaded model
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    protected function findModel($id)
+    {
+        if (($model = TrnHambatanMesin::findOne($id)) !== null) {
+            return $model;
+        }
+
+        throw new NotFoundHttpException('The requested page does not exist.');
+    }
+}

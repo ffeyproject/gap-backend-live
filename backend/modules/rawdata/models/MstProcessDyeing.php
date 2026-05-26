@@ -86,7 +86,7 @@ class MstProcessDyeing extends \yii\db\ActiveRecord
             'lebar_jadi' => 'Lebar Jadi',
             'panjang_jadi' => 'Panjang Jadi',
             'info_kualitas' => 'Info Kualitas',
-            'gangguan_produksi' => 'Gangguan Produksi',
+            'gangguan_produksi' => 'Keterangan',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',

@@ -66,8 +66,30 @@ class MstProcessDyeingController extends Controller
     {
         $model = new MstProcessDyeing();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if ($model->save()) {
+                    $machineIds = $model->mesin_proses_ids ?? [];
+                    if (!is_array($machineIds)) {
+                        $machineIds = [$machineIds];
+                    }
+                    foreach ($machineIds as $machineId) {
+                        if ($machineId) {
+                            Yii::$app->db->createCommand()->insert('mst_process_dyeing_mesin', [
+                                'mst_process_dyeing_id' => $model->id,
+                                'mst_mesin_proses_id' => $machineId
+                            ])->execute();
+                        }
+                    }
+                    
+                    $transaction->commit();
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('create', [
@@ -86,8 +108,35 @@ class MstProcessDyeingController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if ($model->save()) {
+                    // Delete old links
+                    Yii::$app->db->createCommand()->delete('mst_process_dyeing_mesin', [
+                        'mst_process_dyeing_id' => $model->id
+                    ])->execute();
+                    
+                    $machineIds = $model->mesin_proses_ids ?? [];
+                    if (!is_array($machineIds)) {
+                        $machineIds = [$machineIds];
+                    }
+                    foreach ($machineIds as $machineId) {
+                        if ($machineId) {
+                            Yii::$app->db->createCommand()->insert('mst_process_dyeing_mesin', [
+                                'mst_process_dyeing_id' => $model->id,
+                                'mst_mesin_proses_id' => $machineId
+                            ])->execute();
+                        }
+                    }
+                    
+                    $transaction->commit();
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('update', [

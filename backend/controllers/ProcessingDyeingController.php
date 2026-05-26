@@ -162,6 +162,11 @@ class ProcessingDyeingController extends Controller
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         
         $query = $dataProvider->query;
+        $query->joinWith(['sc', 'scGreige']);
+        $query->andWhere([
+            'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+            'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
+        ]);
         
         if ($status_rekap === 'selesai') {
             $query->andWhere(['in', 'trn_kartu_proses_dyeing.status', [
@@ -178,7 +183,7 @@ class ProcessingDyeingController extends Controller
         $models = $dataProvider->getModels();
         
         if ($status_rekap === 'semua') {
-            $models = $this->appendMissingWoColors($models, $searchModel);
+            $models = $this->appendMissingWoColors($models, $searchModel, true);
         }
         
         $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".xls";
@@ -191,6 +196,7 @@ class ProcessingDyeingController extends Controller
         header('Expires: 0');
         
         $masterProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['perbaikan' => false])
             ->orderBy('order')
             ->all();
 
@@ -947,8 +953,8 @@ class ProcessingDyeingController extends Controller
 
         $model = $this->findModel($id);
         $moJetBlack = ($model->mo !== null && $model->mo->jet_black);
-        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false])->orderBy('order')->all();
-        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true])->orderBy('order')->all();
+        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false, 'perbaikan' => false])->orderBy('order')->all();
+        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true, 'perbaikan' => false])->orderBy('order')->all();
 
         $processModels = [];
         $resinFinishIndex = -1;
@@ -1143,7 +1149,7 @@ class ProcessingDyeingController extends Controller
 
             $model = $this->findModel($id);
 
-            if($model->status !== $model::STATUS_DELIVERED){
+            if(in_array($model->status, [$model::STATUS_DRAFT, $model::STATUS_POSTED, $model::STATUS_BATAL])){
                 throw new ForbiddenHttpException('Kartu proses tidak valid.');
             }
 
@@ -1245,7 +1251,7 @@ class ProcessingDyeingController extends Controller
 
             $model = $this->findModel($id);
 
-            if($model->status !== $model::STATUS_DELIVERED){
+            if(in_array($model->status, [$model::STATUS_DRAFT, $model::STATUS_POSTED, $model::STATUS_BATAL])){
                 throw new ForbiddenHttpException('Kartu proses tidak valid.');
             }
 
@@ -2217,7 +2223,7 @@ class ProcessingDyeingController extends Controller
         }
     }
 
-    private function appendMissingWoColors($models, $searchModel)
+    private function appendMissingWoColors($models, $searchModel, $isExport = false)
     {
         if (empty($searchModel->woMonth)) {
             return $models;
@@ -2231,6 +2237,13 @@ class ProcessingDyeingController extends Controller
             ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]))
             ->andWhere(['IS NOT', 'trn_wo.no', null])
             ->andWhere(['!=', 'trn_wo.no', '']);
+            
+        if ($isExport) {
+            $woColorsQuery->andWhere([
+                'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+                'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
+            ]);
+        }
             
         if (!empty($searchModel->woNo)) {
             $woColorsQuery->andFilterWhere(['ilike', 'trn_wo.no', $searchModel->woNo]);
@@ -2355,6 +2368,14 @@ class ProcessingDyeingController extends Controller
         $kartuData = [];
         $rangkumanProses = [];
         if ($mesin) {
+            // Find all process IDs mapped to the selected machine's model
+            $validProcessIds = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_dyeing_id')
+                ->innerJoin('mst_process_dyeing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
             // Find kartu_process_dyeing_process entries filtered at DB level
             $query = KartuProcessDyeingProcess::find()
                 ->alias('kp')
@@ -2362,15 +2383,22 @@ class ProcessingDyeingController extends Controller
                 ->where(['>=', 'kpd.status', TrnKartuProsesDyeing::STATUS_DELIVERED])
                 ->andWhere(['not', ['kpd.status' => TrnKartuProsesDyeing::STATUS_BATAL]])
                 ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
-                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"']);
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesDyeingItems']);
 
             $allProcessRecords = $query->all();
 
             foreach ($allProcessRecords as $record) {
+                // Skip if this process doesn't belong to the selected machine's model
+                if (!in_array($record->process_id, $validProcessIds)) {
+                    continue;
+                }
+
                 $values = Json::decode($record->value);
                 if (!isset($values['no_mesin']) || $values['no_mesin'] !== $mesin->nama_mesin) {
                     continue;
                 }
+                
                 if (!isset($values['tanggal']) || $values['tanggal'] !== $tanggal) {
                     continue;
                 }
@@ -2386,7 +2414,7 @@ class ProcessingDyeingController extends Controller
                     'nomor_kartu' => $kartuProses->nomor_kartu,
                     'motif' => $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '',
                     'nk' => $kartuProses->nomor_kartu,
-                    'pcs' => $kartuProses->berat,
+                    'pcs' => count($kartuProses->trnKartuProsesDyeingItems),
                     'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
                     'warna' => ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '',
                     'proses' => $process ? $process->nama_proses : '',
@@ -2395,6 +2423,7 @@ class ProcessingDyeingController extends Controller
                     'lebar' => isset($values['lebar_jadi']) ? $values['lebar_jadi'] : '',
                     'berat' => $kartuProses->berat,
                     'panjang_jadi' => isset($values['panjang_jadi']) ? $values['panjang_jadi'] : '',
+                    'panjang_greige' => array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m')),
                     'wo_no' => $kartuProses->wo ? $kartuProses->wo->no : '',
                     'kartu_proses_id' => $kartuProses->id,
                     'process_name' => $process ? $process->nama_proses : '',
@@ -2411,12 +2440,27 @@ class ProcessingDyeingController extends Controller
             }
         }
 
-        // Sort by shift group
-        $shiftOrder = ['A' => 4, 'B' => 3, 'C' => 1, 'D' => 2];
+        // Sort by shift group dynamically based on request or default
+        $reqPagi = Yii::$app->request->get('shift_pagi', '');
+        $reqSiang = Yii::$app->request->get('shift_siang', '');
+        $reqMalam = Yii::$app->request->get('shift_malam', '');
+
+        $shiftOrder = [];
+        $orderSeq = 1;
+
+        if ($reqPagi) $shiftOrder[$reqPagi] = $orderSeq++;
+        else $shiftOrder['C'] = $orderSeq++;
+
+        if ($reqSiang) $shiftOrder[$reqSiang] = $orderSeq++;
+        else $shiftOrder['D'] = $orderSeq++;
+
+        if ($reqMalam) $shiftOrder[$reqMalam] = $orderSeq++;
+        else $shiftOrder['A'] = $orderSeq++;
+
         usort($kartuData, function ($a, $b) use ($shiftOrder) {
             $oa = isset($shiftOrder[$a['shift_group']]) ? $shiftOrder[$a['shift_group']] : 99;
             $ob = isset($shiftOrder[$b['shift_group']]) ? $shiftOrder[$b['shift_group']] : 99;
-            return $oa - $ob;
+            return $oa <=> $ob;
         });
 
         // Fetch hambatan for this machine on this date

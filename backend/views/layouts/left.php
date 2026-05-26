@@ -134,10 +134,22 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId=='app-backend' && $controllerId == 'mst-process-printing'
                             ],
                             [
-                                'label'=>'Mesin Processing',
+                                'label'=>'Mesin Relax Celup',
                                 'icon' => 'circle-o',
                                 'url' => ['/mst-mesin-processing/index'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'mst-mesin-processing'
+                            ],
+                            [
+                                'label'=>'Mesin Proses Processing',
+                                'icon' => 'circle-o',
+                                'url' => ['/mst-mesin-proses/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'mst-mesin-proses'
+                            ],
+                            [
+                                'label'=>'Jenis Hambatan Mesin',
+                                'icon' => 'circle-o',
+                                'url' => ['/mst-jenis-hambatan/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'mst-jenis-hambatan'
                             ],
                         ]
                     ],
@@ -549,6 +561,11 @@ $moduleId = $controller->module->id;
             ],
 
             [
+                'label' => 'Hambatan Per Mesin', 'icon' => 'bars', 'url' => ['/trn-hambatan-mesin/index'],
+                'active' => $moduleId=='app-backend' && $controllerId == 'trn-hambatan-mesin'
+            ],
+
+            [
                 'label' => 'PROCESSING',
                 'icon' => 'bars',
                 'url' => '#',
@@ -597,6 +614,12 @@ $moduleId = $controller->module->id;
                                 'icon' => 'circle-o',
                                 'url' => ['processing-printing/rekap'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'processing-printing' && $actionId=='rekap'
+                            ],
+                            [
+                                'label'=> 'Rekap Proses Mesin',
+                                'icon' => 'circle-o',
+                                'url' => ['/processing-dyeing/rekap-proses-mesin'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='rekap-proses-mesin'
                             ],
                         ]
                     ],

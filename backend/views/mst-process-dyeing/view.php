@@ -38,7 +38,18 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     'tanggal:boolean',
                     'start:boolean',
                     'stop:boolean',
-                    'no_mesin:boolean',
+                    [
+                        'label' => 'Mesin',
+                        'format' => 'raw',
+                        'value' => function($model) {
+                            $badges = [];
+                            foreach ($model->mstMesinProseses as $m) {
+                                $label = $m->model_mesin ? "{$m->nama_mesin} ({$m->model_mesin})" : $m->nama_mesin;
+                                $badges[] = Html::tag('span', Html::encode($label), ['class' => 'label label-info', 'style' => 'margin-right: 5px; display: inline-block; margin-bottom: 2px;']);
+                            }
+                            return empty($badges) ? '<span class="text-muted">Tidak ada mesin terhubung</span>' : implode(' ', $badges);
+                        }
+                    ],
                     'shift_group:boolean',
                     'temp:boolean',
                     'speed:boolean',

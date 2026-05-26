@@ -14,10 +14,14 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="kartu-proses-dyeing-index">
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
-    <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'panel' => [
+    <div class="table-responsive">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'responsive' => false,
+            'responsiveWrap' => false,
+            'tableOptions' => ['style' => 'white-space: nowrap;'],
+            'panel' => [
             'type' => 'default',
             'before'=>Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']),
             //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
@@ -40,6 +44,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'value'=>'wo.no'
             ],
             'no',
+            'nomor_kartu',
             [
                 'attribute'=>'asal_greige',
                 'value'=>function($data){
@@ -131,10 +136,7 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             //'created_at:datetime',
             //'created_by',
-            //'updated_at:datetime',
-            //'updated_by',
         ],
     ]); ?>
-
-
+    </div>
 </div>

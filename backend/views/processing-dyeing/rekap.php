@@ -123,6 +123,31 @@ $groupContentOptions = function($model, $key, $index, $column) {
     }
 };
 
+$groupWarnaContentOptions = function($model, $key, $index, $column) {
+    $models = $column->grid->dataProvider->getModels();
+    $currentWoId = $model->wo_id;
+    $currentColor = $model->woColor->moColor->color ?? null;
+    
+    $prevWoId = $index > 0 ? $models[$index - 1]->wo_id : null;
+    $prevColor = $index > 0 ? ($models[$index - 1]->woColor->moColor->color ?? null) : null;
+
+    if ($currentWoId !== $prevWoId || $currentColor !== $prevColor) {
+        $rowspan = 1;
+        for ($i = $index + 1; $i < count($models); $i++) {
+            $nextWoId = $models[$i]->wo_id;
+            $nextColor = $models[$i]->woColor->moColor->color ?? null;
+            if ($nextWoId === $currentWoId && $nextColor === $currentColor) {
+                $rowspan++;
+            } else {
+                break;
+            }
+        }
+        return ['rowspan' => $rowspan, 'style' => 'vertical-align: middle; text-align: center; background-color: #fff;'];
+    } else {
+        return ['style' => 'display: none;'];
+    }
+};
+
 $gridColumns = [
     ['class' => 'kartik\grid\SerialColumn'],
     [
@@ -188,11 +213,26 @@ $gridColumns = [
     [
         'attribute' => 'warna',
         'label'=>'Warna',
-        'value'=>function($data){
-            return $data->woColor->moColor->color;
+        'value'=>function($data, $key, $index, $column){
+            $color = $data->woColor->moColor->color ?? '';
+            $models = $column->grid->dataProvider->getModels();
+            $currentWoId = $data->wo_id;
+            $currentColor = $color;
+            
+            $count = 0;
+            foreach ($models as $m) {
+                if ($m->wo_id === $currentWoId && ($m->woColor->moColor->color ?? '') === $currentColor) {
+                    $count++;
+                }
+            }
+            if ($count > 1) {
+                return $color . ' (' . $count . 'x)';
+            }
+            return $color;
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
+        'contentOptions' => $groupWarnaContentOptions,
     ],
     [
         'attribute' => 'nomor_kartu',
@@ -297,7 +337,7 @@ $gridColumns = [
 
 // Query and append all processes from master process dynamically
 $masterProcesses = \common\models\ar\MstProcessDyeing::find()
-    ->where(['use_jetblack' => false])
+    ->where(['use_jetblack' => false, 'perbaikan' => false])
     ->orderBy('order')
     ->all();
 
@@ -425,7 +465,7 @@ foreach ($masterProcesses as $proc) {
 
     if ($proc->nama_proses === 'Resin Finish') {
         $jetblackProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['use_jetblack' => true])
+            ->where(['use_jetblack' => true, 'perbaikan' => false])
             ->orderBy('order')
             ->all();
         foreach ($jetblackProcesses as $jbProc) {

@@ -176,16 +176,12 @@ $formatter = Yii::$app->formatter;
     <?php echo $this->render('/trn-kartu-proses-dyeing/child/items_processing', ['model' => $model]);?>
 
     <?php
-    switch ($model->status){
-        case $model::STATUS_DELIVERED:
-            echo $this->render('child/proses', ['model' => $model, 'attrsLabels'=>$attrsLabels, 'processModels'=>$processModels, 'processesUlang'=>$processesUlang, 'formatter'=>$formatter]);
-            break;
-        case $model::STATUS_APPROVED:
-        case $model::STATUS_INSPECTED:
-            echo $this->render('child/proses_disabled', ['model' => $model, 'attrsLabels'=>$attrsLabels, 'processModels'=>$processModels, 'processesUlang'=>$processesUlang, 'formatter'=>$formatter]);
-            break;
-        default:
-            echo '';
+    if (!in_array($model->status, [
+        $model::STATUS_DRAFT, 
+        $model::STATUS_POSTED, 
+        $model::STATUS_BATAL
+    ])) {
+        echo $this->render('child/proses', ['model' => $model, 'attrsLabels'=>$attrsLabels, 'processModels'=>$processModels, 'processesUlang'=>$processesUlang, 'formatter'=>$formatter]);
     }
     ?>
 
@@ -203,7 +199,7 @@ echo AjaxModal::widget([
     'header' => '<h4 class="modal-title">...</h4>',
 ]);
 
-if($model->status == $model::STATUS_DELIVERED){
+if(!in_array($model->status, [$model::STATUS_DRAFT, $model::STATUS_POSTED, $model::STATUS_BATAL])){
     $warnaList = $model->wo->getTrnWoColors()->joinWith('moColor')->asArray()->all();
     $this->registerJsVar('warnaList', $warnaList);
     $this->registerJsVar('indexUrl', Url::to(['index']));

@@ -56,19 +56,35 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                     </thead>
                     <tbody>
                     <?php
+                    $existingPcs = KartuProcessDyeingProcess::find()
+                        ->where(['kartu_process_id' => $model->id])
+                        ->select('process_id')
+                        ->column();
+
                     $jetblackHasValue = false;
+                    $topingHasValue = false;
+                    $rcHasValue = false;
+                    $rfUlangHasValue = false;
+                    
                     foreach ($processModels as $item) {
-                        if ($item->use_jetblack) {
-                            $pcModel = KartuProcessDyeingProcess::findOne(['kartu_process_id' => $model->id, 'process_id' => $item->id]);
-                            if ($pcModel !== null) {
-                                $jetblackHasValue = true;
-                                break;
-                            }
+                        if (in_array($item->id, $existingPcs)) {
+                            if ($item->use_jetblack) $jetblackHasValue = true;
+                            if (in_array($item->nama_proses, ['Toping 1', 'Toping 2', 'Toping 3', 'Toping 4', 'Toping 5'])) $topingHasValue = true;
+                            if (in_array($item->nama_proses, ['RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5'])) $rcHasValue = true;
+                            if (in_array($item->nama_proses, ['RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4'])) $rfUlangHasValue = true;
                         }
                     }
 
                     $firstJetblack = true;
+                    $firstToping = true;
+                    $firstRc = true;
+                    $firstRfUlang = true;
+                    
                     foreach ($processModels as $item){
+                        $isToping = in_array($item->nama_proses, ['Toping 1', 'Toping 2', 'Toping 3', 'Toping 4', 'Toping 5']);
+                        $isRc = in_array($item->nama_proses, ['RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5']);
+                        $isRfUlang = in_array($item->nama_proses, ['RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4']);
+
                         if ($item->use_jetblack) {
                             if ($firstJetblack) {
                                 $colCount = count($attrsLabels); // No 'Ulang' column
@@ -82,6 +98,45 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                             }
                             $rowStyle = $jetblackHasValue ? '' : 'style="display: none;"';
                             echo '<tr class="jetblack-row" ' . $rowStyle . '>';
+                        } elseif ($isToping) {
+                            if ($firstToping) {
+                                $colCount = count($attrsLabels);
+                                $chevronClass = $topingHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="toping-header-row" style="background-color: #e08e0b; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="toping-icon"></i> <strong>PROSES TOPING (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstToping = false;
+                            }
+                            $rowStyle = $topingHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="toping-row" ' . $rowStyle . '>';
+                        } elseif ($isRc) {
+                            if ($firstRc) {
+                                $colCount = count($attrsLabels);
+                                $chevronClass = $rcHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="rc-header-row" style="background-color: #00a65a; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="rc-icon"></i> <strong>PROSES RC (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstRc = false;
+                            }
+                            $rowStyle = $rcHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="rc-row" ' . $rowStyle . '>';
+                        } elseif ($isRfUlang) {
+                            if ($firstRfUlang) {
+                                $colCount = count($attrsLabels);
+                                $chevronClass = $rfUlangHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="rfulang-header-row" style="background-color: #dd4b39; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="rfulang-icon"></i> <strong>PROSES RF ULANG (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstRfUlang = false;
+                            }
+                            $rowStyle = $rfUlangHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="rfulang-row" ' . $rowStyle . '>';
                         } else {
                             echo '<tr>';
                         }
@@ -136,6 +191,36 @@ $this->registerJs("
     $(document).on('click', '.jetblack-header-row', function() {
         $('.jetblack-row').toggle();
         var icon = $('#jetblack-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+
+    $(document).on('click', '.toping-header-row', function() {
+        $('.toping-row').toggle();
+        var icon = $('#toping-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+
+    $(document).on('click', '.rc-header-row', function() {
+        $('.rc-row').toggle();
+        var icon = $('#rc-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+
+    $(document).on('click', '.rfulang-header-row', function() {
+        $('.rfulang-row').toggle();
+        var icon = $('#rfulang-icon');
         if (icon.hasClass('glyphicon-chevron-down')) {
             icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
         } else {
