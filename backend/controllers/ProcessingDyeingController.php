@@ -2233,7 +2233,7 @@ class ProcessingDyeingController extends Controller
         $woMonthStr = "{$currentYear}-{$searchModel->woMonth}";
         
         $woColorsQuery = \common\models\ar\TrnWoColor::find()
-            ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust', 'wo.sc.marketing mkt'])
+            ->joinWith(['wo.greige', 'moColor', 'wo.sc.cust', 'wo.sc.marketing mkt', 'wo.scGreige'])
             ->where(new \yii\db\Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month", [':wo_month' => $woMonthStr]))
             ->andWhere(['IS NOT', 'trn_wo.no', null])
             ->andWhere(['!=', 'trn_wo.no', '']);
