@@ -307,6 +307,16 @@ class ProcessingDyeingController extends Controller
             };
             $tFinish = $model->wo ? (Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinish), 1) .'M / '. Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinishToYard), 1).'Y') : '';
             $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
+            $currentWoId = $model->wo_id;
+            $countWarna = 0;
+            foreach ($models as $m) {
+                if ($m->wo_id === $currentWoId && (($m->woColor && $m->woColor->moColor) ? $m->woColor->moColor->color : '') === $warna) {
+                    $countWarna++;
+                }
+            }
+            if ($countWarna > 1 && $warna !== '') {
+                $warna = $warna . ' (' . $countWarna . 'x)';
+            }
             $nk = $model->nomor_kartu;
             $panjang = $model->wo ? $cleanNum($model->wo->colorQtyBatchToMeter) : 0;
             $panjangGreige = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m');
@@ -425,7 +435,8 @@ class ProcessingDyeingController extends Controller
             'col-wodaterange',
             'col-buyer',
             'col-wono',
-            'col-motif'
+            'col-motif',
+            'col-warna'
         ];
 
         foreach ($mergeCols as $colKey) {
