@@ -146,6 +146,9 @@ if($model->kartu_process_dyeing_id !== null){
                     ],
                 ]).' ';
                 break;
+            case $model::STATUS_APPROVED_PARTIAL:
+                echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';
+                break;
             default:
                 if ($hasPostedItemsNotReceived) {
                     echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';

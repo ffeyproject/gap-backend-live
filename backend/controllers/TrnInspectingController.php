@@ -609,7 +609,7 @@ class TrnInspectingController extends Controller
             ->andWhere(['gj.id' => null])
             ->exists();
 
-        if ($model->status != $model::STATUS_DRAFT && !$hasPostedItemsNotReceived) {
+        if ($model->status != $model::STATUS_DRAFT && $model->status != $model::STATUS_APPROVED_PARTIAL && !$hasPostedItemsNotReceived) {
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diupdate.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
