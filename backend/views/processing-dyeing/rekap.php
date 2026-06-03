@@ -452,7 +452,11 @@ $gridColumns = [
                 'title' => 'Lihat Detail',
                 'style' => 'margin-left: 8px; color: #0288d1;'
             ]);
-            return \yii\helpers\Html::encode($data->nomor_kartu) . ' ' . $icon;
+            $result = \yii\helpers\Html::encode($data->nomor_kartu) . ' ' . $icon;
+            if ($data->is_redyeing) {
+                $result .= '<br><span style="color:red; font-weight:bold; font-size:11px;">(Redyeing)</span>';
+            }
+            return $result;
         },
         'format'=>'raw',
         'hAlign' => 'center',
@@ -905,7 +909,7 @@ $columnToggleDropdown .= '</ul></div>';
                                 'style' => 'display: inline-block; width: auto; margin-left: 10px; vertical-align: middle;',
                                 'onchange' => 'filterWoMonth(this);'
                             ]
-                        ) . $columnToggleDropdown . (!empty($searchModel->woMonth) ? ' ' . Html::a('<i class="glyphicon glyphicon-file"></i> Export Excel', ['export-excel', 'woMonth' => $searchModel->woMonth, 'status_rekap' => $statusRekap], ['id' => 'btn-export-excel', 'class' => 'btn btn-success', 'style' => 'vertical-align: middle; margin-left: 10px;']) : '') . '<br><br>' .
+                        ) . $columnToggleDropdown . (!empty($searchModel->woMonth) ? ' ' . Html::a('<i class="glyphicon glyphicon-file"></i> Export Excel', array_merge(['export-excel'], Yii::$app->request->queryParams, ['woMonth' => $searchModel->woMonth, 'status_rekap' => $statusRekap]), ['id' => 'btn-export-excel', 'class' => 'btn btn-success', 'style' => 'vertical-align: middle; margin-left: 10px;']) : '') . '<br><br>' .
                         \yii\bootstrap\Nav::widget([
                             'options' => ['class' => 'nav nav-tabs', 'style' => 'margin-top: 5px; border-bottom: 2px solid #ddd;'],
                             'items' => [

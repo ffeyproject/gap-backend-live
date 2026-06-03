@@ -162,7 +162,7 @@ class ProcessingDyeingController extends Controller
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
         $searchModel->woMonth = $woMonth;
-        $dataProvider = $searchModel->search([]);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         
         $query = $dataProvider->query;
