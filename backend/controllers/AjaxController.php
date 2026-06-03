@@ -280,7 +280,6 @@ class AjaxController extends Controller
                 ->joinWith('greige', false)
                 ->where(['ilike', 'trn_wo.no', $q])
                 ->andWhere(['trn_wo.status'=>TrnWo::STATUS_APPROVED])
-                ->limit(20)
                 ->asArray()
             ;
 
@@ -606,6 +605,54 @@ class AjaxController extends Controller
                 ->asArray()
             ;
             $out['results'] = $query->all();
+        }
+        return $out;
+    }
+
+    /**
+     * @param null $q
+     * @return array
+     */
+    public function actionLookupNkAll($q = null, $wo_no = null){
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => ['id' => '', 'text' => '']];
+        
+        if (!empty($q) || !empty($wo_no)) {
+            // UNION query for Dyeing, PFP, and Printing
+            
+            // Dyeing
+            $queryDyeing = \common\models\ar\TrnKartuProsesDyeing::find()
+                ->select(new \yii\db\Expression('trn_kartu_proses_dyeing.id, trn_kartu_proses_dyeing.nomor_kartu "text"'));
+            if (!empty($q)) {
+                $queryDyeing->where(['ilike', 'trn_kartu_proses_dyeing.nomor_kartu', $q]);
+            }
+            if (!empty($wo_no)) {
+                $queryDyeing->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+            }
+            
+            // PFP
+            $queryPfp = \common\models\ar\TrnKartuProsesPfp::find()
+                ->select(new \yii\db\Expression('trn_kartu_proses_pfp.id, trn_kartu_proses_pfp.nomor_kartu "text"'));
+            if (!empty($q)) {
+                $queryPfp->where(['ilike', 'trn_kartu_proses_pfp.nomor_kartu', $q]);
+            }
+            if (!empty($wo_no)) {
+                $queryPfp->joinWith('orderPfp', false)->andWhere(['trn_order_pfp.no' => $wo_no]);
+            }
+            
+            // Printing
+            $queryPrinting = \common\models\ar\TrnKartuProsesPrinting::find()
+                ->select(new \yii\db\Expression('trn_kartu_proses_printing.id, trn_kartu_proses_printing.nomor_kartu "text"'));
+            if (!empty($q)) {
+                $queryPrinting->where(['ilike', 'trn_kartu_proses_printing.nomor_kartu', $q]);
+            }
+            if (!empty($wo_no)) {
+                $queryPrinting->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+            }
+            
+            $queryDyeing->union($queryPfp)->union($queryPrinting);
+            $queryDyeing->limit(20);
+            $out['results'] = $queryDyeing->asArray()->all();
         }
         return $out;
     }
@@ -1193,6 +1240,103 @@ class AjaxController extends Controller
 
         return $out;
     }
+    public function actionGetExistingProsesData($nk, $prosesName, $mesinId, $tanggal, $wo_no = null, $tipe = null) {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['found' => false, 'data' => []];
 
+        if (empty($prosesName) || empty($mesinId)) {
+            return $out;
+        }
+
+        if ($tipe !== 'Percobaan' && empty($nk)) {
+            return $out;
+        }
+
+        if ($tipe === 'Percobaan') {
+            $existing = \common\models\ar\TrnRekapProsesMesinInput::find()
+                ->where([
+                    'nk_no' => $nk,
+                    'nama_proses' => $prosesName,
+                    'tanggal' => $tanggal,
+                    'mst_mesin_proses_id' => $mesinId,
+                ])->one();
+            
+            if ($existing) {
+                $out['found'] = true;
+                $out['data'] = [
+                    'temp' => $existing->temp,
+                    'panjang_jadi' => $existing->panjang_jadi,
+                    'panjang_greige' => $existing->panjang_greige,
+                    'keterangan' => $existing->keterangan
+                ];
+                return $out;
+            }
+        }
+
+        $mesinModel = \common\models\ar\MstMesinProses::findOne($mesinId);
+        $namaMesin = $mesinModel ? $mesinModel->nama_mesin : '';
+
+        $queryDyeing = \common\models\ar\TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $nk]);
+        if (!empty($wo_no)) {
+            $queryDyeing->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+        }
+        $kpd = $queryDyeing->one();
+        if ($kpd) {
+            $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $prosesName]);
+            if ($mstProcess) {
+                $kpProcesses = \common\models\ar\KartuProcessDyeingProcess::find()->where(['kartu_process_id' => $kpd->id, 'process_id' => $mstProcess->id])->all();
+                foreach ($kpProcesses as $kpProcess) {
+                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                    if (true) {
+                        $out['found'] = true;
+                        $out['data'] = $vals;
+                        return $out;
+                    }
+                }
+            }
+        }
+
+        $queryPfp = \common\models\ar\TrnKartuProsesPfp::find()->where(['nomor_kartu' => $nk]);
+        if (!empty($wo_no)) {
+            $queryPfp->joinWith('orderPfp', false)->andWhere(['trn_order_pfp.no' => $wo_no]);
+        }
+        $kpp = $queryPfp->one();
+        if ($kpp) {
+            $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $prosesName]);
+            if ($mstProcess) {
+                $kpProcesses = \common\models\ar\KartuProcessPfpProcess::find()->where(['kartu_process_id' => $kpp->id, 'process_id' => $mstProcess->id])->all();
+                foreach ($kpProcesses as $kpProcess) {
+                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                    if (true) {
+                        $out['found'] = true;
+                        $out['data'] = $vals;
+                        return $out;
+                    }
+                }
+            }
+        }
+
+        $queryPrinting = \common\models\ar\TrnKartuProsesPrinting::find()->where(['nomor_kartu' => $nk]);
+        if (!empty($wo_no)) {
+            $queryPrinting->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+        }
+        $kppr = $queryPrinting->one();
+        if ($kppr) {
+            $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $prosesName]);
+            if ($mstProcess) {
+                $kpProcesses = \common\models\ar\KartuProcessPrintingProcess::find()->where(['kartu_process_id' => $kppr->id, 'process_id' => $mstProcess->id])->all();
+                foreach ($kpProcesses as $kpProcess) {
+                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                    if (true) {
+                        $out['found'] = true;
+                        $out['data'] = $vals;
+                        return $out;
+                    }
+                }
+            }
+        }
+
+        return $out;
+    }
 
 }

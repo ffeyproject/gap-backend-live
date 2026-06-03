@@ -40,12 +40,21 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $created_by
  * @property int|null $updated_at
  * @property int|null $updated_by
+ * @property bool|null $panjang_jadi
+ * @property bool|null $keterangan
+ * @property bool|null $perbaikan
+ * @property bool|null $use_jetblack
  *
  * @property KartuProcessPfpProcess[] $kartuProcessPfpProcesses
  * @property TrnKartuProsesPfp[] $kartuProcesses
+ * @property MstMesinProses[] $mstMesinProseses
  */
 class MstProcessPfp extends \yii\db\ActiveRecord
 {
+    /**
+     * @var array Selected mesin proses IDs
+     */
+    public $mesin_proses_ids = [];
     /**
      * {@inheritdoc}
      */
@@ -71,8 +80,9 @@ class MstProcessPfp extends \yii\db\ActiveRecord
             [['order', 'nama_proses'], 'required'],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_operator', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi'], 'boolean'],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_operator', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan', 'perbaikan', 'use_jetblack'], 'boolean'],
             [['nama_proses'], 'string', 'max' => 255],
+            [['mesin_proses_ids'], 'safe'],
         ];
     }
 
@@ -111,8 +121,11 @@ class MstProcessPfp extends \yii\db\ActiveRecord
             'gramasi' => 'Gramasi',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
-            'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
+            'panjang_jadi' => 'Panjang Jadi',
+            'keterangan' => 'Keterangan',
+            'perbaikan' => 'Perbaikan',
+            'use_jetblack' => 'Use Jetblack',
         ];
     }
 
@@ -135,5 +148,23 @@ class MstProcessPfp extends \yii\db\ActiveRecord
     public function getKartuProcesses()
     {
         return $this->hasMany(TrnKartuProsesPfp::className(), ['id' => 'kartu_process_id'])->viaTable('kartu_process_pfp_process', ['process_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMstMesinProseses()
+    {
+        return $this->hasMany(MstMesinProses::className(), ['id' => 'mst_mesin_proses_id'])
+            ->viaTable('mst_process_pfp_mesin', ['mst_process_pfp_id' => 'id']);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterFind()
+    {
+        parent::afterFind();
+        $this->mesin_proses_ids = \yii\helpers\ArrayHelper::getColumn($this->mstMesinProseses, 'id');
     }
 }

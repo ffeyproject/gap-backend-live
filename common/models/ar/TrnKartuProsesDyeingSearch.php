@@ -29,6 +29,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $shift;
     public $woMonth;
     public $processDates = [];
+    public $terakhir_proses;
 
     /**
      * {@inheritdoc}
@@ -38,7 +39,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift', 'processDates'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth', 'terakhir_proses'], 'safe'],
             [['toping_matching','ready_colour'], 'boolean'],
         ];
     }
@@ -308,6 +309,15 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     
             // Apply the filter between the two timestamps
             $query->andFilterWhere(['between', 'trn_kartu_proses_dyeing.date_toping_matching', $start_timestamp, $end_timestamp]);
+        }
+        
+        if (!empty($this->terakhir_proses)) {
+            $processes = (array) $this->terakhir_proses;
+            $query->andWhere([
+                'IN',
+                new Expression('(SELECT m.nama_proses FROM kartu_process_dyeing_process k INNER JOIN mst_process_dyeing m ON k.process_id = m.id WHERE k.kartu_process_id = trn_kartu_proses_dyeing.id AND k.value IS NOT NULL AND k.value <> \'\' ORDER BY m.order DESC LIMIT 1)'),
+                $processes
+            ]);
         }
         
         $isFiltering = false;

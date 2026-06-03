@@ -104,13 +104,22 @@ $formatProcessDate = function($dateValue) {
 };
 
 $groupContentOptions = function($model, $key, $index, $column) {
-    $models = $column->grid->dataProvider->getModels();
+    $models = array_values($column->grid->dataProvider->getModels());
+    $pos = false;
+    foreach ($models as $i => $m) {
+        if ($m === $model) {
+            $pos = $i;
+            break;
+        }
+    }
+    if ($pos === false) return [];
+
     $currentWoId = $model->wo_id;
-    $prevWoId = $index > 0 ? $models[$index - 1]->wo_id : null;
+    $prevWoId = $pos > 0 ? $models[$pos - 1]->wo_id : null;
 
     if ($currentWoId !== $prevWoId) {
         $rowspan = 1;
-        for ($i = $index + 1; $i < count($models); $i++) {
+        for ($i = $pos + 1; $i < count($models); $i++) {
             if ($models[$i]->wo_id === $currentWoId) {
                 $rowspan++;
             } else {
@@ -124,16 +133,25 @@ $groupContentOptions = function($model, $key, $index, $column) {
 };
 
 $groupWarnaContentOptions = function($model, $key, $index, $column) {
-    $models = $column->grid->dataProvider->getModels();
+    $models = array_values($column->grid->dataProvider->getModels());
+    $pos = false;
+    foreach ($models as $i => $m) {
+        if ($m === $model) {
+            $pos = $i;
+            break;
+        }
+    }
+    if ($pos === false) return [];
+
     $currentWoId = $model->wo_id;
     $currentColor = $model->woColor->moColor->color ?? null;
     
-    $prevWoId = $index > 0 ? $models[$index - 1]->wo_id : null;
-    $prevColor = $index > 0 ? ($models[$index - 1]->woColor->moColor->color ?? null) : null;
+    $prevWoId = $pos > 0 ? $models[$pos - 1]->wo_id : null;
+    $prevColor = $pos > 0 ? ($models[$pos - 1]->woColor->moColor->color ?? null) : null;
 
     if ($currentWoId !== $prevWoId || $currentColor !== $prevColor) {
         $rowspan = 1;
-        for ($i = $index + 1; $i < count($models); $i++) {
+        for ($i = $pos + 1; $i < count($models); $i++) {
             $nextWoId = $models[$i]->wo_id;
             $nextColor = $models[$i]->woColor->moColor->color ?? null;
             if ($nextWoId === $currentWoId && $nextColor === $currentColor) {
@@ -147,6 +165,58 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
         return ['style' => 'display: none;'];
     }
 };
+
+$allModels = $dataProvider->getModels();
+$modelIds = array_filter(\yii\helpers\ArrayHelper::getColumn($allModels, 'id'));
+
+$processMap = [];
+$lastProcessesMap = [];
+$actionLogMap = [];
+
+$relaxProcessId = null;
+$scutcherProcessId = null;
+$relaxProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Relaxing']);
+$scutcherProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Scutcher Relaxing']);
+if ($relaxProcess) $relaxProcessId = $relaxProcess->id;
+if ($scutcherProcess) $scutcherProcessId = $scutcherProcess->id;
+
+if (!empty($modelIds)) {
+    // 1. Fetch all process data for these models
+    $allProcessData = (new \yii\db\Query())
+        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+        ->where(['in', 'kartu_process_id', $modelIds])
+        ->all();
+        
+    foreach ($allProcessData as $pd) {
+        $processMap[$pd['kartu_process_id']][$pd['process_id']] = $pd;
+    }
+    
+    // 2. Fetch last processes
+    $lastProcessesRaw = Yii::$app->db->createCommand("
+        SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses
+        FROM kartu_process_dyeing_process k
+        INNER JOIN mst_process_dyeing m ON k.process_id = m.id
+        WHERE k.kartu_process_id IN (" . implode(',', $modelIds) . ")
+        AND k.value IS NOT NULL AND k.value <> ''
+        ORDER BY k.kartu_process_id, m.order DESC
+    ")->queryAll();
+    
+    foreach ($lastProcessesRaw as $row) {
+        $lastProcessesMap[$row['kartu_process_id']] = $row['nama_proses'];
+    }
+    
+    // 3. Fetch Action Logs for masuk_verpacking
+    $actionLogsRaw = (new \yii\db\Query())
+        ->select(['kartu_proses_id'])
+        ->from(\common\models\ar\ActionLogKartuDyeing::tableName())
+        ->where(['in', 'kartu_proses_id', $modelIds])
+        ->andWhere(['action_name' => 'masuk_verpacking'])
+        ->all();
+        
+    foreach ($actionLogsRaw as $log) {
+        $actionLogMap[$log['kartu_proses_id']] = true;
+    }
+}
 
 $gridColumns = [
     ['class' => 'kartik\grid\SerialColumn'],
@@ -175,6 +245,110 @@ $gridColumns = [
         'hAlign' => 'center',
         'vAlign' => 'middle',
         'contentOptions' => $groupContentOptions,
+    ],
+    [
+        'label' => 'Tgl. Terima',
+        'value' => function($data) use ($formatIndoDate) {
+            return $data->wo ? $formatIndoDate($data->wo->tgl_kirim) : null;
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
+    ],
+    [
+        'label' => 'Handling',
+        'value' => function($data) {
+            return ($data->wo && $data->wo->handling) ? $data->wo->handling->name : '-';
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
+    ],
+    [
+        'label' => 'Target Finish',
+        'value' => function($data) {
+            $cleanNum = function($val) {
+                return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+            };
+            return $data->wo ? (\Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyFinish), 1) .'M / '. \Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyFinishToYard), 1).'Y') : null;
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
+    ],
+    [
+        'label' => 'Panjang',
+        'value' => function($data) {
+            $cleanNum = function($val) {
+                return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+            };
+            return $data->wo ? (\Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyBatchToMeter)) . ' M') : null;
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupContentOptions,
+    ],
+    [
+        'label' => 'Note WO',
+        'value' => function($data) {
+            $note = '';
+            if ($data->wo && !empty($data->wo->note)) {
+                $rawNote = $data->wo->note;
+                $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $rawNote = strip_tags($rawNote);
+                $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
+                $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
+                $rawNote = trim($rawNote);
+                $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+            }
+            return !empty($note) ? nl2br(\yii\helpers\Html::encode($note)) : '-';
+        },
+        'format' => 'raw',
+        'vAlign' => 'middle',
+        'contentOptions' => function($model, $key, $index, $column) use ($groupContentOptions) {
+            $options = $groupContentOptions($model, $key, $index, $column);
+            if (isset($options['style']) && strpos($options['style'], 'display: none') === false) {
+                $options['style'] .= ' text-align: left; min-width: 150px; white-space: pre-wrap; font-size: 11px; color: #e05e5e;';
+            }
+            return $options;
+        },
+    ],
+    [
+        'label' => 'Memo Perubahan',
+        'value' => function($data) {
+            $memos = $data->wo ? $data->wo->trnWoMemos : [];
+            $memoHtml = '';
+            if (!empty($memos)) {
+                $memoTexts = [];
+                foreach ($memos as $memoModel) {
+                    $mText = $memoModel->memo;
+                    $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $mText = strip_tags($mText);
+                    $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
+                    $mText = trim($mText);
+                    if (!empty($mText)) {
+                        $memoTexts[] = '<strong>No. ' . \yii\helpers\Html::encode($memoModel->no) . ':</strong> ' . nl2br(\yii\helpers\Html::encode($mText));
+                    }
+                }
+                if (!empty($memoTexts)) {
+                    $memoHtml = implode('<br>', $memoTexts);
+                }
+            }
+            return !empty($memoHtml) ? $memoHtml : '<span style="color: #9e9e9e; font-style: italic;">Tidak ada Memo</span>';
+        },
+        'format' => 'raw',
+        'vAlign' => 'middle',
+        'contentOptions' => function($model, $key, $index, $column) use ($groupContentOptions) {
+            $options = $groupContentOptions($model, $key, $index, $column);
+            if (isset($options['style']) && strpos($options['style'], 'display: none') === false) {
+                $options['style'] .= ' text-align: left; min-width: 150px; font-size: 11px; color: #1565c0;';
+            }
+            return $options;
+        },
     ],
     [
         'attribute' => 'customerName',
@@ -237,25 +411,17 @@ $gridColumns = [
     [
         'attribute' => 'nomor_kartu',
         'label'=>'NK',
-        'contentOptions' => function($model, $key, $index, $column) {
-            $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
-                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
-                ->exists();
+        'contentOptions' => function($model, $key, $index, $column) use (&$actionLogMap, &$processMap, $relaxProcessId, $scutcherProcessId) {
+            $hasLogs = isset($actionLogMap[$model->id]);
             if ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16])) {
                 return ['style' => 'font-weight: bold; text-align: center;'];
             }
 
-            $relaxProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Relaxing']);
-            $scutcherProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => 'Scutcher Relaxing']);
-            
             $hasRelax = false;
             $hasScutcher = false;
             
-            if ($relaxProcess !== null) {
-                $pc = (new \yii\db\Query())
-                    ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                    ->where(['kartu_process_id' => $model->id, 'process_id' => $relaxProcess->id])
-                    ->one();
+            if ($relaxProcessId !== null) {
+                $pc = isset($processMap[$model->id][$relaxProcessId]) ? $processMap[$model->id][$relaxProcessId] : false;
                 if ($pc !== false && !empty($pc['value'])) {
                     $v = \yii\helpers\Json::decode($pc['value']);
                     if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
@@ -264,11 +430,8 @@ $gridColumns = [
                 }
             }
             
-            if ($scutcherProcess !== null) {
-                $pc = (new \yii\db\Query())
-                    ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                    ->where(['kartu_process_id' => $model->id, 'process_id' => $scutcherProcess->id])
-                    ->one();
+            if ($scutcherProcessId !== null) {
+                $pc = isset($processMap[$model->id][$scutcherProcessId]) ? $processMap[$model->id][$scutcherProcessId] : false;
                 if ($pc !== false && !empty($pc['value'])) {
                     $v = \yii\helpers\Json::decode($pc['value']);
                     if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
@@ -296,6 +459,25 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
+        'label' => 'Matching Colour',
+        'value' => function($data) use ($formatIndoDate) {
+            return ($data->woColor && $data->woColor->date_ready_colour) ? $formatIndoDate($data->woColor->date_ready_colour) : null;
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupWarnaContentOptions,
+    ],
+    [
+        'label' => 'Matching Toping',
+        'value' => function($data) use ($formatIndoDate) {
+            return $data->date_toping_matching ? $formatIndoDate($data->date_toping_matching) : null;
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
         'label'=>'Panjang Greige',
         'value'=>function($data){
             return $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
@@ -318,17 +500,18 @@ $gridColumns = [
     ],
     [
         'label' => 'Terakhir Proses',
-        'value' => function($data) {
-            $lastProcess = (new \yii\db\Query())
-                ->select(['m.nama_proses'])
-                ->from('kartu_process_dyeing_process k')
-                ->innerJoin('mst_process_dyeing m', 'k.process_id = m.id')
-                ->where(['k.kartu_process_id' => $data->id])
-                ->andWhere(['is not', 'k.value', null])
-                ->andWhere(['<>', 'k.value', ''])
-                ->orderBy(['m.order' => SORT_DESC])
-                ->one();
-            return $lastProcess !== false ? $lastProcess['nama_proses'] : '-';
+        'attribute' => 'terakhir_proses',
+        'filterType' => GridView::FILTER_SELECT2,
+        'filter' => \yii\helpers\ArrayHelper::map(\common\models\ar\MstProcessDyeing::find()->where(['use_jetblack' => false, 'perbaikan' => false])->orderBy('order')->all(), 'nama_proses', 'nama_proses'),
+        'filterWidgetOptions' => [
+            'pluginOptions' => [
+                'allowClear' => true,
+                'multiple' => true,
+                'placeholder' => 'Pilih...',
+            ],
+        ],
+        'value' => function($data) use (&$lastProcessesMap) {
+            return isset($lastProcessesMap[$data->id]) ? $lastProcessesMap[$data->id] : '-';
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
@@ -391,10 +574,8 @@ foreach ($masterProcesses as $proc) {
         'headerOptions' => [
             'style' => 'text-align: center; vertical-align: middle;',
         ],
-        'contentOptions' => function($model, $key, $index, $column) use ($proc, $isDyeing, $isOrange, $isPink, $isResinFinish, $isHeatCut) {
-            $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
-                ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
-                ->exists();
+        'contentOptions' => function($model, $key, $index, $column) use ($proc, $isDyeing, $isOrange, $isPink, $isResinFinish, $isHeatCut, &$processMap, &$actionLogMap) {
+            $hasLogs = isset($actionLogMap[$model->id]);
             $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]));
             
             if ($isPackFilled) {
@@ -402,10 +583,7 @@ foreach ($masterProcesses as $proc) {
             }
 
             $hasData = false;
-            $pc = (new \yii\db\Query())
-                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                ->where(['kartu_process_id' => $model->id, 'process_id' => $proc->id])
-                ->one();
+            $pc = isset($processMap[$model->id][$proc->id]) ? $processMap[$model->id][$proc->id] : false;
             if ($pc !== false && !empty($pc['value'])) {
                 $v = \yii\helpers\Json::decode($pc['value']);
                 if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
@@ -437,14 +615,11 @@ foreach ($masterProcesses as $proc) {
             }
             return ['style' => 'text-align: center;'];
         },
-        'value' => function($data) use ($proc, $formatProcessDate) {
+        'value' => function($data) use ($proc, $formatProcessDate, &$processMap) {
             $tg = '-';
             $sh = '-';
             $mc = '-';
-            $pc = (new \yii\db\Query())
-                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                ->where(['kartu_process_id' => $data->id, 'process_id' => $proc->id])
-                ->one();
+            $pc = isset($processMap[$data->id][$proc->id]) ? $processMap[$data->id][$proc->id] : false;
 
             if ($pc !== false) {
                 $v = \yii\helpers\Json::decode($pc['value']);
@@ -505,10 +680,8 @@ foreach ($masterProcesses as $proc) {
                 'headerOptions' => [
                     'style' => 'text-align: center; vertical-align: middle;',
                 ],
-                'contentOptions' => function($model, $key, $index, $column) use ($jbProc, $isJbPink) {
-                    $hasLogs = \common\models\ar\ActionLogKartuDyeing::find()
-                        ->where(['kartu_proses_id' => $model->id, 'action_name' => 'masuk_verpacking'])
-                        ->exists();
+                'contentOptions' => function($model, $key, $index, $column) use ($jbProc, $isJbPink, &$processMap, &$actionLogMap) {
+                    $hasLogs = isset($actionLogMap[$model->id]);
                     $isPackFilled = ($hasLogs || !empty($model->approved_history) || !empty($model->approved_at) || in_array($model->status, [4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]));
                     
                     if ($isPackFilled) {
@@ -516,10 +689,7 @@ foreach ($masterProcesses as $proc) {
                     }
 
                     $hasData = false;
-                    $pc = (new \yii\db\Query())
-                        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                        ->where(['kartu_process_id' => $model->id, 'process_id' => $jbProc->id])
-                        ->one();
+                    $pc = isset($processMap[$model->id][$jbProc->id]) ? $processMap[$model->id][$jbProc->id] : false;
                     if ($pc !== false && !empty($pc['value'])) {
                         $v = \yii\helpers\Json::decode($pc['value']);
                         if (!empty($v['tanggal']) || !empty($v['shift_group'])) {
@@ -539,14 +709,11 @@ foreach ($masterProcesses as $proc) {
                     }
                     return ['style' => 'text-align: center;'];
                 },
-                'value' => function($data) use ($jbProc, $formatProcessDate) {
+                'value' => function($data) use ($jbProc, $formatProcessDate, &$processMap) {
                     $tg = '-';
                     $sh = '-';
                     $mc = '-';
-                    $pc = (new \yii\db\Query())
-                        ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
-                        ->where(['kartu_process_id' => $data->id, 'process_id' => $jbProc->id])
-                        ->one();
+                    $pc = isset($processMap[$data->id][$jbProc->id]) ? $processMap[$data->id][$jbProc->id] : false;
 
                     if ($pc !== false) {
                         $v = \yii\helpers\Json::decode($pc['value']);
@@ -772,8 +939,15 @@ $columnToggleDropdown .= '</ul></div>';
         'condensed' => true,
         'hover' => true,
         'rowOptions' => function($model, $key, $index, $grid) {
-            $models = $grid->dataProvider->getModels();
-            $nextModel = isset($models[$index + 1]) ? $models[$index + 1] : null;
+            $models = array_values($grid->dataProvider->getModels());
+            $pos = false;
+            foreach ($models as $i => $m) {
+                if ($m->id === $model->id) {
+                    $pos = $i;
+                    break;
+                }
+            }
+            $nextModel = ($pos !== false && isset($models[$pos + 1])) ? $models[$pos + 1] : null;
             
             $currentBuyer = $model->sc ? $model->sc->customerName : null;
             $nextBuyer = ($nextModel && $nextModel->sc) ? $nextModel->sc->customerName : null;
@@ -865,147 +1039,6 @@ $columnToggleDropdown .= '</ul></div>';
             }
             return !empty($classes) ? ['class' => implode(' ', $classes)] : [];
         },
-        'afterRow' => function($model, $key, $index, $grid) use ($gridColumns, $formatIndoDate) {
-            $models = $grid->dataProvider->getModels();
-            $nextModel = isset($models[$index + 1]) ? $models[$index + 1] : null;
-            
-            $currentWoId = $model->wo_id;
-            $nextWoId = $nextModel ? $nextModel->wo_id : null;
-            
-
-            if ($currentWoId !== $nextWoId) {
-                if ($model->wo) {
-                    $note = '';
-                    if (!empty($model->wo->note)) {
-                        $rawNote = $model->wo->note;
-                        $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                        $rawNote = strip_tags($rawNote);
-                        $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
-                        $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
-                        $rawNote = trim($rawNote);
-                        $note = preg_replace("/\n{2,}/", "\n", $rawNote);
-                    }
-                    
-                    // Determine if this is also the end of a Buyer group (to add a thick border)
-                    $currentBuyer = $model->sc ? $model->sc->customerName : null;
-                    $nextBuyer = ($nextModel && $nextModel->sc) ? $nextModel->sc->customerName : null;
-                    $isGroupEnd = ($currentBuyer !== $nextBuyer);
-                    
-                    $borderStyle = $isGroupEnd ? 'border-bottom: 2.5px solid #666 !important;' : 'border-bottom: 1.5px solid #b0b0b0 !important;';
-                    
-                    $html = '<tr class="note-row-group" style="background-color: #fafafa;">';
-                    $html .= '<td class="col-serial" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none;">&nbsp;</td>';
-                    $html .= '<td class="col-id" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none;">&nbsp;</td>';
-                    
-                    // Column 2 to 5: Note and WO Metadata
-                    $html .= '<td colspan="4" class="col-note-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
-                    
-                    // Metadata block
-                    $cleanNum = function($val) {
-                        return (float)str_replace([' ', ','], ['', '.'], (string)$val);
-                    };
-                    $tglKirimRaw = $formatIndoDate($model->wo->tgl_kirim);
-                    $handRaw = $model->wo->handling ? $model->wo->handling->name : '-';
-                    $tFinishRaw = \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinish), 1) .'M / '. \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyFinishToYard), 1).'Y';
-                    $panjangRaw = \Yii::$app->formatter->asDecimal($cleanNum($model->wo->colorQtyBatchToMeter)) . ' M';
-                    
-                    $tglKirimVal = ($tglKirimRaw !== '' && $tglKirimRaw !== null) ? \yii\helpers\Html::encode($tglKirimRaw) : null;
-                    $handVal = ($handRaw !== '' && $handRaw !== null) ? \yii\helpers\Html::encode($handRaw) : null;
-                    $tFinishVal = ($tFinishRaw !== '' && $tFinishRaw !== null) ? '<span style="color: #6a1b9a;">' . \yii\helpers\Html::encode($tFinishRaw) . '</span>' : null;
-                    $panjangVal = ($panjangRaw !== '' && $panjangRaw !== null) ? '<span style="color: #00695c;">' . \yii\helpers\Html::encode($panjangRaw) . '</span>' : null;
-                    
-                    $metaStr = implode(', ', array_filter([$tglKirimVal, $handVal, $tFinishVal, $panjangVal], function($val) {
-                        return $val !== '' && $val !== null;
-                    }));
-
-                    $html .= '<div style="font-size: 11px; margin-bottom: 5px; line-height: 1.5; color: #555; font-weight: bold;">';
-                    $html .= $metaStr;
-                    $html .= '</div>';
-                    
-                    if (!empty($note)) {
-                        $html .= '<div style="border-top: 1px solid #ddd; padding-top: 4px; margin-top: 4px; font-size: 11px; color: #e05e5e; line-height: 1.4;">';
-                        $html .= '<strong>Note:</strong><br>' . nl2br(\yii\helpers\Html::encode($note));
-                        $html .= '</div>';
-                    }
-                    $html .= '</td>';
-                    
-                    // Column 6 to 11: Memo Perubahan
-                    $memos = $model->wo->trnWoMemos;
-                    $memoHtml = '';
-                    if (!empty($memos)) {
-                        $memoTexts = [];
-                        foreach ($memos as $memoModel) {
-                            $mText = $memoModel->memo;
-                            $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                            $mText = strip_tags($mText);
-                            $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
-                            $mText = trim($mText);
-                            if (!empty($mText)) {
-                                $memoTexts[] = '<strong>No. ' . \yii\helpers\Html::encode($memoModel->no) . ':</strong> ' . nl2br(\yii\helpers\Html::encode($mText));
-                            }
-                        }
-                        if (!empty($memoTexts)) {
-                            $memoHtml = implode('<br>', $memoTexts);
-                        }
-                    }
-                    
-                    $html .= '<td colspan="2" class="col-memo-container" style="background-color: #fafafa !important; ' . $borderStyle . ' border-top: none; padding: 6px 12px; text-align: left; vertical-align: middle;">';
-                    $html .= '<div style="font-size: 11px; color: #1565c0; line-height: 1.4;">';
-                    if (!empty($memoHtml)) {
-                        $html .= '<strong>Memo Perubahan WO:</strong><br>' . $memoHtml;
-                    } else {
-                        $html .= '<span style="color: #9e9e9e; font-style: italic;">Tidak ada Memo Perubahan WO</span>';
-                    }
-                    $html .= '</div>';
-                    $html .= '</td>';
-                    
-                    for ($i = 8; $i < count($gridColumns); $i++) {
-                        $col = $gridColumns[$i];
-                        if (isset($col['class']) && $col['class'] === 'kartik\grid\SerialColumn') {
-                            $colKey = 'col-serial';
-                        } elseif (isset($col['attribute'])) {
-                            $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $col['attribute']));
-                        } elseif (isset($col['label'])) {
-                            $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $col['label']));
-                        } else {
-                            $colKey = 'col-column-' . $i;
-                        }
-                        
-                        // Evaluate contentOptions of the column to follow its color styling
-                        $cellStyle = '';
-                        $cellClass = '';
-                        if (isset($col['contentOptions'])) {
-                            if (is_callable($col['contentOptions'])) {
-                                $options = call_user_func($col['contentOptions'], $model, $key, $index, $grid);
-                            } else {
-                                $options = $col['contentOptions'];
-                            }
-                            if (isset($options['style'])) {
-                                $cellStyle = $options['style'];
-                            }
-                            if (isset($options['class'])) {
-                                $cellClass = $options['class'];
-                            }
-                        }
-                        
-                        $finalStyle = $borderStyle . ' border-top: none;';
-                        if (!empty($cellStyle)) {
-                            $finalStyle .= ' ' . $cellStyle;
-                        } else {
-                            $finalStyle .= ' background-color: #fafafa !important;';
-                        }
-                        
-                        $finalClass = trim($colKey . ' ' . $cellClass);
-                        
-                        $html .= '<td class="' . $finalClass . '" style="' . $finalStyle . '">&nbsp;</td>';
-                    }
-                    
-                    $html .= '</tr>';
-                    return $html;
-                }
-            }
-            return null;
-        },
         'columns' => $gridColumns,
     ]); ?>
 </div>
@@ -1041,39 +1074,55 @@ $columnToggleDropdown .= '</ul></div>';
 /* Set standard widths and left offsets to align perfectly when frozen */
 .col-serial {
     width: 50px !important; min-width: 50px !important; max-width: 50px !important;
-    left: 0px !important;
 }
 .col-id {
     width: 60px !important; min-width: 60px !important; max-width: 60px !important;
-    left: 50px !important;
 }
 .col-wodaterange {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
-    left: 110px !important;
+}
+.col-tgl--terima {
+    width: 90px !important; min-width: 90px !important; max-width: 90px !important;
+}
+.col-handling {
+    width: 90px !important; min-width: 90px !important; max-width: 90px !important;
+}
+.col-target-finish {
+    width: 110px !important; min-width: 110px !important; max-width: 110px !important;
+}
+.col-panjang {
+    width: 90px !important; min-width: 90px !important; max-width: 90px !important;
+}
+.col-note-wo {
+    width: 200px !important; min-width: 200px !important; max-width: 200px !important;
+}
+.col-memo-perubahan {
+    width: 180px !important; min-width: 180px !important; max-width: 180px !important;
 }
 .col-buyer {
     width: 80px !important; min-width: 80px !important; max-width: 80px !important;
-    left: 210px !important;
 }
 .col-wono {
     width: 115px !important; min-width: 115px !important; max-width: 115px !important;
-    left: 290px !important;
 }
 .col-motif {
     width: 150px !important; min-width: 150px !important; max-width: 150px !important;
-    left: 405px !important;
 }
 .col-warna {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
-    left: 555px !important;
 }
 .col-nomor-kartu {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
-    left: 655px !important;
+}
+.col-matching-colour {
+    width: 110px !important; min-width: 110px !important; max-width: 110px !important;
+}
+.col-matching-toping {
+    width: 110px !important; min-width: 110px !important; max-width: 110px !important;
 }
 
 /* Horizontal Sticky Behavior for Frozen Columns */
-.col-serial, .col-id, .col-wodaterange, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu {
+.col-serial, .col-id, .col-wodaterange, .col-tgl--terima, .col-handling, .col-target-finish, .col-panjang, .col-note-wo, .col-memo-perubahan, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu, .col-matching-colour, .col-matching-toping {
     position: sticky !important;
     z-index: 5 !important;
 }
@@ -1082,15 +1131,19 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-serial,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-id,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-wodaterange,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-tgl--terima,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-handling,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-target-finish,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-panjang,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-note-wo,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-memo-perubahan,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-buyer,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-motif,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-tgl--kirim,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-hand,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-t--finish,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-panjang,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-matching-colour,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-matching-toping {
     background-color: #ffffff !important;
 }
 
@@ -1305,14 +1358,19 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-serial,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-id,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-wodaterange,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-tgl--terima,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-handling,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-target-finish,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-panjang,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-note-wo,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-memo-perubahan,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-buyer,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-motif,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-tgl--kirim,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-hand,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-t--finish,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-matching-colour,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-matching-toping {
     z-index: 30 !important; /* Must be higher than normal sticky headers and normal sticky cells */
 }
 
@@ -1335,14 +1393,19 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-serial,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-id,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-wodaterange,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-tgl--terima,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-handling,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-target-finish,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-panjang,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-note-wo,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-memo-perubahan,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-buyer,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-motif,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-tgl--kirim,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-hand,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-t--finish,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-matching-colour,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-matching-toping {
     z-index: 29 !important; /* Higher than normal filter cells and body cells */
 }
 
@@ -1421,118 +1484,35 @@ $('.kartu-proses-dyeing-index').on('click', '#dropdownColumnToggle + .dropdown-m
 
 // Fungsi menyesuaikan colspan dari container Memo dan Note sesuai dengan jumlah kolom yang terlihat
 function updateColspans() {
-    // Note container (Tgl. WO, Buyer, No. WO, Motif)
-    var noteCount = 0;
-    if ($('.col-wodaterange:first').is(':visible')) noteCount++;
-    if ($('.col-buyer:first').is(':visible')) noteCount++;
-    if ($('.col-wono:first').is(':visible')) noteCount++;
-    if ($('.col-motif:first').is(':visible')) noteCount++;
+    var leftOffset = 0;
     
-    if (noteCount === 0) {
-        $('.col-note-container').hide();
-    } else {
-        $('.col-note-container').show().attr('colspan', noteCount);
-    }
-    
-    // Memo container (Warna, NK)
-    var memoCount = 0;
-    if ($('.col-warna:first').is(':visible')) memoCount++;
-    if ($('.col-nomor-kartu:first').is(':visible')) memoCount++;
-    
-    if (memoCount === 0) {
-        $('.col-memo-container').hide();
-    } else {
-        $('.col-memo-container').show().attr('colspan', memoCount);
+    function processStickyCol(selector, defaultWidth) {
+        var isVisible = $(selector + ':first').is(':visible');
+        var width = isVisible ? defaultWidth : 0;
+        if (isVisible) {
+            $(selector).each(function() {
+                this.style.setProperty('left', leftOffset + 'px', 'important');
+            });
+        }
+        leftOffset += width;
     }
 
-    // --- Dynamic Sticky Left Offset Calculation ---
-    var serialVisible = $('.col-serial:first').is(':visible');
-    var serialWidth = serialVisible ? 50 : 0;
-    if (serialVisible) {
-        $('.col-serial').each(function() {
-            this.style.setProperty('left', '0px', 'important');
-        });
-    }
-
-    var idVisible = $('.col-id:first').is(':visible');
-    var idWidth = idVisible ? 60 : 0;
-    if (idVisible) {
-        $('.col-id').each(function() {
-            this.style.setProperty('left', serialWidth + 'px', 'important');
-        });
-    }
-
-    var noteLeft = serialWidth + idWidth;
-
-    var wDateVisible = $('.col-wodaterange:first').is(':visible');
-    var wDateWidth = wDateVisible ? 100 : 0;
-    if (wDateVisible) {
-        $('.col-wodaterange').each(function() {
-            this.style.setProperty('left', noteLeft + 'px', 'important');
-        });
-    }
-
-    var buyerVisible = $('.col-buyer:first').is(':visible');
-    var buyerWidth = buyerVisible ? 80 : 0;
-    if (buyerVisible) {
-        $('.col-buyer').each(function() {
-            this.style.setProperty('left', (noteLeft + wDateWidth) + 'px', 'important');
-        });
-    }
-
-    var wonoVisible = $('.col-wono:first').is(':visible');
-    var wonoWidth = wonoVisible ? 115 : 0;
-    if (wonoVisible) {
-        $('.col-wono').each(function() {
-            this.style.setProperty('left', (noteLeft + wDateWidth + buyerWidth) + 'px', 'important');
-        });
-    }
-
-    var motifVisible = $('.col-motif:first').is(':visible');
-    var motifWidth = motifVisible ? 150 : 0;
-    if (motifVisible) {
-        $('.col-motif').each(function() {
-            this.style.setProperty('left', (noteLeft + wDateWidth + buyerWidth + wonoWidth) + 'px', 'important');
-        });
-    }
-
-    var noteTotalWidth = wDateWidth + buyerWidth + wonoWidth + motifWidth;
-    if (noteTotalWidth > 0) {
-        $('.col-note-container').each(function() {
-            this.style.setProperty('left', noteLeft + 'px', 'important');
-            this.style.setProperty('width', noteTotalWidth + 'px', 'important');
-            this.style.setProperty('min-width', noteTotalWidth + 'px', 'important');
-            this.style.setProperty('max-width', noteTotalWidth + 'px', 'important');
-        });
-    }
-
-    var memoLeft = noteLeft + noteTotalWidth;
-
-    var warnaVisible = $('.col-warna:first').is(':visible');
-    var warnaWidth = warnaVisible ? 100 : 0;
-    if (warnaVisible) {
-        $('.col-warna').each(function() {
-            this.style.setProperty('left', memoLeft + 'px', 'important');
-        });
-    }
-
-    var nkVisible = $('.col-nomor-kartu:first').is(':visible');
-    var nkWidth = nkVisible ? 100 : 0;
-    if (nkVisible) {
-        $('.col-nomor-kartu').each(function() {
-            this.style.setProperty('left', (memoLeft + warnaWidth) + 'px', 'important');
-        });
-    }
-
-    var memoTotalWidth = warnaWidth + nkWidth;
-    if (memoTotalWidth > 0) {
-        $('.col-memo-container').each(function() {
-            this.style.setProperty('left', memoLeft + 'px', 'important');
-            this.style.setProperty('width', memoTotalWidth + 'px', 'important');
-            this.style.setProperty('min-width', memoTotalWidth + 'px', 'important');
-            this.style.setProperty('max-width', memoTotalWidth + 'px', 'important');
-        });
-    }
+    processStickyCol('.col-serial', 50);
+    processStickyCol('.col-id', 60);
+    processStickyCol('.col-wodaterange', 100);
+    processStickyCol('.col-tgl--terima', 90);
+    processStickyCol('.col-handling', 90);
+    processStickyCol('.col-target-finish', 110);
+    processStickyCol('.col-panjang', 90);
+    processStickyCol('.col-note-wo', 200);
+    processStickyCol('.col-memo-perubahan', 180);
+    processStickyCol('.col-buyer', 80);
+    processStickyCol('.col-wono', 115);
+    processStickyCol('.col-motif', 150);
+    processStickyCol('.col-warna', 100);
+    processStickyCol('.col-nomor-kartu', 100);
+    processStickyCol('.col-matching-colour', 110);
+    processStickyCol('.col-matching-toping', 110);
 }
 
 // Fungsi menerapkan visibilitas kolom dari localStorage dan meng-update URL Export Excel

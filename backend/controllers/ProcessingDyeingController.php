@@ -78,7 +78,7 @@ class ProcessingDyeingController extends Controller
         }
         
         $dataProvider = $searchModel->search($queryParams);
-        $dataProvider->sort->defaultOrder = ['wo_id' => SORT_DESC];
+        $dataProvider->sort->defaultOrder = ['wo_id' => SORT_DESC, 'date' => SORT_ASC, 'no_urut' => SORT_ASC];
 
         $statusRekap = Yii::$app->request->get('status_rekap', 'semua');
         
@@ -128,6 +128,8 @@ class ProcessingDyeingController extends Controller
                         'sort' => [
                             'attributes' => [
                                 'wo_id',
+                                'date',
+                                'no_urut',
                                 'woNo' => [
                                     'asc' => ['woNo' => SORT_ASC],
                                     'desc' => ['woNo' => SORT_DESC],
@@ -135,6 +137,8 @@ class ProcessingDyeingController extends Controller
                             ],
                             'defaultOrder' => [
                                 'wo_id' => SORT_DESC,
+                                'date' => SORT_ASC,
+                                'no_urut' => SORT_ASC
                             ]
                         ],
                     ]);
@@ -209,11 +213,19 @@ class ProcessingDyeingController extends Controller
         $allHeaders = [
             'col-id' => 'ID',
             'col-wodaterange' => 'Tgl. WO',
+            'col-tgl--kirim' => 'Tgl. Terima',
+            'col-hand' => 'Handling',
+            'col-t--finish' => 'Target Finish',
+            'col-panjang' => 'Panjang',
+            'col-note' => 'Note WO',
+            'col-memo' => 'Memo Perubahan',
             'col-buyer' => 'Buyer',
             'col-wono' => 'No. WO',
             'col-motif' => 'Motif',
             'col-warna' => 'Warna',
             'col-nomor-kartu' => 'NK',
+            'col-matching-colour' => 'Matching Colour',
+            'col-matching-toping' => 'Matching Toping',
             'col-panjang-greige' => 'Panjang Greige',
             'col-berat-greige' => 'Berat Greige',
             'col-pcs' => 'Pcs',
@@ -221,7 +233,7 @@ class ProcessingDyeingController extends Controller
         ];
 
         foreach ($masterProcesses as $proc) {
-            $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+            $colKey = 'col-processdates-' . $proc->id . '-';
             $allHeaders[$colKey] = $proc->nama_proses;
         }
 
@@ -358,6 +370,8 @@ class ProcessingDyeingController extends Controller
                 'col-t--finish' => $tFinish,
                 'col-warna' => $warna,
                 'col-nomor-kartu' => $nk,
+                'col-matching-colour' => ($model->woColor && $model->woColor->date_ready_colour) ? $formatIndoDate($model->woColor->date_ready_colour) : '',
+                'col-matching-toping' => $model->date_toping_matching ? $formatIndoDate($model->date_toping_matching) : '',
                 'col-panjang' => $panjang,
                 'col-panjang-greige' => $panjangGreige,
                 'col-berat-greige' => $beratGreige,
@@ -377,7 +391,7 @@ class ProcessingDyeingController extends Controller
                         $sh = $v['shift_group'];
                     }
                 }
-                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+                $colKey = 'col-processdates-' . $proc->id . '-';
                 $rowVals[$colKey] = $tg . ' / ' . $sh;
             }
             
@@ -433,10 +447,19 @@ class ProcessingDyeingController extends Controller
         $mergeCols = [
             'col-id',
             'col-wodaterange',
+            'col-tgl--kirim',
+            'col-hand',
+            'col-t--finish',
+            'col-panjang',
+            'col-note',
+            'col-memo',
             'col-buyer',
             'col-wono',
             'col-motif',
-            'col-warna'
+            'col-warna',
+            'col-nomor-kartu',
+            'col-matching-colour',
+            'col-matching-toping'
         ];
 
         foreach ($mergeCols as $colKey) {
@@ -520,7 +543,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
-        echo '   <Interior ss:Color="#FFFDE7" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#FFFF00" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="RowTopingFilled">' . "\n";
@@ -544,7 +567,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
-        echo '   <Interior ss:Color="#E3F2FD" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#00FFFF" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="RowPinkFilled">' . "\n";
@@ -556,7 +579,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
-        echo '   <Interior ss:Color="#FCE4EC" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#FF95FF" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         // Column-specific highlight styles
@@ -569,7 +592,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#5D4037"/>' . "\n";
-        echo '   <Interior ss:Color="#FFF8E1" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#FFFF00" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="ColResinStyle">' . "\n";
@@ -581,7 +604,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#0D47A1"/>' . "\n";
-        echo '   <Interior ss:Color="#BBDEFB" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#00FFFF" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="ColHeatCutPackStyle">' . "\n";
@@ -605,7 +628,7 @@ class ProcessingDyeingController extends Controller
         echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
         echo '   </Borders>' . "\n";
         echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#880E4F"/>' . "\n";
-        echo '   <Interior ss:Color="#F8BBD0" ss:Pattern="Solid"/>' . "\n";
+        echo '   <Interior ss:Color="#FF95FF" ss:Pattern="Solid"/>' . "\n";
         echo '  </Style>' . "\n";
 
         echo '  <Style ss:ID="ColTopingRcStyle">' . "\n";
@@ -692,11 +715,19 @@ class ProcessingDyeingController extends Controller
         $columnWidths = [
             'col-id' => 50,
             'col-wodaterange' => 90,
+            'col-tgl--kirim' => 90,
+            'col-hand' => 90,
+            'col-t--finish' => 110,
+            'col-panjang' => 90,
+            'col-note' => 200,
+            'col-memo' => 180,
             'col-buyer' => 80,
             'col-wono' => 110,
             'col-motif' => 130,
             'col-warna' => 100,
             'col-nomor-kartu' => 100,
+            'col-matching-colour' => 110,
+            'col-matching-toping' => 110,
             'col-panjang-greige' => 100,
             'col-berat-greige' => 90,
             'col-pcs' => 50,
@@ -805,7 +836,7 @@ class ProcessingDyeingController extends Controller
             // Process column custom highlights
             $processHighlightStyles = [];
             foreach ($masterProcesses as $proc) {
-                $colKey = 'col-' . strtolower(preg_replace('/[^a-zA-Z0-9]/', '-', $proc->nama_proses . ' / Shift'));
+                $colKey = 'col-processdates-' . $proc->id . '-';
                 $hasVal = false;
                 if (isset($processData[$proc->id])) {
                     $v = $processData[$proc->id];
@@ -883,55 +914,7 @@ class ProcessingDyeingController extends Controller
             }
             echo '   </Row>' . "\n";
             
-            // Print Note/Memo row if WO number changes and there is a note (exactly matching the web UI afterRow logic)
-            $nextRowItem = isset($rowDataList[$idx + 1]) ? $rowDataList[$idx + 1] : null;
-            $currentWoNo = $rowData['col-wono'];
-            $nextWoNo = $nextRowItem ? $nextRowItem['rowData']['col-wono'] : null;
-            
-            if ($currentWoNo !== $nextWoNo) {
-                if ($model->wo) {
-                    echo '   <Row ss:Height="45">' . "\n";
-                    
-                    // Column 1 (ID): Empty cell
-                    echo '    <Cell ss:Index="1" ss:StyleID="NoteRowStyle"><Data ss:Type="String"></Data></Cell>' . "\n";
-                    
-                    // Column 2: Note container with WO Metadata. We use ss:MergeAcross="3" (to span columns 2, 3, 4, 5)
-                    $tglKirim = isset($rowData['col-tgl--kirim']) ? $rowData['col-tgl--kirim'] : '';
-                    $hand = isset($rowData['col-hand']) ? $rowData['col-hand'] : '';
-                    $tFinish = isset($rowData['col-t--finish']) ? $rowData['col-t--finish'] : '';
-                    $panjang = isset($rowData['col-panjang']) ? $rowData['col-panjang'] : '';
-                    $noteVal = isset($rowData['col-note']) ? $rowData['col-note'] : '';
-                    
-                    $metaString = implode(', ', array_filter([$tglKirim, $hand, $tFinish, $panjang . ' M'], function($val) {
-                        return $val !== '' && $val !== null;
-                    }));
-                    
-                    if (!empty($noteVal)) {
-                        $metaString .= "\n\nNote:\n" . $noteVal;
-                    }
-                    
-                    $cleanNoteVal = htmlspecialchars($metaString, ENT_QUOTES | ENT_XML1, 'UTF-8');
-                    echo '    <Cell ss:Index="2" ss:MergeAcross="3" ss:StyleID="NoteStyle"><Data ss:Type="String">' . $cleanNoteVal . '</Data></Cell>' . "\n";
-                    
-                    // Column 6: Memo container. We use ss:MergeAcross="5" (to span columns 6, 7, 8, 9, 10, 11)
-                    $memoVal = isset($rowData['col-memo']) ? $rowData['col-memo'] : '';
-                    if (!empty($memoVal)) {
-                        $memoValClean = strip_tags($memoVal);
-                        $memoValClean = html_entity_decode($memoValClean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                        $cleanMemoVal = 'Memo Perubahan WO: ' . htmlspecialchars($memoValClean, ENT_QUOTES | ENT_XML1, 'UTF-8');
-                    } else {
-                        $cleanMemoVal = 'Tidak ada Memo Perubahan WO';
-                    }
-                    echo '    <Cell ss:Index="6" ss:MergeAcross="5" ss:StyleID="MemoStyle"><Data ss:Type="String">' . $cleanMemoVal . '</Data></Cell>' . "\n";
-                    
-                    // Remaining columns (index 12 to count($visibleCols)) are printed as empty cells
-                    $totalCols = count($visibleCols);
-                    for ($c = 12; $c <= $totalCols; $c++) {
-                        echo '    <Cell ss:Index="' . $c . '" ss:StyleID="NoteRowStyle"><Data ss:Type="String"></Data></Cell>' . "\n";
-                    }
-                    echo '   </Row>' . "\n";
-                }
-            }
+            // Note/Memo rows are now standard columns, so we don't print afterRow anymore.
         }
         
         echo '  </Table>' . "\n";
@@ -2387,22 +2370,62 @@ class ProcessingDyeingController extends Controller
                 ->where(['mmp.model_mesin' => $mesin->model_mesin])
                 ->column();
 
+            $validProcessIdsPfp = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_pfp_id')
+                ->innerJoin('mst_process_pfp_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
             // Find kartu_process_dyeing_process entries filtered at DB level
-            $query = KartuProcessDyeingProcess::find()
+            $query = \common\models\ar\KartuProcessDyeingProcess::find()
                 ->alias('kp')
                 ->innerJoin('trn_kartu_proses_dyeing kpd', 'kp.kartu_process_id = kpd.id')
-                ->where(['>=', 'kpd.status', TrnKartuProsesDyeing::STATUS_DELIVERED])
-                ->andWhere(['not', ['kpd.status' => TrnKartuProsesDyeing::STATUS_BATAL]])
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_BATAL]])
                 ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
                 ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
                 ->with(['kartuProcess.trnKartuProsesDyeingItems']);
 
-            $allProcessRecords = $query->all();
+            $dyeingRecords = $query->all();
+
+            $queryPfp = \common\models\ar\KartuProcessPfpProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesPfpItems']);
+                
+            $pfpRecords = $queryPfp->all();
+
+            $queryPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_printing kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesPrintingItems']);
+                
+            $printingRecords = $queryPrinting->all();
+
+            $allProcessRecords = array_merge($dyeingRecords, $pfpRecords, $printingRecords);
 
             foreach ($allProcessRecords as $record) {
-                // Skip if this process doesn't belong to the selected machine's model
-                if (!in_array($record->process_id, $validProcessIds)) {
-                    continue;
+                $isDyeing = $record instanceof \common\models\ar\KartuProcessDyeingProcess;
+                $isPfp = $record instanceof \common\models\ar\KartuProcessPfpProcess;
+                $isPrinting = $record instanceof \common\models\ar\KartuProcessPrintingProcess;
+
+                if ($isDyeing) {
+                    if (!in_array($record->process_id, $validProcessIds)) {
+                        continue;
+                    }
+                } elseif ($isPfp) {
+                    if (!in_array($record->process_id, $validProcessIdsPfp)) {
+                        continue;
+                    }
                 }
 
                 $values = Json::decode($record->value);
@@ -2417,26 +2440,57 @@ class ProcessingDyeingController extends Controller
                 $kartuProses = $record->kartuProcess;
                 $process = $record->process;
 
-                $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : '-';
+                $motif = '';
+                $pcs = 0;
+                $panjangGreige = 0;
+                $woNo = '';
+                $warna = '-';
+
+                if ($isDyeing) {
+                    $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
+                    $pcs = count($kartuProses->trnKartuProsesDyeingItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m'));
+                    $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
+                    $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                } elseif ($isPrinting) {
+                    $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
+                    $pcs = count($kartuProses->trnKartuProsesPrintingItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPrintingItems, 'panjang_m'));
+                    $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
+                    $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                } elseif ($isPfp) {
+                    $motif = $kartuProses->greige ? $kartuProses->greige->nama_kain : '';
+                    $pcs = count($kartuProses->trnKartuProsesPfpItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPfpItems, 'panjang_m'));
+                    $woNo = 'F-PFP-' . $kartuProses->no;
+                }
+
+                $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : (isset($values['shift_operator']) ? $values['shift_operator'] : '-');
+
+                // Override panjang_greige if defined in JSON
+                if (isset($values['panjang_greige']) && $values['panjang_greige'] !== '') {
+                    $panjangGreige = floatval($values['panjang_greige']);
+                }
 
                 $kartuData[] = [
+                    'tipe' => 'Order',
                     'shift_group' => $shiftGroup,
                     'no' => $kartuProses->no,
                     'nomor_kartu' => $kartuProses->nomor_kartu,
-                    'motif' => $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '',
+                    'motif' => $motif,
                     'nk' => $kartuProses->nomor_kartu,
-                    'pcs' => count($kartuProses->trnKartuProsesDyeingItems),
+                    'pcs' => $pcs,
                     'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
-                    'warna' => ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '',
+                    'warna' => $warna,
                     'proses' => $process ? $process->nama_proses : '',
                     'temp' => isset($values['temp']) ? $values['temp'] : '',
                     'speed' => isset($values['speed']) ? $values['speed'] : '',
                     'lebar' => isset($values['lebar_jadi']) ? $values['lebar_jadi'] : '',
                     'berat' => $kartuProses->berat,
                     'panjang_jadi' => isset($values['panjang_jadi']) ? $values['panjang_jadi'] : '',
-                    'panjang_greige' => array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m')),
+                    'panjang_greige' => $panjangGreige,
                     'keterangan' => isset($values['keterangan']) ? $values['keterangan'] : '',
-                    'wo_no' => $kartuProses->wo ? $kartuProses->wo->no : '',
+                    'wo_no' => $woNo,
                     'kartu_proses_id' => $kartuProses->id,
                     'process_name' => $process ? $process->nama_proses : '',
                 ];
@@ -2446,9 +2500,67 @@ class ProcessingDyeingController extends Controller
                 if (!isset($rangkumanProses[$prosesName])) {
                     $rangkumanProses[$prosesName] = ['count' => 0, 'total_panjang' => 0];
                 }
+                $isStenter = false;
+                if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
+                    $isStenter = true;
+                } elseif (!empty($mesin) && stripos($mesin->model_mesin, 'stenter') !== false) {
+                    $isStenter = true;
+                }
+
                 $rangkumanProses[$prosesName]['count']++;
                 $panjangJadi = isset($values['panjang_jadi']) ? floatval($values['panjang_jadi']) : 0;
-                $rangkumanProses[$prosesName]['total_panjang'] += $panjangJadi;
+                
+                $panjangToUse = $isStenter ? $panjangJadi : $panjangGreige;
+                $rangkumanProses[$prosesName]['total_panjang'] += $panjangToUse;
+            }
+        }
+
+        if ($mesin) {
+            $tambahanInputs = \common\models\ar\TrnRekapProsesMesinInput::find()
+                ->where(['mst_mesin_proses_id' => $mesin->id, 'tanggal' => $tanggal])
+                ->all();
+
+            foreach ($tambahanInputs as $ti) {
+                $kartuData[] = [
+                    'tipe' => $ti->tipe,
+                    'shift_group' => $ti->shift,
+                    'no' => $ti->nk_no,
+                    'nomor_kartu' => $ti->nk_no,
+                    'motif' => $ti->tipe,
+                    'nk' => $ti->nk_no,
+                    'pcs' => '-',
+                    'no_mc' => $mesin->nama_mesin,
+                    'warna' => '-',
+                    'proses' => $ti->nama_proses,
+                    'temp' => $ti->temp,
+                    'speed' => '-',
+                    'lebar' => '-',
+                    'berat' => '-',
+                    'panjang_jadi' => $ti->panjang_jadi,
+                    'panjang_greige' => $ti->panjang_greige,
+                    'keterangan' => $ti->keterangan,
+                    'wo_no' => $ti->wo_no,
+                    'kartu_proses_id' => null,
+                    'process_name' => $ti->nama_proses,
+                ];
+
+                $prosesName = $ti->nama_proses ? $ti->nama_proses : 'Unknown';
+                if (!isset($rangkumanProses[$prosesName])) {
+                    $rangkumanProses[$prosesName] = ['count' => 0, 'total_panjang' => 0];
+                }
+                $isStenter = false;
+                if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
+                    $isStenter = true;
+                } elseif (!empty($mesin) && stripos($mesin->model_mesin, 'stenter') !== false) {
+                    $isStenter = true;
+                }
+
+                $rangkumanProses[$prosesName]['count']++;
+                $panjangJadi = floatval($ti->panjang_jadi);
+                $panjangGreige = floatval($ti->panjang_greige);
+                
+                $panjangToUse = $isStenter ? $panjangJadi : $panjangGreige;
+                $rangkumanProses[$prosesName]['total_panjang'] += $panjangToUse;
             }
         }
 
@@ -2497,5 +2609,198 @@ class ProcessingDyeingController extends Controller
             'rangkumanProses' => $rangkumanProses,
             'hambatanItems' => $hambatanItems,
         ]);
+    }
+
+    /**
+     * Menyimpan data tambahan input dari form Rekap Proses Mesin
+     */
+    public function actionTambahInputProses()
+    {
+        $request = Yii::$app->request;
+        if ($request->isPost) {
+            $data = $request->post('InputProses', []);
+            $mesinId = $request->post('mesin_id');
+            $tanggal = $request->post('tanggal');
+            $modelMesin = $request->post('model_mesin');
+
+            if (empty($mesinId) || empty($tanggal)) {
+                Yii::$app->session->setFlash('error', 'Mesin atau Tanggal tidak valid.');
+                return $this->redirect(['rekap-proses-mesin']);
+            }
+
+            $successCount = 0;
+            foreach ($data as $row) {
+                if (empty($row['tipe']) || empty($row['shift'])) continue;
+                
+                $nk = isset($row['nk']) ? trim($row['nk']) : null;
+                $prosesName = isset($row['proses']) ? trim($row['proses']) : null;
+                $isUpdated = false;
+
+                $mesinModel = \common\models\ar\MstMesinProses::findOne($mesinId);
+                $namaMesin = $mesinModel ? $mesinModel->nama_mesin : '';
+
+                if (!empty($nk) && !empty($prosesName)) {
+                    $wo_no = isset($row['wo']) ? trim($row['wo']) : null;
+                    $queryDyeing = \common\models\ar\TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $nk]);
+                    if (!empty($wo_no)) {
+                        $queryDyeing->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+                    }
+                    $kpd = $queryDyeing->one();
+                    if ($kpd) {
+                        $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $prosesName]);
+                        if ($mstProcess) {
+                            $kpProcesses = \common\models\ar\KartuProcessDyeingProcess::find()->where(['kartu_process_id' => $kpd->id, 'process_id' => $mstProcess->id])->all();
+                            foreach ($kpProcesses as $kpProcess) {
+                                $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                if (true) {
+                                    if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
+                                    if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
+                                    if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                    $vals['tanggal'] = $tanggal;
+                                    $vals['no_mesin'] = $namaMesin;
+                                    $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
+                                    $kpProcess->value = \yii\helpers\Json::encode($vals);
+                                    $kpProcess->save(false);
+                                    $isUpdated = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Try to find in PFP
+                    if (!$isUpdated) {
+                        $queryPfp = \common\models\ar\TrnKartuProsesPfp::find()->where(['nomor_kartu' => $nk]);
+                        if (!empty($wo_no)) {
+                            $queryPfp->joinWith('orderPfp', false)->andWhere(['trn_order_pfp.no' => $wo_no]);
+                        }
+                        $kpp = $queryPfp->one();
+                        if ($kpp) {
+                            $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $prosesName]);
+                            if ($mstProcess) {
+                                $kpProcesses = \common\models\ar\KartuProcessPfpProcess::find()->where(['kartu_process_id' => $kpp->id, 'process_id' => $mstProcess->id])->all();
+                                foreach ($kpProcesses as $kpProcess) {
+                                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                    if (true) {
+                                        if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
+                                        if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
+                                        if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                        $vals['tanggal'] = $tanggal;
+                                        $vals['no_mesin'] = $namaMesin;
+                                        $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
+                                        $kpProcess->value = \yii\helpers\Json::encode($vals);
+                                        $kpProcess->save(false);
+                                        $isUpdated = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Try to find in Printing
+                    if (!$isUpdated) {
+                        $queryPrinting = \common\models\ar\TrnKartuProsesPrinting::find()->where(['nomor_kartu' => $nk]);
+                        if (!empty($wo_no)) {
+                            $queryPrinting->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo_no]);
+                        }
+                        $kppr = $queryPrinting->one();
+                        if ($kppr) {
+                            $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $prosesName]);
+                            if ($mstProcess) {
+                                $kpProcesses = \common\models\ar\KartuProcessPrintingProcess::find()->where(['kartu_process_id' => $kppr->id, 'process_id' => $mstProcess->id])->all();
+                                foreach ($kpProcesses as $kpProcess) {
+                                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                    if (true) {
+                                        if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
+                                        if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
+                                        if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                        $vals['tanggal'] = $tanggal;
+                                        $vals['no_mesin'] = $namaMesin;
+                                        $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
+                                        $kpProcess->value = \yii\helpers\Json::encode($vals);
+                                        $kpProcess->save(false);
+                                        $isUpdated = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if ($isUpdated) {
+                    // Clean up any legacy duplicate dummy records for this NK and Process
+                    \common\models\ar\TrnRekapProsesMesinInput::deleteAll([
+                        'nk_no' => $nk,
+                        'nama_proses' => $prosesName
+                    ]);
+                    $successCount++;
+                    continue;
+                }
+
+                // If it's an Order, we ONLY update existing processes. 
+                // We do not add a dummy record if it's an Order.
+                if (isset($row['tipe']) && stripos($row['tipe'], 'Order') !== false) {
+                    Yii::$app->session->addFlash('warning', "Data proses untuk NK $nk ($prosesName) tidak ditemukan, sehingga gagal di-update.");
+                    continue;
+                }
+
+                // For Percobaan, check if it already exists so we can update it
+                $model = null;
+                if (isset($row['tipe']) && stripos($row['tipe'], 'Percobaan') !== false) {
+                    $model = \common\models\ar\TrnRekapProsesMesinInput::find()->where([
+                        'nk_no' => $nk,
+                        'nama_proses' => $prosesName,
+                        'tanggal' => $tanggal,
+                        'mst_mesin_proses_id' => $mesinId
+                    ])->one();
+                }
+
+                if (!$model) {
+                    $model = new \common\models\ar\TrnRekapProsesMesinInput();
+                    $model->mst_mesin_proses_id = $mesinId;
+                    $model->tanggal = $tanggal;
+                }
+
+                $model->tipe = $row['tipe'];
+                $model->shift = $row['shift'];
+                $model->wo_no = isset($row['wo']) ? $row['wo'] : null;
+                $model->nk_no = $nk;
+                $model->nama_proses = $prosesName;
+                if (isset($row['temp']) && $row['temp'] !== '') $model->temp = $row['temp'];
+                if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $model->panjang_jadi = $row['panjang_jadi'];
+                if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $model->panjang_greige = $row['panjang_greige'];
+                if (isset($row['keterangan'])) $model->keterangan = $row['keterangan'];
+                
+                if ($model->save()) {
+                    $successCount++;
+                } else {
+                    Yii::error('Gagal simpan Tambahan Input: ' . \yii\helpers\Json::encode($model->getErrors()));
+                }
+            }
+
+            if ($successCount > 0) {
+                Yii::$app->session->addFlash('success', "Berhasil menambahkan/mengupdate $successCount data proses.");
+            } else {
+                Yii::$app->session->addFlash('warning', 'Tidak ada data valid yang ditambahkan/diupdate (mungkin tidak ada kecocokan data atau kolom wajib kosong).');
+            }
+
+            $shiftPagi = $request->post('shift_pagi');
+            $shiftSiang = $request->post('shift_siang');
+            $shiftMalam = $request->post('shift_malam');
+
+            return $this->redirect([
+                'rekap-proses-mesin', 
+                'model_mesin' => $modelMesin, 
+                'mesin_id' => $mesinId, 
+                'tanggal' => $tanggal,
+                'shift_pagi' => $shiftPagi,
+                'shift_siang' => $shiftSiang,
+                'shift_malam' => $shiftMalam
+            ]);
+        }
+        
+        return $this->redirect(['rekap-proses-mesin']);
     }
 }
