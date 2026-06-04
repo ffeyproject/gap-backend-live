@@ -540,6 +540,14 @@ $moduleId = $controller->module->id;
                         'url' => '#',
                         'items' => [
                             [
+                                'label' => 'Persiapan',
+                                'icon' => 'circle-o',
+                                'url' => ['/laporan/persiapan-gabungan'],
+                                'active' => $moduleId == 'app-backend'
+                                    && $controllerId == 'laporan'
+                                    && $actionId == 'persiapan-gabungan',
+                            ],
+                            [
                                 'label' => 'Persiapan Dyeing',
                                 'icon' => 'circle-o',
                                 'url' => ['/laporan/persiapan-dyeing'],

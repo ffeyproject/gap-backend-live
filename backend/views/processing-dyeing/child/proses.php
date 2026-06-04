@@ -142,10 +142,14 @@ $this->registerCss('
                         } else {
                             echo '<tr>';
                         }
-                        foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan', 'use_jetblack'])){
-                                if($key !== 'nama_proses'){
-                                    if($value){
+                        foreach ($attrsLabels as $key=>$label){
+                            if($key !== 'id'){
+                                $value = $item->getAttribute($key);
+                                if ($key === 'nama_proses') {
+                                    echo '<td>'.$value.'</td>';
+                                } else {
+                                    $isKeterangan = ($key === 'keterangan');
+                                    if($value || $isKeterangan){
                                         echo '<td>';
 
                                         $pcModel = KartuProcessDyeingProcess::findOne(['kartu_process_id'=>$model->id, 'process_id'=>$item->id]);
@@ -159,8 +163,6 @@ $this->registerCss('
                                                 $lblBtn = '<span class="label label-success">Set</span>';
                                             }
                                         }
-
-                                        $label = $item->getAttributeLabel($key);
 
                                         switch ($key){
                                             case 'tanggal':
@@ -211,8 +213,6 @@ $this->registerCss('
                                     }else{
                                         echo '<td><button class="btn btn-xs btn-danger btn-flat btn-block" disabled="disabled">-</button></td>';
                                     }
-                                }else{
-                                    echo '<td>'.$value.'</td>';
                                 }
                             }
                         }

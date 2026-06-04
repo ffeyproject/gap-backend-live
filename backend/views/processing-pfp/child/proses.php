@@ -43,10 +43,14 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                     <?php
                     foreach ($processModels as $item){
                         echo '<tr>';
-                        foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan'])){
-                                if($key !== 'nama_proses'){
-                                    if($value){
+                        foreach ($attrsLabels as $key=>$label){
+                            if($key !== 'id'){
+                                $value = $item->getAttribute($key);
+                                if ($key === 'nama_proses') {
+                                    echo '<td id="">'.$value.'</td>';
+                                } else {
+                                    $isKeterangan = ($key === 'keterangan');
+                                    if($value || $isKeterangan){
                                         echo '<td id="">';
 
                                         $pcModel = KartuProcessPfpProcess::findOne(['kartu_process_id'=>$model->id, 'process_id'=>$item->id]);
@@ -61,8 +65,6 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                                             }
                                         }
 
-                                        $label = $item->getAttributeLabel($key);
-
                                         switch ($key){
                                             case 'tanggal':
                                                 $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
@@ -74,6 +76,20 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                                             case 'stop':
                                                 $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
                                                     'onclick' => 'setTimeInput(event, "Waktu '.$label.' '.$item->nama_proses.'");',
+                                                    'title' => 'Set '.$label.' '.$item->nama_proses
+                                                ]);
+                                                break;
+                                            case 'shift_operator':
+                                                $currentVal = isset($datas[$key]) ? $datas[$key] : '';
+                                                $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
+                                                    'onclick' => 'setShiftGroupInput(event, "'.$label.' '.$item->nama_proses.'", "'.$currentVal.'");',
+                                                    'title' => 'Set '.$label.' '.$item->nama_proses
+                                                ]);
+                                                break;
+                                            case 'no_mesin':
+                                                $currentVal = isset($datas[$key]) ? $datas[$key] : '';
+                                                $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
+                                                    'onclick' => 'setNoMesinInput(event, "'.$label.' '.$item->nama_proses.'", '.$item->id.', "'.$currentVal.'");',
                                                     'title' => 'Set '.$label.' '.$item->nama_proses
                                                 ]);
                                                 break;
@@ -90,8 +106,6 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                                     }else{
                                         echo '<td><button class="btn btn-xs btn-danger btn-flat btn-block" disabled="disabled">-</button></td>';
                                     }
-                                }else{
-                                    echo '<td>'.$value.'</td>';
                                 }
                             }
                         }

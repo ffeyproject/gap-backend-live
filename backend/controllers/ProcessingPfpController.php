@@ -698,6 +698,19 @@ class ProcessingPfpController extends Controller
         throw new ForbiddenHttpException('Not allowed');
     }
 
+    public function actionGetMachinesByProcess($process_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $process = MstProcessPfp::findOne($process_id);
+        if ($process !== null) {
+            $machines = $process->mstMesinProseses;
+            return \yii\helpers\ArrayHelper::toArray($machines, [
+                \common\models\ar\MstMesinProses::class => ['id', 'nama_mesin']
+            ]);
+        }
+        return [];
+    }
+
     /**
      * Finds the TrnKartuProsesPfp model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.

@@ -76,6 +76,8 @@ use yii\helpers\Json;
  */
 class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
 {
+    public $tipe_laporan;
+
     const STATUS_DRAFT = 1;const STATUS_POSTED = 2;const STATUS_DELIVERED = 3;const STATUS_APPROVED = 4;const STATUS_INSPECTED = 5;const STATUS_GANTI_GREIGE = 6;const STATUS_GANTI_GREIGE_LINKED = 7;const STATUS_BATAL = 8;const STATUS_ROLLING_PACKING = 10; const STATUS_MAKE_UP_PACKING = 11; const STATUS_FOLDED_PACKING = 12; const STATUS_TERIMA_GUDANG_JADI = 13; const STATUS_PERIKSA_PENGIRIMAN = 14; const STATUS_CLOSE = 15; const STATUS_SELVEDGE_PACKING = 16;
     /**
      * @return array

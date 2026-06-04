@@ -70,6 +70,8 @@ use common\models\ar\MstProcessPfp;
  */
 class TrnKartuProsesPfp extends \yii\db\ActiveRecord
 {
+    public $tipe_laporan;
+
     const STATUS_DRAFT = 1;const STATUS_POSTED = 2;const STATUS_DELIVERED = 3;const STATUS_APPROVED = 4;const STATUS_INSPECTED = 5;const STATUS_GAGAL_PROSES = 6;
     /**
      * @return array
