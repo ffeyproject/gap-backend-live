@@ -303,6 +303,23 @@ class LaporanController extends Controller
             }
         }
         
+        $mesinInputOptions = [];
+        if ($processDyeing) {
+            foreach ($processDyeing->mstMesinProseses as $mesin) {
+                if (empty($mcFilter) || in_array($mesin->model_mesin, $mcFilter)) {
+                    $mesinInputOptions[$mesin->nama_mesin] = $mesin->nama_mesin;
+                }
+            }
+        }
+        if ($processPfp) {
+            foreach ($processPfp->mstMesinProseses as $mesin) {
+                if (empty($mcFilter) || in_array($mesin->model_mesin, $mcFilter)) {
+                    $mesinInputOptions[$mesin->nama_mesin] = $mesin->nama_mesin;
+                }
+            }
+        }
+        asort($mesinInputOptions);
+        
         return $this->render('persiapan-gabungan', [
             'dataProvider' => $dataProvider,
             'filterModel' => $filterModel,
@@ -311,6 +328,7 @@ class LaporanController extends Controller
             'shiftPagiFilter' => $shiftPagiFilter,
             'shiftSiangFilter' => $shiftSiangFilter,
             'tanggalFilter' => $tanggalFilter,
+            'mesinInputOptions' => $mesinInputOptions,
         ]);
     }
 
@@ -337,6 +355,16 @@ class LaporanController extends Controller
         $shiftPagiFilter = isset($params['shiftPagiFilter']) ? $params['shiftPagiFilter'] : null;
         $shiftSiangFilter = isset($params['shiftSiangFilter']) ? $params['shiftSiangFilter'] : null;
         $tanggalFilter = isset($params['tanggalFilter']) ? $params['tanggalFilter'] : null;
+        
+        $mesinInputOptions = [];
+        if ($process) {
+            foreach ($process->mstMesinProseses as $mesin) {
+                if (empty($mcFilter) || in_array($mesin->model_mesin, $mcFilter)) {
+                    $mesinInputOptions[$mesin->nama_mesin] = $mesin->nama_mesin;
+                }
+            }
+        }
+        asort($mesinInputOptions);
         
         $query = $dataProvider->query;
         if (!empty($mcFilter) || !empty($shiftPagiFilter) || !empty($shiftSiangFilter) || !empty($tanggalFilter)) {
@@ -416,6 +444,7 @@ class LaporanController extends Controller
             'shiftSiangFilter' => $shiftSiangFilter,
             'tanggalFilter' => $tanggalFilter,
             'mesinOptions' => $mesinOptions,
+            'mesinInputOptions' => $mesinInputOptions,
         ]);
     }
     
@@ -482,7 +511,21 @@ class LaporanController extends Controller
         
         $content = $this->renderPartial('print-persiapan-dyeing', [
             'models' => $models,
+            'shiftPagiFilter' => $shiftPagiFilter,
+            'shiftSiangFilter' => $shiftSiangFilter,
         ]);
+        
+        $title = 'LAPORAN HARIAN PERSIAPAN DYEING';
+        $shiftStr = [];
+        if (!empty($shiftPagiFilter)) {
+            $shiftStr[] = $shiftPagiFilter . ' (Pagi)';
+        }
+        if (!empty($shiftSiangFilter)) {
+            $shiftStr[] = $shiftSiangFilter . ' (Siang)';
+        }
+        if (!empty($shiftStr)) {
+            $title .= ' SHIFT: ' . implode(' DAN ', $shiftStr);
+        }
         
         $pdf = new \kartik\mpdf\Pdf([
             'mode' => \kartik\mpdf\Pdf::MODE_BLANK,
@@ -507,7 +550,7 @@ class LaporanController extends Controller
             ',
             'options' => ['title' => 'Laporan Harian Persiapan Dyeing'],
             'methods' => [
-                'SetTitle' => 'LAPORAN HARIAN PERSIAPAN DYEING',
+                'SetTitle' => $title,
                 'SetFooter' => ['{PAGENO}'],
             ]
         ]);
@@ -525,7 +568,10 @@ class LaporanController extends Controller
                     $kartuProcessId = isset($item['kartu_process_id']) ? $item['kartu_process_id'] : null;
                     
                     if (empty($kartuProcessId) && !empty($item['nomor_kartu'])) {
-                        $kp = \common\models\ar\TrnKartuProsesDyeing::findOne(['nomor_kartu' => trim($item['nomor_kartu'])]);
+                        $kp = \common\models\ar\TrnKartuProsesDyeing::find()
+                            ->where(['nomor_kartu' => trim($item['nomor_kartu'])])
+                            ->orderBy(['is_redyeing' => SORT_ASC, 'id' => SORT_DESC])
+                            ->one();
                         if ($kp) {
                             $kartuProcessId = $kp->id;
                         } else {
@@ -660,11 +706,24 @@ class LaporanController extends Controller
             $berat = number_format((float)$kp->berat, 1);
             $pbg = $panjangTotal . ' / ' . $berat . ' / ' . $jumlahRoll;
             
+            $hasData = false;
+            $kpdp = \common\models\ar\KartuProcessDyeingProcess::findOne([
+                'kartu_process_id' => $kp->id,
+                'process_id' => 1
+            ]);
+            if ($kpdp) {
+                $json = \yii\helpers\Json::decode($kpdp->value);
+                if (!empty($json['tanggal']) || !empty($json['no_mesin']) || !empty($json['keterangan'])) {
+                    $hasData = true;
+                }
+            }
+            
             $nks[] = [
                 'id' => $kp->id,
                 'nomor_kartu' => $kp->nomor_kartu,
                 'warna' => $warnaName,
-                'pbg' => $pbg
+                'pbg' => $pbg,
+                'has_data' => $hasData
             ];
         }
         
@@ -702,10 +761,24 @@ class LaporanController extends Controller
             $berat = number_format((float)$kp->berat, 1);
             $pbg = $panjangTotal . ' / ' . $berat . ' / ' . $jumlahRoll;
             
+            $hasData = false;
+            $processId = \common\models\ar\MstProcessPfp::find()->select('id')->where(['order' => 1])->scalar() ?: 1;
+            $kppp = \common\models\ar\KartuProcessPfpProcess::findOne([
+                'kartu_process_id' => $kp->id,
+                'process_id' => $processId
+            ]);
+            if ($kppp) {
+                $json = \yii\helpers\Json::decode($kppp->value);
+                if (!empty($json['tanggal']) || !empty($json['no_mesin']) || !empty($json['keterangan']) || !empty($json['shift_operator'])) {
+                    $hasData = true;
+                }
+            }
+            
             $nks[] = [
                 'id' => $kp->id,
                 'nomor_kartu' => $kp->nomor_kartu,
-                'pbg' => $pbg
+                'pbg' => $pbg,
+                'has_data' => $hasData
             ];
         }
         
@@ -744,6 +817,16 @@ class LaporanController extends Controller
         $shiftPagiFilter = isset($params['shiftPagiFilter']) ? $params['shiftPagiFilter'] : null;
         $shiftSiangFilter = isset($params['shiftSiangFilter']) ? $params['shiftSiangFilter'] : null;
         $tanggalFilter = isset($params['tanggalFilter']) ? $params['tanggalFilter'] : null;
+        
+        $mesinInputOptions = [];
+        if ($process) {
+            foreach ($process->mstMesinProseses as $mesin) {
+                if (empty($mcFilter) || in_array($mesin->model_mesin, $mcFilter)) {
+                    $mesinInputOptions[$mesin->nama_mesin] = $mesin->nama_mesin;
+                }
+            }
+        }
+        asort($mesinInputOptions);
         
         $query = $dataProvider->query;
         if (!empty($mcFilter) || !empty($shiftPagiFilter) || !empty($shiftSiangFilter) || !empty($tanggalFilter)) {
@@ -825,6 +908,7 @@ class LaporanController extends Controller
             'shiftSiangFilter' => $shiftSiangFilter,
             'tanggalFilter' => $tanggalFilter,
             'mesinOptions' => $mesinOptions,
+            'mesinInputOptions' => $mesinInputOptions,
             'processId' => $processId,
         ]);
     }
@@ -865,10 +949,10 @@ class LaporanController extends Controller
         if (!empty($shiftPagiFilter) || !empty($shiftSiangFilter)) {
             $shiftConditions = ['or'];
             if (!empty($shiftPagiFilter)) {
-                $shiftConditions[] = ['like', 'kppp.value', '"shift_group":"' . $shiftPagiFilter . '"'];
+                $shiftConditions[] = ['like', 'kppp.value', '"shift_operator":"' . $shiftPagiFilter . '"'];
             }
             if (!empty($shiftSiangFilter)) {
-                $shiftConditions[] = ['like', 'kppp.value', '"shift_group":"' . $shiftSiangFilter . '"'];
+                $shiftConditions[] = ['like', 'kppp.value', '"shift_operator":"' . $shiftSiangFilter . '"'];
             }
             $query->andWhere($shiftConditions);
         }
@@ -887,7 +971,7 @@ class LaporanController extends Controller
         }
         
         $dateSortExpr = "split_part(split_part(kppp.value, '\"tanggal\":\"', 2), '\"', 1)";
-        $shiftSortExpr = "split_part(split_part(kppp.value, '\"shift_group\":\"', 2), '\"', 1)";
+        $shiftSortExpr = "split_part(split_part(kppp.value, '\"shift_operator\":\"', 2), '\"', 1)";
         $query->orderBy([
             new \yii\db\Expression($dateSortExpr . " ASC"),
             new \yii\db\Expression($shiftSortExpr . " ASC"),
@@ -897,7 +981,21 @@ class LaporanController extends Controller
         
         $content = $this->renderPartial('print-persiapan-pfp', [
             'models' => $models,
+            'shiftPagiFilter' => $shiftPagiFilter,
+            'shiftSiangFilter' => $shiftSiangFilter,
         ]);
+        
+        $title = 'LAPORAN HARIAN PERSIAPAN PFP';
+        $shiftStr = [];
+        if (!empty($shiftPagiFilter)) {
+            $shiftStr[] = $shiftPagiFilter . ' (Pagi)';
+        }
+        if (!empty($shiftSiangFilter)) {
+            $shiftStr[] = $shiftSiangFilter . ' (Siang)';
+        }
+        if (!empty($shiftStr)) {
+            $title .= ' SHIFT: ' . implode(' DAN ', $shiftStr);
+        }
         
         $pdf = new \kartik\mpdf\Pdf([
             'mode' => \kartik\mpdf\Pdf::MODE_BLANK,
@@ -922,7 +1020,7 @@ class LaporanController extends Controller
             ',
             'options' => ['title' => 'Laporan Harian Persiapan PFP'],
             'methods' => [
-                'SetTitle' => 'LAPORAN HARIAN PERSIAPAN PFP',
+                'SetTitle' => $title,
                 'SetFooter' => ['{PAGENO}'],
             ]
         ]);

@@ -21,15 +21,23 @@ $shiftOptions = [
 $urlLookupWo = \yii\helpers\Url::to(['/ajax/lookup-wo-dyeing']);
 $urlGetInfoWo = \yii\helpers\Url::to(['/laporan/get-info-by-wo']);
 
+$mesinOptionsJson = json_encode($mesinInputOptions);
+
 $js = <<<JS
 $('.toggle-hide-btn').click(function(e) {
     e.preventDefault();
     $(this).closest('tr').addClass('hidden-print').fadeOut();
 });
 
+$(document).on('click', '#btn-unhide-all', function(e) {
+    e.preventDefault();
+    $('tr.hidden-print').removeClass('hidden-print').fadeIn();
+});
+
 var rowIndex = 0;
 window.addEditRow = function(id, tanggal, woNo, motif, warna, noKartu, pbg, mc, ket) {
     var isManual = !id;
+    var hasDataCls = (tanggal || mc || ket) ? ' has-existing-data' : '';
     
     var woHtml = isManual ? '<select name="Inputan['+rowIndex+'][wo]" class="form-control input-sm select2-wo" style="width: 100%;"></select>' : '<input type="text" class="form-control input-sm" value="'+woNo+'" readonly>';
     var motifHtml = '<input type="text" class="form-control input-sm motif-input" value="'+motif+'" readonly>';
@@ -37,20 +45,34 @@ window.addEditRow = function(id, tanggal, woNo, motif, warna, noKartu, pbg, mc, 
     var noKartuHtml = isManual ? '<select name="Inputan['+rowIndex+'][nomor_kartu]" class="form-control input-sm select-nk"><option value="">-</option></select>' : '<input type="text" class="form-control input-sm" value="'+noKartu+'" readonly>';
     var pbgHtml = '<input type="text" class="form-control input-sm pbg-input" value="'+pbg+'" readonly>';
     
-    var rowHtml = '<tr id="row-'+rowIndex+'">' +
+    var mesinOptions = {$mesinOptionsJson};
+    var mcOptionsHtml = '<option value="">-</option>';
+    $.each(mesinOptions, function(k, v) {
+        var sel = (v === mc) ? ' selected' : '';
+        mcOptionsHtml += '<option value="'+v+'"'+sel+'>'+v+'</option>';
+    });
+    var mcHtml = '<select name="Inputan['+rowIndex+'][no_mesin]" class="form-control input-sm select2-mc">'+mcOptionsHtml+'</select>';
+    
+    var rowHtml = '<tr id="row-'+rowIndex+'" class="'+hasDataCls+'">' +
         '<td><input type="date" name="Inputan['+rowIndex+'][tanggal]" class="form-control input-sm" value="'+tanggal+'"></td>' +
         '<td>' + woHtml + '</td>' +
         '<td>' + motifHtml + '</td>' +
         '<td>' + warnaHtml + '</td>' +
         '<td>' + noKartuHtml + '<input type="hidden" name="Inputan['+rowIndex+'][kartu_process_id]" class="kartu-process-id" value="'+id+'"></td>' +
         '<td>' + pbgHtml + '</td>' +
-        '<td><input type="text" name="Inputan['+rowIndex+'][no_mesin]" class="form-control input-sm" value="'+mc+'"></td>' +
+        '<td>' + mcHtml + '</td>' +
         '<td><input type="text" name="Inputan['+rowIndex+'][keterangan]" class="form-control input-sm" value="'+ket+'"></td>' +
         '<td><button type="button" class="btn btn-danger btn-sm delete-row-btn"><i class="glyphicon glyphicon-trash"></i></button></td>' +
     '</tr>';
     
     var rowEl = $(rowHtml);
     $('#inputan-table tbody').append(rowEl);
+    
+    rowEl.find('.select2-mc').select2({
+        placeholder: 'Pilih MC',
+        allowClear: true,
+        width: '100%'
+    });
     
     if (isManual) {
         rowEl.find('.select2-wo').select2({
@@ -113,9 +135,15 @@ window.addEditRow = function(id, tanggal, woNo, motif, warna, noKartu, pbg, mc, 
             if (selectedNk) {
                 currentRowEl.find('.pbg-input').val(selectedNk.pbg);
                 currentRowEl.find('.kartu-process-id').val(selectedNk.id);
+                if (selectedNk.has_data) {
+                    currentRowEl.addClass('has-existing-data');
+                } else {
+                    currentRowEl.removeClass('has-existing-data');
+                }
             } else {
                 currentRowEl.find('.pbg-input').val('');
                 currentRowEl.find('.kartu-process-id').val('');
+                currentRowEl.removeClass('has-existing-data');
             }
         });
     }
@@ -127,8 +155,36 @@ window.addEditRow = function(id, tanggal, woNo, motif, warna, noKartu, pbg, mc, 
     }, 500);
 };
 
+$(document).on('submit', '#form-inputan-bawah', function(e) {
+    var form = $(this);
+    if (form.data('confirmed')) {
+        return true;
+    }
+    
+    var hasExisting = form.find('.has-existing-data').length > 0;
+    if (hasExisting) {
+        e.preventDefault();
+        krajeeDialog.confirm('Beberapa data yang diinput sudah memiliki isi sebelumnya (tanggal/mc/keterangan). Apakah Anda yakin ingin menimpanya?', function(result) {
+            if (result) {
+                form.data('confirmed', true);
+                form.submit();
+            }
+        });
+    }
+});
+
 $(document).on('click', '.delete-row-btn', function() {
     $(this).closest('tr').remove();
+});
+
+$(document).on('click', '.toggle-hide-btn', function(e) {
+    e.preventDefault();
+    $(this).closest('tr').addClass('hidden-row').hide();
+});
+
+$(document).on('click', '#btn-unhide-all', function(e) {
+    e.preventDefault();
+    $('.hidden-row').removeClass('hidden-row').show();
 });
 
 $(document).on('click', '#btn-tambah-set-inputan', function(e) {
@@ -224,7 +280,8 @@ $this->registerJs($js);
             'before'=>Html::tag(
                 'div',
                 Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['persiapan-dyeing'], ['class' => 'btn btn-default']).
-                Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']),
+                Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']).
+                Html::button('<i class="glyphicon glyphicon-eye-open"></i> Tampilkan Baris Tersembunyi', ['class' => 'btn btn-info', 'id' => 'btn-unhide-all']),
                 ['class'=>'btn-group', 'role'=>'group']
             ),
         ],
@@ -299,7 +356,13 @@ $this->registerJs($js);
                     return $data->woColor->moColor->color;
                 }
             ],
-            'nomor_kartu',
+            [
+                'attribute' => 'nomor_kartu',
+                'format' => 'raw',
+                'value' => function($data) {
+                    return Html::a($data->nomor_kartu, ['/trn-kartu-proses-dyeing/view', 'id' => $data->id], ['target' => '_blank', 'title' => 'Lihat Detail NK', 'data-pjax' => 0]);
+                }
+            ],
             [
                 'label' => 'Panjang',
                 'value' => function($data){

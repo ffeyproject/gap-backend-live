@@ -3,6 +3,8 @@ use yii\helpers\Html;
 
 /* @var $this yii\web\View */
 /* @var $models common\models\ar\TrnKartuProsesPfp[] */
+/* @var $shiftPagiFilter string */
+/* @var $shiftSiangFilter string */
 
 $shiftGroups = [
     'A' => 'A',
@@ -33,7 +35,13 @@ foreach ($models as $model) {
     $groupedModels[$shiftGroup][] = $model;
 }
 
-ksort($groupedModels);
+uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter) {
+    if (isset($shiftPagiFilter) && $a === $shiftPagiFilter && $b !== $shiftPagiFilter) return -1;
+    if (isset($shiftPagiFilter) && $b === $shiftPagiFilter && $a !== $shiftPagiFilter) return 1;
+    if (isset($shiftSiangFilter) && $a === $shiftSiangFilter && $b !== $shiftSiangFilter) return -1;
+    if (isset($shiftSiangFilter) && $b === $shiftSiangFilter && $a !== $shiftSiangFilter) return 1;
+    return strcmp($a, $b);
+});
 ?>
 <?php if (empty($groupedModels)): ?>
 <div class="row">
@@ -70,7 +78,15 @@ ksort($groupedModels);
         
         <div class="row">
             <div class="col-xs-12">
-                <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP SHIFT: <?= Html::encode($shiftGroup) ?></h3>
+                <?php
+                    $shiftLabel = $shiftGroup;
+                    if (isset($shiftPagiFilter) && $shiftGroup === $shiftPagiFilter) {
+                        $shiftLabel .= ' (Pagi)';
+                    } elseif (isset($shiftSiangFilter) && $shiftGroup === $shiftSiangFilter) {
+                        $shiftLabel .= ' (Siang)';
+                    }
+                ?>
+                <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP SHIFT: <?= Html::encode($shiftLabel) ?></h3>
                 <table class="table table-bordered small">
             <thead>
                 <tr>

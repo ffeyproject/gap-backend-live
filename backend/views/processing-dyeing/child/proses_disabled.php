@@ -52,6 +52,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                             }
                         }
                         ?>
+                        <th>Ulang</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -87,7 +88,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
 
                         if ($item->use_jetblack) {
                             if ($firstJetblack) {
-                                $colCount = count($attrsLabels); // No 'Ulang' column
+                                $colCount = count($attrsLabels) + 1; // including 'Ulang' column
                                 $chevronClass = $jetblackHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
                                 echo '<tr class="jetblack-header-row" style="background-color: #3c8dbc; color: white; cursor: pointer; font-weight: bold;">';
                                 echo '<td colspan="' . $colCount . '" class="text-center">';
@@ -100,7 +101,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                             echo '<tr class="jetblack-row" ' . $rowStyle . '>';
                         } elseif ($isToping) {
                             if ($firstToping) {
-                                $colCount = count($attrsLabels);
+                                $colCount = count($attrsLabels) + 1;
                                 $chevronClass = $topingHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
                                 echo '<tr class="toping-header-row" style="background-color: #e08e0b; color: white; cursor: pointer; font-weight: bold;">';
                                 echo '<td colspan="' . $colCount . '" class="text-center">';
@@ -113,7 +114,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                             echo '<tr class="toping-row" ' . $rowStyle . '>';
                         } elseif ($isRc) {
                             if ($firstRc) {
-                                $colCount = count($attrsLabels);
+                                $colCount = count($attrsLabels) + 1;
                                 $chevronClass = $rcHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
                                 echo '<tr class="rc-header-row" style="background-color: #00a65a; color: white; cursor: pointer; font-weight: bold;">';
                                 echo '<td colspan="' . $colCount . '" class="text-center">';
@@ -126,7 +127,7 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                             echo '<tr class="rc-row" ' . $rowStyle . '>';
                         } elseif ($isRfUlang) {
                             if ($firstRfUlang) {
-                                $colCount = count($attrsLabels);
+                                $colCount = count($attrsLabels) + 1;
                                 $chevronClass = $rfUlangHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
                                 echo '<tr class="rfulang-header-row" style="background-color: #dd4b39; color: white; cursor: pointer; font-weight: bold;">';
                                 echo '<td colspan="' . $colCount . '" class="text-center">';
@@ -140,10 +141,12 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                         } else {
                             echo '<tr>';
                         }
-                        foreach ($item->attributes as $key=>$value){
-                            if(!in_array($key, ['id', 'order', 'created_at', 'created_by', 'updated_at', 'updated_by', 'max_pengulangan', 'use_jetblack'])){
+                        foreach ($attrsLabels as $key=>$label){
+                            if($key !== 'id'){
+                                $value = $item->getAttribute($key);
                                 if($key !== 'nama_proses'){
-                                    if($value){
+                                    $isKeterangan = ($key === 'keterangan');
+                                    if($value || $isKeterangan){
                                         echo '<td>';
 
                                         $pcModel = KartuProcessDyeingProcess::findOne(['kartu_process_id'=>$model->id, 'process_id'=>$item->id]);
@@ -158,8 +161,6 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                                             }
                                         }
 
-                                        $label = $item->getAttributeLabel($key);
-
                                         echo $lblBtn;
 
                                         echo '</td>';
@@ -171,6 +172,8 @@ $btnUnset = Html::button('&nbsp;', ['class'=>'btn btn-xs btn-warning btn-flat bt
                                 }
                             }
                         }
+                        echo '<td><button class="btn btn-xs btn-default btn-flat" disabled="disabled">-</button></td>';
+                        echo '</tr>';
                     }
                     ?>
                     </tbody>

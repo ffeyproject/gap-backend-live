@@ -17,6 +17,13 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
         <div class="col-xs-12">
             <h3 class="text-center">LAPORAN PERSIAPAN (DYEING & PFP)</h3>
             <p class="text-center">
+                <?php
+                    $shiftInfo = [];
+                    if (!empty($shiftPagiFilter)) $shiftInfo[] = $shiftPagiFilter . ' (Pagi)';
+                    if (!empty($shiftSiangFilter)) $shiftInfo[] = $shiftSiangFilter . ' (Siang)';
+                    $shiftStr = !empty($shiftInfo) ? implode(' / ', $shiftInfo) : 'Semua Shift';
+                ?>
+                SHIFT: <?= Html::encode($shiftStr) ?><br>
                 <?= !empty($tanggalFilter) ? "Tanggal: " . $tanggalFilter : "" ?><br>
                 <?= !empty($mcFilter) ? "MC: " . implode(', ', $mcFilter) : "" ?>
             </p>
