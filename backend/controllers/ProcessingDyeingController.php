@@ -78,7 +78,7 @@ class ProcessingDyeingController extends Controller
         }
         
         $dataProvider = $searchModel->search($queryParams);
-        $dataProvider->sort->defaultOrder = ['wo_id' => SORT_DESC, 'date' => SORT_ASC, 'no_urut' => SORT_ASC];
+        $dataProvider->sort->defaultOrder = ['woDateRange' => SORT_ASC, 'woNo' => SORT_ASC, 'openDateRange' => SORT_ASC];
 
         $statusRekap = Yii::$app->request->get('status_rekap', 'semua');
         
@@ -103,6 +103,12 @@ class ProcessingDyeingController extends Controller
         if (!$hasFilter) {
             $dataProvider->query->andWhere('1=0');
         } else {
+            $dataProvider->query->joinWith(['sc', 'scGreige']);
+            $dataProvider->query->andWhere([
+                'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+                'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
+            ]);
+            
             if ($statusRekap === 'selesai') {
                 $dataProvider->query->andWhere(['in', 'trn_kartu_proses_dyeing.status', [
                     TrnKartuProsesDyeing::STATUS_APPROVED, TrnKartuProsesDyeing::STATUS_INSPECTED, TrnKartuProsesDyeing::STATUS_GANTI_GREIGE,
@@ -119,28 +125,51 @@ class ProcessingDyeingController extends Controller
                 if (!empty($searchModel->woMonth)) {
                     $dataProvider->pagination = false;
                     $models = $dataProvider->getModels();
-                    $models = $this->appendMissingWoColors($models, $searchModel);
+                    if (empty($searchModel->terakhir_proses)) {
+                        $models = $this->appendMissingWoColors($models, $searchModel, true);
+                    }
+                    $getBukaGreige = function($m) {
+                        if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
+                        if ($m->isRelationPopulated('kartuProcessDyeingProcesses')) {
+                            foreach ($m->kartuProcessDyeingProcesses as $kpd) {
+                                if ($kpd->process_id == 1 && $kpd->value) {
+                                    $val = \yii\helpers\Json::decode($kpd->value);
+                                    if (isset($val['tanggal']) && !empty($val['tanggal'])) {
+                                        return $val['tanggal'];
+                                    }
+                                }
+                            }
+                        }
+                        return '9999-12-31';
+                    };
+
+                    usort($models, function($a, $b) use ($getBukaGreige) {
+                        $woDateA = $a->wo ? $a->wo->date : '9999-12-31';
+                        $woDateB = $b->wo ? $b->wo->date : '9999-12-31';
+                        if ($woDateA === $woDateB) {
+                            $woNoA = $a->wo ? $a->wo->no : '';
+                            $woNoB = $b->wo ? $b->wo->no : '';
+                            if ($woNoA === $woNoB) {
+                                $bgA = $getBukaGreige($a);
+                                $bgB = $getBukaGreige($b);
+                                if ($bgA === $bgB) {
+                                    $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                                    $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                                    return strcmp($colA, $colB);
+                                }
+                                return strcmp($bgA, $bgB);
+                            }
+                            return strcmp($woNoA, $woNoB);
+                        }
+                        return strcmp($woDateA, $woDateB);
+                    });
+
                     $dataProvider = new \yii\data\ArrayDataProvider([
                         'allModels' => $models,
                         'pagination' => [
                             'pageSize' => 20,
                         ],
-                        'sort' => [
-                            'attributes' => [
-                                'wo_id',
-                                'date',
-                                'no_urut',
-                                'woNo' => [
-                                    'asc' => ['woNo' => SORT_ASC],
-                                    'desc' => ['woNo' => SORT_DESC],
-                                ],
-                            ],
-                            'defaultOrder' => [
-                                'wo_id' => SORT_DESC,
-                                'date' => SORT_ASC,
-                                'no_urut' => SORT_ASC
-                            ]
-                        ],
+                        'sort' => false,
                     ]);
                 }
             }
@@ -186,9 +215,45 @@ class ProcessingDyeingController extends Controller
         $dataProvider->pagination = false;
         $models = $dataProvider->getModels();
         
-        if ($status_rekap === 'semua') {
+        if ($status_rekap === 'semua' && empty($searchModel->terakhir_proses)) {
             $models = $this->appendMissingWoColors($models, $searchModel, true);
         }
+        
+        $getBukaGreige = function($m) {
+            if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
+            if ($m->isRelationPopulated('kartuProcessDyeingProcesses')) {
+                foreach ($m->kartuProcessDyeingProcesses as $kpd) {
+                    if ($kpd->process_id == 1 && $kpd->value) {
+                        $val = \yii\helpers\Json::decode($kpd->value);
+                        if (isset($val['tanggal']) && !empty($val['tanggal'])) {
+                            return $val['tanggal'];
+                        }
+                    }
+                }
+            }
+            return '9999-12-31';
+        };
+
+        usort($models, function($a, $b) use ($getBukaGreige) {
+            $woDateA = $a->wo ? $a->wo->date : '9999-12-31';
+            $woDateB = $b->wo ? $b->wo->date : '9999-12-31';
+            if ($woDateA === $woDateB) {
+                $woNoA = $a->wo ? $a->wo->no : '';
+                $woNoB = $b->wo ? $b->wo->no : '';
+                if ($woNoA === $woNoB) {
+                    $bgA = $getBukaGreige($a);
+                    $bgB = $getBukaGreige($b);
+                    if ($bgA === $bgB) {
+                        $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                        $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                        return strcmp($colA, $colB);
+                    }
+                    return strcmp($bgA, $bgB);
+                }
+                return strcmp($woNoA, $woNoB);
+            }
+            return strcmp($woDateA, $woDateB);
+        });
         
         $filename = "rekap-processing-dyeing-" . $woMonth . "-" . date('Ymd_His') . ".xls";
         
@@ -240,7 +305,7 @@ class ProcessingDyeingController extends Controller
         $allHeaders['col-panjang-jadi'] = 'Panjang Jadi';
         $allHeaders['col-pack'] = 'Pack';
 
-        // Localized Indonesian date formatting helper
+        // Localized Indonesian date formatting helper (now requested as j/n/y)
         $formatIndoDate = function($dateValue) {
             if (empty($dateValue)) {
                 return '';
@@ -253,16 +318,7 @@ class ProcessingDyeingController extends Controller
             if (!$time) {
                 return $dateValue;
             }
-            $day = date('d', $time);
-            $monthNum = (int)date('m', $time);
-            $year = date('Y', $time);
-            $indoMonths = [
-                1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
-                5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agt',
-                9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
-            ];
-            $monthName = isset($indoMonths[$monthNum]) ? $indoMonths[$monthNum] : date('M', $time);
-            return "{$day}-{$monthName}-{$year}";
+            return date('j/n/y', $time);
         };
 
         // Calculate columns and prepare data list first

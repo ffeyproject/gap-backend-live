@@ -1126,7 +1126,7 @@ $columnToggleDropdown .= '</ul></div>';
 }
 
 /* Horizontal Sticky Behavior for Frozen Columns */
-.col-serial, .col-id, .col-wodaterange, .col-tgl--terima, .col-handling, .col-target-finish, .col-panjang, .col-note-wo, .col-memo-perubahan, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu, .col-matching-colour, .col-matching-toping {
+.col-serial, .col-id, .col-wodaterange, .col-tgl--terima, .col-handling, .col-target-finish, .col-panjang, .col-note-wo, .col-memo-perubahan, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu {
     position: sticky !important;
     z-index: 5 !important;
 }
@@ -1145,9 +1145,7 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-motif,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-matching-colour,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-matching-toping {
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu {
     background-color: #ffffff !important;
 }
 
@@ -1372,9 +1370,7 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-motif,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-matching-colour,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-matching-toping {
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu {
     z-index: 30 !important; /* Must be higher than normal sticky headers and normal sticky cells */
 }
 
@@ -1407,9 +1403,7 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-motif,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-matching-colour,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-matching-toping {
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu {
     z-index: 29 !important; /* Higher than normal filter cells and body cells */
 }
 
@@ -1515,8 +1509,6 @@ function updateColspans() {
     processStickyCol('.col-motif', 150);
     processStickyCol('.col-warna', 100);
     processStickyCol('.col-nomor-kartu', 100);
-    processStickyCol('.col-matching-colour', 110);
-    processStickyCol('.col-matching-toping', 110);
 }
 
 // Fungsi menerapkan visibilitas kolom dari localStorage dan meng-update URL Export Excel
