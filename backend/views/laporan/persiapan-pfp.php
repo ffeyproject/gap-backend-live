@@ -160,7 +160,7 @@ $(document).on('submit', '#form-inputan-bawah', function(e) {
     var hasExisting = form.find('.has-existing-data').length > 0;
     if (hasExisting) {
         e.preventDefault();
-        krajeeDialog.confirm('Beberapa data yang diinput sudah memiliki isi sebelumnya (tanggal/mc/keterangan). Apakah Anda yakin ingin menimpanya?', function(result) {
+        krajeeDialog.confirm('Beberapa data yang diinput sudah memiliki isi sebelumnya (tanggal/shift/mc/keterangan). Apakah Anda yakin ingin menimpanya?', function(result) {
             if (result) {
                 form.data('confirmed', true);
                 form.submit();
@@ -377,6 +377,21 @@ $this->registerJs($js);
                 },
                 'format' => ['decimal', 0],
                 'pageSummary' => true
+            ],
+            [
+                'label' => 'Shift',
+                'value' => function($data) use ($processId) {
+                    $model = $data->getKartuProcessPfpProcesses()->where(['process_id'=>$processId])->one();
+                    if($model !== null){
+                        try {
+                            $json = \yii\helpers\Json::decode($model['value']);
+                            return isset($json['shift_operator']) ? $json['shift_operator'] : '-';
+                        }catch (\Throwable $t){
+                            return '-';
+                        }
+                    }
+                    return '-';
+                }
             ],
             [
                 'label' => 'MC',

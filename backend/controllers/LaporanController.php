@@ -603,6 +603,9 @@ class LaporanController extends Controller
                     if (isset($item['no_mesin'])) {
                         $json['no_mesin'] = $item['no_mesin'];
                     }
+                    if (isset($item['shift_operator'])) {
+                        $json['shift_operator'] = $item['shift_operator'];
+                    }
                     if (isset($item['keterangan'])) {
                         $json['keterangan'] = $item['keterangan'];
                     }
@@ -642,6 +645,7 @@ class LaporanController extends Controller
                         if (!is_array($json)) $json = [];
                         if (isset($item['tanggal'])) $json['tanggal'] = $item['tanggal'];
                         if (isset($item['no_mesin'])) $json['no_mesin'] = $item['no_mesin'];
+                        if (isset($item['shift_operator'])) $json['shift_operator'] = $item['shift_operator'];
                         if (isset($item['keterangan'])) $json['keterangan'] = $item['keterangan'];
                         $kpdp->value = \yii\helpers\Json::encode($json);
                         $kpdp->save(false);
@@ -661,6 +665,7 @@ class LaporanController extends Controller
                         if (!is_array($json)) $json = [];
                         if (isset($item['tanggal'])) $json['tanggal'] = $item['tanggal'];
                         if (isset($item['no_mesin'])) $json['no_mesin'] = $item['no_mesin'];
+                        if (isset($item['shift_operator'])) $json['shift_operator'] = $item['shift_operator'];
                         if (isset($item['keterangan'])) $json['keterangan'] = $item['keterangan'];
                         $kpdp->value = \yii\helpers\Json::encode($json);
                         $kpdp->save(false);
@@ -713,7 +718,7 @@ class LaporanController extends Controller
             ]);
             if ($kpdp) {
                 $json = \yii\helpers\Json::decode($kpdp->value);
-                if (!empty($json['tanggal']) || !empty($json['no_mesin']) || !empty($json['keterangan'])) {
+                if (!empty($json['tanggal']) || !empty($json['no_mesin']) || !empty($json['keterangan']) || !empty($json['shift_operator'])) {
                     $hasData = true;
                 }
             }

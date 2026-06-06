@@ -55,9 +55,10 @@ $(document).on('click', '.edit-row-btn', function(e) {
     var warna = $(this).data('warna');
     var noKartu = $(this).data('nokartu');
     var pbg = $(this).data('pbg');
+    var shift = $(this).data('shift');
     var mc = $(this).data('mc');
     var ket = $(this).data('ket');
-    var hasDataCls = (tanggal || mc || ket) ? ' has-existing-data' : '';
+    var hasDataCls = (tanggal || shift || mc || ket) ? ' has-existing-data' : '';
     
     var mesinOptions = {$mesinOptionsJson};
     var mcOptionsHtml = '<option value="">-</option>';
@@ -67,13 +68,22 @@ $(document).on('click', '.edit-row-btn', function(e) {
     });
     var mcHtml = '<select name="Inputan['+rowIndex+'][no_mesin]" class="form-control input-sm select2-mc">'+mcOptionsHtml+'</select>';
     
+    var shiftHtml = '<select name="Inputan['+rowIndex+'][shift_operator]" class="form-control input-sm">' +
+        '<option value="">-</option>' +
+        '<option value="A" '+(shift==='A'?'selected':'')+'>A</option>' +
+        '<option value="B" '+(shift==='B'?'selected':'')+'>B</option>' +
+        '<option value="C" '+(shift==='C'?'selected':'')+'>C</option>' +
+        '<option value="D" '+(shift==='D'?'selected':'')+'>D</option>' +
+    '</select>';
+    
     var rowHtml = '<tr id="row-'+rowIndex+'" class="'+hasDataCls+'">' +
         '<td><input type="date" name="Inputan['+rowIndex+'][tanggal]" class="form-control input-sm" value="'+tanggal+'"></td>' +
         '<td><input type="text" class="form-control input-sm" value="'+woNo+'" readonly></td>' +
         '<td><input type="text" class="form-control input-sm motif-input" value="'+motif+'" readonly></td>' +
-        '<td><input type="text" class="form-control input-sm" value="'+warna+'" readonly></td>' +
         '<td><input type="text" class="form-control input-sm" value="'+noKartu+'" readonly><input type="hidden" name="Inputan['+rowIndex+'][kartu_process_id]" class="kartu-process-id" value="'+id+'"><input type="hidden" name="Inputan['+rowIndex+'][tipe]" value="'+tipe+'"></td>' +
+        '<td><input type="text" class="form-control input-sm" value="'+warna+'" readonly></td>' +
         '<td><input type="text" class="form-control input-sm pbg-input" value="'+pbg+'" readonly></td>' +
+        '<td>' + shiftHtml + '</td>' +
         '<td>' + mcHtml + '</td>' +
         '<td><input type="text" name="Inputan['+rowIndex+'][keterangan]" class="form-control input-sm" value="'+ket+'"></td>' +
         '<td><button type="button" class="btn btn-danger btn-sm delete-row-btn"><i class="glyphicon glyphicon-trash"></i></button></td>' +
@@ -118,13 +128,22 @@ window.addManualRow = function(tipeLaporan) {
     });
     var mcHtml = '<select name="Inputan['+rowIndex+'][no_mesin]" class="form-control input-sm select2-mc">'+mcOptionsHtml+'</select>';
     
+    var shiftHtml = '<select name="Inputan['+rowIndex+'][shift_operator]" class="form-control input-sm">' +
+        '<option value="">-</option>' +
+        '<option value="A">A</option>' +
+        '<option value="B">B</option>' +
+        '<option value="C">C</option>' +
+        '<option value="D">D</option>' +
+    '</select>';
+    
     var rowHtml = '<tr id="row-'+rowIndex+'">' +
         '<td><input type="date" name="Inputan['+rowIndex+'][tanggal]" class="form-control input-sm" value=""></td>' +
         '<td>' + woHtml + '</td>' +
         '<td><input type="text" class="form-control input-sm motif-input" value="" readonly></td>' +
-        '<td>' + warnaHtml + '</td>' +
         '<td>' + noKartuHtml + '<input type="hidden" name="Inputan['+rowIndex+'][kartu_process_id]" class="kartu-process-id" value=""><input type="hidden" name="Inputan['+rowIndex+'][tipe]" value="'+tipeLaporan+'"></td>' +
+        '<td>' + warnaHtml + '</td>' +
         '<td><input type="text" class="form-control input-sm pbg-input" value="" readonly></td>' +
+        '<td>' + shiftHtml + '</td>' +
         '<td>' + mcHtml + '</td>' +
         '<td><input type="text" name="Inputan['+rowIndex+'][keterangan]" class="form-control input-sm" value=""></td>' +
         '<td><button type="button" class="btn btn-danger btn-sm delete-row-btn"><i class="glyphicon glyphicon-trash"></i></button></td>' +
@@ -171,16 +190,7 @@ window.addManualRow = function(tipeLaporan) {
         });
         
         rowEl.find('.select-warna').on('change', function() {
-            var warna = $(this).val();
-            var currentRowEl = $(this).closest('tr');
-            var nks = currentRowEl.data('nks') || [];
-            var nkOpt = '<option value="">Pilih NK</option>';
-            nks.forEach(function(nk) {
-                if (!warna || nk.warna === warna) {
-                    nkOpt += '<option value="'+nk.nomor_kartu+'">'+nk.nomor_kartu+'</option>';
-                }
-            });
-            currentRowEl.find('.select-nk').html(nkOpt);
+            // Removed filtering of NK based on Warna as requested
         });
         
     } else {
@@ -220,6 +230,9 @@ window.addManualRow = function(tipeLaporan) {
         if (selectedNk) {
             currentRowEl.find('.pbg-input').val(selectedNk.pbg);
             currentRowEl.find('.kartu-process-id').val(selectedNk.id);
+            if (currentRowEl.find('.select-warna').length) {
+                currentRowEl.find('.select-warna').val(selectedNk.warna);
+            }
             if (selectedNk.has_data) {
                 currentRowEl.addClass('has-existing-data');
             } else {
@@ -228,6 +241,9 @@ window.addManualRow = function(tipeLaporan) {
         } else {
             currentRowEl.find('.pbg-input').val('');
             currentRowEl.find('.kartu-process-id').val('');
+            if (currentRowEl.find('.select-warna').length) {
+                currentRowEl.find('.select-warna').val('');
+            }
             currentRowEl.removeClass('has-existing-data');
         }
     });
@@ -479,6 +495,20 @@ $this->registerCss($css);
                         }
                     ],
                     [
+                        'label' => 'Shift',
+                        'value' => function($data) {
+                            $processId = $data->tipe_laporan === 'Dyeing' ? 1 : (\common\models\ar\MstProcessPfp::find()->select('id')->where(['order'=>1])->scalar() ?: 1);
+                            $kpdp = $data->tipe_laporan === 'Dyeing' ? $data->getKartuProcessDyeingProcesses()->where(['process_id'=>$processId])->one() : $data->getKartuProcessPfpProcesses()->where(['process_id'=>$processId])->one();
+                            if($kpdp){
+                                try{
+                                    $json = \yii\helpers\Json::decode($kpdp->value);
+                                    if(!empty($json['shift_operator'])) return $json['shift_operator'];
+                                }catch(\Throwable $t){}
+                            }
+                            return '-';
+                        }
+                    ],
+                    [
                         'label' => 'MC',
                         'value' => function($data) {
                             $processId = $data->tipe_laporan === 'Dyeing' ? 1 : (\common\models\ar\MstProcessPfp::find()->select('id')->where(['order'=>1])->scalar() ?: 1);
@@ -519,12 +549,14 @@ $this->registerCss($css);
                                 $kpdp = $isDyeing ? $model->getKartuProcessDyeingProcesses()->where(['process_id'=>$processId])->one() : $model->getKartuProcessPfpProcesses()->where(['process_id'=>$processId])->one();
                                 
                                 $tanggal = '-';
+                                $shift = '';
                                 $mc = '';
                                 $ket = '';
                                 if($kpdp){
                                     try{
                                         $json = \yii\helpers\Json::decode($kpdp->value);
                                         if(!empty($json['tanggal'])) $tanggal = $json['tanggal'];
+                                        if(!empty($json['shift_operator'])) $shift = $json['shift_operator'];
                                         if(!empty($json['no_mesin'])) $mc = $json['no_mesin'];
                                         if(!empty($json['keterangan'])) $ket = $json['keterangan'];
                                     }catch(\Throwable $t){}
@@ -565,6 +597,7 @@ $this->registerCss($css);
                                     'data-warna' => $warna,
                                     'data-nokartu' => $model->nomor_kartu,
                                     'data-pbg' => $pbg,
+                                    'data-shift' => $shift,
                                     'data-mc' => $mc,
                                     'data-ket' => $ket,
                                 ]);
@@ -594,11 +627,12 @@ $this->registerCss($css);
                             <th>TANGGAL</th>
                             <th>Nomor WO</th>
                             <th>Motif</th>
-                            <th>Warna</th>
                             <th>Nomor Kartu</th>
+                            <th>Warna</th>
                             <th>Panjang / Berat / Gul</th>
-                            <th width="10%">MC</th>
-                            <th width="15%">Ket</th>
+                            <th>Shift</th>
+                            <th>Mesin</th>
+                            <th>Keterangan</th>
                             <th></th>
                         </tr>
                     </thead>
