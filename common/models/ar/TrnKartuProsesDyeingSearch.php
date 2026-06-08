@@ -205,8 +205,8 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         ];
 
         $dataProvider->sort->attributes['woNo'] = [
-            'asc' => ['trn_wo.no' => SORT_ASC, 'moColor.color' => SORT_ASC],
-            'desc' => ['trn_wo.no' => SORT_DESC, 'moColor.color' => SORT_ASC],
+            'asc' => ['LENGTH(trn_wo.no)' => SORT_ASC, 'trn_wo.no' => SORT_ASC, 'moColor.color' => SORT_ASC],
+            'desc' => ['LENGTH(trn_wo.no)' => SORT_DESC, 'trn_wo.no' => SORT_DESC, 'moColor.color' => SORT_ASC],
         ];
 
 

@@ -103,9 +103,9 @@ class ProcessingDyeingController extends Controller
         if (!$hasFilter) {
             $dataProvider->query->andWhere('1=0');
         } else {
-            $dataProvider->query->joinWith(['sc', 'scGreige']);
+            $dataProvider->query->joinWith(['wo', 'scGreige']);
             $dataProvider->query->andWhere([
-                'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+                'trn_wo.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
                 'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
             ]);
             
@@ -128,19 +128,25 @@ class ProcessingDyeingController extends Controller
                     if (empty($searchModel->terakhir_proses)) {
                         $models = $this->appendMissingWoColors($models, $searchModel, true);
                     }
-                    $getBukaGreige = function($m) {
-                        if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
-                        if ($m->isRelationPopulated('kartuProcessDyeingProcesses')) {
-                            foreach ($m->kartuProcessDyeingProcesses as $kpd) {
-                                if ($kpd->process_id == 1 && $kpd->value) {
-                                    $val = \yii\helpers\Json::decode($kpd->value);
-                                    if (isset($val['tanggal']) && !empty($val['tanggal'])) {
-                                        return $val['tanggal'];
-                                    }
-                                }
+                    $modelIds = array_filter(\yii\helpers\ArrayHelper::getColumn($models, 'id'));
+                    $bukaGreigeMap = [];
+                    if (!empty($modelIds)) {
+                        $bukaGreigeData = (new \yii\db\Query())
+                            ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                            ->where(['in', 'kartu_process_id', $modelIds])
+                            ->andWhere(['process_id' => 1])
+                            ->all();
+                        foreach ($bukaGreigeData as $bg) {
+                            $v = \yii\helpers\Json::decode($bg['value']);
+                            if (isset($v['tanggal']) && !empty($v['tanggal'])) {
+                                $bukaGreigeMap[$bg['kartu_process_id']] = $v['tanggal'];
                             }
                         }
-                        return '9999-12-31';
+                    }
+
+                    $getBukaGreige = function($m) use ($bukaGreigeMap) {
+                        if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
+                        return isset($bukaGreigeMap[$m->id]) ? $bukaGreigeMap[$m->id] : '9999-12-31';
                     };
 
                     usort($models, function($a, $b) use ($getBukaGreige) {
@@ -150,16 +156,21 @@ class ProcessingDyeingController extends Controller
                             $woNoA = $a->wo ? $a->wo->no : '';
                             $woNoB = $b->wo ? $b->wo->no : '';
                             if ($woNoA === $woNoB) {
-                                $bgA = $getBukaGreige($a);
-                                $bgB = $getBukaGreige($b);
-                                if ($bgA === $bgB) {
-                                    $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
-                                    $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
-                                    return strcmp($colA, $colB);
+                                $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                                $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                                if ($colA === $colB) {
+                                    $bgA = $getBukaGreige($a);
+                                    $bgB = $getBukaGreige($b);
+                                    if ($bgA === $bgB) {
+                                        $nkA = $a->nomor_kartu ?? '';
+                                        $nkB = $b->nomor_kartu ?? '';
+                                        return strnatcmp($nkA, $nkB);
+                                    }
+                                    return strcmp($bgA, $bgB);
                                 }
-                                return strcmp($bgA, $bgB);
+                                return strcmp($colA, $colB);
                             }
-                            return strcmp($woNoA, $woNoB);
+                            return strnatcmp($woNoA, $woNoB);
                         }
                         return strcmp($woDateA, $woDateB);
                     });
@@ -195,9 +206,9 @@ class ProcessingDyeingController extends Controller
         $dataProvider->sort->defaultOrder = ['woNo' => SORT_ASC];
         
         $query = $dataProvider->query;
-        $query->joinWith(['sc', 'scGreige']);
+        $query->joinWith(['wo', 'scGreige']);
         $query->andWhere([
-            'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+            'trn_wo.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
             'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
         ]);
         
@@ -219,19 +230,25 @@ class ProcessingDyeingController extends Controller
             $models = $this->appendMissingWoColors($models, $searchModel, true);
         }
         
-        $getBukaGreige = function($m) {
-            if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
-            if ($m->isRelationPopulated('kartuProcessDyeingProcesses')) {
-                foreach ($m->kartuProcessDyeingProcesses as $kpd) {
-                    if ($kpd->process_id == 1 && $kpd->value) {
-                        $val = \yii\helpers\Json::decode($kpd->value);
-                        if (isset($val['tanggal']) && !empty($val['tanggal'])) {
-                            return $val['tanggal'];
-                        }
-                    }
+        $modelIds = array_filter(\yii\helpers\ArrayHelper::getColumn($models, 'id'));
+        $bukaGreigeMap = [];
+        if (!empty($modelIds)) {
+            $bukaGreigeData = (new \yii\db\Query())
+                ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                ->where(['in', 'kartu_process_id', $modelIds])
+                ->andWhere(['process_id' => 1])
+                ->all();
+            foreach ($bukaGreigeData as $bg) {
+                $v = \yii\helpers\Json::decode($bg['value']);
+                if (isset($v['tanggal']) && !empty($v['tanggal'])) {
+                    $bukaGreigeMap[$bg['kartu_process_id']] = $v['tanggal'];
                 }
             }
-            return '9999-12-31';
+        }
+
+        $getBukaGreige = function($m) use ($bukaGreigeMap) {
+            if (!$m || !$m instanceof \common\models\ar\TrnKartuProsesDyeing || $m->isNewRecord) return '9999-12-31';
+            return isset($bukaGreigeMap[$m->id]) ? $bukaGreigeMap[$m->id] : '9999-12-31';
         };
 
         usort($models, function($a, $b) use ($getBukaGreige) {
@@ -241,16 +258,21 @@ class ProcessingDyeingController extends Controller
                 $woNoA = $a->wo ? $a->wo->no : '';
                 $woNoB = $b->wo ? $b->wo->no : '';
                 if ($woNoA === $woNoB) {
-                    $bgA = $getBukaGreige($a);
-                    $bgB = $getBukaGreige($b);
-                    if ($bgA === $bgB) {
-                        $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
-                        $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
-                        return strcmp($colA, $colB);
+                    $colA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                    $colB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                    if ($colA === $colB) {
+                        $bgA = $getBukaGreige($a);
+                        $bgB = $getBukaGreige($b);
+                        if ($bgA === $bgB) {
+                            $nkA = $a->nomor_kartu ?? '';
+                            $nkB = $b->nomor_kartu ?? '';
+                            return strnatcmp($nkA, $nkB);
+                        }
+                        return strcmp($bgA, $bgB);
                     }
-                    return strcmp($bgA, $bgB);
+                    return strcmp($colA, $colB);
                 }
-                return strcmp($woNoA, $woNoB);
+                return strnatcmp($woNoA, $woNoB);
             }
             return strcmp($woDateA, $woDateB);
         });
@@ -297,9 +319,21 @@ class ProcessingDyeingController extends Controller
             'col-terakhir-proses' => 'Terakhir Proses',
         ];
 
+        $jetblackProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['use_jetblack' => true, 'perbaikan' => false])
+            ->orderBy('order')
+            ->all();
+
         foreach ($masterProcesses as $proc) {
             $colKey = 'col-processdates-' . $proc->id . '-';
             $allHeaders[$colKey] = $proc->nama_proses;
+
+            if ($proc->nama_proses === 'Resin Finish') {
+                foreach ($jetblackProcesses as $jbProc) {
+                    $jbColKey = 'col-processdates-' . $jbProc->id . '-';
+                    $allHeaders[$jbColKey] = $jbProc->nama_proses;
+                }
+            }
         }
 
         $allHeaders['col-panjang-jadi'] = 'Panjang Jadi';
@@ -438,17 +472,43 @@ class ProcessingDyeingController extends Controller
             foreach ($masterProcesses as $proc) {
                 $tg = '-';
                 $sh = '-';
+                $mc = '-';
                 if (isset($processData[$proc->id])) {
                     $v = $processData[$proc->id];
                     if (isset($v['tanggal']) && !empty($v['tanggal'])) {
                         $tg = $formatIndoDate($v['tanggal']);
                     }
-                    if (isset($v['shift_group'])) {
+                    if (isset($v['shift_group']) && !empty($v['shift_group'])) {
                         $sh = $v['shift_group'];
+                    }
+                    if (isset($v['no_mesin']) && !empty($v['no_mesin'])) {
+                        $mc = $v['no_mesin'];
                     }
                 }
                 $colKey = 'col-processdates-' . $proc->id . '-';
-                $rowVals[$colKey] = $tg . ' / ' . $sh;
+                $rowVals[$colKey] = $tg . '-' . $sh . '-' . $mc;
+
+                if ($proc->nama_proses === 'Resin Finish') {
+                    foreach ($jetblackProcesses as $jbProc) {
+                        $jbTg = '-';
+                        $jbSh = '-';
+                        $jbMc = '-';
+                        if (isset($processData[$jbProc->id])) {
+                            $jbV = $processData[$jbProc->id];
+                            if (isset($jbV['tanggal']) && !empty($jbV['tanggal'])) {
+                                $jbTg = $formatIndoDate($jbV['tanggal']);
+                            }
+                            if (isset($jbV['shift_group']) && !empty($jbV['shift_group'])) {
+                                $jbSh = $jbV['shift_group'];
+                            }
+                            if (isset($jbV['no_mesin']) && !empty($jbV['no_mesin'])) {
+                                $jbMc = $jbV['no_mesin'];
+                            }
+                        }
+                        $jbColKey = 'col-processdates-' . $jbProc->id . '-';
+                        $rowVals[$jbColKey] = $jbTg . '-' . $jbSh . '-' . $jbMc;
+                    }
+                }
             }
             
             $panjangJadi = 0;
@@ -2290,7 +2350,7 @@ class ProcessingDyeingController extends Controller
             
         if ($isExport) {
             $woColorsQuery->andWhere([
-                'trn_sc.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+                'trn_wo.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
                 'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
             ]);
         }
