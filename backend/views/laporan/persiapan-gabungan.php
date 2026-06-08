@@ -463,7 +463,7 @@ $this->registerCss($css);
                         }
                     ],
                     [
-                        'label' => 'Panjang',
+                        'label' => 'Pjg',
                         'format' => ['decimal', 0],
                         'pageSummary' => true,
                         'value' => function($data) {
@@ -629,7 +629,7 @@ $this->registerCss($css);
                             <th>Motif</th>
                             <th>Nomor Kartu</th>
                             <th>Warna</th>
-                            <th>Panjang / Berat / Gul</th>
+                            <th>Pjg / Berat / Gul</th>
                             <th>Shift</th>
                             <th>Mesin</th>
                             <th>Keterangan</th>

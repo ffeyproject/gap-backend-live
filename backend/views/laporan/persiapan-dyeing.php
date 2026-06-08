@@ -368,7 +368,7 @@ $this->registerJs($js);
                 }
             ],
             [
-                'label' => 'Panjang',
+                'label' => 'Pjg',
                 'value' => function($data){
                     $panjangTotal = $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
                     return $panjangTotal === null ? 0 : $panjangTotal;
@@ -519,7 +519,7 @@ $this->registerJs($js);
                             <th>Motif</th>
                             <th>Nomor Kartu</th>
                             <th>Warna</th>
-                            <th>Panjang / Berat / Gul</th>
+                            <th>Pjg / Berat / Gul</th>
                             <th>Shift</th>
                             <th>Mesin</th>
                             <th>Keterangan</th>

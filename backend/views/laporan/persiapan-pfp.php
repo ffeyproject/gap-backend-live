@@ -353,7 +353,7 @@ $this->registerJs($js);
                 }
             ],
             [
-                'label' => 'Panjang',
+                'label' => 'Pjg',
                 'value' => function($data){
                     $panjangTotal = $data->getTrnKartuProsesPfpItems()->sum('panjang_m');
                     return $panjangTotal === null ? 0 : (float) $panjangTotal;
@@ -510,7 +510,7 @@ $this->registerJs($js);
                             <th>Nomor Order PFP</th>
                             <th>Motif</th>
                             <th>Nomor Kartu</th>
-                            <th>Panjang / Berat / Gul</th>
+                            <th>Pjg / Berat / Gul</th>
                             <th width="10%">Shift</th>
                             <th width="10%">MC</th>
                             <th width="15%">Ket</th>

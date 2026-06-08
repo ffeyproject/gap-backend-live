@@ -35,12 +35,11 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
             <tr>
                 <th>No</th>
                 <th>SHIFT</th>
-                <th>Tanggal</th>
                 <th>Nomor WO</th>
                 <th>Motif</th>
                 <th>Warna</th>
                 <th>Nomor Kartu</th>
-                <th>Panjang</th>
+                <th>Pjg</th>
                 <th>Berat</th>
                 <th>Gul</th>
                 <th>MC</th>
@@ -110,10 +109,9 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
                     <tr>
                         <td><?= $no++ ?></td>
                         <td><?= Html::encode($shift) ?></td>
-                        <td><?= Html::encode($tanggal) ?></td>
                         <td><?= Html::encode($orderNo) ?></td>
-                        <td><?= Html::encode($motif) ?></td>
-                        <td><?= Html::encode($warna) ?></td>
+                        <td style="white-space: nowrap;"><?= Html::encode($motif) ?></td>
+                        <td style="white-space: nowrap;"><?= Html::encode($warna) ?></td>
                         <td><?= Html::encode($nomor_kartu) ?></td>
                         <td><?= Html::encode($panjangStr) ?></td>
                         <td><?= Html::encode($beratStr) ?></td>
@@ -129,7 +127,7 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
         <?php if (!empty($models)): ?>
         <tfoot>
             <tr>
-                <th colspan="7" class="text-right">TOTAL</th>
+                <th colspan="6" class="text-right">TOTAL</th>
                 <th><?= number_format((float)$totalPanjang, 0) ?></th>
                 <th><?= number_format((float)$totalBerat, 1) ?></th>
                 <th><?= $totalGul ?></th>

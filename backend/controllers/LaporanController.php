@@ -511,6 +511,7 @@ class LaporanController extends Controller
         
         $content = $this->renderPartial('print-persiapan-dyeing', [
             'models' => $models,
+            'tanggalFilter' => $tanggalFilter,
             'shiftPagiFilter' => $shiftPagiFilter,
             'shiftSiangFilter' => $shiftSiangFilter,
         ]);
@@ -986,6 +987,7 @@ class LaporanController extends Controller
         
         $content = $this->renderPartial('print-persiapan-pfp', [
             'models' => $models,
+            'tanggalFilter' => $tanggalFilter,
             'shiftPagiFilter' => $shiftPagiFilter,
             'shiftSiangFilter' => $shiftSiangFilter,
         ]);

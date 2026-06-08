@@ -4,7 +4,9 @@ use yii\helpers\Html;
 /* @var $this yii\web\View */
 /* @var $models common\models\ar\TrnKartuProsesPfp[] */
 /* @var $shiftPagiFilter string */
+/* @var $shiftPagiFilter string */
 /* @var $shiftSiangFilter string */
+/* @var $tanggalFilter string */
 
 $shiftGroups = [
     'A' => 'A',
@@ -45,25 +47,25 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
 ?>
 <?php if (empty($groupedModels)): ?>
 <div class="row">
-    <div class="col-xs-12">
+        <p style="text-align: right; font-weight: bold; margin-bottom: 5px;">
+            Tanggal: <?= !empty($tanggalFilter) ? Html::encode($tanggalFilter) : '-' ?>
+        </p>
         <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP</h3>
         <table class="table table-bordered small">
         <thead>
             <tr>
                 <th>NO</th>
-                <th>TGL</th>
                 <th>Nomor Order</th>
                 <th>Motif</th>
                 <th>NK</th>
-                <th>Panjang</th>
+                <th>Pjg</th>
                 <th>Berat</th>
                 <th>Gul</th>
                 <th>MC</th>
                 <th>NR</th>
             </tr>
         </thead>
-        <tbody>
-            <tr><td colspan="10">Tidak ada data.</td></tr>
+            <tr><td colspan="9">Tidak ada data.</td></tr>
         </tbody>
         </table>
     </div>
@@ -85,17 +87,31 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                     } elseif (isset($shiftSiangFilter) && $shiftGroup === $shiftSiangFilter) {
                         $shiftLabel .= ' (Siang)';
                     }
+                    
+                    // Coba ambil tanggal dari item pertama jika filter tanggal kosong
+                    $headerDate = !empty($tanggalFilter) ? $tanggalFilter : '-';
+                    if ($headerDate === '-' && !empty($items)) {
+                        $firstModel = reset($items);
+                        $processIdFirst = \common\models\ar\MstProcessPfp::find()->select('id')->where(['order' => 1])->scalar() ?: 1;
+                        $kpdpFirst = $firstModel->getKartuProcessPfpProcesses()->where(['process_id' => $processIdFirst])->one();
+                        if ($kpdpFirst) {
+                            $jsonFirst = \yii\helpers\Json::decode($kpdpFirst->value);
+                            $headerDate = isset($jsonFirst['tanggal']) && !empty($jsonFirst['tanggal']) ? date('j/n/y', strtotime($jsonFirst['tanggal'])) : '-';
+                        }
+                    }
                 ?>
+                <p style="text-align: right; font-weight: bold; margin-bottom: 5px;">
+                    Tanggal: <?= Html::encode($headerDate) ?>
+                </p>
                 <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP SHIFT: <?= Html::encode($shiftLabel) ?></h3>
                 <table class="table table-bordered small">
             <thead>
                 <tr>
                     <th>NO</th>
-                    <th>TGL</th>
                     <th>Nomor Order</th>
                     <th>Motif</th>
                     <th>NK</th>
-                    <th>Panjang</th>
+                    <th>Pjg</th>
                     <th>Berat</th>
                     <th>Gul</th>
                     <th>MC</th>
@@ -155,9 +171,8 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                 ?>
                 <tr>
                     <td><?= $no++ ?></td>
-                    <td><?= $tanggal ?></td>
                     <td><?= $orderNo ?></td>
-                    <td class="text-left" style="max-width: 150px; word-wrap: break-word;"><?= Html::encode($motif) ?></td>
+                    <td class="text-left" style="white-space: nowrap;"><?= Html::encode($motif) ?></td>
                     <td><?= $nomorKartu ?></td>
                     <td><?= number_format($panjang, 0) ?></td>
                     <td><?= $berat ?></td>
@@ -168,7 +183,7 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                 <?php endforeach; ?>
                 
                 <tr class="footer-row">
-                    <td colspan="5"></td>
+                    <td colspan="4"></td>
                     <td><?= number_format($totalPanjang, 0) ?></td>
                     <td></td>
                     <td><?= number_format($totalGul, 0) ?></td>
