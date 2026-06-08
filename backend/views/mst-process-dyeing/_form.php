@@ -151,8 +151,19 @@ if (!empty($selectedModelMesin)) {
 $machinesUrl = \yii\helpers\Url::to(['/trn-hambatan-mesin/get-machines-by-model']);
 
 $js = <<<JS
-$('#model-mesin-select').on('change', function() {
+var isInitialLoad = true;
+
+$('#model-mesin-select').on('change', function(e) {
+    // If triggered programmatically on load, ignore it to prevent clearing pre-selected data
+    if (isInitialLoad && !e.originalEvent) {
+        isInitialLoad = false;
+        return;
+    }
+    isInitialLoad = false;
+
     var modelVal = $(this).val();
+    var currentSelected = $('#machine-select').val() || [];
+    
     $('#machine-select').empty().trigger('change');
     if (!modelVal || modelVal.length === 0) return;
     
@@ -162,7 +173,8 @@ $('#model-mesin-select').on('change', function() {
         dataType: 'json',
         success: function(data) {
             $.each(data, function(i, item) {
-                var option = new Option(item.nama_mesin, item.id, false, false);
+                var isSelected = currentSelected.indexOf(item.id.toString()) !== -1;
+                var option = new Option(item.nama_mesin, item.id, isSelected, isSelected);
                 $('#machine-select').append(option);
             });
             $('#machine-select').trigger('change');
