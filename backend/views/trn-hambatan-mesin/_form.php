@@ -99,9 +99,28 @@ if (!$model->isNewRecord) {
         </div>
     </div>
 
+    <?php
+    $dyeingItems = [];
+    $pfpItems = [];
+    foreach ($items as $item) {
+        // Assume PFP if no_wo has OPFP or no_kartu has PFP
+        if (($item->no_wo && strpos($item->no_wo, 'OPFP') !== false) || ($item->no_kartu && strpos($item->no_kartu, 'PFP') !== false)) {
+            $pfpItems[] = $item;
+        } else {
+            $dyeingItems[] = $item;
+        }
+    }
+    if (empty($dyeingItems)) {
+        $dyeingItems[] = new \common\models\ar\TrnHambatanMesinItem();
+    }
+    if (empty($pfpItems)) {
+        $pfpItems[] = new \common\models\ar\TrnHambatanMesinItem();
+    }
+    ?>
+
     <div class="box box-primary">
         <div class="box-header with-border">
-            <h3 class="box-title">Daftar Hambatan</h3>
+            <h3 class="box-title">Daftar Hambatan (Dyeing / Printing)</h3>
         </div>
         <div class="box-body no-padding">
             <table class="table table-bordered table-striped" id="hambatan-table" style="margin-bottom: 0;">
@@ -118,7 +137,7 @@ if (!$model->isNewRecord) {
                     </tr>
                 </thead>
                 <tbody id="hambatan-tbody">
-                    <?php foreach ($items as $index => $item): ?>
+                    <?php foreach ($dyeingItems as $index => $item): ?>
                         <tr class="hambatan-row" data-index="<?= $index ?>">
                             <td>
                                 <?= Html::textInput("Items[{$index}][start_time]", $item->start_time, [
@@ -185,6 +204,97 @@ if (!$model->isNewRecord) {
         </div>
     </div>
 
+    <div class="box box-warning">
+        <div class="box-header with-border">
+            <h3 class="box-title">Daftar Hambatan (PFP)</h3>
+        </div>
+        <div class="box-body no-padding">
+            <table class="table table-bordered table-striped" id="hambatan-table-pfp" style="margin-bottom: 0;">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">Start</th>
+                        <th style="width: 100px;">Stop</th>
+                        <th style="width: 100px;">Shift</th>
+                        <th>Keterangan</th>
+                        <th style="width: 200px;">Order PFP (jika ada)</th>
+                        <th style="width: 200px;">NK PFP (jika ada)</th>
+                        <th style="width: 250px;">Jenis Hambatan (Bisa Pilih Banyak)</th>
+                        <th style="width: 50px; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="hambatan-tbody-pfp">
+                    <?php 
+                    // Start offset for PFP items
+                    $pfpOffset = max(100, count($items) + 100);
+                    foreach ($pfpItems as $index => $item): 
+                        $idx = $pfpOffset + $index;
+                    ?>
+                        <tr class="hambatan-row" data-index="<?= $idx ?>">
+                            <td>
+                                <?= Html::textInput("Items[{$idx}][start_time]", $item->start_time, [
+                                    'class' => 'form-control start-time-input',
+                                    'placeholder' => 'HH:MM',
+                                    'required' => true
+                                ]) ?>
+                            </td>
+                            <td>
+                                <?= Html::textInput("Items[{$idx}][stop_time]", $item->stop_time, [
+                                    'class' => 'form-control stop-time-input',
+                                    'placeholder' => 'HH:MM',
+                                    'required' => true
+                                ]) ?>
+                            </td>
+                            <td>
+                                <?= Html::dropDownList("Items[{$idx}][shift]", $item->shift, ['A'=>'A', 'B'=>'B', 'C'=>'C', 'D'=>'D'], [
+                                    'class' => 'form-control',
+                                    'prompt' => 'Pilih...'
+                                ]) ?>
+                            </td>
+                            <td>
+                                <?= Html::textInput("Items[{$idx}][keterangan]", $item->keterangan, [
+                                    'class' => 'form-control keterangan-input',
+                                    'placeholder' => 'Ketik Keterangan...'
+                                ]) ?>
+                            </td>
+                            <td>
+                                <select name="Items[<?= $idx ?>][no_wo]" class="form-control order-pfp-select2">
+                                    <?php if ($item->no_wo): ?>
+                                        <option value="<?= Html::encode($item->no_wo) ?>" selected><?= Html::encode($item->no_wo) ?></option>
+                                    <?php endif; ?>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="Items[<?= $idx ?>][no_kartu]" class="form-control nk-select2">
+                                    <?php if ($item->no_kartu): ?>
+                                        <option value="<?= Html::encode($item->no_kartu) ?>" selected><?= Html::encode($item->no_kartu) ?></option>
+                                    <?php endif; ?>
+                                </select>
+                            </td>
+                            <td>
+                                <?= Html::listBox("Items[{$idx}][jenis_hambatan_ids]", $item->jenis_hambatan_ids, 
+                                    !$model->isNewRecord && $model->mstMesinProses ? ArrayHelper::map($model->mstMesinProses->mstJenisHambatans, 'id', 'nama') : [], [
+                                    'class' => 'form-control jenis-hambatan-select2',
+                                    'multiple' => true
+                                ]) ?>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <button type="button" class="btn btn-sm btn-danger remove-row-btn-pfp">
+                                    <i class="glyphicon glyphicon-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            
+            <div style="padding: 10px;">
+                <button type="button" class="btn btn-warning" id="add-row-btn-pfp">
+                    <i class="glyphicon glyphicon-plus"></i> Tambah Set Hambatan PFP
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="form-group">
         <?= Html::submitButton('Simpan Data Hambatan', ['class' => 'btn btn-primary btn-lg']) ?>
     </div>
@@ -197,9 +307,11 @@ $hambatansUrl = \yii\helpers\Url::to(['get-hambatans-by-machine']);
 $machinesUrl = \yii\helpers\Url::to(['get-machines-by-model']);
 $searchKpUrl = \yii\helpers\Url::to(['search-kartu-proses']);
 $searchWoUrl = \yii\helpers\Url::to(['search-wo']);
+$searchOrderPfpUrl = \yii\helpers\Url::to(['search-order-pfp']);
 
 $js = <<<JS
-var rowIndex = $('.hambatan-row').length;
+var rowIndex = 1000;
+var pfpRowIndex = 2000;
 
 // Preload current machine's hambatans if updating
 var currentMachineHambatans = [];
@@ -271,8 +383,11 @@ function initSelect2(element) {
             dataType: 'json',
             delay: 250,
             data: function (params) {
+                var row = $(element).closest('.hambatan-row');
+                var selectedWo = row.find('.wo-select2').length ? row.find('.wo-select2').val() : row.find('.order-pfp-select2').val();
                 return {
-                    q: params.term
+                    q: params.term,
+                    wo: selectedWo
                 };
             },
             processResults: function (data) {
@@ -283,7 +398,6 @@ function initSelect2(element) {
             cache: true
         },
         placeholder: 'Cari No. Kartu...',
-        minimumInputLength: 2,
         width: '100%',
         allowClear: true
     });
@@ -308,6 +422,31 @@ function initWoSelect2(element) {
             cache: true
         },
         placeholder: 'Cari No. WO...',
+        minimumInputLength: 2,
+        width: '100%',
+        allowClear: true
+    });
+}
+
+function initOrderPfpSelect2(element) {
+    $(element).select2({
+        ajax: {
+            url: '{$searchOrderPfpUrl}',
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        placeholder: 'Cari No. Order PFP...',
         minimumInputLength: 2,
         width: '100%',
         allowClear: true
@@ -339,6 +478,10 @@ $('.wo-select2').each(function() {
     initWoSelect2(this);
 });
 
+$('.order-pfp-select2').each(function() {
+    initOrderPfpSelect2(this);
+});
+
 $('.jenis-hambatan-select2').each(function() {
     initJenisHambatanSelect2(this);
 });
@@ -347,13 +490,18 @@ $('.start-time-input, .stop-time-input').each(function() {
     initTimeMask(this);
 });
 
+// Clear NK when WO/Order PFP changes
+$(document).on('change', '.wo-select2, .order-pfp-select2', function() {
+    $(this).closest('tr').find('.nk-select2').val(null).trigger('change');
+});
+
 // If updating, load hambatans initially
 var initialMachineId = $('#machine-select').val();
 if (initialMachineId) {
     fetchHambatans(initialMachineId);
 }
 
-// Add new row set
+// Add new row set for Dyeing
 $('#add-row-btn').on('click', function() {
     var newRow = $('<tr class="hambatan-row" data-index="' + rowIndex + '">');
     
@@ -384,12 +532,51 @@ $('#add-row-btn').on('click', function() {
     rowIndex++;
 });
 
+// Add new row set for PFP
+$('#add-row-btn-pfp').on('click', function() {
+    var newRow = $('<tr class="hambatan-row" data-index="' + pfpRowIndex + '">');
+    
+    newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][start_time]" class="form-control start-time-input" placeholder="HH:MM" required></td>');
+    newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][stop_time]" class="form-control stop-time-input" placeholder="HH:MM" required></td>');
+    newRow.append('<td><select name="Items[' + pfpRowIndex + '][shift]" class="form-control"><option value="">Pilih...</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></td>');
+    newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][keterangan]" class="form-control keterangan-input" placeholder="Ketik Keterangan..."></td>');
+    newRow.append('<td><select name="Items[' + pfpRowIndex + '][no_wo]" class="form-control order-pfp-select2"></select></td>');
+    newRow.append('<td><select name="Items[' + pfpRowIndex + '][no_kartu]" class="form-control nk-select2"></select></td>');
+    
+    var dropdownHtml = '<td><select name="Items[' + pfpRowIndex + '][jenis_hambatan_ids][]" class="form-control jenis-hambatan-select2" multiple="multiple">';
+    $.each(currentMachineHambatans, function(i, item) {
+        dropdownHtml += '<option value="' + item.id + '">' + item.nama + '</option>';
+    });
+    dropdownHtml += '</select></td>';
+    newRow.append(dropdownHtml);
+    newRow.append('<td style="text-align: center; vertical-align: middle;"><button type="button" class="btn btn-sm btn-danger remove-row-btn-pfp"><i class="glyphicon glyphicon-trash"></i></button></td>');
+    
+    $('#hambatan-tbody-pfp').append(newRow);
+    
+    // Init select2 on new selects
+    initSelect2(newRow.find('.nk-select2'));
+    initOrderPfpSelect2(newRow.find('.order-pfp-select2'));
+    initJenisHambatanSelect2(newRow.find('.jenis-hambatan-select2'));
+    initTimeMask(newRow.find('.start-time-input'));
+    initTimeMask(newRow.find('.stop-time-input'));
+    
+    pfpRowIndex++;
+});
+
 // Remove row
 $(document).on('click', '.remove-row-btn', function() {
-    if ($('.hambatan-row').length > 1) {
+    if ($('#hambatan-tbody .hambatan-row').length > 1) {
         $(this).closest('tr').remove();
     } else {
-        alert('Minimal harus ada satu set hambatan.');
+        alert('Minimal harus ada satu set hambatan Dyeing.');
+    }
+});
+
+$(document).on('click', '.remove-row-btn-pfp', function() {
+    if ($('#hambatan-tbody-pfp .hambatan-row').length > 1) {
+        $(this).closest('tr').remove();
+    } else {
+        alert('Minimal harus ada satu set hambatan PFP.');
     }
 });
 JS;

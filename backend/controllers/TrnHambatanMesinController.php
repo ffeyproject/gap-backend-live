@@ -266,18 +266,21 @@ class TrnHambatanMesinController extends Controller
     /**
      * Dynamic card search
      */
-    public function actionSearchKartuProses($q = null, $id = null)
+    public function actionSearchKartuProses($q = null, $id = null, $wo = null)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         $out = ['results' => []];
-        if (!is_null($q)) {
+        if (!is_null($q) || !is_null($wo)) {
             $results = [];
             
             // Search in Dyeing
-            $dyeing = \common\models\ar\TrnKartuProsesDyeing::find()
-                ->select(['no'])
-                ->andFilterWhere(['like', 'no', $q])
-                ->orderBy(['id' => SORT_DESC])
+            $queryDyeing = \common\models\ar\TrnKartuProsesDyeing::find()
+                ->select(['trn_kartu_proses_dyeing.no'])
+                ->andFilterWhere(['like', 'trn_kartu_proses_dyeing.no', $q]);
+            if ($wo) {
+                $queryDyeing->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo]);
+            }
+            $dyeing = $queryDyeing->orderBy(['trn_kartu_proses_dyeing.id' => SORT_DESC])
                 ->limit(10)
                 ->asArray()
                 ->all();
@@ -288,10 +291,13 @@ class TrnHambatanMesinController extends Controller
             }
 
             // Search in Printing
-            $printing = \common\models\ar\TrnKartuProsesPrinting::find()
-                ->select(['no'])
-                ->andFilterWhere(['like', 'no', $q])
-                ->orderBy(['id' => SORT_DESC])
+            $queryPrinting = \common\models\ar\TrnKartuProsesPrinting::find()
+                ->select(['trn_kartu_proses_printing.no'])
+                ->andFilterWhere(['like', 'trn_kartu_proses_printing.no', $q]);
+            if ($wo) {
+                $queryPrinting->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo]);
+            }
+            $printing = $queryPrinting->orderBy(['trn_kartu_proses_printing.id' => SORT_DESC])
                 ->limit(10)
                 ->asArray()
                 ->all();
@@ -302,10 +308,13 @@ class TrnHambatanMesinController extends Controller
             }
 
             // Search in Pfp
-            $pfp = \common\models\ar\TrnKartuProsesPfp::find()
-                ->select(['no'])
-                ->andFilterWhere(['like', 'no', $q])
-                ->orderBy(['id' => SORT_DESC])
+            $queryPfp = \common\models\ar\TrnKartuProsesPfp::find()
+                ->select(['trn_kartu_proses_pfp.no'])
+                ->andFilterWhere(['like', 'trn_kartu_proses_pfp.no', $q]);
+            if ($wo) {
+                $queryPfp->joinWith('orderPfp', false)->andWhere(['trn_order_pfp.no' => $wo]);
+            }
+            $pfp = $queryPfp->orderBy(['trn_kartu_proses_pfp.id' => SORT_DESC])
                 ->limit(10)
                 ->asArray()
                 ->all();
@@ -316,24 +325,29 @@ class TrnHambatanMesinController extends Controller
             }
 
             // Search in Celup
-            $celup = \common\models\ar\TrnKartuProsesCelup::find()
-                ->select(['no'])
-                ->andFilterWhere(['like', 'no', $q])
-                ->orderBy(['id' => SORT_DESC])
-                ->limit(10)
-                ->asArray()
-                ->all();
-            foreach ($celup as $row) {
-                if ($row['no']) {
-                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Celup)'];
+            if (!$wo) {
+                $queryCelup = \common\models\ar\TrnKartuProsesCelup::find()
+                    ->select(['trn_kartu_proses_celup.no'])
+                    ->andFilterWhere(['like', 'trn_kartu_proses_celup.no', $q]);
+                $celup = $queryCelup->orderBy(['trn_kartu_proses_celup.id' => SORT_DESC])
+                    ->limit(10)
+                    ->asArray()
+                    ->all();
+                foreach ($celup as $row) {
+                    if ($row['no']) {
+                        $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no'] . ' (Celup)'];
+                    }
                 }
             }
 
             // Search in Maklon
-            $maklon = \common\models\ar\TrnKartuProsesMaklon::find()
-                ->select(['no'])
-                ->andFilterWhere(['like', 'no', $q])
-                ->orderBy(['id' => SORT_DESC])
+            $queryMaklon = \common\models\ar\TrnKartuProsesMaklon::find()
+                ->select(['trn_kartu_proses_maklon.no'])
+                ->andFilterWhere(['like', 'trn_kartu_proses_maklon.no', $q]);
+            if ($wo) {
+                $queryMaklon->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo]);
+            }
+            $maklon = $queryMaklon->orderBy(['trn_kartu_proses_maklon.id' => SORT_DESC])
                 ->limit(10)
                 ->asArray()
                 ->all();
@@ -368,6 +382,36 @@ class TrnHambatanMesinController extends Controller
                 ->asArray()
                 ->all();
             foreach ($wo as $row) {
+                if ($row['no']) {
+                    $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no']];
+                }
+            }
+
+            $out['results'] = array_values($results);
+        } elseif ($id) {
+            $out['results'] = [['id' => $id, 'text' => $id]];
+        }
+        return $out;
+    }
+
+    /**
+     * Dynamic Order PFP search
+     */
+    public function actionSearchOrderPfp($q = null, $id = null)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => []];
+        if (!is_null($q)) {
+            $results = [];
+            
+            $orders = \common\models\ar\TrnOrderPfp::find()
+                ->select(['no'])
+                ->andFilterWhere(['like', 'no', $q])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(10)
+                ->asArray()
+                ->all();
+            foreach ($orders as $row) {
                 if ($row['no']) {
                     $results[$row['no']] = ['id' => $row['no'], 'text' => $row['no']];
                 }
