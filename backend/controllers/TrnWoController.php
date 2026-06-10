@@ -56,6 +56,7 @@ class TrnWoController extends Controller
     {
         $searchModel = new TrnWoSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING]);
 
         return $this->render('rekap-order-actual-dyeing', [
             'searchModel' => $searchModel,

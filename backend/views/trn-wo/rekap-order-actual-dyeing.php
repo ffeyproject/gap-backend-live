@@ -71,6 +71,14 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'no',
                 'label' => 'No. WO',
+                'format' => 'html',
+                'value' => function($model){
+                    return Html::a($model->no, ['view', 'id' => $model->id], [
+                        'title' => 'Lihat Detail WO',
+                        'data-pjax' => '0',
+                        'target' => '_blank'
+                    ]);
+                }
             ],
             [
                 'label' => 'Motif',
