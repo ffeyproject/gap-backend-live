@@ -2441,6 +2441,271 @@ class ProcessingDyeingController extends Controller
     }
 
     /**
+     * Laporan Rekap Mesin page
+     * @return string
+     */
+    public function actionLaporanRekapMesin()
+    {
+        $selectedModelMesins = \Yii::$app->request->get('model_mesins', []);
+        if (!is_array($selectedModelMesins)) {
+            $selectedModelMesins = [$selectedModelMesins];
+        }
+        
+        $dateRange = \Yii::$app->request->get('date_range', date('Y-m-d') . ' - ' . date('Y-m-d'));
+        if (strpos($dateRange, ' to ') !== false) {
+            $dates = explode(' to ', $dateRange);
+        } else {
+            $dates = explode(' - ', $dateRange);
+        }
+        $startDate = trim($dates[0]);
+        $endDate = isset($dates[1]) ? trim($dates[1]) : $startDate;
+
+        // Get options for dropdown
+        $modelMesinOptions = \common\models\ar\MstMesinProses::find()
+            ->select('model_mesin')
+            ->distinct()
+            ->where(['not', ['model_mesin' => null]])
+            ->andWhere(['not', ['model_mesin' => '']])
+            ->orderBy(['model_mesin' => SORT_ASC])
+            ->column();
+
+        $summary = ['batch' => 0, 'kartu' => 0, 'jumbo' => 0, 'perbaikan' => 0];
+        $rekapProses = [];
+        $rekapMesin = [];
+        $rekapShift = [];
+        $allProsesNames = [];
+        $kartuTracker = []; // For tracking distinct NKs if needed, though they just said count(kartu)
+        
+        // Map perbaikan
+        $perbaikanProcesses = \common\models\ar\MstProcessDyeing::find()
+            ->where(['perbaikan' => true])
+            ->select('nama_proses')
+            ->column();
+
+        if (!empty($selectedModelMesins)) {
+            $machines = \common\models\ar\MstMesinProses::find()
+                ->where(['in', 'model_mesin', $selectedModelMesins])
+                ->all();
+            
+            $machineNames = \yii\helpers\ArrayHelper::getColumn($machines, 'nama_mesin');
+            $machineMap = \yii\helpers\ArrayHelper::index($machines, 'nama_mesin');
+            $machineIds = \yii\helpers\ArrayHelper::getColumn($machines, 'id');
+            
+            // Get allowed processes for the selected machines
+            $allowedProcessIds = (new \yii\db\Query())
+                ->select('mst_process_dyeing_id')
+                ->from('mst_process_dyeing_mesin')
+                ->where(['in', 'mst_mesin_proses_id', $machineIds])
+                ->column();
+                
+            $allowedProcessNames = \common\models\ar\MstProcessDyeing::find()
+                ->where(['in', 'id', $allowedProcessIds])
+                ->select('nama_proses')
+                ->column();
+
+            // Prepopulate machines and shifts so they always appear
+            foreach ($machineNames as $mName) {
+                $rekapMesin[$mName] = ['total' => ['p' => 0, 'c' => 0]];
+            }
+            foreach (['A', 'B', 'C'] as $sName) {
+                $rekapShift[$sName] = ['total' => ['p' => 0, 'c' => 0]];
+            }
+
+            $dyeingRecords = [];
+            $pfpRecords = [];
+
+            $minUpdatedAt = strtotime($startDate . ' 00:00:00') - (86400 * 90);
+
+            $currentDate = $startDate;
+            while ($currentDate <= $endDate) {
+                foreach ($machineNames as $mName) {
+                    $mNameSafe = str_replace(['%', '_'], ['\%', '\_'], $mName);
+                    
+                    // DYEING
+                    $qDyeing = \common\models\ar\KartuProcessDyeingProcess::find()
+                        ->alias('kp')
+                        ->innerJoin('trn_kartu_proses_dyeing kpd', 'kp.kartu_process_id = kpd.id')
+                        ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
+                        ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_BATAL]])
+                        ->andWhere(['in', 'kp.process_id', $allowedProcessIds])
+                        ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
+                        ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
+                        ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
+                        ->with(['kartuProcess', 'process']);
+                    $dyeingRecords = array_merge($dyeingRecords, $qDyeing->all());
+
+                    // PFP
+                    $qPfp = \common\models\ar\KartuProcessPfpProcess::find()
+                        ->alias('kp')
+                        ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
+                        ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
+                        ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
+                        ->andWhere(['in', 'kp.process_id', $allowedProcessIds])
+                        ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
+                        ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
+                        ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
+                        ->with(['kartuProcess', 'process']);
+                    $pfpRecords = array_merge($pfpRecords, $qPfp->all());
+                }
+                
+                $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
+            }
+
+            // Tambahan Input
+            $tambahanQuery = \common\models\ar\TrnRekapProsesMesinInput::find()
+                ->where(['in', 'mst_mesin_proses_id', \yii\helpers\ArrayHelper::getColumn($machines, 'id')])
+                ->andWhere(['between', 'tanggal', $startDate, $endDate])
+                ->all();
+
+            // Tracker for unique cards to calculate summary numbers accurately
+            $jumboMachines = \common\models\ar\MstMesinProses::find()->where(['model_mesin' => 'Hisaka Jumbo'])->select('nama_mesin')->column();
+
+            $processRecord = function($valJson, $processName, $tipeKategori, $isPerbaikan, $nk) use (
+                &$rekapProses, &$rekapMesin, &$rekapShift, &$summary, &$kartuTracker,
+                $machineNames, $machineMap, $selectedModelMesins, $jumboMachines
+            ) {
+                $vals = \yii\helpers\Json::decode($valJson);
+                $noMesin = isset($vals['no_mesin']) ? $vals['no_mesin'] : null;
+                $tanggalVal = isset($vals['tanggal']) ? $vals['tanggal'] : null;
+                $shift = isset($vals['shift_group']) ? $vals['shift_group'] : (isset($vals['shift_operator']) ? $vals['shift_operator'] : '-');
+                
+                if (!$noMesin || !in_array($noMesin, $machineNames)) return;
+
+                $mesinModel = isset($machineMap[$noMesin]) ? $machineMap[$noMesin] : null;
+                $modelMesin = $mesinModel ? $mesinModel->model_mesin : '';
+                
+                $isStenter = stripos($modelMesin, 'stenter') !== false;
+                
+                // Grouping Toping 1-5 to "Toping"
+                $processKey = $processName;
+                if (preg_match('/^Toping\s+[1-5]$/i', $processName)) {
+                    $processKey = 'Toping';
+                }
+
+                $isNoLength = (preg_match('/^RC\s+[1-5]$/i', $processName) || stripos($processName, 'Cuci Ulang') !== false);
+                
+                $panjang = 0;
+                if (!$isNoLength) {
+                    $panjang = $isStenter ? floatval($vals['panjang_jadi'] ?? 0) : floatval($vals['panjang_greige'] ?? 0);
+                }
+
+                // Summary Calculation (Unique NKs)
+                if ($nk && !isset($kartuTracker[$nk])) {
+                    $kartuTracker[$nk] = true;
+                    $summary['kartu']++;
+                    if (in_array($noMesin, $jumboMachines)) {
+                        $summary['jumbo']++;
+                    }
+                }
+                
+                if ($isPerbaikan) {
+                    $summary['perbaikan']++;
+                }
+                
+                // Init Process Array
+                if (!isset($rekapProses[$processKey])) {
+                    $rekapProses[$processKey] = ['dyeing' => ['p' => 0, 'c' => 0], 'pfp' => ['p' => 0, 'c' => 0], 'total' => ['p' => 0, 'c' => 0]];
+                }
+                
+                $rekapProses[$processKey][$tipeKategori]['p'] += $panjang;
+                $rekapProses[$processKey][$tipeKategori]['c']++;
+                $rekapProses[$processKey]['total']['p'] += $panjang;
+                $rekapProses[$processKey]['total']['c']++;
+                
+                // Init Mesin Array
+                if (!isset($rekapMesin[$noMesin])) {
+                    $rekapMesin[$noMesin] = ['total' => ['p' => 0, 'c' => 0]];
+                }
+                if (!isset($rekapMesin[$noMesin][$processKey])) {
+                    $rekapMesin[$noMesin][$processKey] = ['p' => 0, 'c' => 0];
+                }
+                $rekapMesin[$noMesin][$processKey]['p'] += $panjang;
+                $rekapMesin[$noMesin][$processKey]['c']++;
+                $rekapMesin[$noMesin]['total']['p'] += $panjang;
+                $rekapMesin[$noMesin]['total']['c']++;
+
+                // Init Shift Array
+                if (!isset($rekapShift[$shift])) {
+                    $rekapShift[$shift] = ['total' => ['p' => 0, 'c' => 0]];
+                }
+                if (!isset($rekapShift[$shift][$processKey])) {
+                    $rekapShift[$shift][$processKey] = ['p' => 0, 'c' => 0];
+                }
+                $rekapShift[$shift][$processKey]['p'] += $panjang;
+                $rekapShift[$shift][$processKey]['c']++;
+                $rekapShift[$shift]['total']['p'] += $panjang;
+                $rekapShift[$shift]['total']['c']++;
+            };
+
+            foreach ($dyeingRecords as $rec) {
+                if (!isset($rec->kartuProcess)) continue;
+                $processName = $rec->process ? $rec->process->nama_proses : '';
+                $isPerbaikan = in_array($processName, $perbaikanProcesses);
+                $nk = $rec->kartuProcess->nomor_kartu;
+                $processRecord($rec->value, $processName, 'dyeing', $isPerbaikan, $nk);
+            }
+
+            foreach ($pfpRecords as $rec) {
+                if (!isset($rec->kartuProcess)) continue;
+                $processName = $rec->process ? $rec->process->nama_proses : '';
+                $isPerbaikan = false; // Assuming PFP doesn't use the perbaikan flag in the same way, or it's mapped.
+                $nk = 'PFP-'.$rec->kartuProcess->no;
+                $processRecord($rec->value, $processName, 'pfp', $isPerbaikan, $nk);
+            }
+
+            foreach ($tambahanQuery as $rec) {
+                $processName = $rec->nama_proses;
+                if (!in_array($processName, $allowedProcessNames) && !in_array('Toping', $allowedProcessNames)) continue;
+                
+                $isPerbaikan = in_array($processName, $perbaikanProcesses);
+                
+                $valJson = \yii\helpers\Json::encode([
+                    'no_mesin' => $rec->mstMesinProses ? $rec->mstMesinProses->nama_mesin : '',
+                    'tanggal' => $rec->tanggal,
+                    'shift_group' => $rec->shift,
+                    'panjang_jadi' => $rec->panjang_jadi,
+                    'panjang_greige' => $rec->panjang_greige
+                ]);
+                $nk = $rec->nk_no;
+                $processRecord($valJson, $processName, stripos($rec->tipe, 'pfp') !== false ? 'pfp' : 'dyeing', $isPerbaikan, $nk);
+            }
+
+            $summary['batch'] = max(0, $summary['kartu'] - $summary['jumbo']);
+            
+            // Sort processes by Master Dyeing order
+            $orderedProcesses = \common\models\ar\MstProcessDyeing::find()->orderBy(['order' => SORT_ASC])->select('nama_proses')->column();
+            $orderedProcesses[] = 'Toping'; // Add the grouped name
+            
+            $sortFunc = function($a, $b) use ($orderedProcesses) {
+                $posA = array_search($a, $orderedProcesses);
+                $posB = array_search($b, $orderedProcesses);
+                if ($posA === false) $posA = 999;
+                if ($posB === false) $posB = 999;
+                if ($posA == $posB) return strcmp($a, $b);
+                return $posA < $posB ? -1 : 1;
+            };
+            
+            $allProsesNames = array_keys($rekapProses);
+            usort($allProsesNames, $sortFunc);
+            
+            // Sort keys in rekapMesin
+            ksort($rekapMesin);
+            ksort($rekapShift);
+        }
+
+        return $this->render('laporan-rekap-mesin', [
+            'modelMesinOptions' => $modelMesinOptions,
+            'selectedModelMesins' => $selectedModelMesins,
+            'dateRange' => $dateRange,
+            'summary' => $summary,
+            'rekapProses' => $rekapProses,
+            'rekapMesin' => $rekapMesin,
+            'rekapShift' => $rekapShift,
+            'allProsesNames' => $allProsesNames,
+        ]);
+    }
+
+    /**
      * Rekap Proses Mesin page
      * @return string
      */
