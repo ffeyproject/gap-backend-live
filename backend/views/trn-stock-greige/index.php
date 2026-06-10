@@ -181,6 +181,12 @@ echo AjaxModal::widget([
                 ],
             ],
             [
+                'attribute' => 'greige_id',
+                'label' => 'ID Master Greige',
+                'value' => 'greige_id',
+                'filter' => true,
+            ],
+            [
                 'label'=>'Greige',
                 'attribute'=>'greigeNamaKain',
                 'value'=>'greige.nama_kain'
