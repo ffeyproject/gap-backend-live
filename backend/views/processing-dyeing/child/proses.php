@@ -65,6 +65,8 @@ $this->registerCss('
 
                     $jetblackHasValue = false;
                     $topingHasValue = false;
+                    $topingLevelHasValue = false;
+                    $levelingHasValue = false;
                     $rcHasValue = false;
                     $rfUlangHasValue = false;
                     
@@ -72,6 +74,8 @@ $this->registerCss('
                         if (in_array($item->id, $existingPcs)) {
                             if ($item->use_jetblack) $jetblackHasValue = true;
                             if (in_array($item->nama_proses, ['Toping 1', 'Toping 2', 'Toping 3', 'Toping 4', 'Toping 5'])) $topingHasValue = true;
+                            if (in_array($item->nama_proses, ['Toping Level 1', 'Toping Level 2', 'Toping Level 3', 'Toping Level 4', 'Toping Level 5'])) $topingLevelHasValue = true;
+                            if (in_array($item->nama_proses, ['Leveling 1', 'Leveling 2', 'Leveling 3', 'Leveling 4', 'Leveling 5'])) $levelingHasValue = true;
                             if (in_array($item->nama_proses, ['RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5'])) $rcHasValue = true;
                             if (in_array($item->nama_proses, ['RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4'])) $rfUlangHasValue = true;
                         }
@@ -79,11 +83,15 @@ $this->registerCss('
 
                     $firstJetblack = true;
                     $firstToping = true;
+                    $firstTopingLevel = true;
+                    $firstLeveling = true;
                     $firstRc = true;
                     $firstRfUlang = true;
                     
                     foreach ($processModels as $item){
                         $isToping = in_array($item->nama_proses, ['Toping 1', 'Toping 2', 'Toping 3', 'Toping 4', 'Toping 5']);
+                        $isTopingLevel = in_array($item->nama_proses, ['Toping Level 1', 'Toping Level 2', 'Toping Level 3', 'Toping Level 4', 'Toping Level 5']);
+                        $isLeveling = in_array($item->nama_proses, ['Leveling 1', 'Leveling 2', 'Leveling 3', 'Leveling 4', 'Leveling 5']);
                         $isRc = in_array($item->nama_proses, ['RC 1', 'RC 2', 'RC 3', 'RC 4', 'RC 5']);
                         $isRfUlang = in_array($item->nama_proses, ['RF Ulang 1', 'RF Ulang 2', 'RF Ulang 3', 'RF Ulang 4']);
 
@@ -113,6 +121,32 @@ $this->registerCss('
                             }
                             $rowStyle = $topingHasValue ? '' : 'style="display: none;"';
                             echo '<tr class="toping-row" ' . $rowStyle . '>';
+                        } elseif ($isTopingLevel) {
+                            if ($firstTopingLevel) {
+                                $colCount = count($attrsLabels) + 1;
+                                $chevronClass = $topingLevelHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="toping-level-header-row" style="background-color: #00c0ef; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="toping-level-icon"></i> <strong>PROSES TOPING LEVEL (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstTopingLevel = false;
+                            }
+                            $rowStyle = $topingLevelHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="toping-level-row" ' . $rowStyle . '>';
+                        } elseif ($isLeveling) {
+                            if ($firstLeveling) {
+                                $colCount = count($attrsLabels) + 1;
+                                $chevronClass = $levelingHasValue ? 'glyphicon-chevron-down' : 'glyphicon-chevron-right';
+                                echo '<tr class="leveling-header-row" style="background-color: #f39c12; color: white; cursor: pointer; font-weight: bold;">';
+                                echo '<td colspan="' . $colCount . '" class="text-center">';
+                                echo '<i class="glyphicon ' . $chevronClass . '" id="leveling-icon"></i> <strong>PROSES LEVELING (Klik untuk Expand / Collapse)</strong>';
+                                echo '</td>';
+                                echo '</tr>';
+                                $firstLeveling = false;
+                            }
+                            $rowStyle = $levelingHasValue ? '' : 'style="display: none;"';
+                            echo '<tr class="leveling-row" ' . $rowStyle . '>';
                         } elseif ($isRc) {
                             if ($firstRc) {
                                 $colCount = count($attrsLabels) + 1;
@@ -308,6 +342,26 @@ $this->registerJs("
     $(document).on('click', '.rfulang-header-row', function() {
         $('.rfulang-row').toggle();
         var icon = $('#rfulang-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+
+    $(document).on('click', '.toping-level-header-row', function() {
+        $('.toping-level-row').toggle();
+        var icon = $('#toping-level-icon');
+        if (icon.hasClass('glyphicon-chevron-down')) {
+            icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
+        } else {
+            icon.removeClass('glyphicon-chevron-right').addClass('glyphicon-chevron-down');
+        }
+    });
+
+    $(document).on('click', '.leveling-header-row', function() {
+        $('.leveling-row').toggle();
+        var icon = $('#leveling-icon');
         if (icon.hasClass('glyphicon-chevron-down')) {
             icon.removeClass('glyphicon-chevron-down').addClass('glyphicon-chevron-right');
         } else {

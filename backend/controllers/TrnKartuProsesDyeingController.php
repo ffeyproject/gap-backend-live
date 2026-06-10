@@ -119,12 +119,12 @@ class TrnKartuProsesDyeingController extends Controller
         $model = $this->findModel($id);
 
         $moJetBlack = ($model->mo !== null && $model->mo->jet_black);
-        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false, 'perbaikan' => false])->orderBy('order')->all();
+        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false])->orderBy('order')->all();
         if(empty($nonJetblackProcesses)){
             throw new NotAcceptableHttpException('Tidak ditemukan adanya data master processing untuk Dyeing, silahkan input dulu master processing untuk Dyeing lalu kembali lagi ke halaman ini.');
         }
 
-        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true, 'perbaikan' => false])->orderBy('order')->all();
+        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true])->orderBy('order')->all();
 
         $processModels = [];
         $resinFinishIndex = -1;

@@ -1063,8 +1063,8 @@ class ProcessingDyeingController extends Controller
 
         $model = $this->findModel($id);
         $moJetBlack = ($model->mo !== null && $model->mo->jet_black);
-        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false, 'perbaikan' => false])->orderBy('order')->all();
-        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true, 'perbaikan' => false])->orderBy('order')->all();
+        $nonJetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => false])->orderBy('order')->all();
+        $jetblackProcesses = MstProcessDyeing::find()->where(['use_jetblack' => true])->orderBy('order')->all();
 
         $processModels = [];
         $resinFinishIndex = -1;
