@@ -2476,7 +2476,7 @@ class ProcessingDyeingController extends Controller
 
         // Fetch kartu proses data for the selected machine on the selected date
         $kartuData = [];
-        $rangkumanProses = [];
+        $rangkumanProses = ['Order' => [], 'Percobaan' => []];
         if ($mesin) {
             // Find all process IDs mapped to the selected machine's model
             $validProcessIds = \common\models\ar\MstMesinProses::find()
@@ -2613,8 +2613,8 @@ class ProcessingDyeingController extends Controller
 
                 // Build rangkuman
                 $prosesName = $process ? $process->nama_proses : 'Unknown';
-                if (!isset($rangkumanProses[$prosesName])) {
-                    $rangkumanProses[$prosesName] = ['count' => 0, 'total_panjang' => 0];
+                if (!isset($rangkumanProses['Order'][$prosesName])) {
+                    $rangkumanProses['Order'][$prosesName] = ['count' => 0, 'total_panjang' => 0];
                 }
                 $isStenter = false;
                 if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
@@ -2623,11 +2623,11 @@ class ProcessingDyeingController extends Controller
                     $isStenter = true;
                 }
 
-                $rangkumanProses[$prosesName]['count']++;
+                $rangkumanProses['Order'][$prosesName]['count']++;
                 $panjangJadi = isset($values['panjang_jadi']) ? floatval($values['panjang_jadi']) : 0;
                 
                 $panjangToUse = $isStenter ? $panjangJadi : $panjangGreige;
-                $rangkumanProses[$prosesName]['total_panjang'] += $panjangToUse;
+                $rangkumanProses['Order'][$prosesName]['total_panjang'] += $panjangToUse;
             }
         }
 
@@ -2658,11 +2658,13 @@ class ProcessingDyeingController extends Controller
                     'wo_no' => $ti->wo_no,
                     'kartu_proses_id' => null,
                     'process_name' => $ti->nama_proses,
+                    'input_id' => $ti->id,
                 ];
 
                 $prosesName = $ti->nama_proses ? $ti->nama_proses : 'Unknown';
-                if (!isset($rangkumanProses[$prosesName])) {
-                    $rangkumanProses[$prosesName] = ['count' => 0, 'total_panjang' => 0];
+                $tipeRangkuman = (stripos($ti->tipe, 'Percobaan') !== false) ? 'Percobaan' : 'Order';
+                if (!isset($rangkumanProses[$tipeRangkuman][$prosesName])) {
+                    $rangkumanProses[$tipeRangkuman][$prosesName] = ['count' => 0, 'total_panjang' => 0];
                 }
                 $isStenter = false;
                 if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
@@ -2671,12 +2673,12 @@ class ProcessingDyeingController extends Controller
                     $isStenter = true;
                 }
 
-                $rangkumanProses[$prosesName]['count']++;
+                $rangkumanProses[$tipeRangkuman][$prosesName]['count']++;
                 $panjangJadi = floatval($ti->panjang_jadi);
                 $panjangGreige = floatval($ti->panjang_greige);
                 
                 $panjangToUse = $isStenter ? $panjangJadi : $panjangGreige;
-                $rangkumanProses[$prosesName]['total_panjang'] += $panjangToUse;
+                $rangkumanProses[$tipeRangkuman][$prosesName]['total_panjang'] += $panjangToUse;
             }
         }
 
@@ -2862,15 +2864,13 @@ class ProcessingDyeingController extends Controller
                     continue;
                 }
 
-                // For Percobaan, check if it already exists so we can update it
+                // For Percobaan, check if input_id is passed so we can update it
                 $model = null;
                 if (isset($row['tipe']) && stripos($row['tipe'], 'Percobaan') !== false) {
-                    $model = \common\models\ar\TrnRekapProsesMesinInput::find()->where([
-                        'nk_no' => $nk,
-                        'nama_proses' => $prosesName,
-                        'tanggal' => $tanggal,
-                        'mst_mesin_proses_id' => $mesinId
-                    ])->one();
+                    $inputId = isset($row['input_id']) ? $row['input_id'] : null;
+                    if (!empty($inputId)) {
+                        $model = \common\models\ar\TrnRekapProsesMesinInput::findOne($inputId);
+                    }
                 }
 
                 if (!$model) {

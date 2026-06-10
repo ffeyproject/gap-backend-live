@@ -264,21 +264,23 @@ $this->registerCss('
                             endif;
                             $totalMc++;
                     ?>
-                        <tr>
-                            <?php 
-                                $isStenterRow = false;
-                                if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
-                                    $isStenterRow = true;
-                                } elseif (!empty($mesin) && stripos($mesin->model_mesin, 'stenter') !== false) {
-                                    $isStenterRow = true;
-                                }
-                                $panjangValRow = $isStenterRow ? floatval($row['panjang_jadi']) : floatval($row['panjang_greige']);
-                                $chkId = 'chk_' . $row['kartu_proses_id'] . '_' . md5($row['proses'] . $tanggal); 
-                            ?>
+                        <?php 
+                            $isStenterRow = false;
+                            if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
+                                $isStenterRow = true;
+                            } elseif (!empty($mesin) && stripos($mesin->model_mesin, 'stenter') !== false) {
+                                $isStenterRow = true;
+                            }
+                            $panjangValRow = $isStenterRow ? floatval($row['panjang_jadi']) : floatval($row['panjang_greige']);
+                            $chkId = 'chk_' . $row['kartu_proses_id'] . '_' . md5($row['proses'] . $tanggal); 
+                            $namaProsesRow = trim($row['proses'] ?? 'Unknown');
+                            if ($namaProsesRow === '') $namaProsesRow = 'Unknown';
+                        ?>
+                        <tr class="data-row" data-shift="<?= Html::encode($row['shift_group']) ?>" data-panjang="<?= $panjangValRow ?>" data-proses="<?= Html::encode($namaProsesRow) ?>">
                             <td class="col-cek" style="text-align: center; vertical-align: middle;">
                                 <input type="checkbox" class="admin-penanda" data-id="<?= $chkId ?>" data-panjang="<?= $panjangValRow ?>">
                             </td>
-                            <td class="col-shift" style="font-weight:bold; color: <?= $shiftInfo['color'] ?>;">
+                            <td class="col-shift" style="font-weight:bold; color: <?= $shiftInfo['color'] ?>;" data-label="<?= Html::encode($shiftInfo['label']) ?>" data-color="<?= Html::encode($shiftInfo['color']) ?>">
                                 <?= $shiftInfo['label'] ?> (<?= Html::encode($row['shift_group']) ?>)
                             </td>
                             <td class="col-wo"><?= Html::encode($row['wo_no']) ?></td>
@@ -305,6 +307,7 @@ $this->registerCss('
                                     data-wo="<?= Html::encode($row['wo_no']) ?>"
                                     data-nk="<?= Html::encode($row['nk']) ?>"
                                     data-proses="<?= Html::encode($row['proses']) ?>"
+                                    data-input-id="<?= Html::encode($row['input_id'] ?? '') ?>"
                                     title="Edit via Tambahan Input"><i class="fa fa-edit"></i> Edit</button>
                             </td>
                         </tr>
@@ -312,81 +315,16 @@ $this->registerCss('
                 </tbody>
             </table>
         </div>
-        <?php
-        $shiftTotals = [];
-        if (!empty($kartuData)) {
-            foreach ($kartuData as $row) {
-                $sg = $row['shift_group'];
-                if (!isset($shiftTotals[$sg])) {
-                    $shiftTotals[$sg] = [
-                        'count' => 0, 
-                        'total_panjang' => 0,
-                        'breakdown' => ['Dyeing' => 0, 'PFP' => 0, 'Printing' => 0, 'Lainnya' => 0]
-                    ];
-                }
-                $shiftTotals[$sg]['count']++;
-                
-                $isStenter = false;
-                if (!empty($selectedModel) && stripos($selectedModel, 'stenter') !== false) {
-                    $isStenter = true;
-                } elseif (!empty($mesin) && stripos($mesin->model_mesin, 'stenter') !== false) {
-                    $isStenter = true;
-                }
-                
-                $panjangVal = $isStenter ? floatval($row['panjang_jadi']) : floatval($row['panjang_greige']);
-                $shiftTotals[$sg]['total_panjang'] += $panjangVal;
-
-                // Breakdown by jenis proses based on WO first letter
-                $woNo = strtoupper($row['wo_no'] ?? '');
-                if (strpos($woNo, 'D') === 0) {
-                    $shiftTotals[$sg]['breakdown']['Dyeing'] += $panjangVal;
-                } elseif (strpos($woNo, 'F') === 0) {
-                    $shiftTotals[$sg]['breakdown']['PFP'] += $panjangVal;
-                } elseif (strpos($woNo, 'P') === 0) {
-                    $shiftTotals[$sg]['breakdown']['Printing'] += $panjangVal;
-                } else {
-                    $shiftTotals[$sg]['breakdown']['Lainnya'] += $panjangVal;
-                }
-            }
-        }
-        ?>
-        <?php if (!empty($shiftTotals)): ?>
         <div class="box-footer" style="background-color: #f9f9f9; border-top: 1px solid #ddd;">
             <div id="total-hasil-select-container" style="margin-bottom: 10px; font-size: 1.1em; padding: 5px; background: #e9ecef; border-radius: 4px; display: none;">
                 <strong>TOTAL HASIL SELECT: </strong> <span id="total-hasil-select-value">0</span> (<span id="total-hasil-select-count">0</span>x)
             </div>
-            <?php foreach ($shiftTotals as $sg => $data): 
-                $shiftLabel = $sg;
-                if (isset($shiftMapping[$sg])) {
-                    $shiftLabel = $shiftMapping[$sg]['label'] . " ($sg)";
-                } elseif (isset($shiftLabels[$sg])) {
-                    $shiftLabel = $shiftLabels[$sg]['label'] . " ($sg)";
-                }
-            ?>
-                <div style="margin-bottom: 5px;">
-                    <strong style="margin-right: 10px; color: <?= isset($shiftMapping[$sg]) ? $shiftMapping[$sg]['color'] : (isset($shiftLabels[$sg]) ? $shiftLabels[$sg]['color'] : '#333') ?>;">
-                        TOTAL SHIFT <?= Html::encode($shiftLabel) ?>: <?= number_format($data['total_panjang'], 0) ?> (<?= $data['count'] ?>x)
-                    </strong>
-                    <?php
-                    $bdStrs = [];
-                    foreach (['Dyeing', 'PFP', 'Printing', 'Lainnya'] as $jenis) {
-                        if ($data['breakdown'][$jenis] > 0) {
-                            $bdStrs[] = $jenis . ': ' . number_format($data['breakdown'][$jenis], 0);
-                        }
-                    }
-                    if (!empty($bdStrs)): ?>
-                        <span style="font-size: 0.9em; font-weight: normal; color: #555;">
-                            [ <?= implode(' | ', $bdStrs) ?> ]
-                        </span>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
+            <div id="dynamic-shift-totals-container"></div>
         </div>
-        <?php endif; ?>
     </div>
 
     <!-- Rangkuman Proses -->
-    <?php if (!empty($rangkumanProses)): ?>
+    <?php if (!empty($rangkumanProses['Order']) || !empty($rangkumanProses['Percobaan'])): ?>
     <div class="box box-warning">
         <div class="box-header with-border">
             <h3 class="box-title"><i class="fa fa-bar-chart"></i> Rangkuman Proses</h3>
@@ -395,14 +333,36 @@ $this->registerCss('
             <?php 
             $totalAll = 0;
             $totalCount = 0;
-            foreach ($rangkumanProses as $prosesName => $data): 
-                $totalAll += $data['total_panjang'];
-                $totalCount += $data['count'];
             ?>
-                <span class="label label-primary" style="font-size: 13px; margin-right: 10px; padding: 5px 10px;">
-                    <?= Html::encode($prosesName) ?> <?= number_format($data['total_panjang'], 0) ?> (<?= $data['count'] ?>x)
-                </span>
-            <?php endforeach; ?>
+
+            <?php if (!empty($rangkumanProses['Order'])): ?>
+                <h5 style="font-weight: bold; margin-top: 0;">Order</h5>
+                <div style="margin-bottom: 10px;">
+                    <?php foreach ($rangkumanProses['Order'] as $prosesName => $data): 
+                        $totalAll += $data['total_panjang'];
+                        $totalCount += $data['count'];
+                    ?>
+                        <span class="label label-primary" style="font-size: 13px; margin-right: 10px; padding: 5px 10px; display: inline-block; margin-bottom: 5px;">
+                            <?= Html::encode($prosesName) ?> <?= number_format($data['total_panjang'], 0) ?> (<?= $data['count'] ?>x)
+                        </span>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($rangkumanProses['Percobaan'])): ?>
+                <h5 style="font-weight: bold; margin-top: 10px;">Percobaan</h5>
+                <div style="margin-bottom: 10px;">
+                    <?php foreach ($rangkumanProses['Percobaan'] as $prosesName => $data): 
+                        $totalAll += $data['total_panjang'];
+                        $totalCount += $data['count'];
+                    ?>
+                        <span class="label label-info" style="font-size: 13px; margin-right: 10px; padding: 5px 10px; display: inline-block; margin-bottom: 5px;">
+                            <?= Html::encode($prosesName) ?> <?= number_format($data['total_panjang'], 0) ?> (<?= $data['count'] ?>x)
+                        </span>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
             <hr style="margin: 10px 0;">
             <strong>TOTAL MC <?= $mesin ? Html::encode($mesin->nama_mesin) : '' ?>: <?= number_format($totalAll, 0) ?> (<?= $totalCount ?>x)</strong>
         </div>
@@ -511,10 +471,70 @@ $this->registerCss('
 </div>
 
 <?php
-$prosesList = \common\models\ar\MstProcessDyeing::find()->select(['id', 'nama_proses'])->orderBy('nama_proses')->asArray()->all();
+$prosesListNames = [];
+if ($mesin) {
+    // 1. Get valid Dyeing Process IDs
+    $validProcessIds = \common\models\ar\MstMesinProses::find()
+        ->alias('mmp')
+        ->select('mpdm.mst_process_dyeing_id')
+        ->innerJoin('mst_process_dyeing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+        ->where(['mmp.model_mesin' => $mesin->model_mesin])
+        ->column();
+    
+    if (!empty($validProcessIds)) {
+        $dyeingProses = \common\models\ar\MstProcessDyeing::find()
+            ->select('nama_proses')
+            ->where(['id' => $validProcessIds])
+            ->column();
+        $prosesListNames = array_merge($prosesListNames, $dyeingProses);
+    }
+
+    // 2. Get valid PFP Process IDs
+    $validProcessIdsPfp = \common\models\ar\MstMesinProses::find()
+        ->alias('mmp')
+        ->select('mpdm.mst_process_pfp_id')
+        ->innerJoin('mst_process_pfp_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+        ->where(['mmp.model_mesin' => $mesin->model_mesin])
+        ->column();
+        
+    if (!empty($validProcessIdsPfp)) {
+        $pfpProses = \common\models\ar\MstProcessPfp::find()
+            ->select('nama_proses')
+            ->where(['id' => $validProcessIdsPfp])
+            ->column();
+        $prosesListNames = array_merge($prosesListNames, $pfpProses);
+    }
+    
+    // 3. Get valid Printing Process IDs (if any)
+    try {
+        $validProcessIdsPrinting = \common\models\ar\MstMesinProses::find()
+            ->alias('mmp')
+            ->select('mpdm.mst_process_printing_id')
+            ->innerJoin('mst_process_printing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+            ->where(['mmp.model_mesin' => $mesin->model_mesin])
+            ->column();
+            
+        if (!empty($validProcessIdsPrinting)) {
+            $printingProses = \common\models\ar\MstProcessPrinting::find()
+                ->select('nama_proses')
+                ->where(['id' => $validProcessIdsPrinting])
+                ->column();
+            $prosesListNames = array_merge($prosesListNames, $printingProses);
+        }
+    } catch (\Exception $e) {
+        // Table might not exist yet, safe to ignore
+    }
+    
+    $prosesListNames = array_unique($prosesListNames);
+    sort($prosesListNames);
+} else {
+    // Fallback if no machine selected: Load all dyeing processes
+    $prosesListNames = \common\models\ar\MstProcessDyeing::find()->select('nama_proses')->orderBy('nama_proses')->column();
+}
+
 $prosesOptions = '<option value="">- Pilih Proses -</option>';
-foreach ($prosesList as $p) {
-    $prosesOptions .= '<option value="' . Html::encode($p['nama_proses']) . '">' . Html::encode($p['nama_proses']) . '</option>';
+foreach ($prosesListNames as $namaProses) {
+    $prosesOptions .= '<option value="' . Html::encode($namaProses) . '">' . Html::encode($namaProses) . '</option>';
 }
 $prosesOptionsJson = json_encode($prosesOptions);
 $urlLookupWo = \yii\helpers\Url::to(['/ajax/lookup-wo-all']);
@@ -565,6 +585,24 @@ $('.admin-penanda').on('change', function() {
     }
     
     updateTotalSelect();
+});
+
+// Text selection to check functionality
+$(document).on('mouseup', function() {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return; // No text selected
+    
+    // Check which rows are partially or fully in the selection
+    $('.data-row').each(function() {
+        var tr = this;
+        // containsNode checks if the node is part of the selection
+        if (sel.containsNode && sel.containsNode(tr, true)) {
+            var cb = $(this).find('.admin-penanda');
+            if (!cb.prop('checked')) {
+                cb.prop('checked', true).trigger('change');
+            }
+        }
+    });
 });
 
 // Tambahan Input Dynamic Rows
@@ -748,7 +786,10 @@ $('#tambahan-input-form').submit(function(e) {
     if (!isValid) {
         e.preventDefault();
     } else {
-        // Handle successful form submission here if needed
+        var confirmed = confirm("Sudah ada data proses ini di kartu, apakah tetap mau menimpa data?");
+        if (!confirmed) {
+            e.preventDefault();
+        }
     }
 });
 
@@ -762,7 +803,7 @@ $('.column-search').on('keyup', function() {
         }
     });
 
-    $('#tabel-rekap tbody tr').each(function() {
+    $('#tabel-rekap tbody tr:not(.search-row)').each(function() {
         // Skip shift dividers or empty rows
         if ($(this).find('td').length <= 1) return;
         
@@ -776,7 +817,67 @@ $('.column-search').on('keyup', function() {
         }
         $(this).toggle(showRow);
     });
+    
+    updateDynamicShiftTotals();
 });
+
+function updateDynamicShiftTotals() {
+    var totals = {};
+    var order = [];
+    $('#tabel-rekap tbody tr.data-row:visible').each(function() {
+        var shift = $(this).data('shift');
+        var panjang = parseFloat($(this).data('panjang')) || 0;
+        var proses = $(this).data('proses');
+        
+        var colShift = $(this).find('.col-shift');
+        var color = colShift.data('color') || '#333';
+        var label = colShift.data('label') || shift;
+        
+        if (!totals[shift]) {
+            totals[shift] = {
+                length: 0,
+                count: 0,
+                color: color,
+                label: label,
+                breakdown: {}
+            };
+            order.push(shift);
+        }
+        
+        totals[shift].length += panjang;
+        totals[shift].count += 1;
+        
+        if (!totals[shift].breakdown[proses]) {
+            totals[shift].breakdown[proses] = { length: 0, count: 0 };
+        }
+        totals[shift].breakdown[proses].length += panjang;
+        totals[shift].breakdown[proses].count += 1;
+    });
+    
+    var html = '';
+    for (var i = 0; i < order.length; i++) {
+        var shift = order[i];
+        var data = totals[shift];
+        var bdStrs = [];
+        for (var p in data.breakdown) {
+            bdStrs.push(p + ': ' + data.breakdown[p].length.toLocaleString('en-US') + ' (' + data.breakdown[p].count + 'x)');
+        }
+        
+        html += '<div style="margin-bottom: 5px;">' +
+                '<strong style="margin-right: 10px; color: ' + data.color + ';">' +
+                    'TOTAL SHIFT ' + data.label + ' (' + shift + '): ' + data.length.toLocaleString('en-US') + ' (' + data.count + 'x)' +
+                '</strong>' +
+                '<span style="font-size: 0.9em; font-weight: normal; color: #555;">' +
+                    '[ ' + bdStrs.join('; ') + ' ]' +
+                '</span>' +
+            '</div>';
+    }
+    
+    $('#dynamic-shift-totals-container').html(html);
+}
+
+// Initial calculation
+updateDynamicShiftTotals();
 
 // Edit Button functionality
 $(document).on('click', '.btn-edit-row', function() {
@@ -785,12 +886,18 @@ $(document).on('click', '.btn-edit-row', function() {
     var wo = $(this).data('wo');
     var nk = $(this).data('nk');
     var proses = $(this).data('proses');
+    var inputId = $(this).data('input-id') || '';
     
     // Click add input to generate a new row
     $('#btn-tambah-input').click();
     
     var lastRowId = 'row-input-' + rowCount;
     var row = $('#' + lastRowId);
+    
+    // Append hidden input_id if it exists (for editing Percobaan)
+    if (inputId !== '') {
+        row.append('<input type="hidden" name="InputProses[' + rowCount + '][input_id]" value="' + inputId + '">');
+    }
     
     // Populate fields
     if (tipe === 'Percobaan' || tipe === 'Order') {
