@@ -857,7 +857,8 @@ class TrnGudangStockOpnameController extends Controller
             ->where([
                 'greige_id' => $greige_id,
                 'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
-                'status' => TrnStockGreige::STATUS_VALID
+                'status' => TrnStockGreige::STATUS_VALID,
+                'jenis_gudang' => TrnStockGreige::JG_FRESH
             ])
             ->andWhere(['not in', 'id', $opnameIdsQuery])
             ->sum('panjang_m');
@@ -866,7 +867,8 @@ class TrnGudangStockOpnameController extends Controller
             ->where([
                 'greige_id' => $greige_id,
                 'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
-                'status' => TrnStockGreige::STATUS_VALID
+                'status' => TrnStockGreige::STATUS_VALID,
+                'jenis_gudang' => TrnStockGreige::JG_FRESH
             ])
             ->andWhere(['not in', 'id', $opnameIdsQuery])
             ->count();
@@ -930,7 +932,8 @@ class TrnGudangStockOpnameController extends Controller
                 ->where([
                     'greige_id' => $greige_id,
                     'asal_greige' => TrnStockGreige::ASAL_GREIGE_WJL,
-                    'status' => TrnStockGreige::STATUS_VALID
+                    'status' => TrnStockGreige::STATUS_VALID,
+                    'jenis_gudang' => TrnStockGreige::JG_FRESH
                 ])
                 ->andWhere(['not in', 'id', $opnameIdsQuery])
                 ->all();
