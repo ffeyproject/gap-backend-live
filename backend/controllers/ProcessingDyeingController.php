@@ -2531,7 +2531,7 @@ class ProcessingDyeingController extends Controller
                         ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
                         ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
                         ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
-                        ->with(['kartuProcess', 'process']);
+                        ->with(['kartuProcess.trnKartuProsesDyeingItems', 'process']);
                     $dyeingRecords = array_merge($dyeingRecords, $qDyeing->all());
 
                     // PFP
@@ -2544,7 +2544,7 @@ class ProcessingDyeingController extends Controller
                         ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
                         ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
                         ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
-                        ->with(['kartuProcess', 'process']);
+                        ->with(['kartuProcess.trnKartuProsesPfpItems', 'process']);
                     $pfpRecords = array_merge($pfpRecords, $qPfp->all());
                 }
                 
@@ -2560,7 +2560,7 @@ class ProcessingDyeingController extends Controller
             // Tracker for unique cards to calculate summary numbers accurately
             $jumboMachines = \common\models\ar\MstMesinProses::find()->where(['model_mesin' => 'Hisaka Jumbo'])->select('nama_mesin')->column();
 
-            $processRecord = function($valJson, $processName, $tipeKategori, $isPerbaikan, $nk) use (
+            $processRecord = function($valJson, $processName, $tipeKategori, $isPerbaikan, $nk, $parentCard) use (
                 &$rekapProses, &$rekapMesin, &$rekapShift, &$summary, &$kartuTracker,
                 $machineNames, $machineMap, $selectedModelMesins, $jumboMachines
             ) {
@@ -2586,7 +2586,21 @@ class ProcessingDyeingController extends Controller
                 
                 $panjang = 0;
                 if (!$isNoLength) {
-                    $panjang = $isStenter ? floatval($vals['panjang_jadi'] ?? 0) : floatval($vals['panjang_greige'] ?? 0);
+                    if ($isStenter) {
+                        $panjang = floatval($vals['panjang_jadi'] ?? 0);
+                    } else {
+                        if ($tipeKategori === 'dyeing' && $parentCard) {
+                            foreach($parentCard->trnKartuProsesDyeingItems as $item) {
+                                $panjang += floatval($item->panjang_m);
+                            }
+                        } elseif ($tipeKategori === 'pfp' && $parentCard) {
+                            foreach($parentCard->trnKartuProsesPfpItems as $item) {
+                                $panjang += floatval($item->panjang_m);
+                            }
+                        } else {
+                            $panjang = floatval($vals['panjang_greige'] ?? 0);
+                        }
+                    }
                 }
 
                 // Summary Calculation (Unique NKs)
@@ -2642,7 +2656,7 @@ class ProcessingDyeingController extends Controller
                 $processName = $rec->process ? $rec->process->nama_proses : '';
                 $isPerbaikan = in_array($processName, $perbaikanProcesses);
                 $nk = $rec->kartuProcess->nomor_kartu;
-                $processRecord($rec->value, $processName, 'dyeing', $isPerbaikan, $nk);
+                $processRecord($rec->value, $processName, 'dyeing', $isPerbaikan, $nk, $rec->kartuProcess);
             }
 
             foreach ($pfpRecords as $rec) {
@@ -2650,7 +2664,7 @@ class ProcessingDyeingController extends Controller
                 $processName = $rec->process ? $rec->process->nama_proses : '';
                 $isPerbaikan = false; // Assuming PFP doesn't use the perbaikan flag in the same way, or it's mapped.
                 $nk = 'PFP-'.$rec->kartuProcess->no;
-                $processRecord($rec->value, $processName, 'pfp', $isPerbaikan, $nk);
+                $processRecord($rec->value, $processName, 'pfp', $isPerbaikan, $nk, $rec->kartuProcess);
             }
 
             foreach ($tambahanQuery as $rec) {
@@ -3039,6 +3053,7 @@ class ProcessingDyeingController extends Controller
                                     if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                     if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
                                     if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                    if (isset($row['keterangan'])) $vals['keterangan'] = $row['keterangan'];
                                     $vals['tanggal'] = $tanggal;
                                     $vals['no_mesin'] = $namaMesin;
                                     $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
@@ -3068,6 +3083,7 @@ class ProcessingDyeingController extends Controller
                                         if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                         if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
                                         if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                        if (isset($row['keterangan'])) $vals['keterangan'] = $row['keterangan'];
                                         $vals['tanggal'] = $tanggal;
                                         $vals['no_mesin'] = $namaMesin;
                                         $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
@@ -3098,6 +3114,7 @@ class ProcessingDyeingController extends Controller
                                         if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                         if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
                                         if (isset($row['panjang_greige']) && $row['panjang_greige'] !== '') $vals['panjang_greige'] = $row['panjang_greige'];
+                                        if (isset($row['keterangan'])) $vals['keterangan'] = $row['keterangan'];
                                         $vals['tanggal'] = $tanggal;
                                         $vals['no_mesin'] = $namaMesin;
                                         $vals['shift_group'] = isset($row['shift']) ? $row['shift'] : (isset($vals['shift_group']) ? $vals['shift_group'] : '-');
