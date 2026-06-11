@@ -146,7 +146,7 @@ class TrnKartuProsesDyeingController extends Controller
         $attrsLabels = [];
         if($processModels !== null){
             $attrsLabels = $processModels[0]->attributeLabels();
-            unset($attrsLabels['order']); unset($attrsLabels['created_at']); unset($attrsLabels['created_by']); unset($attrsLabels['updated_at']); unset($attrsLabels['updated_by']); unset($attrsLabels['max_pengulangan']);
+            unset($attrsLabels['order']); unset($attrsLabels['created_at']); unset($attrsLabels['created_by']); unset($attrsLabels['updated_at']); unset($attrsLabels['updated_by']); unset($attrsLabels['max_pengulangan']); unset($attrsLabels['gangguan_produksi']);
             //BaseVarDumper::dump($attrsLabels, 10, true);Yii::$app->end();
         }
 
@@ -164,7 +164,7 @@ class TrnKartuProsesDyeingController extends Controller
 
                     $headers = [];
                     $attrs = $kartuProcessDyeingProcess->process->attributes;
-                    unset($attrs['id']); unset($attrs['order']); unset($attrs['created_at']); unset($attrs['created_by']); unset($attrs['updated_at']); unset($attrs['updated_by']); unset($attrs['max_pengulangan']);
+                    unset($attrs['id']); unset($attrs['order']); unset($attrs['created_at']); unset($attrs['created_by']); unset($attrs['updated_at']); unset($attrs['updated_by']); unset($attrs['max_pengulangan']); unset($attrs['gangguan_produksi']);
                     foreach ($attrs as $key=>$attr) {
                         if($key === 'nama_proses'){
                             $processUlang['nama_proses'] = $attr;

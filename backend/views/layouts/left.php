@@ -579,6 +579,10 @@ $moduleId = $controller->module->id;
                 'url' => '#',
                 'items' => [
                     [
+                        'label' => 'Inputan Data Produksi Mesin', 'icon' => 'circle-o', 'url' => ['/produksi-mesin/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'produksi-mesin'
+                    ],
+                    [
                         'label' => 'PFP', 'icon' => 'circle-o', 'url' => ['/processing-pfp/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp'
                     ],

@@ -97,7 +97,7 @@ class ProcessingPfpController extends Controller
         $attrsLabels = [];
         if($processModels !== null){
             $attrsLabels = $processModels[0]->attributeLabels();
-            unset($attrsLabels['order']); unset($attrsLabels['created_at']); unset($attrsLabels['created_by']); unset($attrsLabels['updated_at']); unset($attrsLabels['updated_by']); unset($attrsLabels['max_pengulangan']); unset($attrsLabels['waktu']); unset($attrsLabels['counter']);
+            unset($attrsLabels['order']); unset($attrsLabels['created_at']); unset($attrsLabels['created_by']); unset($attrsLabels['updated_at']); unset($attrsLabels['updated_by']); unset($attrsLabels['max_pengulangan']); unset($attrsLabels['waktu']); unset($attrsLabels['counter']); unset($attrsLabels['gangguan_produksi']); unset($attrsLabels['use_jetblack']);
             //BaseVarDumper::dump($attrsLabels, 10, true);Yii::$app->end();
         }
 
@@ -115,7 +115,7 @@ class ProcessingPfpController extends Controller
 
                     $headers = [];
                     $attrs = $kartuProcessPfpProcess->process->attributes;
-                    unset($attrs['id']); unset($attrs['order']); unset($attrs['created_at']); unset($attrs['created_by']); unset($attrs['updated_at']); unset($attrs['updated_by']); unset($attrs['max_pengulangan']); unset($attrs['waktu']); unset($attrs['counter']);
+                    unset($attrs['id']); unset($attrs['order']); unset($attrs['created_at']); unset($attrs['created_by']); unset($attrs['updated_at']); unset($attrs['updated_by']); unset($attrs['max_pengulangan']); unset($attrs['waktu']); unset($attrs['counter']); unset($attrs['gangguan_produksi']); unset($attrs['use_jetblack']);
                     foreach ($attrs as $key=>$attr) {
                         if($key === 'nama_proses'){
                             $processUlang['nama_proses'] = $attr;
