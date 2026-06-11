@@ -109,10 +109,15 @@ $jenisMesinOptions = array_combine($jenisMesins, $jenisMesins);
 <?php
 $mesinDataJson = json_encode($mesinData);
 $initialNoMesin = $no_mesin ? json_encode((array)$no_mesin) : '[]';
+$urlLookupKpById = \yii\helpers\Url::to(['/ajax/lookup-kp-by-id']);
+$dyeingConfigJson = json_encode($prosesDyeingConfig ?? []);
+$pfpConfigJson = json_encode($prosesPfpConfig ?? []);
 
 $js = <<<JS
 var mesinData = $mesinDataJson;
 var initialNoMesin = $initialNoMesin;
+var dyeingConfig = $dyeingConfigJson;
+var pfpConfig = $pfpConfigJson;
 
 $('#jenis-mesin-select').on('change', function() {
     var jenis = $(this).val();
@@ -186,16 +191,50 @@ $(document).on('click', '.btn-edit-row', function() {
     if (prosesSelect.find("option[value='" + prosesVal + "']").length === 0) {
         prosesSelect.append(new Option(prosesVal, prosesVal));
     }
-    prosesSelect.val(prosesVal);
+    prosesSelect.val(prosesVal).trigger('change');
     
     row.find('td:eq(5) input').val($(this).data('start'));
     row.find('td:eq(6) input').val($(this).data('stop'));
-    row.find('td:eq(7) input').val($(this).data('nomesin'));
-    row.find('td:eq(8) input').val($(this).data('temp'));
-    row.find('td:eq(9) input').val($(this).data('speed'));
-    row.find('td:eq(10) input').val($(this).data('gramasi'));
-    row.find('td:eq(11) input').val($(this).data('program'));
-    row.find('td:eq(12) input').val($(this).data('density'));
+    var nmSelect = row.find('td:eq(7) select');
+    if (nmSelect.length) {
+        nmSelect.val($(this).data('nomesin'));
+    } else {
+        row.find('td:eq(7) input').val($(this).data('nomesin'));
+    }
+    if (target === 'dyeing') {
+        row.find('td:eq(8) input').val($(this).data('temp'));
+        row.find('td:eq(9) input').val($(this).data('speed'));
+        row.find('td:eq(10) input').val($(this).data('gramasi'));
+        row.find('td:eq(11) input').val($(this).data('program'));
+        row.find('td:eq(12) input').val($(this).data('density'));
+        row.find('td:eq(13) input').val($(this).data('overfeed'));
+        row.find('td:eq(14) input').val($(this).data('lebarjadi'));
+        row.find('td:eq(15) input').val($(this).data('panjangjadi'));
+        row.find('td:eq(16) input').val($(this).data('infokualitas'));
+        row.find('td:eq(17) input').val($(this).data('gangguanproduksi'));
+        row.find('td:eq(18) input').val($(this).data('keterangan'));
+    } else {
+        row.find('td:eq(8) input').val($(this).data('temp'));
+        row.find('td:eq(9) input').val($(this).data('speed'));
+        row.find('td:eq(10) input').val($(this).data('waktu'));
+        row.find('td:eq(11) input').val($(this).data('program'));
+        row.find('td:eq(12) input').val($(this).data('exrelax'));
+        row.find('td:eq(13) input').val($(this).data('exwroligomer'));
+        row.find('td:eq(14) input').val($(this).data('exdyeing'));
+        row.find('td:eq(15) input').val($(this).data('wrpcnt'));
+        row.find('td:eq(16) input').val($(this).data('rpm'));
+        row.find('td:eq(17) input').val($(this).data('density'));
+        row.find('td:eq(18) input').val($(this).data('jamur'));
+        row.find('td:eq(19) input').val($(this).data('karat'));
+        row.find('td:eq(20) input').val($(this).data('overfeed'));
+        row.find('td:eq(21) input').val($(this).data('counter'));
+        row.find('td:eq(22) input').val($(this).data('lebarjadi'));
+        row.find('td:eq(23) input').val($(this).data('infokualitas'));
+        row.find('td:eq(24) input').val($(this).data('gangguanproduksi'));
+        row.find('td:eq(25) input').val($(this).data('gramasi'));
+        row.find('td:eq(26) input').val($(this).data('panjangjadi'));
+        row.find('td:eq(27) input').val($(this).data('keterangan'));
+    }
     
     $('html, body').animate({
         scrollTop: tbody.closest('.box').offset().top - 50
@@ -206,6 +245,96 @@ $(document).on('click', '.btn-edit-row', function() {
         row.css('background-color', '');
     }, 2000);
 });
+
+$('#dyeing-nk-input').on('change', function() {
+    var id = $(this).val();
+    if(id) {
+        $.ajax({
+            url: '{$urlLookupKpById}',
+            type: 'GET',
+            data: {q: 'dyeing', id: id},
+            success: function(data) {
+                if (data) {
+                    $('#dyeing-motif-input').val(data.wo && data.wo.greige ? data.wo.greige.nama_kain : '');
+                    $('#dyeing-warna-input').val(data.woColor && data.woColor.moColor ? data.woColor.moColor.color : '');
+                }
+            }
+        });
+    } else {
+        $('#dyeing-motif-input').val('');
+        $('#dyeing-warna-input').val('');
+    }
+});
+
+$('#pfp-nk-input').on('change', function() {
+    var id = $(this).val();
+    if(id) {
+        $.ajax({
+            url: '{$urlLookupKpById}',
+            type: 'GET',
+            data: {q: 'pfp', id: id},
+            success: function(data) {
+                if (data) {
+                    $('#pfp-motif-input').val(data.greige ? data.greige.nama_kain : '');
+                    $('#pfp-warna-input').val(data.orderPfp && data.orderPfp.dasar_warna ? data.orderPfp.dasar_warna : '');
+                }
+            }
+        });
+    } else {
+        $('#pfp-motif-input').val('');
+        $('#pfp-warna-input').val('');
+    }
+});
+
+function applyDyeingProcessConfig(prosesName) {
+    var config = dyeingConfig[prosesName] || {};
+    var row = $('#tbody-input-dyeing tr:first');
+    row.find('input[name="InputDyeing[0][temp]"]').prop('disabled', !config.temp);
+    row.find('input[name="InputDyeing[0][speed]"]').prop('disabled', !config.speed);
+    row.find('input[name="InputDyeing[0][gramasi]"]').prop('disabled', !config.gramasi);
+    row.find('input[name="InputDyeing[0][program_number]"]').prop('disabled', !config.program_number);
+    row.find('input[name="InputDyeing[0][density]"]').prop('disabled', !config.density);
+    row.find('input[name="InputDyeing[0][over_feed]"]').prop('disabled', !config.over_feed);
+    row.find('input[name="InputDyeing[0][lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
+    row.find('input[name="InputDyeing[0][panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
+    row.find('input[name="InputDyeing[0][info_kualitas]"]').prop('disabled', !config.info_kualitas);
+    row.find('input[name="InputDyeing[0][gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
+    row.find('input[name="InputDyeing[0][keterangan]"]').prop('disabled', !config.keterangan);
+}
+
+$('#dyeing-proses-input').on('change', function() {
+    applyDyeingProcessConfig($(this).val());
+});
+
+function applyPfpProcessConfig(prosesName) {
+    var config = pfpConfig[prosesName] || {};
+    var row = $('#tbody-input-pfp tr:first');
+    row.find('input[name="InputPfp[0][temp]"]').prop('disabled', !config.temp);
+    row.find('input[name="InputPfp[0][speed]"]').prop('disabled', !config.speed);
+    row.find('input[name="InputPfp[0][waktu]"]').prop('disabled', !config.waktu);
+    row.find('input[name="InputPfp[0][program_number]"]').prop('disabled', !config.program_number);
+    row.find('input[name="InputPfp[0][ex_relax]"]').prop('disabled', !config.ex_relax);
+    row.find('input[name="InputPfp[0][ex_wr_oligomer]"]').prop('disabled', !config.ex_wr_oligomer);
+    row.find('input[name="InputPfp[0][ex_dyeing]"]').prop('disabled', !config.ex_dyeing);
+    row.find('input[name="InputPfp[0][wr_pcnt]"]').prop('disabled', !config.wr_pcnt);
+    row.find('input[name="InputPfp[0][rpm]"]').prop('disabled', !config.rpm);
+    row.find('input[name="InputPfp[0][density]"]').prop('disabled', !config.density);
+    row.find('input[name="InputPfp[0][jamur]"]').prop('disabled', !config.jamur);
+    row.find('input[name="InputPfp[0][karat]"]').prop('disabled', !config.karat);
+    row.find('input[name="InputPfp[0][over_feed]"]').prop('disabled', !config.over_feed);
+    row.find('input[name="InputPfp[0][counter]"]').prop('disabled', !config.counter);
+    row.find('input[name="InputPfp[0][lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
+    row.find('input[name="InputPfp[0][info_kualitas]"]').prop('disabled', !config.info_kualitas);
+    row.find('input[name="InputPfp[0][gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
+    row.find('input[name="InputPfp[0][gramasi]"]').prop('disabled', !config.gramasi);
+    row.find('input[name="InputPfp[0][panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
+    row.find('input[name="InputPfp[0][keterangan]"]').prop('disabled', !config.keterangan);
+}
+
+$('#pfp-proses-input').on('change', function() {
+    applyPfpProcessConfig($(this).val());
+});
+
 JS;
 $this->registerJs($js);
 ?>
@@ -213,6 +342,12 @@ $this->registerJs($js);
 <?php if ($jenis_mesin && $no_mesin && $shift && $tanggal): ?>
 <?php 
 $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
+$noMesinList = [];
+if (is_array($no_mesin)) {
+    foreach ($no_mesin as $nm) {
+        $noMesinList[$nm] = $nm;
+    }
+}
 ?>
 <div class="row">
     <div class="col-md-12">
@@ -246,6 +381,12 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     <th>Gramasi</th>
                     <th>Program Number</th>
                     <th>Density</th>
+                    <th>Over Feed</th>
+                    <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -264,7 +405,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                         ?>
                         <tr>
                             <td><?= $wo ? Html::encode($wo->no) : '-' ?></td>
-                            <td><?= Html::encode($record->kartuProcess->no) ?></td>
+                            <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/trn-kartu-proses-dyeing/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
                             <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
                             <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
@@ -276,6 +417,12 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                             <td><?= Html::encode($val['gramasi'] ?? '-') ?></td>
                             <td><?= Html::encode($val['program_number'] ?? '-') ?></td>
                             <td><?= Html::encode($val['density'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['over_feed'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['lebar_jadi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['panjang_jadi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['info_kualitas'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['gangguan_produksi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['keterangan'] ?? '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="dyeing"
@@ -294,6 +441,12 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                                     data-gramasi="<?= Html::encode($val['gramasi'] ?? '') ?>"
                                     data-program="<?= Html::encode($val['program_number'] ?? '') ?>"
                                     data-density="<?= Html::encode($val['density'] ?? '') ?>"
+                                    data-overfeed="<?= Html::encode($val['over_feed'] ?? '') ?>"
+                                    data-lebarjadi="<?= Html::encode($val['lebar_jadi'] ?? '') ?>"
+                                    data-panjangjadi="<?= Html::encode($val['panjang_jadi'] ?? '') ?>"
+                                    data-infokualitas="<?= Html::encode($val['info_kualitas'] ?? '') ?>"
+                                    data-gangguanproduksi="<?= Html::encode($val['gangguan_produksi'] ?? '') ?>"
+                                    data-keterangan="<?= Html::encode($val['keterangan'] ?? '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                             </td>
@@ -323,9 +476,24 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     <th>No Mesin</th>
                     <th>Temp</th>
                     <th>Speed</th>
-                    <th>Gramasi</th>
+                    <th>Waktu</th>
                     <th>Program Number</th>
+                    <th>Ex Relax</th>
+                    <th>Ex Wr Oligomer</th>
+                    <th>Ex Dyeing</th>
+                    <th>Wr Pcnt</th>
+                    <th>Rpm</th>
                     <th>Density</th>
+                    <th>Jamur</th>
+                    <th>Karat</th>
+                    <th>Over Feed</th>
+                    <th>Counter</th>
+                    <th>Lebar Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Gramasi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -344,7 +512,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                         ?>
                         <tr>
                             <td><?= $wo ? Html::encode($wo->no) : '-' ?></td>
-                            <td><?= Html::encode($record->kartuProcess->no) ?></td>
+                            <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/trn-kartu-proses-pfp/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
                             <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
                             <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
@@ -353,9 +521,24 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                             <td><?= Html::encode($val['no_mesin'] ?? '-') ?></td>
                             <td><?= Html::encode($val['temp'] ?? '-') ?></td>
                             <td><?= Html::encode($val['speed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['gramasi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['waktu'] ?? '-') ?></td>
                             <td><?= Html::encode($val['program_number'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['ex_relax'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['ex_wr_oligomer'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['ex_dyeing'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['wr_pcnt'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['rpm'] ?? '-') ?></td>
                             <td><?= Html::encode($val['density'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['jamur'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['karat'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['over_feed'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['counter'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['lebar_jadi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['info_kualitas'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['gangguan_produksi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['gramasi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['panjang_jadi'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['keterangan'] ?? '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="pfp"
@@ -371,9 +554,24 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                                     data-nomesin="<?= Html::encode($val['no_mesin'] ?? '') ?>"
                                     data-temp="<?= Html::encode($val['temp'] ?? '') ?>"
                                     data-speed="<?= Html::encode($val['speed'] ?? '') ?>"
-                                    data-gramasi="<?= Html::encode($val['gramasi'] ?? '') ?>"
+                                    data-waktu="<?= Html::encode($val['waktu'] ?? '') ?>"
                                     data-program="<?= Html::encode($val['program_number'] ?? '') ?>"
+                                    data-exrelax="<?= Html::encode($val['ex_relax'] ?? '') ?>"
+                                    data-exwroligomer="<?= Html::encode($val['ex_wr_oligomer'] ?? '') ?>"
+                                    data-exdyeing="<?= Html::encode($val['ex_dyeing'] ?? '') ?>"
+                                    data-wrpcnt="<?= Html::encode($val['wr_pcnt'] ?? '') ?>"
+                                    data-rpm="<?= Html::encode($val['rpm'] ?? '') ?>"
                                     data-density="<?= Html::encode($val['density'] ?? '') ?>"
+                                    data-jamur="<?= Html::encode($val['jamur'] ?? '') ?>"
+                                    data-karat="<?= Html::encode($val['karat'] ?? '') ?>"
+                                    data-overfeed="<?= Html::encode($val['over_feed'] ?? '') ?>"
+                                    data-counter="<?= Html::encode($val['counter'] ?? '') ?>"
+                                    data-lebarjadi="<?= Html::encode($val['lebar_jadi'] ?? '') ?>"
+                                    data-infokualitas="<?= Html::encode($val['info_kualitas'] ?? '') ?>"
+                                    data-gangguanproduksi="<?= Html::encode($val['gangguan_produksi'] ?? '') ?>"
+                                    data-gramasi="<?= Html::encode($val['gramasi'] ?? '') ?>"
+                                    data-panjangjadi="<?= Html::encode($val['panjang_jadi'] ?? '') ?>"
+                                    data-keterangan="<?= Html::encode($val['keterangan'] ?? '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                             </td>
@@ -384,6 +582,18 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
         </table>
     </div>
 </div>
+
+<?= Html::beginForm(['save-input'], 'post', ['id' => 'form-tambahan-input']) ?>
+<?= Html::hiddenInput('jenis_mesin', $jenis_mesin) ?>
+<?= Html::hiddenInput('tanggal', $tanggal) ?>
+<?= Html::hiddenInput('shift', $shift) ?>
+<?php 
+if (is_array($no_mesin)) {
+    foreach ($no_mesin as $nm) {
+        echo Html::hiddenInput('no_mesin[]', $nm);
+    }
+}
+?>
 
 <div class="box box-primary">
     <div class="box-header with-border">
@@ -409,6 +619,12 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     <th>Gramasi</th>
                     <th>Program Number</th>
                     <th>Density</th>
+                    <th>Over Feed</th>
+                    <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -416,7 +632,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                 <tr>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputDyeing[wo]',
+                            'name' => 'InputDyeing[0][wo]',
                             'options' => ['id' => 'dyeing-wo-input', 'class' => 'input-wo-dyeing', 'placeholder' => 'Cari WO...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
@@ -431,7 +647,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     </td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputDyeing[nk]',
+                            'name' => 'InputDyeing[0][nk]',
                             'options' => ['id' => 'dyeing-nk-input', 'class' => 'input-nk-dyeing', 'placeholder' => 'Cari NK...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
@@ -447,26 +663,34 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="text" class="form-control" readonly></td>
-                    <td><input type="text" class="form-control" readonly></td>
+                    <td><input type="text" id="dyeing-motif-input" class="form-control" readonly></td>
+                    <td><input type="text" id="dyeing-warna-input" class="form-control" readonly></td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputDyeing[proses]',
+                            'name' => 'InputDyeing[0][proses]',
                             'data' => $prosesDyeing,
-                            'options' => ['placeholder' => 'Pilih Proses...'],
+                            'options' => ['id' => 'dyeing-proses-input', 'class' => 'input-proses-dyeing', 'placeholder' => 'Pilih Proses...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="time" class="form-control"></td>
-                    <td><input type="time" class="form-control"></td>
-                    <td><input type="text" class="form-control" value="<?= Html::encode($noMesinStr) ?>"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
+                    <td><input type="time" name="InputDyeing[0][start]" class="form-control"></td>
+                    <td><input type="time" name="InputDyeing[0][stop]" class="form-control"></td>
+                    <td>
+                        <?= Html::dropDownList('InputDyeing[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih Mesin...']) ?>
+                    </td>
+                    <td><input type="text" name="InputDyeing[0][temp]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][speed]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][gramasi]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][program_number]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][density]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][over_feed]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][lebar_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][panjang_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][info_kualitas]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][gangguan_produksi]" class="form-control"></td>
+                    <td><input type="text" name="InputDyeing[0][keterangan]" class="form-control"></td>
                     <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>
@@ -491,9 +715,24 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     <th>No Mesin</th>
                     <th>Temp</th>
                     <th>Speed</th>
-                    <th>Gramasi</th>
+                    <th>Waktu</th>
                     <th>Program Number</th>
+                    <th>Ex Relax</th>
+                    <th>Ex Wr Oligomer</th>
+                    <th>Ex Dyeing</th>
+                    <th>Wr Pcnt</th>
+                    <th>Rpm</th>
                     <th>Density</th>
+                    <th>Jamur</th>
+                    <th>Karat</th>
+                    <th>Over Feed</th>
+                    <th>Counter</th>
+                    <th>Lebar Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Gramasi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -501,7 +740,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                 <tr>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputPfp[wo]',
+                            'name' => 'InputPfp[0][wo]',
                             'options' => ['id' => 'pfp-wo-input', 'class' => 'input-wo-pfp', 'placeholder' => 'Cari Order PFP...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
@@ -516,7 +755,7 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                     </td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputPfp[nk]',
+                            'name' => 'InputPfp[0][nk]',
                             'options' => ['id' => 'pfp-nk-input', 'class' => 'input-nk-pfp', 'placeholder' => 'Cari NK...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
@@ -532,26 +771,43 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="text" class="form-control" readonly></td>
-                    <td><input type="text" class="form-control" readonly></td>
+                    <td><input type="text" id="pfp-motif-input" class="form-control" readonly></td>
+                    <td><input type="text" id="pfp-warna-input" class="form-control" readonly></td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
-                            'name' => 'InputPfp[proses]',
+                            'name' => 'InputPfp[0][proses]',
                             'data' => $prosesPfp,
-                            'options' => ['placeholder' => 'Pilih Proses...'],
+                            'options' => ['id' => 'pfp-proses-input', 'class' => 'input-proses-pfp', 'placeholder' => 'Pilih Proses...'],
                             'pluginOptions' => [
                                 'allowClear' => true,
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="time" class="form-control"></td>
-                    <td><input type="time" class="form-control"></td>
-                    <td><input type="text" class="form-control" value="<?= Html::encode($noMesinStr) ?>"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
-                    <td><input type="text" class="form-control"></td>
+                    <td><input type="time" name="InputPfp[0][start]" class="form-control"></td>
+                    <td><input type="time" name="InputPfp[0][stop]" class="form-control"></td>
+                    <td>
+                        <?= Html::dropDownList('InputPfp[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih Mesin...']) ?>
+                    </td>
+                    <td><input type="text" name="InputPfp[0][temp]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][speed]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][waktu]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][program_number]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][ex_relax]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][ex_wr_oligomer]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][ex_dyeing]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][wr_pcnt]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][rpm]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][density]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][jamur]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][counter]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][info_kualitas]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][gangguan_produksi]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][gramasi]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][keterangan]" class="form-control"></td>
                     <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>
@@ -561,7 +817,8 @@ $noMesinStr = is_array($no_mesin) ? implode(', ', $no_mesin) : $no_mesin;
 
     </div>
     <div class="box-footer">
-        <button class="btn btn-primary"><i class="glyphicon glyphicon-save"></i> Simpan Data Input</button>
+        <button type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-save"></i> Simpan Data Input</button>
     </div>
 </div>
+<?= Html::endForm() ?>
 <?php endif; ?>

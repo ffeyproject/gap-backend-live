@@ -64,22 +64,28 @@ class ProduksiMesinController extends Controller
 
         $prosesDyeing = [];
         $prosesPfp = [];
+        $prosesDyeingConfig = [];
+        $prosesPfpConfig = [];
         if ($jenis_mesin) {
-            $prosesDyeing = \common\models\ar\MstProcessDyeing::find()
+            $dyeingModels = \common\models\ar\MstProcessDyeing::find()
                 ->innerJoin('mst_process_dyeing_mesin', 'mst_process_dyeing_mesin.mst_process_dyeing_id = mst_process_dyeing.id')
                 ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_dyeing_mesin.mst_mesin_proses_id')
                 ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
-                ->select(['mst_process_dyeing.nama_proses', 'mst_process_dyeing.nama_proses'])
-                ->indexBy('nama_proses')
-                ->column();
+                ->all();
+            foreach ($dyeingModels as $model) {
+                $prosesDyeing[$model->nama_proses] = $model->nama_proses;
+                $prosesDyeingConfig[$model->nama_proses] = $model->attributes;
+            }
 
-            $prosesPfp = \common\models\ar\MstProcessPfp::find()
+            $pfpModels = \common\models\ar\MstProcessPfp::find()
                 ->innerJoin('mst_process_pfp_mesin', 'mst_process_pfp_mesin.mst_process_pfp_id = mst_process_pfp.id')
                 ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_pfp_mesin.mst_mesin_proses_id')
                 ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
-                ->select(['mst_process_pfp.nama_proses', 'mst_process_pfp.nama_proses'])
-                ->indexBy('nama_proses')
-                ->column();
+                ->all();
+            foreach ($pfpModels as $model) {
+                $prosesPfp[$model->nama_proses] = $model->nama_proses;
+                $prosesPfpConfig[$model->nama_proses] = $model->attributes;
+            }
         }
 
         return $this->render('index', [
@@ -93,6 +99,118 @@ class ProduksiMesinController extends Controller
             'pfpRecords' => $pfpRecords,
             'prosesDyeing' => $prosesDyeing,
             'prosesPfp' => $prosesPfp,
+            'prosesDyeingConfig' => $prosesDyeingConfig,
+            'prosesPfpConfig' => $prosesPfpConfig,
         ]);
+    }
+
+    public function actionSaveInput()
+    {
+        $request = Yii::$app->request;
+        $jenis_mesin = $request->post('jenis_mesin');
+        $tanggal = $request->post('tanggal');
+        $shift = $request->post('shift');
+        $no_mesin = $request->post('no_mesin', []);
+
+        $inputDyeing = $request->post('InputDyeing', []);
+        $inputPfp = $request->post('InputPfp', []);
+
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+        try {
+            // Save InputDyeing
+            if (is_array($inputDyeing)) {
+                foreach ($inputDyeing as $row) {
+                    if (!empty($row['nk']) && !empty($row['proses'])) {
+                        // Find process ID
+                        $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $row['proses']]);
+                        if ($mstProcess) {
+                            $kpProcess = \common\models\ar\KartuProcessDyeingProcess::findOne([
+                                'kartu_process_id' => $row['nk'],
+                                'process_id' => $mstProcess->id
+                            ]);
+                            
+                            if (!$kpProcess) {
+                                $kpProcess = new \common\models\ar\KartuProcessDyeingProcess();
+                                $kpProcess->kartu_process_id = $row['nk'];
+                                $kpProcess->process_id = $mstProcess->id;
+                            }
+                            
+                            $val = [];
+                            if ($kpProcess->value) {
+                                $val = json_decode($kpProcess->value, true) ?: [];
+                            }
+                            
+                            // Update values
+                            $val['tanggal'] = $tanggal;
+                            $val['shift_group'] = $shift;
+                            
+                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'keterangan'];
+                            foreach ($fields as $f) {
+                                if (isset($row[$f])) {
+                                    $val[$f] = $row[$f];
+                                }
+                            }
+                            
+                            $kpProcess->value = json_encode($val);
+                            if (!$kpProcess->save(false)) {
+                                throw new \Exception('Gagal menyimpan data Dyeing.');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Save InputPfp
+            if (is_array($inputPfp)) {
+                foreach ($inputPfp as $row) {
+                    if (!empty($row['nk']) && !empty($row['proses'])) {
+                        // Find process ID
+                        $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $row['proses']]);
+                        if ($mstProcess) {
+                            $kpProcess = \common\models\ar\KartuProcessPfpProcess::findOne([
+                                'kartu_process_id' => $row['nk'],
+                                'process_id' => $mstProcess->id
+                            ]);
+                            
+                            if (!$kpProcess) {
+                                $kpProcess = new \common\models\ar\KartuProcessPfpProcess();
+                                $kpProcess->kartu_process_id = $row['nk'];
+                                $kpProcess->process_id = $mstProcess->id;
+                            }
+                            
+                            $val = [];
+                            if ($kpProcess->value) {
+                                $val = json_decode($kpProcess->value, true) ?: [];
+                            }
+                            
+                            // Update values
+                            $val['tanggal'] = $tanggal;
+                            $val['shift_group'] = $shift;
+                            
+                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan'];
+                            foreach ($fields as $f) {
+                                if (isset($row[$f])) {
+                                    $val[$f] = $row[$f];
+                                }
+                            }
+                            
+                            $kpProcess->value = json_encode($val);
+                            if (!$kpProcess->save(false)) {
+                                throw new \Exception('Gagal menyimpan data PFP.');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Data Tambahan Input berhasil disimpan.');
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        }
+
+        return $this->redirect(['index', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin]);
     }
 }

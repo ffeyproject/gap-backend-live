@@ -32,6 +32,10 @@ echo AjaxModal::widget([
             'data-target'=>"#allStockModal",
             'data-title' => 'Lihat Stock Keseluruhan'
         ])?>
+        <?=Html::a('<i class="glyphicon glyphicon-refresh"></i> Refresh', ['index'], [
+            'class' => 'btn btn-default',
+            'title' => 'Refresh Halaman'
+        ])?>
     </p>
 
     <?= GridView::widget([

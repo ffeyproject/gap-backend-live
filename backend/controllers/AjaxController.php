@@ -860,6 +860,14 @@ class AjaxController extends Controller
                         ->one()
                     ;
                     break;
+                case 'pfp':
+                    $out = TrnKartuProsesPfp::find()
+                        ->joinWith(['orderPfp', 'greige'])
+                        ->where(['trn_kartu_proses_pfp.id'=>$id])
+                        ->asArray()
+                        ->one()
+                    ;
+                    break;
             }
         }
         return $out;
