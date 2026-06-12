@@ -150,7 +150,11 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                                     <td style="vertical-align: middle; font-weight: 500;"><?= Html::encode($record['wo_no']) ?></td>
                                     <td style="vertical-align: middle;"><?= Html::encode($record['motif']) ?></td>
                                     <td style="vertical-align: middle;"><?= Html::encode($record['warna']) ?></td>
-                                    <td style="text-align: center; vertical-align: middle; font-weight: bold; color: #2c3e50;"><?= Html::encode($record['nk']) ?></td>
+                                    <td style="text-align: center; vertical-align: middle; font-weight: bold; color: #2c3e50;">
+                                        <a href="<?= Url::to(['/processing-dyeing/view', 'id' => $record['id']]) ?>" target="_blank" style="color: #3c8dbc; text-decoration: underline;">
+                                            <?= Html::encode($record['nk']) ?>
+                                        </a>
+                                    </td>
                                     <td style="text-align: center; vertical-align: middle; color: #27ae60; font-weight: 600;"><?= Html::encode(date('d-M-Y', strtotime($record['buka_greige']))) ?></td>
                                     <td style="text-align: center; vertical-align: middle; font-weight: 600; color: <?= $record['tgl_packing'] === 'Belum Packing' ? '#e74c3c' : '#7f8c8d' ?>;">
                                         <?= Html::encode($record['tgl_packing']) ?>
