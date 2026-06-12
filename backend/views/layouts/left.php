@@ -647,6 +647,19 @@ $moduleId = $controller->module->id;
                             ],
                         ]
                     ],
+                    [
+                        'label' => 'SINKRON DATA',
+                        'icon' => 'refresh',
+                        'url' => '#',
+                        'items' => [
+                            [
+                                'label' => 'Synchron Verpacking Dyeing',
+                                'icon' => 'circle-o',
+                                'url' => ['/processing-dyeing/synchron-verpacking'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='synchron-verpacking'
+                            ]
+                        ]
+                    ],
                 ],
             ],
 

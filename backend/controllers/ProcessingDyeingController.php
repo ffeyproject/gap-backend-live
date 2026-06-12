@@ -68,6 +68,77 @@ class ProcessingDyeingController extends Controller
      * Lists all TrnKartuProsesDyeing models.
      * @return mixed
      */
+    public function actionSynchronVerpacking()
+    {
+        $selectedMonth = Yii::$app->request->post('month') ?: date('Y-m');
+
+        if (Yii::$app->request->isPost) {
+            $time = strtotime($selectedMonth . '-01');
+            $queryMonthYear = date('Y-m', $time);
+            $likePattern = $queryMonthYear . '-%';
+
+            // Find all Process ID 1 records for the selected month
+            $processes = KartuProcessDyeingProcess::find()
+                ->where(['process_id' => 1])
+                ->andWhere(new \yii\db\Expression("CAST(value AS jsonb)->>'tanggal' LIKE :tgl", [':tgl' => $likePattern]))
+                ->all();
+
+            $kartuIds = [];
+            foreach ($processes as $proc) {
+                $kartuIds[] = $proc->kartu_process_id;
+            }
+
+            if (!empty($kartuIds)) {
+                // Find all TrnKartuProsesDyeing with empty approved_at and within $kartuIds
+                $cards = TrnKartuProsesDyeing::find()
+                    ->where(['id' => $kartuIds])
+                    ->andWhere(['or', ['approved_at' => null], ['approved_at' => 0]])
+                    ->all();
+
+                $updatedCount = 0;
+                foreach ($cards as $card) {
+                    $log = \common\models\ar\ActionLogKartuDyeing::find()
+                        ->where(['kartu_proses_id' => $card->id])
+                        ->orderBy(['created_at' => SORT_ASC])
+                        ->one();
+
+                    if ($log) {
+                        $card->approved_at = $log->created_at;
+                        $card->approved_by = $log->user_id; // optional
+                        if ($card->save(false)) { // skip validation to bypass other constraints
+                            $updatedCount++;
+                        }
+                    }
+                }
+
+                Yii::$app->session->setFlash('success', "Proses sinkronisasi selesai. Berhasil memperbarui $updatedCount kartu proses.");
+            } else {
+                Yii::$app->session->setFlash('info', 'Tidak ada data Buka Greige ditemukan untuk bulan ' . date('F Y', $time));
+            }
+        }
+
+        // Generate month options (current month down to Jan of current year)
+        $currentYear = date('Y');
+        $currentMonth = date('n');
+        $monthOptions = [];
+        for ($i = $currentMonth; $i >= 1; $i--) {
+            $monthNumber = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $time = strtotime("$currentYear-$monthNumber-01");
+            $value = date('Y-m', $time);
+            $label = date('F Y', $time);
+            $monthOptions[$value] = $label;
+        }
+
+        return $this->render('synchron-verpacking', [
+            'selectedMonth' => $selectedMonth,
+            'monthOptions' => $monthOptions,
+        ]);
+    }
+
+    /**
+     * Lists all TrnKartuProsesDyeing models.
+     * @return mixed
+     */
     public function actionRekap()
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
