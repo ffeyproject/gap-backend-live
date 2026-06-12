@@ -64,7 +64,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                 <th>TERCAPAI (&le; 14 HARI)</th>
                 <th>TIDAK TERCAPAI (&gt; 14 HARI / BELUM)</th>
                 <th>TOTAL</th>
-                <th style="background-color: #D9EDF7; width: 180px;">PERSENTASE TIDAK TERCAPAI</th>
+                <th style="background-color: #D9EDF7; width: 180px;">PERSENTASE TERCAPAI</th>
             </tr>
         </thead>
         <tbody>

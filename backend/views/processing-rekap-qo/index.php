@@ -90,7 +90,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                             <th style="color: #27ae60; font-weight: bold; vertical-align: middle;">TERCAPAI (&le; 14 HARI)</th>
                             <th style="color: #e74c3c; font-weight: bold; vertical-align: middle;">TIDAK TERCAPAI (&gt; 14 HARI / BELUM)</th>
                             <th style="font-weight: bold; vertical-align: middle;">TOTAL</th>
-                            <th style="background-color: #ebf5fb; color: #2980b9; font-weight: bold; vertical-align: middle; width: 220px;">PERSENTASE TIDAK TERCAPAI</th>
+                            <th style="background-color: #ebf5fb; color: #2980b9; font-weight: bold; vertical-align: middle; width: 220px;">PERSENTASE TERCAPAI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -234,7 +234,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
       <div class="modal-header" style="background-color: #fafbfc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         <h4 class="modal-title" id="grafikModalLabel" style="font-weight: 700; color: #2c3e50;">
-            <i class="glyphicon glyphicon-stats"></i> Grafik Tren Persentase Tidak Tercapai (Tahun <?= date('Y') ?>)
+            <i class="glyphicon glyphicon-stats"></i> Grafik Tren Persentase Tercapai (Tahun <?= date('Y') ?>)
         </h4>
       </div>
       <div class="modal-body">
@@ -341,7 +341,7 @@ $this->registerJs(<<<JS
                         labels: response.labels,
                         datasets: [
                             {
-                                label: 'Persentase WO Tidak Tercapai (%)',
+                                label: 'Persentase WO Tercapai (%)',
                                 data: response.wo,
                                 borderColor: '#e74c3c',
                                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
@@ -352,7 +352,7 @@ $this->registerJs(<<<JS
                                 tension: 0.3
                             },
                             {
-                                label: 'Persentase Batch Tidak Tercapai (%)',
+                                label: 'Persentase Batch Tercapai (%)',
                                 data: response.batch,
                                 borderColor: '#f39c12',
                                 backgroundColor: 'rgba(243, 156, 18, 0.1)',

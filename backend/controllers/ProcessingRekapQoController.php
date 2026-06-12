@@ -285,10 +285,10 @@ class ProcessingRekapQoController extends Controller
 
         // Calculate Percentages
         if ($stats['wo']['total'] > 0) {
-            $stats['wo']['persentase'] = round(($stats['wo']['tidak_tercapai'] / $stats['wo']['total']) * 100, 1);
+            $stats['wo']['persentase'] = round(($stats['wo']['tercapai'] / $stats['wo']['total']) * 100, 1);
         }
         if ($stats['batch']['total'] > 0) {
-            $stats['batch']['persentase'] = round(($stats['batch']['tidak_tercapai'] / $stats['batch']['total']) * 100, 1);
+            $stats['batch']['persentase'] = round(($stats['batch']['tercapai'] / $stats['batch']['total']) * 100, 1);
         }
 
         // Return DataProvider for gridview

@@ -111,8 +111,8 @@ $mesinDataJson = json_encode($mesinData);
 $initialNoMesin = $no_mesin ? json_encode((array)$no_mesin) : '[]';
 $urlLookupKpById = \yii\helpers\Url::to(['/ajax/lookup-kp-by-id']);
 $urlCheckExistingData = \yii\helpers\Url::to(['/produksi-mesin/check-existing-data']);
-$dyeingConfigJson = json_encode($prosesDyeingConfig ?? []);
-$pfpConfigJson = json_encode($prosesPfpConfig ?? []);
+$dyeingConfigJson = json_encode(isset($prosesDyeingConfig) ? $prosesDyeingConfig : []);
+$pfpConfigJson = json_encode(isset($prosesPfpConfig) ? $prosesPfpConfig : []);
 
 $js = <<<JS
 var mesinData = $mesinDataJson;
@@ -212,8 +212,7 @@ $(document).on('click', '.btn-edit-row', function() {
         row.find('td:eq(14) input').val($(this).data('lebarjadi'));
         row.find('td:eq(15) input').val($(this).data('panjangjadi'));
         row.find('td:eq(16) input').val($(this).data('infokualitas'));
-        row.find('td:eq(17) input').val($(this).data('gangguanproduksi'));
-        row.find('td:eq(18) input').val($(this).data('keterangan'));
+        row.find('td:eq(17) input').val($(this).data('keterangan'));
     } else {
         row.find('td:eq(8) input').val($(this).data('temp'));
         row.find('td:eq(9) input').val($(this).data('speed'));
@@ -299,7 +298,6 @@ function applyDyeingProcessConfig(prosesName) {
     row.find('input[name="InputDyeing[0][lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
     row.find('input[name="InputDyeing[0][panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
     row.find('input[name="InputDyeing[0][info_kualitas]"]').prop('disabled', !config.info_kualitas);
-    row.find('input[name="InputDyeing[0][gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
     row.find('input[name="InputDyeing[0][keterangan]"]').prop('disabled', !config.keterangan);
 }
 
@@ -417,7 +415,6 @@ if (is_array($no_mesin)) {
                     <th>Lebar Jadi</th>
                     <th>Panjang Jadi</th>
                     <th>Info Kualitas</th>
-                    <th>Gangguan Produksi</th>
                     <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
@@ -441,20 +438,19 @@ if (is_array($no_mesin)) {
                             <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
                             <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
-                            <td><?= Html::encode($val['start'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['stop'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['no_mesin'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['temp'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['speed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['gramasi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['program_number'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['density'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['over_feed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['lebar_jadi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['panjang_jadi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['info_kualitas'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['gangguan_produksi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['keterangan'] ?? '-') ?></td>
+                            <td><?= Html::encode(isset($val['start']) ? $val['start'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['stop']) ? $val['stop'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['temp']) ? $val['temp'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['speed']) ? $val['speed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['gramasi']) ? $val['gramasi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['program_number']) ? $val['program_number'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['density']) ? $val['density'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="dyeing"
@@ -465,20 +461,19 @@ if (is_array($no_mesin)) {
                                     data-motif="<?= $mo ? Html::encode($mo->design) : '' ?>"
                                     data-warna="<?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '' ?>"
                                     data-proses="<?= Html::encode($record->process->nama_proses) ?>"
-                                    data-start="<?= Html::encode($val['start'] ?? '') ?>"
-                                    data-stop="<?= Html::encode($val['stop'] ?? '') ?>"
-                                    data-nomesin="<?= Html::encode($val['no_mesin'] ?? '') ?>"
-                                    data-temp="<?= Html::encode($val['temp'] ?? '') ?>"
-                                    data-speed="<?= Html::encode($val['speed'] ?? '') ?>"
-                                    data-gramasi="<?= Html::encode($val['gramasi'] ?? '') ?>"
-                                    data-program="<?= Html::encode($val['program_number'] ?? '') ?>"
-                                    data-density="<?= Html::encode($val['density'] ?? '') ?>"
-                                    data-overfeed="<?= Html::encode($val['over_feed'] ?? '') ?>"
-                                    data-lebarjadi="<?= Html::encode($val['lebar_jadi'] ?? '') ?>"
-                                    data-panjangjadi="<?= Html::encode($val['panjang_jadi'] ?? '') ?>"
-                                    data-infokualitas="<?= Html::encode($val['info_kualitas'] ?? '') ?>"
-                                    data-gangguanproduksi="<?= Html::encode($val['gangguan_produksi'] ?? '') ?>"
-                                    data-keterangan="<?= Html::encode($val['keterangan'] ?? '') ?>"
+                                    data-start="<?= Html::encode(isset($val['start']) ? $val['start'] : '') ?>"
+                                    data-stop="<?= Html::encode(isset($val['stop']) ? $val['stop'] : '') ?>"
+                                    data-nomesin="<?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '') ?>"
+                                    data-temp="<?= Html::encode(isset($val['temp']) ? $val['temp'] : '') ?>"
+                                    data-speed="<?= Html::encode(isset($val['speed']) ? $val['speed'] : '') ?>"
+                                    data-gramasi="<?= Html::encode(isset($val['gramasi']) ? $val['gramasi'] : '') ?>"
+                                    data-program="<?= Html::encode(isset($val['program_number']) ? $val['program_number'] : '') ?>"
+                                    data-density="<?= Html::encode(isset($val['density']) ? $val['density'] : '') ?>"
+                                    data-overfeed="<?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '') ?>"
+                                    data-lebarjadi="<?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '') ?>"
+                                    data-panjangjadi="<?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '') ?>"
+                                    data-infokualitas="<?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '') ?>"
+                                    data-keterangan="<?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                             </td>
@@ -543,25 +538,25 @@ if (is_array($no_mesin)) {
                             <td><?= $greige ? Html::encode($greige->nama_kain) : '-' ?></td>
                             <td><?= $orderPfp ? Html::encode($orderPfp->dasar_warna) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
-                            <td><?= Html::encode($val['tanggal'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['start'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['stop'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['no_mesin'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['shift_group'] ?? $val['shift_operator'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['temp'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['speed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['program_number'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['ex_relax'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['ex_wr_oligomer'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['ex_dyeing'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['wr_pcnt'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['rpm'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['density'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['jamur'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['karat'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['over_feed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['lebar_jadi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['info_kualitas'] ?? '-') ?></td>
+                            <td><?= Html::encode(isset($val['tanggal']) ? $val['tanggal'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['start']) ? $val['start'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['stop']) ? $val['stop'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['shift_group']) ? $val['shift_group'] : (isset($val['shift_operator']) ? $val['shift_operator'] : '-')) ?></td>
+                            <td><?= Html::encode(isset($val['temp']) ? $val['temp'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['speed']) ? $val['speed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['program_number']) ? $val['program_number'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['ex_relax']) ? $val['ex_relax'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['ex_wr_oligomer']) ? $val['ex_wr_oligomer'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['ex_dyeing']) ? $val['ex_dyeing'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['wr_pcnt']) ? $val['wr_pcnt'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['rpm']) ? $val['rpm'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['density']) ? $val['density'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['jamur']) ? $val['jamur'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['karat']) ? $val['karat'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="pfp"
@@ -572,25 +567,25 @@ if (is_array($no_mesin)) {
                                     data-motif="<?= $greige ? Html::encode($greige->nama_kain) : '' ?>"
                                     data-warna="<?= $orderPfp ? Html::encode($orderPfp->dasar_warna) : '' ?>"
                                     data-proses="<?= Html::encode($record->process->nama_proses) ?>"
-                                    data-start="<?= Html::encode($val['start'] ?? '') ?>"
-                                    data-stop="<?= Html::encode($val['stop'] ?? '') ?>"
-                                    data-nomesin="<?= Html::encode($val['no_mesin'] ?? '') ?>"
-                                    data-temp="<?= Html::encode($val['temp'] ?? '') ?>"
-                                    data-speed="<?= Html::encode($val['speed'] ?? '') ?>"
+                                    data-start="<?= Html::encode(isset($val['start']) ? $val['start'] : '') ?>"
+                                    data-stop="<?= Html::encode(isset($val['stop']) ? $val['stop'] : '') ?>"
+                                    data-nomesin="<?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '') ?>"
+                                    data-temp="<?= Html::encode(isset($val['temp']) ? $val['temp'] : '') ?>"
+                                    data-speed="<?= Html::encode(isset($val['speed']) ? $val['speed'] : '') ?>"
                                     data-waktu=""
-                                    data-program="<?= Html::encode($val['program_number'] ?? '') ?>"
-                                    data-exrelax="<?= Html::encode($val['ex_relax'] ?? '') ?>"
-                                    data-exwroligomer="<?= Html::encode($val['ex_wr_oligomer'] ?? '') ?>"
-                                    data-exdyeing="<?= Html::encode($val['ex_dyeing'] ?? '') ?>"
-                                    data-wrpcnt="<?= Html::encode($val['wr_pcnt'] ?? '') ?>"
-                                    data-rpm="<?= Html::encode($val['rpm'] ?? '') ?>"
-                                    data-density="<?= Html::encode($val['density'] ?? '') ?>"
-                                    data-jamur="<?= Html::encode($val['jamur'] ?? '') ?>"
-                                    data-karat="<?= Html::encode($val['karat'] ?? '') ?>"
-                                    data-overfeed="<?= Html::encode($val['over_feed'] ?? '') ?>"
+                                    data-program="<?= Html::encode(isset($val['program_number']) ? $val['program_number'] : '') ?>"
+                                    data-exrelax="<?= Html::encode(isset($val['ex_relax']) ? $val['ex_relax'] : '') ?>"
+                                    data-exwroligomer="<?= Html::encode(isset($val['ex_wr_oligomer']) ? $val['ex_wr_oligomer'] : '') ?>"
+                                    data-exdyeing="<?= Html::encode(isset($val['ex_dyeing']) ? $val['ex_dyeing'] : '') ?>"
+                                    data-wrpcnt="<?= Html::encode(isset($val['wr_pcnt']) ? $val['wr_pcnt'] : '') ?>"
+                                    data-rpm="<?= Html::encode(isset($val['rpm']) ? $val['rpm'] : '') ?>"
+                                    data-density="<?= Html::encode(isset($val['density']) ? $val['density'] : '') ?>"
+                                    data-jamur="<?= Html::encode(isset($val['jamur']) ? $val['jamur'] : '') ?>"
+                                    data-karat="<?= Html::encode(isset($val['karat']) ? $val['karat'] : '') ?>"
+                                    data-overfeed="<?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '') ?>"
                                     data-counter=""
-                                    data-lebarjadi="<?= Html::encode($val['lebar_jadi'] ?? '') ?>"
-                                    data-infokualitas="<?= Html::encode($val['info_kualitas'] ?? '') ?>"
+                                    data-lebarjadi="<?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '') ?>"
+                                    data-infokualitas="<?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '') ?>"
                                     data-gangguanproduksi=""
                                     data-gramasi=""
                                     data-panjangjadi=""
@@ -646,7 +641,6 @@ if (is_array($no_mesin)) {
                     <th>Lebar Jadi</th>
                     <th>Panjang Jadi</th>
                     <th>Info Kualitas</th>
-                    <th>Gangguan Produksi</th>
                     <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
@@ -712,7 +706,6 @@ if (is_array($no_mesin)) {
                     <td><input type="text" name="InputDyeing[0][lebar_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][info_kualitas]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][gangguan_produksi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][keterangan]" class="form-control"></td>
                     <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
