@@ -22,6 +22,37 @@ class ProduksiMesinController extends Controller
         $dyeingRecords = [];
         $pfpRecords = [];
 
+        $prosesDyeing = [];
+        $prosesPfp = [];
+        $prosesDyeingConfig = [];
+        $prosesPfpConfig = [];
+        $dyeingProcessIds = [];
+        $pfpProcessIds = [];
+
+        if ($jenis_mesin) {
+            $dyeingModels = \common\models\ar\MstProcessDyeing::find()
+                ->innerJoin('mst_process_dyeing_mesin', 'mst_process_dyeing_mesin.mst_process_dyeing_id = mst_process_dyeing.id')
+                ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_dyeing_mesin.mst_mesin_proses_id')
+                ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
+                ->all();
+            foreach ($dyeingModels as $model) {
+                $dyeingProcessIds[] = $model->id;
+                $prosesDyeing[$model->nama_proses] = $model->nama_proses;
+                $prosesDyeingConfig[$model->nama_proses] = $model->attributes;
+            }
+
+            $pfpModels = \common\models\ar\MstProcessPfp::find()
+                ->innerJoin('mst_process_pfp_mesin', 'mst_process_pfp_mesin.mst_process_pfp_id = mst_process_pfp.id')
+                ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_pfp_mesin.mst_mesin_proses_id')
+                ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
+                ->all();
+            foreach ($pfpModels as $model) {
+                $pfpProcessIds[] = $model->id;
+                $prosesPfp[$model->nama_proses] = $model->nama_proses;
+                $prosesPfpConfig[$model->nama_proses] = $model->attributes;
+            }
+        }
+
         if ($jenis_mesin && $no_mesin && $tanggal && $shift) {
             // Dyeing
             $queryDyeing = \common\models\ar\KartuProcessDyeingProcess::find()
@@ -30,8 +61,15 @@ class ProduksiMesinController extends Controller
                 ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
                 ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_BATAL]])
                 ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
-                ->andWhere(['like', 'kp.value', '"shift_group":"' . $shift . '"'])
-                ->with(['kartuProcess.wo', 'kartuProcess.mo', 'kartuProcess.woColor', 'process']);
+                ->andWhere(['like', 'kp.value', '"shift_group":"' . $shift . '"']);
+                
+            if (!empty($dyeingProcessIds)) {
+                $queryDyeing->andWhere(['in', 'kp.process_id', $dyeingProcessIds]);
+            } else {
+                $queryDyeing->andWhere('0=1');
+            }
+
+            $queryDyeing->with(['kartuProcess.wo', 'kartuProcess.mo', 'kartuProcess.woColor', 'process']);
 
             $orConditionsDyeing = ['or'];
             foreach ((array)$no_mesin as $nm) {
@@ -46,11 +84,27 @@ class ProduksiMesinController extends Controller
             $queryPfp = \common\models\ar\KartuProcessPfpProcess::find()
                 ->alias('kp')
                 ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
-                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
-                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
+                ->where(['kpd.status' => [
+                    \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED,
+                    \common\models\ar\TrnKartuProsesPfp::STATUS_APPROVED,
+                    \common\models\ar\TrnKartuProsesPfp::STATUS_INSPECTED,
+                    \common\models\ar\TrnKartuProsesPfp::STATUS_POSTED,
+                    \common\models\ar\TrnKartuProsesPfp::STATUS_DRAFT,
+                ]])
                 ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
-                ->andWhere(['like', 'kp.value', '"shift_group":"' . $shift . '"'])
-                ->with(['kartuProcess.wo', 'kartuProcess.mo', 'kartuProcess.woColor', 'process']);
+                ->andWhere([
+                    'or',
+                    ['like', 'kp.value', '"shift_group":"' . $shift . '"'],
+                    ['like', 'kp.value', '"shift_operator":"' . $shift . '"']
+                ]);
+
+            if (!empty($pfpProcessIds)) {
+                $queryPfp->andWhere(['in', 'kp.process_id', $pfpProcessIds]);
+            } else {
+                $queryPfp->andWhere('0=1');
+            }
+
+            $queryPfp->with(['kartuProcess.orderPfp', 'kartuProcess.greige', 'process']);
 
             $orConditionsPfp = ['or'];
             foreach ((array)$no_mesin as $nm) {
@@ -60,32 +114,8 @@ class ProduksiMesinController extends Controller
                 $queryPfp->andWhere($orConditionsPfp);
             }
             $pfpRecords = $queryPfp->all();
-        }
-
-        $prosesDyeing = [];
-        $prosesPfp = [];
-        $prosesDyeingConfig = [];
-        $prosesPfpConfig = [];
-        if ($jenis_mesin) {
-            $dyeingModels = \common\models\ar\MstProcessDyeing::find()
-                ->innerJoin('mst_process_dyeing_mesin', 'mst_process_dyeing_mesin.mst_process_dyeing_id = mst_process_dyeing.id')
-                ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_dyeing_mesin.mst_mesin_proses_id')
-                ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
-                ->all();
-            foreach ($dyeingModels as $model) {
-                $prosesDyeing[$model->nama_proses] = $model->nama_proses;
-                $prosesDyeingConfig[$model->nama_proses] = $model->attributes;
-            }
-
-            $pfpModels = \common\models\ar\MstProcessPfp::find()
-                ->innerJoin('mst_process_pfp_mesin', 'mst_process_pfp_mesin.mst_process_pfp_id = mst_process_pfp.id')
-                ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_pfp_mesin.mst_mesin_proses_id')
-                ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
-                ->all();
-            foreach ($pfpModels as $model) {
-                $prosesPfp[$model->nama_proses] = $model->nama_proses;
-                $prosesPfpConfig[$model->nama_proses] = $model->attributes;
-            }
+            
+            \Yii::info("PFP Query: " . $queryPfp->createCommand()->getRawSql(), 'produksi_mesin');
         }
 
         return $this->render('index', [
@@ -186,7 +216,8 @@ class ProduksiMesinController extends Controller
                             
                             // Update values
                             $val['tanggal'] = $tanggal;
-                            $val['shift_group'] = $shift;
+                            $val['shift_group'] = $shift; // backward compatibility
+                            $val['shift_operator'] = $shift; // correct schema attribute
                             
                             $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan'];
                             foreach ($fields as $f) {
@@ -212,5 +243,59 @@ class ProduksiMesinController extends Controller
         }
 
         return $this->redirect(['index', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin]);
+    }
+
+    public function actionCheckExistingData()
+    {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+        $inputDyeing = $request->post('InputDyeing', []);
+        $inputPfp = $request->post('InputPfp', []);
+
+        $exists = false;
+
+        if (is_array($inputDyeing)) {
+            foreach ($inputDyeing as $row) {
+                if (!empty($row['nk']) && !empty($row['proses'])) {
+                    $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $row['proses']]);
+                    if ($mstProcess) {
+                        $kpProcess = \common\models\ar\KartuProcessDyeingProcess::findOne([
+                            'kartu_process_id' => $row['nk'],
+                            'process_id' => $mstProcess->id
+                        ]);
+                        if ($kpProcess && $kpProcess->value) {
+                            $val = json_decode($kpProcess->value, true);
+                            if (!empty($val['tanggal'])) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$exists && is_array($inputPfp)) {
+            foreach ($inputPfp as $row) {
+                if (!empty($row['nk']) && !empty($row['proses'])) {
+                    $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $row['proses']]);
+                    if ($mstProcess) {
+                        $kpProcess = \common\models\ar\KartuProcessPfpProcess::findOne([
+                            'kartu_process_id' => $row['nk'],
+                            'process_id' => $mstProcess->id
+                        ]);
+                        if ($kpProcess && $kpProcess->value) {
+                            $val = json_decode($kpProcess->value, true);
+                            if (!empty($val['tanggal'])) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return ['exists' => $exists];
     }
 }

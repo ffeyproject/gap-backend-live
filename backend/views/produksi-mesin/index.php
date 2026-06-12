@@ -110,6 +110,7 @@ $jenisMesinOptions = array_combine($jenisMesins, $jenisMesins);
 $mesinDataJson = json_encode($mesinData);
 $initialNoMesin = $no_mesin ? json_encode((array)$no_mesin) : '[]';
 $urlLookupKpById = \yii\helpers\Url::to(['/ajax/lookup-kp-by-id']);
+$urlCheckExistingData = \yii\helpers\Url::to(['/produksi-mesin/check-existing-data']);
 $dyeingConfigJson = json_encode($prosesDyeingConfig ?? []);
 $pfpConfigJson = json_encode($prosesPfpConfig ?? []);
 
@@ -335,6 +336,37 @@ $('#pfp-proses-input').on('change', function() {
     applyPfpProcessConfig($(this).val());
 });
 
+$('#form-tambahan-input').on('submit', function(e) {
+    e.preventDefault();
+    var form = $(this);
+    
+    // Disable submit button to prevent double click
+    var submitBtn = form.find('button[type="submit"]');
+    var originalText = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Checking...');
+
+    $.ajax({
+        url: '{$urlCheckExistingData}',
+        type: 'POST',
+        data: form.serialize(),
+        success: function(res) {
+            if (res.exists) {
+                if (confirm('Data sudah ada, apakah mau menimpa data?')) {
+                    form.off('submit').submit();
+                } else {
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            } else {
+                form.off('submit').submit();
+            }
+        },
+        error: function() {
+            alert('Terjadi kesalahan saat memeriksa data existing.');
+            submitBtn.prop('disabled', false).html(originalText);
+        }
+    });
+});
+
 JS;
 $this->registerJs($js);
 ?>
@@ -471,29 +503,25 @@ if (is_array($no_mesin)) {
                     <th>Motif</th>
                     <th>Warna</th>
                     <th>Nama Proses</th>
+                    <th>Tanggal</th>
                     <th>Start</th>
                     <th>Stop</th>
                     <th>No Mesin</th>
+                    <th>Shift</th>
                     <th>Temp</th>
                     <th>Speed</th>
-                    <th>Waktu</th>
                     <th>Program Number</th>
                     <th>Ex Relax</th>
                     <th>Ex Wr Oligomer</th>
                     <th>Ex Dyeing</th>
-                    <th>Wr Pcnt</th>
+                    <th>WR %</th>
                     <th>Rpm</th>
                     <th>Density</th>
                     <th>Jamur</th>
                     <th>Karat</th>
                     <th>Over Feed</th>
-                    <th>Counter</th>
                     <th>Lebar Jadi</th>
                     <th>Info Kualitas</th>
-                    <th>Gangguan Produksi</th>
-                    <th>Gramasi</th>
-                    <th>Panjang Jadi</th>
-                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -506,22 +534,22 @@ if (is_array($no_mesin)) {
                     <?php foreach ($pfpRecords as $record): ?>
                         <?php 
                             $val = json_decode($record->value, true); 
-                            $wo = $record->kartuProcess->wo;
-                            $mo = $record->kartuProcess->mo;
-                            $woColor = $record->kartuProcess->woColor;
+                            $orderPfp = $record->kartuProcess->orderPfp;
+                            $greige = $record->kartuProcess->greige;
                         ?>
                         <tr>
-                            <td><?= $wo ? Html::encode($wo->no) : '-' ?></td>
+                            <td><?= $orderPfp ? Html::encode($orderPfp->no) : '-' ?></td>
                             <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/trn-kartu-proses-pfp/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
-                            <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
-                            <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
+                            <td><?= $greige ? Html::encode($greige->nama_kain) : '-' ?></td>
+                            <td><?= $orderPfp ? Html::encode($orderPfp->dasar_warna) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
+                            <td><?= Html::encode($val['tanggal'] ?? '-') ?></td>
                             <td><?= Html::encode($val['start'] ?? '-') ?></td>
                             <td><?= Html::encode($val['stop'] ?? '-') ?></td>
                             <td><?= Html::encode($val['no_mesin'] ?? '-') ?></td>
+                            <td><?= Html::encode($val['shift_group'] ?? $val['shift_operator'] ?? '-') ?></td>
                             <td><?= Html::encode($val['temp'] ?? '-') ?></td>
                             <td><?= Html::encode($val['speed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['waktu'] ?? '-') ?></td>
                             <td><?= Html::encode($val['program_number'] ?? '-') ?></td>
                             <td><?= Html::encode($val['ex_relax'] ?? '-') ?></td>
                             <td><?= Html::encode($val['ex_wr_oligomer'] ?? '-') ?></td>
@@ -532,29 +560,24 @@ if (is_array($no_mesin)) {
                             <td><?= Html::encode($val['jamur'] ?? '-') ?></td>
                             <td><?= Html::encode($val['karat'] ?? '-') ?></td>
                             <td><?= Html::encode($val['over_feed'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['counter'] ?? '-') ?></td>
                             <td><?= Html::encode($val['lebar_jadi'] ?? '-') ?></td>
                             <td><?= Html::encode($val['info_kualitas'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['gangguan_produksi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['gramasi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['panjang_jadi'] ?? '-') ?></td>
-                            <td><?= Html::encode($val['keterangan'] ?? '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="pfp"
-                                    data-wo="<?= $wo ? Html::encode($record->kartuProcess->orderPfp->no ?? $wo->no) : '' ?>"
-                                    data-wo-id="<?= $wo ? Html::encode($record->kartuProcess->orderPfp->id ?? $wo->id) : '' ?>"
+                                    data-wo="<?= $orderPfp ? Html::encode($orderPfp->no) : '' ?>"
+                                    data-wo-id="<?= $orderPfp ? Html::encode($orderPfp->id) : '' ?>"
                                     data-nk="<?= Html::encode($record->kartuProcess->no) ?>"
                                     data-nk-id="<?= Html::encode($record->kartuProcess->id) ?>"
-                                    data-motif="<?= $mo ? Html::encode($mo->design) : '' ?>"
-                                    data-warna="<?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '' ?>"
+                                    data-motif="<?= $greige ? Html::encode($greige->nama_kain) : '' ?>"
+                                    data-warna="<?= $orderPfp ? Html::encode($orderPfp->dasar_warna) : '' ?>"
                                     data-proses="<?= Html::encode($record->process->nama_proses) ?>"
                                     data-start="<?= Html::encode($val['start'] ?? '') ?>"
                                     data-stop="<?= Html::encode($val['stop'] ?? '') ?>"
                                     data-nomesin="<?= Html::encode($val['no_mesin'] ?? '') ?>"
                                     data-temp="<?= Html::encode($val['temp'] ?? '') ?>"
                                     data-speed="<?= Html::encode($val['speed'] ?? '') ?>"
-                                    data-waktu="<?= Html::encode($val['waktu'] ?? '') ?>"
+                                    data-waktu=""
                                     data-program="<?= Html::encode($val['program_number'] ?? '') ?>"
                                     data-exrelax="<?= Html::encode($val['ex_relax'] ?? '') ?>"
                                     data-exwroligomer="<?= Html::encode($val['ex_wr_oligomer'] ?? '') ?>"
@@ -565,13 +588,13 @@ if (is_array($no_mesin)) {
                                     data-jamur="<?= Html::encode($val['jamur'] ?? '') ?>"
                                     data-karat="<?= Html::encode($val['karat'] ?? '') ?>"
                                     data-overfeed="<?= Html::encode($val['over_feed'] ?? '') ?>"
-                                    data-counter="<?= Html::encode($val['counter'] ?? '') ?>"
+                                    data-counter=""
                                     data-lebarjadi="<?= Html::encode($val['lebar_jadi'] ?? '') ?>"
                                     data-infokualitas="<?= Html::encode($val['info_kualitas'] ?? '') ?>"
-                                    data-gangguanproduksi="<?= Html::encode($val['gangguan_produksi'] ?? '') ?>"
-                                    data-gramasi="<?= Html::encode($val['gramasi'] ?? '') ?>"
-                                    data-panjangjadi="<?= Html::encode($val['panjang_jadi'] ?? '') ?>"
-                                    data-keterangan="<?= Html::encode($val['keterangan'] ?? '') ?>"
+                                    data-gangguanproduksi=""
+                                    data-gramasi=""
+                                    data-panjangjadi=""
+                                    data-keterangan=""
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                             </td>
@@ -715,24 +738,18 @@ if (is_array($no_mesin)) {
                     <th>No Mesin</th>
                     <th>Temp</th>
                     <th>Speed</th>
-                    <th>Waktu</th>
                     <th>Program Number</th>
                     <th>Ex Relax</th>
                     <th>Ex Wr Oligomer</th>
                     <th>Ex Dyeing</th>
-                    <th>Wr Pcnt</th>
+                    <th>WR %</th>
                     <th>Rpm</th>
                     <th>Density</th>
                     <th>Jamur</th>
                     <th>Karat</th>
                     <th>Over Feed</th>
-                    <th>Counter</th>
                     <th>Lebar Jadi</th>
                     <th>Info Kualitas</th>
-                    <th>Gangguan Produksi</th>
-                    <th>Gramasi</th>
-                    <th>Panjang Jadi</th>
-                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -790,7 +807,6 @@ if (is_array($no_mesin)) {
                     </td>
                     <td><input type="text" name="InputPfp[0][temp]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][speed]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][waktu]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][program_number]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][ex_relax]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][ex_wr_oligomer]" class="form-control"></td>
@@ -801,13 +817,8 @@ if (is_array($no_mesin)) {
                     <td><input type="text" name="InputPfp[0][jamur]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][counter]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][info_kualitas]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][gangguan_produksi]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][gramasi]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][keterangan]" class="form-control"></td>
                     <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>
