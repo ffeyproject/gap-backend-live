@@ -639,6 +639,12 @@ $moduleId = $controller->module->id;
                                 'url' => ['/processing-dyeing/laporan-rekap-mesin'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='laporan-rekap-mesin'
                             ],
+                            [
+                                'label'=>'Qo',
+                                'icon' => 'circle-o',
+                                'url' => ['/processing-rekap-qo/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'processing-rekap-qo'
+                            ],
                         ]
                     ],
                 ],

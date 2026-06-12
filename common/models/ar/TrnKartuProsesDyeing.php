@@ -119,7 +119,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             self::STATUS_SELVEDGE_PACKING => 'navy',        // biru dongker (custom)
         ];
 
-        return $colors[$status] ?? 'default';
+        return isset($colors[$status]) ? $colors[$status] : 'default';
     }
 
     /**
@@ -146,7 +146,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
         return [
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by','date_toping_matching'], 'default', 'value' => null],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by', 'wo_color_id','date_toping_matching'], 'integer'],
-            [['note', 'reject_notes', 'memo_pg', 'memo_pg_no', 'nomor_kartu', 'approved_history'], 'string'],
+            [['note', 'reject_notes', 'memo_pg', 'memo_pg_no', 'nomor_kartu', 'approved_history', 'qo_keterangan'], 'string'],
             ['berat', 'number'],
             ['no_limit_item', 'default', 'value'=>false],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok'], 'string', 'max' => 255],
@@ -238,6 +238,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             'no_limit_item' => 'Item Tidak Dibatasi',
             'nomor_kartu' => 'Nomor Kartu',
             'approved_history' => 'Approved History',
+            'qo_keterangan' => 'Keterangan QO',
         ];
     }
 
