@@ -32,8 +32,8 @@ class ProcessingRekapQoController extends Controller
      */
     public function actionIndex()
     {
-        // Default to previous month so that the evaluated month is the current month
-        $defaultMonth = date('Y-m', strtotime('first day of -1 month'));
+        // Default to current month
+        $defaultMonth = date('Y-m');
         $selectedMonth = Yii::$app->request->get('month', $defaultMonth);
 
         $data = $this->getQoData($selectedMonth);
@@ -91,6 +91,37 @@ class ProcessingRekapQoController extends Controller
             'records' => $records,
             'stats' => $stats
         ]);
+    }
+
+    /**
+     * Helper to fetch and calculate Qo data.
+     */
+    public function actionGrafikData()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $currentYear = date('Y');
+        $currentMonth = (int)date('n');
+        
+        $labels = [];
+        $woData = [];
+        $batchData = [];
+        
+        for ($i = 1; $i <= $currentMonth; $i++) {
+            $monthStr = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $selectedMonth = $currentYear . '-' . $monthStr;
+            $data = $this->getQoData($selectedMonth);
+            
+            $labels[] = date('M Y', strtotime($selectedMonth . '-01'));
+            $woData[] = $data['stats']['wo']['persentase'];
+            $batchData[] = $data['stats']['batch']['persentase'];
+        }
+        
+        return [
+            'labels' => $labels,
+            'wo' => $woData,
+            'batch' => $batchData,
+        ];
     }
 
     /**

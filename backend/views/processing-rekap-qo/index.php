@@ -15,10 +15,13 @@ $this->params['breadcrumbs'][] = ['label' => 'PROCESSING', 'url' => '#'];
 $this->params['breadcrumbs'][] = ['label' => 'REKAP', 'url' => '#'];
 $this->params['breadcrumbs'][] = 'Qo';
 
-// Generate month options for dropdown (last 12 months)
+// Generate month options for dropdown (current month down to January of the current year)
+$currentYear = date('Y');
+$currentMonth = date('n');
 $monthOptions = [];
-for ($i = 0; $i < 12; $i++) {
-    $time = strtotime("-$i months");
+for ($i = $currentMonth; $i >= 1; $i--) {
+    $monthNumber = str_pad($i, 2, '0', STR_PAD_LEFT);
+    $time = strtotime("$currentYear-$monthNumber-01");
     $value = date('Y-m', $time);
     // Localized month name
     $label = date('F Y', $time);
@@ -55,6 +58,11 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                             </select>
                         </div>
                     </form>
+                    
+                    <!-- Show Grafik Button -->
+                    <button type="button" class="btn btn-info" id="btnShowGrafik" data-toggle="modal" data-target="#grafikModal" style="border-radius: 4px; font-weight: bold; background: linear-gradient(135deg, #3498db, #2980b9); border: none; box-shadow: 0 2px 5px rgba(52,152,219,0.3); transition: all 0.3s ease;">
+                        <i class="glyphicon glyphicon-stats"></i> Show Grafik
+                    </button>
                     
                     <!-- Export Button -->
                     <a href="<?= Url::to(['export-excel', 'month' => $selectedMonth]) ?>" class="btn btn-success" style="border-radius: 4px; font-weight: bold; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; box-shadow: 0 2px 5px rgba(46,204,113,0.3); transition: all 0.3s ease;">
@@ -219,6 +227,32 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
 }
 </style>
 
+<!-- Modal Grafik -->
+<div class="modal fade" id="grafikModal" tabindex="-1" role="dialog" aria-labelledby="grafikModalLabel">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content" style="border-radius: 8px;">
+      <div class="modal-header" style="background-color: #fafbfc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="grafikModalLabel" style="font-weight: 700; color: #2c3e50;">
+            <i class="glyphicon glyphicon-stats"></i> Grafik Tren Persentase Tidak Tercapai (Tahun <?= date('Y') ?>)
+        </h4>
+      </div>
+      <div class="modal-body">
+        <div id="chartLoading" class="text-center" style="padding: 40px; color: #7f8c8d;">
+            <i class="glyphicon glyphicon-refresh" style="animation: spin 1s linear infinite; font-size: 24px;"></i>
+            <p style="margin-top: 10px;">Memuat data grafik...</p>
+        </div>
+        <canvas id="qoChartCanvas" style="height: 350px; width: 100%; display: none;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <!-- jQuery AJAX Keterangan Save Logic -->
 <?php
 $this->registerJs(<<<JS
@@ -282,6 +316,78 @@ $this->registerJs(<<<JS
                 btn.prop('disabled', false);
                 btn.html(originalHtml);
                 showToast('Gagal terhubung ke server.', false);
+            }
+        });
+    });
+
+    // Chart Logic
+    var chartInstance = null;
+    $('#grafikModal').on('shown.bs.modal', function () {
+        if (chartInstance !== null) {
+            return; // Already loaded
+        }
+        
+        $.ajax({
+            url: '/processing-rekap-qo/grafik-data',
+            type: 'GET',
+            success: function(response) {
+                $('#chartLoading').hide();
+                $('#qoChartCanvas').show();
+                
+                var ctx = document.getElementById('qoChartCanvas').getContext('2d');
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: response.labels,
+                        datasets: [
+                            {
+                                label: 'Persentase WO Tidak Tercapai (%)',
+                                data: response.wo,
+                                borderColor: '#e74c3c',
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#c0392b',
+                                pointRadius: 4,
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Persentase Batch Tidak Tercapai (%)',
+                                data: response.batch,
+                                borderColor: '#f39c12',
+                                backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: '#d35400',
+                                pointRadius: 4,
+                                fill: true,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'Persentase (%)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+            },
+            error: function() {
+                $('#chartLoading').html('<p class="text-danger">Gagal memuat grafik. Coba lagi nanti.</p>');
             }
         });
     });
