@@ -862,7 +862,7 @@ class AjaxController extends Controller
                     break;
                 case 'pfp':
                     $out = TrnKartuProsesPfp::find()
-                        ->joinWith(['orderPfp', 'greige'])
+                        ->joinWith(['orderPfp.greige', 'greige'])
                         ->where(['trn_kartu_proses_pfp.id'=>$id])
                         ->asArray()
                         ->one()

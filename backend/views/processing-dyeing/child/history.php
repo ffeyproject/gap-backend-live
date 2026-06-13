@@ -60,6 +60,14 @@ $dataProvider = new ArrayDataProvider([
                         $labelText = Html::encode($data->action_name);
                         
                         switch ($data->action_name) {
+                            case 'gabung':
+                                $labelClass = 'label label-success';
+                                $labelText = 'Gabung Kartu (Baru)';
+                                break;
+                            case 'gabung_source':
+                                $labelClass = 'label label-warning';
+                                $labelText = 'Gabung Kartu (Sumber)';
+                                break;
                             case 'ganti_wo':
                                 $labelClass = 'label label-warning';
                                 $labelText = 'Ganti WO';

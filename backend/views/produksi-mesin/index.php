@@ -216,7 +216,7 @@ $(document).on('click', '.btn-edit-row', function() {
     } else {
         row.find('td:eq(8) input').val($(this).data('temp'));
         row.find('td:eq(9) input').val($(this).data('speed'));
-        row.find('td:eq(10) input').val($(this).data('waktu'));
+        row.find('td:eq(10) input').val($(this).data('gramasi'));
         row.find('td:eq(11) input').val($(this).data('program'));
         row.find('td:eq(12) input').val($(this).data('exrelax'));
         row.find('td:eq(13) input').val($(this).data('exwroligomer'));
@@ -227,13 +227,10 @@ $(document).on('click', '.btn-edit-row', function() {
         row.find('td:eq(18) input').val($(this).data('jamur'));
         row.find('td:eq(19) input').val($(this).data('karat'));
         row.find('td:eq(20) input').val($(this).data('overfeed'));
-        row.find('td:eq(21) input').val($(this).data('counter'));
-        row.find('td:eq(22) input').val($(this).data('lebarjadi'));
+        row.find('td:eq(21) input').val($(this).data('lebarjadi'));
+        row.find('td:eq(22) input').val($(this).data('panjangjadi'));
         row.find('td:eq(23) input').val($(this).data('infokualitas'));
-        row.find('td:eq(24) input').val($(this).data('gangguanproduksi'));
-        row.find('td:eq(25) input').val($(this).data('gramasi'));
-        row.find('td:eq(26) input').val($(this).data('panjangjadi'));
-        row.find('td:eq(27) input').val($(this).data('keterangan'));
+        row.find('td:eq(24) input').val($(this).data('keterangan'));
     }
     
     $('html, body').animate({
@@ -275,7 +272,7 @@ $('#pfp-nk-input').on('change', function() {
             data: {q: 'pfp', id: id},
             success: function(data) {
                 if (data) {
-                    $('#pfp-motif-input').val(data.greige ? data.greige.nama_kain : '');
+                    $('#pfp-motif-input').val(data.greige ? data.greige.nama_kain : (data.orderPfp && data.orderPfp.greige ? data.orderPfp.greige.nama_kain : ''));
                     $('#pfp-warna-input').val(data.orderPfp && data.orderPfp.dasar_warna ? data.orderPfp.dasar_warna : '');
                 }
             }
@@ -680,8 +677,8 @@ if (is_array($no_mesin)) {
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="text" id="dyeing-motif-input" class="form-control" readonly></td>
-                    <td><input type="text" id="dyeing-warna-input" class="form-control" readonly></td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="dyeing-motif-input" class="form-control" readonly></td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="dyeing-warna-input" class="form-control" readonly></td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
                             'name' => 'InputDyeing[0][proses]',
@@ -731,6 +728,7 @@ if (is_array($no_mesin)) {
                     <th>No Mesin</th>
                     <th>Temp</th>
                     <th>Speed</th>
+                    <th>Gramasi</th>
                     <th>Program Number</th>
                     <th>Ex Relax</th>
                     <th>Ex Wr Oligomer</th>
@@ -742,7 +740,9 @@ if (is_array($no_mesin)) {
                     <th>Karat</th>
                     <th>Over Feed</th>
                     <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
                     <th>Info Kualitas</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -781,8 +781,8 @@ if (is_array($no_mesin)) {
                             ],
                         ]) ?>
                     </td>
-                    <td><input type="text" id="pfp-motif-input" class="form-control" readonly></td>
-                    <td><input type="text" id="pfp-warna-input" class="form-control" readonly></td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="pfp-motif-input" class="form-control" readonly></td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="pfp-warna-input" class="form-control" readonly></td>
                     <td style="min-width: 150px;">
                         <?= Select2::widget([
                             'name' => 'InputPfp[0][proses]',
@@ -800,6 +800,7 @@ if (is_array($no_mesin)) {
                     </td>
                     <td><input type="text" name="InputPfp[0][temp]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][speed]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][gramasi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][program_number]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][ex_relax]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][ex_wr_oligomer]" class="form-control"></td>
@@ -811,7 +812,9 @@ if (is_array($no_mesin)) {
                     <td><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][info_kualitas]" class="form-control"></td>
+                    <td><input type="text" name="InputPfp[0][keterangan]" class="form-control"></td>
                     <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>

@@ -81,7 +81,7 @@ $formatter = Yii::$app->formatter;
                     <div class="checkbox" style="margin-top: 0; margin-bottom: 12px;">
                         <label style="font-weight: 700; color: #2f3542;">
                             <input type="checkbox" checked disabled> 
-                            🏢 Kartu Induk: <?= Html::encode($model->nomor_kartu) ?> (Status: <?= Html::encode($model::statusOptions()[$model->status] ?? '') ?>)
+                            🏢 Kartu Induk: <?= Html::encode($model->nomor_kartu) ?> (Status: <?= Html::encode(isset($model::statusOptions()[$model->status]) ? $model::statusOptions()[$model->status] : '') ?>)
                         </label>
                     </div>
                     
@@ -91,7 +91,7 @@ $formatter = Yii::$app->formatter;
                         <div class="checkbox" style="margin-bottom: 8px;">
                             <label style="font-weight: 600; color: #57606f;">
                                 <input type="checkbox" name="approve_child_ids[]" value="<?= $child->id ?>" checked> 
-                                ✂️ Kartu Split: <strong style="color: #2f3542;"><?= Html::encode($child->nomor_kartu) ?></strong> (Status: <?= Html::encode($child::statusOptions()[$child->status] ?? 'Unknown') ?> - <?= count($child->trnKartuProsesDyeingItems) ?> Rolls)
+                                ✂️ Kartu Split: <strong style="color: #2f3542;"><?= Html::encode($child->nomor_kartu) ?></strong> (Status: <?= Html::encode(isset($child::statusOptions()[$child->status]) ? $child::statusOptions()[$child->status] : 'Unknown') ?> - <?= count($child->trnKartuProsesDyeingItems) ?> Rolls)
                             </label>
                         </div>
                     <?php endforeach; ?>
@@ -131,6 +131,11 @@ $formatter = Yii::$app->formatter;
             <?=Html::a('Split Kartu', ['split', 'id' => $model->id], [
                     'class' => 'btn bg-purple',
                     'title' => 'Split Kartu Proses: '.$model->id
+                ]);?>
+
+            <?=Html::a('Gabung Kartu', ['gabung', 'id' => $model->id], [
+                    'class' => 'btn btn-primary',
+                    'title' => 'Gabung Kartu Proses: '.$model->id
                 ]);?>
         <?php endif;?>
 

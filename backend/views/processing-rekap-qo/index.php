@@ -137,6 +137,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                             <th style="text-align: center; vertical-align: middle;">NK</th>
                             <th style="text-align: center; vertical-align: middle;">BUKA GREIGE</th>
                             <th style="text-align: center; vertical-align: middle;">TGL PACKING</th>
+                            <th style="text-align: center; vertical-align: middle;">TARGET PACKING</th>
                             <th style="vertical-align: middle; width: 300px;">KETERANGAN</th>
                             <th style="text-align: center; vertical-align: middle; width: 90px;">AKSI</th>
                         </tr>
@@ -144,7 +145,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                     <tbody>
                         <?php if (empty($rawRecords)): ?>
                             <tr>
-                                <td colspan="11" class="text-center text-muted" style="padding: 30px; font-size: 15px;">
+                                <td colspan="12" class="text-center text-muted" style="padding: 30px; font-size: 15px;">
                                     <i class="glyphicon glyphicon-info-sign" style="font-size: 20px; display: block; margin-bottom: 8px; color: #bdc3c7;"></i>
                                     Tidak ada data kartu proses (NK) yang lambat atau tidak tercapai untuk bulan ini.
                                 </td>
@@ -167,6 +168,7 @@ $evaluatedMonthLabel = date('F Y', $evaluatedMonthTime);
                                     <td style="text-align: center; vertical-align: middle; font-weight: 600; color: <?= $record['tgl_packing'] === 'Belum Packing' ? '#e74c3c' : '#7f8c8d' ?>;">
                                         <?= Html::encode($record['tgl_packing']) ?>
                                     </td>
+                                    <td style="text-align: center; vertical-align: middle; color: #e67e22; font-weight: 600;"><?= Html::encode(date('d-M-Y', strtotime($record['buka_greige'] . ' + 14 days'))) ?></td>
                                     <td style="vertical-align: middle; padding: 4px;">
                                         <textarea class="form-control ket-textarea" data-id="<?= $record['id'] ?>" rows="1" style="resize: vertical; border-radius: 4px; padding: 4px 8px; font-size: 12px; transition: border-color 0.2s;" placeholder="Ketik keterangan..."><?= Html::encode($record['keterangan']) ?></textarea>
                                     </td>

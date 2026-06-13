@@ -1530,6 +1530,46 @@ class ProcessingDyeingController extends Controller
                 $model->status = $model::STATUS_APPROVED;
                 $model->approved_at = time();
                 $model->approved_by = Yii::$app->user->id;
+
+                // Jika kartu ini adalah kartu split, pindahkan qty roll (items) kembali ke kartu induk
+                if ($model->kartu_proses_id !== null) {
+                    $parentCard = TrnKartuProsesDyeing::findOne($model->kartu_proses_id);
+                    if ($parentCard) {
+                        if ($parentCard->status != TrnKartuProsesDyeing::STATUS_APPROVED) {
+                            $parentCard->status = TrnKartuProsesDyeing::STATUS_APPROVED;
+                            $parentCard->approved_at = time();
+                            $parentCard->approved_by = Yii::$app->user->id;
+                        }
+
+                        $parentHistory = [];
+                        if (!empty($parentCard->approved_history)) {
+                            $parentHistory = Json::decode($parentCard->approved_history);
+                        }
+                        $parentHistory[] = [
+                            'time' => time(),
+                            'by' => Yii::$app->user->id,
+                            'note' => "Kartu Split {$model->nomor_kartu} disetujui & digabungkan"
+                        ];
+                        $parentCard->approved_history = Json::encode($parentHistory);
+                        
+                        if (!$parentCard->save(false, ['status', 'approved_at', 'approved_by', 'approved_history'])) {
+                            throw new \Exception("Gagal memperbarui status kartu induk.");
+                        }
+
+                        foreach ($model->trnKartuProsesDyeingItems as $item) {
+                            $item->kartu_process_id = $model->kartu_proses_id;
+                            if (!$item->save(false)) {
+                                throw new \Exception("Gagal mengembalikan item dari kartu split ke kartu induk.");
+                            }
+                        }
+
+                        $this->logKartuDyeing(
+                            'masuk_verpacking',
+                            $parentCard->id,
+                            "Kartu Split {$model->nomor_kartu} disetujui & masuk verpacking"
+                        );
+                    }
+                }
             }
 
             // Determine approval note and prepare history entry
@@ -3271,5 +3311,195 @@ class ProcessingDyeingController extends Controller
         }
         
         return $this->redirect(['rekap-proses-mesin']);
+    }
+
+    public function actionGabung($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->status != $model::STATUS_DELIVERED) {
+            throw new \yii\web\ForbiddenHttpException('Kartu proses tidak valid, tidak bisa digabung.');
+        }
+
+        if (Yii::$app->request->isPost) {
+            $selectedItemIds = Yii::$app->request->post('selected_items', []);
+            $kartu2Id = Yii::$app->request->post('kartu2_id');
+            $newNomorKartu = Yii::$app->request->post('new_nomor_kartu');
+            $newWoId = Yii::$app->request->post('new_wo_id');
+            $newColorId = Yii::$app->request->post('new_wo_color_id');
+
+            if (empty($selectedItemIds) || empty($kartu2Id) || empty($newNomorKartu) || empty($newWoId) || empty($newColorId)) {
+                Yii::$app->session->setFlash('error', 'Semua field wajib diisi dan setidaknya satu item harus dipilih dari kedua kartu.');
+                return $this->redirect(['gabung', 'id' => $model->id]);
+            }
+
+            // Validasi NK baru belum dipakai di motif yang sama
+            $exists = TrnKartuProsesDyeing::find()
+                ->joinWith('wo')
+                ->where([
+                    'trn_wo.greige_id' => $model->wo->greige_id,
+                    'trn_kartu_proses_dyeing.nomor_kartu' => $newNomorKartu
+                ])->exists();
+
+            if ($exists) {
+                Yii::$app->session->setFlash('error', 'Nomor Kartu baru sudah digunakan pada motif ini.');
+                return $this->redirect(['gabung', 'id' => $model->id]);
+            }
+
+            $kartu2 = $this->findModel($kartu2Id);
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                // Clone model1 as base for the new card
+                $attributes = $model->attributes;
+                unset($attributes['id']);
+
+                $newCard = new TrnKartuProsesDyeing();
+                $newCard->attributes = $attributes;
+                $newCard->isNewRecord = true;
+                $newCard->nomor_kartu = $newNomorKartu;
+                $newCard->wo_id = $newWoId;
+                $newCard->wo_color_id = $newColorId;
+                $newCard->status = TrnKartuProsesDyeing::STATUS_DELIVERED;
+                $newCard->date = date('Y-m-d');
+                $newCard->created_at = time();
+                $newCard->created_by = Yii::$app->user->id;
+                $newCard->updated_at = time();
+                $newCard->updated_by = Yii::$app->user->id;
+                $newCard->approved_at = null;
+                $newCard->approved_by = null;
+                $newCard->delivered_at = null;
+                $newCard->delivered_by = null;
+                $newCard->kartu_proses_id = null; // Ini bukan split, tapi gabungan, kita buat berdiri sendiri
+                
+                $newCard->setNomor();
+
+                if (!$newCard->save(false)) {
+                    throw new \Exception('Gagal menyimpan Kartu Proses Gabungan yang baru.');
+                }
+
+                // Transfer items
+                foreach ($selectedItemIds as $itemId) {
+                    $item = \common\models\ar\TrnKartuProsesDyeingItem::findOne($itemId);
+                    if ($item) {
+                        $item->kartu_process_id = $newCard->id;
+                        if (!$item->save(false)) {
+                            throw new \Exception('Gagal memindahkan item ke kartu gabungan.');
+                        }
+                    }
+                }
+
+                // Log History untuk Kartu Baru
+                $this->logKartuDyeing('gabung', $newCard->id, "Kartu Baru hasil gabungan dari NK {$model->nomor_kartu} dan NK {$kartu2->nomor_kartu}.");
+                $this->logKartuDyeing('gabung_source', $model->id, "Sebagian/seluruh item dipindah karena digabung dengan NK {$kartu2->nomor_kartu} menjadi NK baru {$newCard->nomor_kartu}.");
+                $this->logKartuDyeing('gabung_source', $kartu2->id, "Sebagian/seluruh item dipindah karena digabung dengan NK {$model->nomor_kartu} menjadi NK baru {$newCard->nomor_kartu}.");
+
+                // Copy proses dari kartu pertama
+                foreach ($model->kartuProcessDyeingProcesses as $prosesSrc) {
+                    $newProses = new \common\models\ar\KartuProcessDyeingProcess();
+                    $newProses->attributes = $prosesSrc->attributes;
+                    $newProses->isNewRecord = true;
+                    $newProses->kartu_process_id = $newCard->id;
+                    $newProses->save(false);
+                }
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Berhasil menggabungkan kartu! Nomor Kartu Baru: ' . $newCard->nomor_kartu);
+                return $this->redirect(['view', 'id' => $newCard->id]);
+
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
+                return $this->redirect(['gabung', 'id' => $model->id]);
+            }
+        }
+
+        $wos = \common\models\ar\TrnWo::find()->where(['mo_id' => $model->mo_id])->all();
+
+        $parts = explode('/', $model->nomor_kartu);
+        $part1 = $parts[0];
+        $part2 = isset($parts[1]) ? '/' . $parts[1] : '';
+
+        $seq = 1;
+        while (true) {
+            $suggestedNk = $part1 . 'G' . $seq . $part2;
+            $exists = \common\models\ar\TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $suggestedNk])->exists();
+            if (!$exists) {
+                break;
+            }
+            $seq++;
+        }
+
+        return $this->render('gabung', [
+            'model' => $model,
+            'items' => $model->trnKartuProsesDyeingItems,
+            'wos' => $wos,
+            'suggestedNk' => $suggestedNk
+        ]);
+    }
+
+    public function actionAjaxSearchKartuByMotif($q = null, $mo_id = null, $id_exclude = null)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $out = ['results' => []];
+
+        if (!empty($q) && $mo_id) {
+            $data = TrnKartuProsesDyeing::find()
+                ->where(['mo_id' => $mo_id])
+                ->andWhere(['!=', 'id', $id_exclude])
+                ->andWhere(['status' => TrnKartuProsesDyeing::STATUS_DELIVERED])
+                ->andWhere(['ilike', 'nomor_kartu', $q])
+                ->limit(20)
+                ->all();
+
+            foreach ($data as $item) {
+                $out['results'][] = [
+                    'id' => $item->id,
+                    'text' => $item->nomor_kartu . ' (WO: ' . ($item->wo ? $item->wo->no : '') . ' - ' . count($item->trnKartuProsesDyeingItems) . ' Rolls)'
+                ];
+            }
+        }
+        return $out;
+    }
+
+    public function actionAjaxGetKartuDetails($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $model = TrnKartuProsesDyeing::findOne($id);
+        if (!$model) return ['success' => false];
+
+        $items = [];
+        foreach ($model->trnKartuProsesDyeingItems as $item) {
+            $items[] = [
+                'id' => $item->id,
+                'panjang_m' => Yii::$app->formatter->asDecimal($item->stock->panjang_m),
+                'tube' => $item->tube == 1 ? 'Kiri' : 'Kanan',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'items' => $items
+        ];
+    }
+
+    public function actionAjaxGetWoColors($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $wo = \common\models\ar\TrnWo::findOne($id);
+        if (!$wo) return ['success' => false];
+
+        $colors = [];
+        foreach ($wo->trnWoColors as $color) {
+            $colors[] = [
+                'id' => $color->id,
+                'name' => $color->moColor ? $color->moColor->color : 'Unknown',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'colors' => $colors
+        ];
     }
 }
