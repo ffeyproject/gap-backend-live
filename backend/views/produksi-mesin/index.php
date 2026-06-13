@@ -340,6 +340,8 @@ $('#form-tambahan-input').on('submit', function(e) {
     var originalText = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Checking...');
 
+    isSubmitting = true;
+
     $.ajax({
         url: '{$urlCheckExistingData}',
         type: 'POST',
@@ -350,6 +352,7 @@ $('#form-tambahan-input').on('submit', function(e) {
                     form.off('submit').submit();
                 } else {
                     submitBtn.prop('disabled', false).html(originalText);
+                    isSubmitting = false;
                 }
             } else {
                 form.off('submit').submit();
@@ -358,8 +361,48 @@ $('#form-tambahan-input').on('submit', function(e) {
         error: function() {
             alert('Terjadi kesalahan saat memeriksa data existing.');
             submitBtn.prop('disabled', false).html(originalText);
+            isSubmitting = false;
         }
     });
+});
+
+var isDirty = false;
+var isSubmitting = false;
+
+$('input, select, textarea').on('change input', function() {
+    isDirty = true;
+});
+
+$('form').not('#form-tambahan-input').on('submit', function() {
+    isSubmitting = true;
+});
+
+window.addEventListener("beforeunload", function (e) {
+    if (isDirty && !isSubmitting) {
+        var confirmationMessage = 'Ada perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?';
+        (e || window.event).returnValue = confirmationMessage;
+        return confirmationMessage;
+    }
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        if (isDirty && !isSubmitting) {
+            alert('PERHATIAN: Ada perubahan yang belum disimpan di halaman Produksi Mesin ini!');
+        }
+    }
+});
+
+$('a').on('click', function(e) {
+    if (isDirty && !isSubmitting) {
+        var href = $(this).attr('href');
+        // Jangan intercept jika itu link buntu atau javascript
+        if (href && href !== '#' && href.indexOf('javascript:') !== 0 && !$(this).attr('target')) {
+            if (!confirm('Ada perubahan yang belum disimpan. Yakin ingin meninggalkan halaman?')) {
+                e.preventDefault();
+            }
+        }
+    }
 });
 
 JS;

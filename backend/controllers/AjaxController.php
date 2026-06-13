@@ -861,8 +861,8 @@ class AjaxController extends Controller
                     ;
                     break;
                 case 'pfp':
-                    $out = TrnKartuProsesPfp::find()
-                        ->joinWith(['orderPfp.greige', 'greige'])
+                    $out = \common\models\ar\TrnKartuProsesPfp::find()
+                        ->with(['orderPfp.greige', 'greige'])
                         ->where(['trn_kartu_proses_pfp.id'=>$id])
                         ->asArray()
                         ->one()
