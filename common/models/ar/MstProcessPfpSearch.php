@@ -19,7 +19,7 @@ class MstProcessPfpSearch extends MstProcessPfp
         return [
             [['id', 'order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['nama_proses'], 'safe'],
-            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_operator', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi'], 'boolean'],
+            [['tanggal', 'start', 'stop', 'no_mesin', 'shift_operator', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan'], 'boolean'],
         ];
     }
 
@@ -90,6 +90,9 @@ class MstProcessPfpSearch extends MstProcessPfp
             'lebar_jadi' => $this->lebar_jadi,
             'info_kualitas' => $this->info_kualitas,
             'gangguan_produksi' => $this->gangguan_produksi,
+            'gramasi' => $this->gramasi,
+            'panjang_jadi' => $this->panjang_jadi,
+            'keterangan' => $this->keterangan,
             'created_at' => $this->created_at,
             'created_by' => $this->created_by,
             'updated_at' => $this->updated_at,

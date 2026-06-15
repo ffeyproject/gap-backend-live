@@ -280,6 +280,7 @@ class AjaxController extends Controller
                 ->joinWith('greige', false)
                 ->where(['ilike', 'trn_wo.no', $q])
                 ->andWhere(['trn_wo.status'=>TrnWo::STATUS_APPROVED])
+                ->orderBy(['trn_wo.id' => SORT_DESC])
                 ->asArray()
             ;
 
@@ -448,6 +449,7 @@ class AjaxController extends Controller
                 ->where(['ilike', 'no', $q])
                 ->andWhere(['<>', 'status', TrnOrderPfp::STATUS_DRAFT])
                 //->andWhere(['status' => TrnOrderPfp::STATUS_APPROVED])
+                ->orderBy(['id' => SORT_DESC])
                 ->limit(20)
                 ->asArray()
             ;

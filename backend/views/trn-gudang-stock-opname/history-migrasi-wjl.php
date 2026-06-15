@@ -1,12 +1,14 @@
 <?php
 use yii\grid\GridView;
 use yii\helpers\Html;
+use yii\widgets\Pjax;
 
 /* @var $this yii\web\View */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 ?>
 <div class="history-migrasi-wjl-index">
+    <?php Pjax::begin(['id' => 'history-migrasi-pjax', 'enablePushState' => false]); ?>
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'summary' => false,
@@ -43,4 +45,5 @@ use yii\helpers\Html;
             ],
         ],
     ]); ?>
+    <?php Pjax::end(); ?>
 </div>

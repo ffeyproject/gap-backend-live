@@ -111,10 +111,16 @@ $mesinDataJson = json_encode($mesinData);
 $initialNoMesin = $no_mesin ? json_encode((array)$no_mesin) : '[]';
 $urlLookupKpById = \yii\helpers\Url::to(['/ajax/lookup-kp-by-id']);
 $urlCheckExistingData = \yii\helpers\Url::to(['/produksi-mesin/check-existing-data']);
+$urlLookupWoAll = \yii\helpers\Url::to(['/ajax/lookup-wo-all']);
+$urlLookupOrderPfp = \yii\helpers\Url::to(['/ajax/lookup-order-pfp']);
+$urlLookupNkAll = \yii\helpers\Url::to(['/ajax/lookup-nk-all']);
 $dyeingConfigJson = json_encode(isset($prosesDyeingConfig) ? $prosesDyeingConfig : []);
 $pfpConfigJson = json_encode(isset($prosesPfpConfig) ? $prosesPfpConfig : []);
 
 $js = <<<JS
+var urlLookupWoAll = '{$urlLookupWoAll}';
+var urlLookupOrderPfp = '{$urlLookupOrderPfp}';
+var urlLookupNkAll = '{$urlLookupNkAll}';
 var mesinData = $mesinDataJson;
 var initialNoMesin = $initialNoMesin;
 var dyeingConfig = $dyeingConfigJson;
@@ -159,11 +165,10 @@ $(document).on('click', '.btn-edit-row', function() {
     var woSelect = row.find('td:eq(0) select');
     if (woSelect.length) {
         if (woVal) {
-            if (woSelect.find("option[value='" + (woId || woVal) + "']").length === 0) {
-                woSelect.append(new Option(woVal, woId || woVal, true, true));
-            }
+            woSelect.empty().append(new Option('', '')).append(new Option(woVal, woId || woVal, true, true));
             woSelect.val(woId || woVal).trigger('change');
         } else {
+            woSelect.empty().append(new Option('', ''));
             woSelect.val(null).trigger('change');
         }
     } else {
@@ -173,11 +178,10 @@ $(document).on('click', '.btn-edit-row', function() {
     var nkSelect = row.find('td:eq(1) select');
     if (nkSelect.length) {
         if (nkVal) {
-            if (nkSelect.find("option[value='" + (nkId || nkVal) + "']").length === 0) {
-                nkSelect.append(new Option(nkVal, nkId || nkVal, true, true));
-            }
+            nkSelect.empty().append(new Option('', '')).append(new Option(nkVal, nkId || nkVal, true, true));
             nkSelect.val(nkId || nkVal).trigger('change');
         } else {
+            nkSelect.empty().append(new Option('', ''));
             nkSelect.val(null).trigger('change');
         }
     } else {
@@ -283,57 +287,216 @@ $('#pfp-nk-input').on('change', function() {
     }
 });
 
-function applyDyeingProcessConfig(prosesName) {
+function applyDyeingProcessConfig(prosesName, targetRow) {
     var config = dyeingConfig[prosesName] || {};
-    var row = $('#tbody-input-dyeing tr:first');
-    row.find('input[name="InputDyeing[0][temp]"]').prop('disabled', !config.temp);
-    row.find('input[name="InputDyeing[0][speed]"]').prop('disabled', !config.speed);
-    row.find('input[name="InputDyeing[0][gramasi]"]').prop('disabled', !config.gramasi);
-    row.find('input[name="InputDyeing[0][program_number]"]').prop('disabled', !config.program_number);
-    row.find('input[name="InputDyeing[0][density]"]').prop('disabled', !config.density);
-    row.find('input[name="InputDyeing[0][over_feed]"]').prop('disabled', !config.over_feed);
-    row.find('input[name="InputDyeing[0][lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
-    row.find('input[name="InputDyeing[0][panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
-    row.find('input[name="InputDyeing[0][info_kualitas]"]').prop('disabled', !config.info_kualitas);
-    row.find('input[name="InputDyeing[0][keterangan]"]').prop('disabled', !config.keterangan);
+    var row = targetRow || $('#tbody-input-dyeing tr:first');
+    row.find('input[name$="[temp]"]').prop('disabled', !config.temp);
+    row.find('input[name$="[speed]"]').prop('disabled', !config.speed);
+    row.find('input[name$="[gramasi]"]').prop('disabled', !config.gramasi);
+    row.find('input[name$="[program_number]"]').prop('disabled', !config.program_number);
+    row.find('input[name$="[density]"]').prop('disabled', !config.density);
+    row.find('input[name$="[over_feed]"]').prop('disabled', !config.over_feed);
+    row.find('input[name$="[lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
+    row.find('input[name$="[panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
+    row.find('input[name$="[info_kualitas]"]').prop('disabled', !config.info_kualitas);
+    row.find('input[name$="[keterangan]"]').prop('disabled', !config.keterangan);
 }
 
-$('#dyeing-proses-input').on('change', function() {
-    applyDyeingProcessConfig($(this).val());
+$(document).on('change', '.input-proses-dyeing', function() {
+    applyDyeingProcessConfig($(this).val(), $(this).closest('tr'));
 });
 
-function applyPfpProcessConfig(prosesName) {
+function applyPfpProcessConfig(prosesName, targetRow) {
     var config = pfpConfig[prosesName] || {};
-    var row = $('#tbody-input-pfp tr:first');
-    row.find('input[name="InputPfp[0][temp]"]').prop('disabled', !config.temp);
-    row.find('input[name="InputPfp[0][speed]"]').prop('disabled', !config.speed);
-    row.find('input[name="InputPfp[0][waktu]"]').prop('disabled', !config.waktu);
-    row.find('input[name="InputPfp[0][program_number]"]').prop('disabled', !config.program_number);
-    row.find('input[name="InputPfp[0][ex_relax]"]').prop('disabled', !config.ex_relax);
-    row.find('input[name="InputPfp[0][ex_wr_oligomer]"]').prop('disabled', !config.ex_wr_oligomer);
-    row.find('input[name="InputPfp[0][ex_dyeing]"]').prop('disabled', !config.ex_dyeing);
-    row.find('input[name="InputPfp[0][wr_pcnt]"]').prop('disabled', !config.wr_pcnt);
-    row.find('input[name="InputPfp[0][rpm]"]').prop('disabled', !config.rpm);
-    row.find('input[name="InputPfp[0][density]"]').prop('disabled', !config.density);
-    row.find('input[name="InputPfp[0][jamur]"]').prop('disabled', !config.jamur);
-    row.find('input[name="InputPfp[0][karat]"]').prop('disabled', !config.karat);
-    row.find('input[name="InputPfp[0][over_feed]"]').prop('disabled', !config.over_feed);
-    row.find('input[name="InputPfp[0][counter]"]').prop('disabled', !config.counter);
-    row.find('input[name="InputPfp[0][lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
-    row.find('input[name="InputPfp[0][info_kualitas]"]').prop('disabled', !config.info_kualitas);
-    row.find('input[name="InputPfp[0][gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
-    row.find('input[name="InputPfp[0][gramasi]"]').prop('disabled', !config.gramasi);
-    row.find('input[name="InputPfp[0][panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
-    row.find('input[name="InputPfp[0][keterangan]"]').prop('disabled', !config.keterangan);
+    var row = targetRow || $('#tbody-input-pfp tr:first');
+    row.find('input[name$="[temp]"]').prop('disabled', !config.temp);
+    row.find('input[name$="[speed]"]').prop('disabled', !config.speed);
+    row.find('input[name$="[waktu]"]').prop('disabled', !config.waktu);
+    row.find('input[name$="[program_number]"]').prop('disabled', !config.program_number);
+    row.find('input[name$="[ex_relax]"]').prop('disabled', !config.ex_relax);
+    row.find('input[name$="[ex_wr_oligomer]"]').prop('disabled', !config.ex_wr_oligomer);
+    row.find('input[name$="[ex_dyeing]"]').prop('disabled', !config.ex_dyeing);
+    row.find('input[name$="[wr_pcnt]"]').prop('disabled', !config.wr_pcnt);
+    row.find('input[name$="[rpm]"]').prop('disabled', !config.rpm);
+    row.find('input[name$="[density]"]').prop('disabled', !config.density);
+    row.find('input[name$="[jamur]"]').prop('disabled', !config.jamur);
+    row.find('input[name$="[karat]"]').prop('disabled', !config.karat);
+    row.find('input[name$="[over_feed]"]').prop('disabled', !config.over_feed);
+    row.find('input[name$="[counter]"]').prop('disabled', !config.counter);
+    row.find('input[name$="[lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
+    row.find('input[name$="[info_kualitas]"]').prop('disabled', !config.info_kualitas);
+    row.find('input[name$="[gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
+    row.find('input[name$="[gramasi]"]').prop('disabled', !config.gramasi);
+    row.find('input[name$="[panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
+    row.find('input[name$="[keterangan]"]').prop('disabled', !config.keterangan);
 }
 
-$('#pfp-proses-input').on('change', function() {
-    applyPfpProcessConfig($(this).val());
+$(document).on('change', '.input-proses-pfp', function() {
+    applyPfpProcessConfig($(this).val(), $(this).closest('tr'));
+});
+
+$(document).on('click', '.btn-tambah-row', function(e) {
+    e.preventDefault();
+    var target = $(this).data('target');
+    var tbody = $('#tbody-input-' + target);
+    var firstRow = tbody.find('tr').first();
+    
+    var newRow = firstRow.clone();
+    newRow.find('input').val('');
+    
+    newRow.find('.select2-container').remove();
+    newRow.find('select').removeClass('select2-hidden-accessible').removeAttr('data-select2-id tabindex aria-hidden data-krajee-select2 data-s2-options').empty();
+    
+    var newIndex = new Date().getTime();
+    
+    newRow.find('input, select').each(function() {
+        var name = $(this).attr('name');
+        if (name) {
+            $(this).attr('name', name.replace(/\[\d+\]/, '[' + newIndex + ']'));
+        }
+        var id = $(this).attr('id');
+        if (id) {
+            $(this).attr('id', id + '-' + newIndex);
+        }
+    });
+    
+    tbody.append(newRow);
+    
+    newRow.find('.input-wo-' + target).select2({
+        allowClear: true,
+        placeholder: target === 'dyeing' ? 'Cari WO...' : 'Cari Order PFP...',
+        minimumInputLength: 3,
+        ajax: {
+            url: target === 'dyeing' ? urlLookupWoAll : urlLookupOrderPfp,
+            dataType: 'json',
+            delay: 250,
+            data: function(params) { return {q: params.term}; },
+            processResults: function(data) { return {results: data.results || data}; }
+        }
+    });
+    
+    newRow.find('.input-nk-' + target).select2({
+        allowClear: true,
+        placeholder: 'Cari NK...',
+        minimumInputLength: 0,
+        ajax: {
+            url: urlLookupNkAll,
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                var wo_no = newRow.find('.input-wo-' + target + ' option:selected').text();
+                return {q: params.term, wo_no: wo_no};
+            },
+            processResults: function(data) { return {results: data.results || data}; }
+        }
+    }).on('change', function() {
+        var id = $(this).val();
+        if(id) {
+            $.ajax({
+                url: '{$urlLookupKpById}',
+                type: 'GET',
+                data: {q: target, id: id},
+                success: function(data) {
+                    if (data) {
+                        if (target === 'dyeing') {
+                            newRow.find('input[id^="dyeing-motif-input"]').val(data.wo && data.wo.greige ? data.wo.greige.nama_kain : '');
+                            newRow.find('input[id^="dyeing-warna-input"]').val(data.woColor && data.woColor.moColor ? data.woColor.moColor.color : '');
+                        } else {
+                            newRow.find('input[id^="pfp-motif-input"]').val(data.greige ? data.greige.nama_kain : (data.orderPfp && data.orderPfp.greige ? data.orderPfp.greige.nama_kain : ''));
+                            newRow.find('input[id^="pfp-warna-input"]').val(data.orderPfp && data.orderPfp.dasar_warna ? data.orderPfp.dasar_warna : '');
+                        }
+                    }
+                }
+            });
+        } else {
+            if (target === 'dyeing') {
+                newRow.find('input[id^="dyeing-motif-input"]').val('');
+                newRow.find('input[id^="dyeing-warna-input"]').val('');
+            } else {
+                newRow.find('input[id^="pfp-motif-input"]').val('');
+                newRow.find('input[id^="pfp-warna-input"]').val('');
+            }
+        }
+    });
+    
+    var prosesSelect = firstRow.find('.input-proses-' + target);
+    var clonedProsesSelect = newRow.find('.input-proses-' + target);
+    prosesSelect.find('option').each(function() {
+        clonedProsesSelect.append(new Option($(this).text(), $(this).val()));
+    });
+    clonedProsesSelect.select2({
+        allowClear: true,
+        placeholder: 'Pilih Proses...'
+    });
+    
+    var mesinSelect = firstRow.find('select[name$="[no_mesin]"]');
+    var clonedMesinSelect = newRow.find('select[name$="[no_mesin]"]');
+    mesinSelect.find('option').each(function() {
+        clonedMesinSelect.append(new Option($(this).text(), $(this).val()));
+    });
+});
+
+$(document).on('click', '.btn-hapus-row', function(e) {
+    e.preventDefault();
+    var tbody = $(this).closest('tbody');
+    if (tbody.find('tr').length > 1) {
+        $(this).closest('tr').remove();
+    } else {
+        $(this).closest('tr').find('input').val('');
+        $(this).closest('tr').find('select').val(null).trigger('change');
+    }
 });
 
 $('#form-tambahan-input').on('submit', function(e) {
     e.preventDefault();
     var form = $(this);
+    
+    var valid = true;
+    var errMsg = "";
+
+    function validateRows(tbodyId, label) {
+        $(tbodyId + ' tr').each(function(index) {
+            var tr = $(this);
+            var wo = tr.find('.input-wo-' + label.toLowerCase()).val() || tr.find('input[name$="[wo]"]').val() || tr.find('select[name$="[wo]"]').val();
+            var nk = tr.find('.input-nk-' + label.toLowerCase()).val() || tr.find('input[name$="[nk]"]').val() || tr.find('select[name$="[nk]"]').val();
+            var proses = tr.find('.input-proses-' + label.toLowerCase()).val() || tr.find('select[name$="[proses]"]').val();
+            var mesin = tr.find('select[name$="[no_mesin]"]').val();
+            var ket = tr.find('input[name$="[keterangan]"]').val();
+            
+            var hasData = false;
+            tr.find('input[type!="hidden"], select').each(function() {
+                var val = $(this).val();
+                if (val && val !== '') {
+                    hasData = true;
+                }
+            });
+            
+            if (hasData) {
+                if (!wo || !nk || !proses || !mesin) {
+                    valid = false;
+                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": WO, NK, Proses, dan No Mesin HARUS diisi! (Atau hapus baris jika tidak digunakan)";
+                    return false;
+                }
+                if ((proses === 'Cuci' || proses === 'Cuci 2-5') && (!ket || ket.trim() === '')) {
+                    valid = false;
+                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": Proses '" + proses + "' mewajibkan kolom Keterangan diisi!";
+                    return false;
+                }
+            }
+        });
+    }
+
+    validateRows('#tbody-input-dyeing', 'Dyeing');
+    if (!valid) {
+        alert(errMsg);
+        return;
+    }
+    
+    validateRows('#tbody-input-pfp', 'PFP');
+    if (!valid) {
+        alert(errMsg);
+        return;
+    }
     
     // Disable submit button to prevent double click
     var submitBtn = form.find('button[type="submit"]');
@@ -734,25 +897,25 @@ if (is_array($no_mesin)) {
                     </td>
                     <td><input type="time" name="InputDyeing[0][start]" class="form-control"></td>
                     <td><input type="time" name="InputDyeing[0][stop]" class="form-control"></td>
-                    <td>
-                        <?= Html::dropDownList('InputDyeing[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih Mesin...']) ?>
+                    <td style="min-width: 80px; width: 80px;">
+                        <?= Html::dropDownList('InputDyeing[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih...']) ?>
                     </td>
-                    <td><input type="text" name="InputDyeing[0][temp]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][speed]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][temp]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][speed]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][gramasi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][program_number]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][density]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][over_feed]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][density]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][over_feed]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][lebar_jadi]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][panjang_jadi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][info_kualitas]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][keterangan]" class="form-control"></td>
-                    <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
+                    <td><button type="button" class="btn btn-danger btn-sm btn-hapus-row"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>
         </table>
         </div>
-        <button class="btn btn-success btn-sm"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
+        <button type="button" class="btn btn-success btn-sm btn-tambah-row" data-target="dyeing"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
 
         <hr>
 
@@ -838,32 +1001,32 @@ if (is_array($no_mesin)) {
                     </td>
                     <td><input type="time" name="InputPfp[0][start]" class="form-control"></td>
                     <td><input type="time" name="InputPfp[0][stop]" class="form-control"></td>
-                    <td>
-                        <?= Html::dropDownList('InputPfp[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih Mesin...']) ?>
+                    <td style="min-width: 80px; width: 80px;">
+                        <?= Html::dropDownList('InputPfp[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih...']) ?>
                     </td>
-                    <td><input type="text" name="InputPfp[0][temp]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][speed]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][temp]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][speed]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][gramasi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][program_number]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][ex_relax]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][ex_relax]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][ex_wr_oligomer]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][ex_dyeing]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][wr_pcnt]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][rpm]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][density]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][jamur]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][ex_dyeing]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][wr_pcnt]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][rpm]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][density]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][jamur]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][info_kualitas]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][keterangan]" class="form-control"></td>
-                    <td><button class="btn btn-danger btn-sm"><i class="glyphicon glyphicon-trash"></i></button></td>
+                    <td><button type="button" class="btn btn-danger btn-sm btn-hapus-row"><i class="glyphicon glyphicon-trash"></i></button></td>
                 </tr>
             </tbody>
         </table>
         </div>
-        <button class="btn btn-success btn-sm"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
+        <button type="button" class="btn btn-success btn-sm btn-tambah-row" data-target="pfp"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
 
     </div>
     <div class="box-footer">

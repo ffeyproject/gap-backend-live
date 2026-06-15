@@ -2687,13 +2687,27 @@ class ProcessingDyeingController extends Controller
                 
                 $isStenter = stripos($modelMesin, 'stenter') !== false;
                 
-                // Grouping Toping 1-5 to "Toping"
+                // Grouping Leveling and Toping Level to "Level", Toping 1-5 to "Toping", RF Ulang and Perbaikan JB to "RF Ulang"
                 $processKey = $processName;
-                if (preg_match('/^Toping\s+[1-5]$/i', $processName)) {
+                if (preg_match('/^Toping(\s+[1-5])?$/i', trim($processName))) {
                     $processKey = 'Toping';
+                } elseif (preg_match('/^(Leveling|Toping\s+Level)(\s+[1-5])?$/i', trim($processName))) {
+                    $processKey = 'Level';
+                } elseif (preg_match('/^(RF\s+Ulang(\s+[1-5])?|Perbaikan\s+JB)$/i', trim($processName))) {
+                    $processKey = 'RF Ulang';
+                } elseif (preg_match('/^(Resin\s+finish|Step-1\/JB|Step-2\/FS|Step-3)$/i', trim($processName))) {
+                    $processKey = 'RF';
+                } elseif (preg_match('/^(Setting|Greige\s+set|Batching)$/i', trim($processName))) {
+                    $processKey = 'Set';
+                } elseif (preg_match('/^Tarik\s+Ulang(\s+[1-5])?$/i', trim($processName))) {
+                    $processKey = 'Set Ulang';
+                } elseif (preg_match('/^Percobaan/i', trim($processName))) {
+                    $processKey = 'Percobaan';
+                } elseif (preg_match('/^Cuci(\s+2-5|\s+[1-5])?$/i', trim($processName))) {
+                    $processKey = 'Cuci';
                 }
 
-                $isNoLength = (preg_match('/^RC\s+[1-5]$/i', $processName) || stripos($processName, 'Cuci Ulang') !== false);
+                $isNoLength = (preg_match('/^RC\s+[1-5]$/i', $processName) || stripos($processName, 'Cuci Ulang') !== false || $processKey === 'Cuci');
                 
                 $panjang = 0;
                 if (!$isNoLength) {
@@ -2780,7 +2794,15 @@ class ProcessingDyeingController extends Controller
 
             foreach ($tambahanQuery as $rec) {
                 $processName = $rec->nama_proses;
-                if (!in_array($processName, $allowedProcessNames) && !in_array('Toping', $allowedProcessNames)) continue;
+                $allowedGroupings = ['Toping', 'Toping Level', 'Level', 'Leveling', 'RF Ulang', 'Perbaikan JB', 'RF', 'Resin finish', 'Step-1/JB', 'Step-2/FS', 'Step-3', 'Set', 'Setting', 'Greige set', 'Batching', 'Set Ulang', 'Tarik Ulang', 'Percobaan', 'Cuci', 'Cuci 2-5'];
+                $isAllowed = in_array($processName, $allowedProcessNames);
+                foreach ($allowedGroupings as $grouping) {
+                    if (in_array($grouping, $allowedProcessNames)) {
+                        $isAllowed = true;
+                        break;
+                    }
+                }
+                if (!$isAllowed) continue;
                 
                 $isPerbaikan = in_array($processName, $perbaikanProcesses);
                 
@@ -2795,11 +2817,20 @@ class ProcessingDyeingController extends Controller
                 $processRecord($valJson, $processName, stripos($rec->tipe, 'pfp') !== false ? 'pfp' : 'dyeing', $isPerbaikan, $nk);
             }
 
+            $rawJumbo = $summary['jumbo'];
+            $summary['jumbo'] = $rawJumbo / 2;
             $summary['batch'] = max(0, $summary['kartu'] - $summary['jumbo']);
             
             // Sort processes by Master Dyeing order
             $orderedProcesses = \common\models\ar\MstProcessDyeing::find()->orderBy(['order' => SORT_ASC])->select('nama_proses')->column();
             $orderedProcesses[] = 'Toping'; // Add the grouped name
+            $orderedProcesses[] = 'Level'; // Add the grouped name
+            $orderedProcesses[] = 'RF Ulang'; // Add the grouped name
+            $orderedProcesses[] = 'RF'; // Add the grouped name
+            $orderedProcesses[] = 'Set'; // Add the grouped name
+            $orderedProcesses[] = 'Set Ulang'; // Add the grouped name
+            $orderedProcesses[] = 'Percobaan'; // Add the grouped name
+            $orderedProcesses[] = 'Cuci'; // Add the grouped name
             
             $sortFunc = function($a, $b) use ($orderedProcesses) {
                 $posA = array_search($a, $orderedProcesses);
