@@ -2859,9 +2859,16 @@ class ProcessingDyeingController extends Controller
                 $processRecord($valJson, $processName, stripos($rec->tipe, 'pfp') !== false ? 'pfp' : 'dyeing', $isPerbaikan, $nk);
             }
 
+            $totalBatchCount = 0;
+            foreach ($rekapProses as $data) {
+                $totalBatchCount += $data['total']['c'];
+            }
+
             $rawJumbo = $summary['jumbo'];
+            
+            $summary['batch'] = $totalBatchCount;
             $summary['jumbo'] = $rawJumbo / 2;
-            $summary['batch'] = max(0, $summary['kartu'] - $summary['jumbo']);
+            $summary['kartu'] = $summary['batch'] + $summary['jumbo'];
             
             // Sort processes by Master Dyeing order
             $orderedProcesses = \common\models\ar\MstProcessDyeing::find()->orderBy(['order' => SORT_ASC])->select('nama_proses')->column();
