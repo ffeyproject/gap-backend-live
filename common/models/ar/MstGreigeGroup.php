@@ -66,12 +66,14 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
     }
 
     const LEBAR_KAIN_44 = 1; const LEBAR_KAIN_58 = 2; const LEBAR_KAIN_60 = 3; const LEBAR_KAIN_64 = 4; const LEBAR_KAIN_66 = 5; const LEBAR_KAIN_68 = 6;const LEBAR_KAIN_72 = 7;const LEBAR_KAIN_69 = 8;const LEBAR_KAIN_70 = 9;const LEBAR_KAIN_71 = 10;
+    const LEBAR_KAIN_74 = 11; const LEBAR_KAIN_76 = 12; const LEBAR_KAIN_78 = 13; const LEBAR_KAIN_80 = 14; const LEBAR_KAIN_82 = 15; const LEBAR_KAIN_84 = 16; const LEBAR_KAIN_86 = 17; const LEBAR_KAIN_88 = 18; const LEBAR_KAIN_90 = 19; const LEBAR_KAIN_47 = 20;
     /**
      * @return array
      */
     public static function lebarKainOptions(){
         return [
             self::LEBAR_KAIN_44 => '44"',
+            self::LEBAR_KAIN_47 => '47"',
             self::LEBAR_KAIN_58 => '58"',
             self::LEBAR_KAIN_60 => '60"',
             self::LEBAR_KAIN_64 => '64"',
@@ -81,6 +83,15 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_70 => '70"',
             self::LEBAR_KAIN_71 => '71"',
             self::LEBAR_KAIN_72 => '72"',
+            self::LEBAR_KAIN_74 => '74"',
+            self::LEBAR_KAIN_76 => '76"',
+            self::LEBAR_KAIN_78 => '78"',
+            self::LEBAR_KAIN_80 => '80"',
+            self::LEBAR_KAIN_82 => '82"',
+            self::LEBAR_KAIN_84 => '84"',
+            self::LEBAR_KAIN_86 => '86"',
+            self::LEBAR_KAIN_88 => '88"',
+            self::LEBAR_KAIN_90 => '90"',
         ];
     }
 
@@ -121,7 +132,7 @@ class MstGreigeGroup extends \yii\db\ActiveRecord
             ['unit', 'in', 'range' => [self::UNIT_YARD, self::UNIT_METER, self::UNIT_PCS, self::UNIT_KILOGRAM]],
 
             ['lebar_kain', 'default', 'value'=>self::LEBAR_KAIN_44],
-            ['lebar_kain', 'in', 'range' => [self::LEBAR_KAIN_44, self::LEBAR_KAIN_58, self::LEBAR_KAIN_60, self::LEBAR_KAIN_64, self::LEBAR_KAIN_66, self::LEBAR_KAIN_68, self::LEBAR_KAIN_69, self::LEBAR_KAIN_70, self::LEBAR_KAIN_71, self::LEBAR_KAIN_72]],
+            ['lebar_kain', 'in', 'range' => [self::LEBAR_KAIN_44, self::LEBAR_KAIN_58, self::LEBAR_KAIN_60, self::LEBAR_KAIN_64, self::LEBAR_KAIN_66, self::LEBAR_KAIN_68, self::LEBAR_KAIN_69, self::LEBAR_KAIN_70, self::LEBAR_KAIN_71, self::LEBAR_KAIN_72, self::LEBAR_KAIN_74, self::LEBAR_KAIN_76, self::LEBAR_KAIN_78, self::LEBAR_KAIN_80, self::LEBAR_KAIN_82, self::LEBAR_KAIN_84, self::LEBAR_KAIN_86, self::LEBAR_KAIN_88, self::LEBAR_KAIN_90, self::LEBAR_KAIN_47]],
         ];
     }
 

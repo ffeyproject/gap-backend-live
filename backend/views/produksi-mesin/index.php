@@ -366,6 +366,8 @@ $(document).on('click', '.btn-tambah-row', function(e) {
         allowClear: true,
         placeholder: target === 'dyeing' ? 'Cari WO...' : 'Cari Order PFP...',
         minimumInputLength: 3,
+        width: '100%',
+        theme: 'krajee',
         ajax: {
             url: target === 'dyeing' ? urlLookupWoAll : urlLookupOrderPfp,
             dataType: 'json',
@@ -379,6 +381,8 @@ $(document).on('click', '.btn-tambah-row', function(e) {
         allowClear: true,
         placeholder: 'Cari NK...',
         minimumInputLength: 0,
+        width: '100%',
+        theme: 'krajee',
         ajax: {
             url: urlLookupNkAll,
             dataType: 'json',
@@ -426,7 +430,9 @@ $(document).on('click', '.btn-tambah-row', function(e) {
     });
     clonedProsesSelect.select2({
         allowClear: true,
-        placeholder: 'Pilih Proses...'
+        placeholder: 'Pilih Proses...',
+        width: '100%',
+        theme: 'krajee'
     });
     
     var mesinSelect = firstRow.find('select[name$="[no_mesin]"]');
@@ -442,8 +448,11 @@ $(document).on('click', '.btn-hapus-row', function(e) {
     if (tbody.find('tr').length > 1) {
         $(this).closest('tr').remove();
     } else {
-        $(this).closest('tr').find('input').val('');
-        $(this).closest('tr').find('select').val(null).trigger('change');
+        var tr = $(this).closest('tr');
+        // Hanya kosongkan input parameter, biarkan readonly Motif dan Warna serta Start dan Stop
+        tr.find('input').not('[id$="-motif-input"], [id$="-warna-input"], input[name$="[start]"], input[name$="[stop]"]').val('');
+        // Jangan clear select2 untuk WO, NK, Proses, dan No Mesin
+        tr.find('select').not('.input-wo-dyeing, .input-nk-dyeing, .input-proses-dyeing, .input-wo-pfp, .input-nk-pfp, .input-proses-pfp, select[name$="[no_mesin]"]').val(null).trigger('change');
     }
 });
 
@@ -637,7 +646,7 @@ if (is_array($no_mesin)) {
                         ?>
                         <tr>
                             <td><?= $wo ? Html::encode($wo->no) : '-' ?></td>
-                            <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/trn-kartu-proses-dyeing/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
+                            <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/processing-dyeing/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
                             <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
                             <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
                             <td><?= Html::encode($record->process->nama_proses) ?></td>
@@ -679,6 +688,14 @@ if (is_array($no_mesin)) {
                                     data-keterangan="<?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
+                                <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'dyeing', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
+                                    'class' => 'btn btn-danger btn-xs',
+                                    'title' => 'Hapus Data Input',
+                                    'data' => [
+                                        'confirm' => 'Yakin ingin menghapus data input ini?',
+                                        'method' => 'post',
+                                    ],
+                                ]) ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -708,6 +725,7 @@ if (is_array($no_mesin)) {
                     <th>Shift</th>
                     <th>Temp</th>
                     <th>Speed</th>
+                    <th>Gramasi</th>
                     <th>Program Number</th>
                     <th>Ex Relax</th>
                     <th>Ex Wr Oligomer</th>
@@ -719,7 +737,9 @@ if (is_array($no_mesin)) {
                     <th>Karat</th>
                     <th>Over Feed</th>
                     <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
                     <th>Info Kualitas</th>
+                    <th>Keterangan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -748,6 +768,7 @@ if (is_array($no_mesin)) {
                             <td><?= Html::encode(isset($val['shift_group']) ? $val['shift_group'] : (isset($val['shift_operator']) ? $val['shift_operator'] : '-')) ?></td>
                             <td><?= Html::encode(isset($val['temp']) ? $val['temp'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['speed']) ? $val['speed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['gramasi']) ? $val['gramasi'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['program_number']) ? $val['program_number'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['ex_relax']) ? $val['ex_relax'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['ex_wr_oligomer']) ? $val['ex_wr_oligomer'] : '-') ?></td>
@@ -759,7 +780,9 @@ if (is_array($no_mesin)) {
                             <td><?= Html::encode(isset($val['karat']) ? $val['karat'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '-') ?></td>
                             <td><?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '-') ?></td>
                             <td>
                                 <button type="button" class="btn btn-default btn-xs btn-edit-row"
                                     data-target="pfp"
@@ -790,9 +813,9 @@ if (is_array($no_mesin)) {
                                     data-lebarjadi="<?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '') ?>"
                                     data-infokualitas="<?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '') ?>"
                                     data-gangguanproduksi=""
-                                    data-gramasi=""
-                                    data-panjangjadi=""
-                                    data-keterangan=""
+                                    data-gramasi="<?= Html::encode(isset($val['gramasi']) ? $val['gramasi'] : '') ?>"
+                                    data-panjangjadi="<?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '') ?>"
+                                    data-keterangan="<?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                             </td>

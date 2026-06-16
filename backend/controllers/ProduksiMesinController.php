@@ -245,6 +245,55 @@ class ProduksiMesinController extends Controller
         return $this->redirect(['index', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin]);
     }
 
+    public function actionDeleteInput($id, $proses_id, $tipe)
+    {
+        $request = Yii::$app->request;
+        $jenis_mesin = $request->get('jenis_mesin');
+        $tanggal = $request->get('tanggal');
+        $shift = $request->get('shift');
+        $no_mesin = $request->get('no_mesin');
+
+        if ($request->isPost) {
+            if ($tipe === 'dyeing') {
+                $kpProcess = \common\models\ar\KartuProcessDyeingProcess::findOne([
+                    'kartu_process_id' => $id,
+                    'process_id' => $proses_id
+                ]);
+            } else {
+                $kpProcess = \common\models\ar\KartuProcessPfpProcess::findOne([
+                    'kartu_process_id' => $id,
+                    'process_id' => $proses_id
+                ]);
+            }
+
+            if ($kpProcess) {
+                if ($kpProcess->value) {
+                    $val = json_decode($kpProcess->value, true) ?: [];
+                    $newVal = [];
+                    $keepFields = ['tanggal', 'shift_group', 'shift_operator', 'start', 'stop', 'no_mesin'];
+                    foreach ($keepFields as $f) {
+                        if (isset($val[$f])) {
+                            $newVal[$f] = $val[$f];
+                        }
+                    }
+                    $kpProcess->value = json_encode($newVal);
+                    
+                    if ($kpProcess->save(false)) {
+                        Yii::$app->session->setFlash('success', 'Data isian parameter proses berhasil dihapus.');
+                    } else {
+                        Yii::$app->session->setFlash('error', 'Gagal menghapus isian parameter proses.');
+                    }
+                } else {
+                    Yii::$app->session->setFlash('success', 'Data isian sudah kosong.');
+                }
+            } else {
+                Yii::$app->session->setFlash('error', 'Data input tidak ditemukan.');
+            }
+        }
+        
+        return $this->redirect(['index', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin]);
+    }
+
     public function actionCheckExistingData()
     {
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;

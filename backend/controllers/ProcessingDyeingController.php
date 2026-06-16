@@ -2746,10 +2746,12 @@ class ProcessingDyeingController extends Controller
                     $rekapProses[$processKey] = ['dyeing' => ['p' => 0, 'c' => 0], 'pfp' => ['p' => 0, 'c' => 0], 'total' => ['p' => 0, 'c' => 0]];
                 }
                 
+                $batchCount = in_array($noMesin, $jumboMachines) ? 0.5 : 1;
+
                 $rekapProses[$processKey][$tipeKategori]['p'] += $panjang;
-                $rekapProses[$processKey][$tipeKategori]['c']++;
+                $rekapProses[$processKey][$tipeKategori]['c'] += $batchCount;
                 $rekapProses[$processKey]['total']['p'] += $panjang;
-                $rekapProses[$processKey]['total']['c']++;
+                $rekapProses[$processKey]['total']['c'] += $batchCount;
                 
                 // Init Mesin Array
                 if (!isset($rekapMesin[$noMesin])) {
@@ -2759,9 +2761,9 @@ class ProcessingDyeingController extends Controller
                     $rekapMesin[$noMesin][$processKey] = ['p' => 0, 'c' => 0];
                 }
                 $rekapMesin[$noMesin][$processKey]['p'] += $panjang;
-                $rekapMesin[$noMesin][$processKey]['c']++;
+                $rekapMesin[$noMesin][$processKey]['c'] += $batchCount;
                 $rekapMesin[$noMesin]['total']['p'] += $panjang;
-                $rekapMesin[$noMesin]['total']['c']++;
+                $rekapMesin[$noMesin]['total']['c'] += $batchCount;
 
                 // Init Shift Array
                 if (!isset($rekapShift[$shift])) {
@@ -2771,9 +2773,9 @@ class ProcessingDyeingController extends Controller
                     $rekapShift[$shift][$processKey] = ['p' => 0, 'c' => 0];
                 }
                 $rekapShift[$shift][$processKey]['p'] += $panjang;
-                $rekapShift[$shift][$processKey]['c']++;
+                $rekapShift[$shift][$processKey]['c'] += $batchCount;
                 $rekapShift[$shift]['total']['p'] += $panjang;
-                $rekapShift[$shift]['total']['c']++;
+                $rekapShift[$shift]['total']['c'] += $batchCount;
             };
 
             foreach ($dyeingRecords as $rec) {
