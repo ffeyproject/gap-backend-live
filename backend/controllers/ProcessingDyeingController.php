@@ -2654,6 +2654,19 @@ class ProcessingDyeingController extends Controller
                 ->select('nama_proses')
                 ->column();
 
+            $allowedProcessIdsPfp = (new \yii\db\Query())
+                ->select('mst_process_pfp_id')
+                ->from('mst_process_pfp_mesin')
+                ->where(['in', 'mst_mesin_proses_id', $machineIds])
+                ->column();
+                
+            $allowedProcessNamesPfp = \common\models\ar\MstProcessPfp::find()
+                ->where(['in', 'id', $allowedProcessIdsPfp])
+                ->select('nama_proses')
+                ->column();
+                
+            $allowedProcessNames = array_merge($allowedProcessNames, $allowedProcessNamesPfp);
+
             // Prepopulate machines and shifts so they always appear
             foreach ($machineNames as $mName) {
                 $rekapMesin[$mName] = ['total' => ['p' => 0, 'c' => 0]];
@@ -2691,7 +2704,7 @@ class ProcessingDyeingController extends Controller
                         ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
                         ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
                         ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
-                        ->andWhere(['in', 'kp.process_id', $allowedProcessIds])
+                        ->andWhere(['in', 'kp.process_id', $allowedProcessIdsPfp])
                         ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
                         ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
                         ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
