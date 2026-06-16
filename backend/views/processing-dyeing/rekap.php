@@ -400,10 +400,24 @@ $gridColumns = [
                 }
             }
             if ($count > 1) {
-                return $color . ' (' . $count . 'x)';
+                $displayText = $color . ' (' . $count . 'x)';
+            } else {
+                $displayText = $color;
             }
-            return $color;
+            
+            $woColorId = $data->wo_color_id ?? ($data->woColor->id ?? '');
+            if ($woColorId) {
+                return \yii\helpers\Html::a($displayText, 'javascript:void(0)', [
+                    'class' => 'editable-color',
+                    'data-id' => $woColorId,
+                    'data-val' => $color,
+                    'title' => 'Klik untuk edit warna',
+                    'style' => 'border-bottom: 1px dashed #0088cc; text-decoration: none;'
+                ]);
+            }
+            return $displayText;
         },
+        'format' => 'raw',
         'hAlign' => 'center',
         'vAlign' => 'middle',
         'contentOptions' => $groupWarnaContentOptions,
@@ -1442,6 +1456,7 @@ $columnToggleDropdown .= '</ul></div>';
 </style>
 
 <?php
+$urlUpdateColor = \yii\helpers\Url::to(['/processing-dyeing/update-mo-color']);
 $jsCode = <<<JS
 window.filterWoMonth = function(selectElement) {
     var val = selectElement.value;
@@ -1619,6 +1634,36 @@ $(document).on('mousedown click focus show.daterangepicker input', '.process-dat
             $(this).closest('td').find('input').val('');
         }
     });
+});
+
+// Handle edit warna
+$(document).on('click', '.editable-color', function(e) {
+    e.preventDefault();
+    var aTag = $(this);
+    var woColorId = aTag.data('id');
+    var currentColor = aTag.data('val');
+    
+    var newColor = prompt('Edit Warna:', currentColor);
+    if (newColor !== null && newColor.trim() !== '' && newColor !== currentColor) {
+        $.ajax({
+            url: '{$urlUpdateColor}',
+            type: 'POST',
+            data: {
+                wo_color_id: woColorId,
+                color: newColor.trim()
+            },
+            success: function(response) {
+                if (response.success) {
+                    window.location.reload();
+                } else {
+                    alert(response.message || 'Gagal menyimpan warna.');
+                }
+            },
+            error: function() {
+                alert('Terjadi kesalahan pada server.');
+            }
+        });
+    }
 });
 JS;
 

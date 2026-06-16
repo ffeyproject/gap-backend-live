@@ -135,6 +135,28 @@ class ProcessingDyeingController extends Controller
         ]);
     }
 
+    public function actionUpdateMoColor()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+        if ($request->isPost) {
+            $woColorId = $request->post('wo_color_id');
+            $newColor = $request->post('color');
+            if ($woColorId && $newColor !== null) {
+                $woColor = \common\models\ar\TrnWoColor::findOne($woColorId);
+                if ($woColor && $woColor->moColor) {
+                    $moColor = $woColor->moColor;
+                    $moColor->color = $newColor;
+                    if ($moColor->save(false)) {
+                        Yii::$app->session->setFlash('success', 'Warna berhasil diupdate menjadi: ' . $newColor);
+                        return ['success' => true];
+                    }
+                }
+            }
+        }
+        return ['success' => false, 'message' => 'Gagal mengupdate warna'];
+    }
+
     /**
      * Lists all TrnKartuProsesDyeing models.
      * @return mixed
@@ -220,7 +242,20 @@ class ProcessingDyeingController extends Controller
                         return isset($bukaGreigeMap[$m->id]) ? $bukaGreigeMap[$m->id] : '9999-12-31';
                     };
 
-                    usort($models, function($a, $b) use ($getBukaGreige) {
+                    $colorCounts = [];
+                    foreach ($models as $m) {
+                        $woNo = $m->wo ? $m->wo->no : '';
+                        $col = ($m->woColor && $m->woColor->moColor) ? $m->woColor->moColor->color : '';
+                        if (!isset($colorCounts[$woNo])) {
+                            $colorCounts[$woNo] = [];
+                        }
+                        if (!isset($colorCounts[$woNo][$col])) {
+                            $colorCounts[$woNo][$col] = 0;
+                        }
+                        $colorCounts[$woNo][$col]++;
+                    }
+
+                    usort($models, function($a, $b) use ($getBukaGreige, $colorCounts) {
                         $woDateA = $a->wo ? $a->wo->date : '9999-12-31';
                         $woDateB = $b->wo ? $b->wo->date : '9999-12-31';
                         if ($woDateA === $woDateB) {
@@ -239,7 +274,12 @@ class ProcessingDyeingController extends Controller
                                     }
                                     return strcmp($bgA, $bgB);
                                 }
-                                return strcmp($colA, $colB);
+                                $countA = $colorCounts[$woNoA][$colA] ?? 0;
+                                $countB = $colorCounts[$woNoB][$colB] ?? 0;
+                                if ($countA === $countB) {
+                                    return strcmp($colA, $colB);
+                                }
+                                return $countA <=> $countB;
                             }
                             return strnatcmp($woNoA, $woNoB);
                         }
