@@ -268,15 +268,7 @@ class ProduksiMesinController extends Controller
 
             if ($kpProcess) {
                 if ($kpProcess->value) {
-                    $val = json_decode($kpProcess->value, true) ?: [];
-                    $newVal = [];
-                    $keepFields = ['tanggal', 'shift_group', 'shift_operator', 'start', 'stop', 'no_mesin'];
-                    foreach ($keepFields as $f) {
-                        if (isset($val[$f])) {
-                            $newVal[$f] = $val[$f];
-                        }
-                    }
-                    $kpProcess->value = json_encode($newVal);
+                    $kpProcess->value = null;
                     
                     if ($kpProcess->save(false)) {
                         Yii::$app->session->setFlash('success', 'Data isian parameter proses berhasil dihapus.');

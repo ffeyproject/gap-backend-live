@@ -444,6 +444,10 @@ $(document).on('click', '.btn-tambah-row', function(e) {
 
 $(document).on('click', '.btn-hapus-row', function(e) {
     e.preventDefault();
+    if (!confirm('Yakin ingin menghapus baris input ini?')) {
+        return;
+    }
+    
     var tbody = $(this).closest('tbody');
     if (tbody.find('tr').length > 1) {
         $(this).closest('tr').remove();
@@ -451,8 +455,8 @@ $(document).on('click', '.btn-hapus-row', function(e) {
         var tr = $(this).closest('tr');
         // Hanya kosongkan input parameter, biarkan readonly Motif dan Warna serta Start dan Stop
         tr.find('input').not('[id$="-motif-input"], [id$="-warna-input"], input[name$="[start]"], input[name$="[stop]"]').val('');
-        // Jangan clear select2 untuk WO, NK, Proses, dan No Mesin
-        tr.find('select').not('.input-wo-dyeing, .input-nk-dyeing, .input-proses-dyeing, .input-wo-pfp, .input-nk-pfp, .input-proses-pfp, select[name$="[no_mesin]"]').val(null).trigger('change');
+        // Kosongkan juga select no_mesin dengan menghapusnya dari list .not()
+        tr.find('select').not('.input-wo-dyeing, .input-nk-dyeing, .input-proses-dyeing, .input-wo-pfp, .input-nk-pfp, .input-proses-pfp').val(null).trigger('change');
     }
 });
 
@@ -818,6 +822,14 @@ if (is_array($no_mesin)) {
                                     data-keterangan="<?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '') ?>"
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
+                                <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'pfp', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
+                                    'class' => 'btn btn-danger btn-xs',
+                                    'title' => 'Hapus Data Input',
+                                    'data' => [
+                                        'confirm' => 'Yakin ingin menghapus data input ini?',
+                                        'method' => 'post',
+                                    ],
+                                ]) ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
