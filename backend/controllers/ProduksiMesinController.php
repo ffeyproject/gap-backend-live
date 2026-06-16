@@ -166,6 +166,23 @@ class ProduksiMesinController extends Controller
                                 $kpProcess->process_id = $mstProcess->id;
                             }
                             
+                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'keterangan'];
+                            
+                            $hasData = false;
+                            foreach ($fields as $f) {
+                                if (isset($row[$f]) && $row[$f] !== '') {
+                                    $hasData = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$hasData) {
+                                if (!$kpProcess->isNewRecord) {
+                                    $kpProcess->delete();
+                                }
+                                continue;
+                            }
+
                             $val = [];
                             if ($kpProcess->value) {
                                 $val = json_decode($kpProcess->value, true) ?: [];
@@ -175,7 +192,6 @@ class ProduksiMesinController extends Controller
                             $val['tanggal'] = $tanggal;
                             $val['shift_group'] = $shift;
                             
-                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'gramasi', 'program_number', 'density', 'over_feed', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'keterangan'];
                             foreach ($fields as $f) {
                                 if (isset($row[$f])) {
                                     $val[$f] = $row[$f];
@@ -209,6 +225,23 @@ class ProduksiMesinController extends Controller
                                 $kpProcess->process_id = $mstProcess->id;
                             }
                             
+                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan'];
+                            
+                            $hasData = false;
+                            foreach ($fields as $f) {
+                                if (isset($row[$f]) && $row[$f] !== '') {
+                                    $hasData = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$hasData) {
+                                if (!$kpProcess->isNewRecord) {
+                                    $kpProcess->delete();
+                                }
+                                continue;
+                            }
+
                             $val = [];
                             if ($kpProcess->value) {
                                 $val = json_decode($kpProcess->value, true) ?: [];
@@ -219,7 +252,6 @@ class ProduksiMesinController extends Controller
                             $val['shift_group'] = $shift; // backward compatibility
                             $val['shift_operator'] = $shift; // correct schema attribute
                             
-                            $fields = ['start', 'stop', 'no_mesin', 'temp', 'speed', 'waktu', 'program_number', 'ex_relax', 'ex_wr_oligomer', 'ex_dyeing', 'wr_pcnt', 'rpm', 'density', 'jamur', 'karat', 'over_feed', 'counter', 'lebar_jadi', 'info_kualitas', 'gangguan_produksi', 'gramasi', 'panjang_jadi', 'keterangan'];
                             foreach ($fields as $f) {
                                 if (isset($row[$f])) {
                                     $val[$f] = $row[$f];
@@ -267,16 +299,10 @@ class ProduksiMesinController extends Controller
             }
 
             if ($kpProcess) {
-                if ($kpProcess->value) {
-                    $kpProcess->value = null;
-                    
-                    if ($kpProcess->save(false)) {
-                        Yii::$app->session->setFlash('success', 'Data isian parameter proses berhasil dihapus.');
-                    } else {
-                        Yii::$app->session->setFlash('error', 'Gagal menghapus isian parameter proses.');
-                    }
+                if ($kpProcess->delete()) {
+                    Yii::$app->session->setFlash('success', 'Data proses berhasil dihapus.');
                 } else {
-                    Yii::$app->session->setFlash('success', 'Data isian sudah kosong.');
+                    Yii::$app->session->setFlash('error', 'Gagal menghapus data proses.');
                 }
             } else {
                 Yii::$app->session->setFlash('error', 'Data input tidak ditemukan.');

@@ -447,14 +447,17 @@ $(document).on('click', '.btn-hapus-row', function(e) {
     if (!confirm('Yakin ingin menghapus baris input ini?')) {
         return;
     }
+    if (!confirm('Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!')) {
+        return;
+    }
     
     var tbody = $(this).closest('tbody');
     if (tbody.find('tr').length > 1) {
         $(this).closest('tr').remove();
     } else {
         var tr = $(this).closest('tr');
-        // Hanya kosongkan input parameter, biarkan readonly Motif dan Warna serta Start dan Stop
-        tr.find('input').not('[id$="-motif-input"], [id$="-warna-input"], input[name$="[start]"], input[name$="[stop]"]').val('');
+        // Hanya kosongkan input parameter, biarkan readonly Motif dan Warna
+        tr.find('input').not('[id$="-motif-input"], [id$="-warna-input"]').val('');
         // Kosongkan juga select no_mesin dengan menghapusnya dari list .not()
         tr.find('select').not('.input-wo-dyeing, .input-nk-dyeing, .input-proses-dyeing, .input-wo-pfp, .input-nk-pfp, .input-proses-pfp').val(null).trigger('change');
     }
@@ -485,9 +488,9 @@ $('#form-tambahan-input').on('submit', function(e) {
             });
             
             if (hasData) {
-                if (!wo || !nk || !proses || !mesin) {
+                if (!wo || !nk || !proses) {
                     valid = false;
-                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": WO, NK, Proses, dan No Mesin HARUS diisi! (Atau hapus baris jika tidak digunakan)";
+                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": WO, NK, dan Proses HARUS diisi! (Atau hapus baris jika tidak digunakan)";
                     return false;
                 }
                 if ((proses === 'Cuci' || proses === 'Cuci 2-5') && (!ket || ket.trim() === '')) {
@@ -695,8 +698,8 @@ if (is_array($no_mesin)) {
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'dyeing', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
                                     'class' => 'btn btn-danger btn-xs',
                                     'title' => 'Hapus Data Input',
+                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { return false; }',
                                     'data' => [
-                                        'confirm' => 'Yakin ingin menghapus data input ini?',
                                         'method' => 'post',
                                     ],
                                 ]) ?>
@@ -825,8 +828,8 @@ if (is_array($no_mesin)) {
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'pfp', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
                                     'class' => 'btn btn-danger btn-xs',
                                     'title' => 'Hapus Data Input',
+                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { return false; }',
                                     'data' => [
-                                        'confirm' => 'Yakin ingin menghapus data input ini?',
                                         'method' => 'post',
                                     ],
                                 ]) ?>

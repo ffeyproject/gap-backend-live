@@ -309,6 +309,14 @@ $this->registerCss('
                                     data-proses="<?= Html::encode($row['proses']) ?>"
                                     data-input-id="<?= Html::encode($row['input_id'] ?? '') ?>"
                                     title="Edit via Tambahan Input"><i class="fa fa-edit"></i> Edit</button>
+                                
+                                <button type="button" class="btn btn-xs btn-danger pull-right btn-hapus-rekap" style="margin-right: 5px;"
+                                    data-tipe="<?= Html::encode($row['tipe'] ?? 'Order') ?>"
+                                    data-nk="<?= Html::encode($row['nk']) ?>"
+                                    data-proses="<?= Html::encode($row['proses']) ?>"
+                                    data-wo="<?= Html::encode($row['wo_no']) ?>"
+                                    data-input-id="<?= Html::encode($row['input_id'] ?? '') ?>"
+                                    title="Hapus Data (Tanggal, Mesin, Temp, Panjang Jadi)"><i class="fa fa-trash"></i> Hapus</button>
                             </td>
                         </tr>
                     <?php endforeach; endif; ?>
@@ -540,6 +548,7 @@ $prosesOptionsJson = json_encode($prosesOptions);
 $urlLookupWo = \yii\helpers\Url::to(['/ajax/lookup-wo-all']);
 $urlLookupNk = \yii\helpers\Url::to(['/ajax/lookup-nk-all']);
 $urlGetExistingProsesData = \yii\helpers\Url::to(['/ajax/get-existing-proses-data']);
+$urlHapusRekapData = \yii\helpers\Url::to(['/processing-dyeing/hapus-rekap-data']);
 $mesinIdStr = $mesin ? $mesin->id : '';
 
 $js = <<<JS
@@ -935,6 +944,55 @@ $(document).on('click', '.btn-edit-row', function() {
     setTimeout(function() {
         row.css('background-color', '');
     }, 2000);
+});
+
+// Hapus Button functionality
+$(document).on('click', '.btn-hapus-rekap', function(e) {
+    e.preventDefault();
+    if (!confirm('Yakin ingin menghapus data (tanggal, mesin, temp, dll) dari rekap ini?')) {
+        return;
+    }
+    if (!confirm('Anda benar-benar yakin? Data akan hilang dari rekap mesin ini!')) {
+        return;
+    }
+    
+    var btn = $(this);
+    var tipe = btn.data('tipe');
+    var nk = btn.data('nk');
+    var proses = btn.data('proses');
+    var wo = btn.data('wo');
+    var inputId = btn.data('input-id');
+    
+    var originalText = btn.html();
+    btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+    
+    $.ajax({
+        url: '{$urlHapusRekapData}',
+        type: 'POST',
+        data: {
+            tipe: tipe,
+            nk: nk,
+            proses: proses,
+            wo: wo,
+            input_id: inputId,
+            YII_CSRF_TOKEN: yii.getCsrfToken()
+        },
+        success: function(res) {
+            if (res.success) {
+                btn.closest('tr').fadeOut(function() { 
+                    $(this).remove(); 
+                    updateDynamicShiftTotals(); 
+                });
+            } else {
+                alert('Gagal menghapus: ' + (res.message || 'Unknown error'));
+                btn.prop('disabled', false).html(originalText);
+            }
+        },
+        error: function() {
+            alert('Terjadi kesalahan koneksi saat menghapus data.');
+            btn.prop('disabled', false).html(originalText);
+        }
+    });
 });
 
 // Column toggle functionality

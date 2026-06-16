@@ -3424,6 +3424,104 @@ class ProcessingDyeingController extends Controller
         return $this->redirect(['rekap-proses-mesin']);
     }
 
+    /**
+     * Menghapus (mengosongkan) data tanggal, no mesin, temp, panjang jadi
+     */
+    public function actionHapusRekapData()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+        if (!$request->isPost) {
+            return ['success' => false, 'message' => 'Method not allowed'];
+        }
+
+        $tipe = $request->post('tipe');
+        $nk = $request->post('nk');
+        $prosesName = $request->post('proses');
+        $wo = $request->post('wo');
+        $inputId = $request->post('input_id');
+
+        // Jika Percobaan, hapus recordnya secara fisik agar tidak nyangkut (orphan)
+        if ($tipe === 'Percobaan' && !empty($inputId)) {
+            $model = \common\models\ar\TrnRekapProsesMesinInput::findOne($inputId);
+            if ($model) {
+                if ($model->delete()) {
+                    return ['success' => true];
+                }
+            }
+            return ['success' => false, 'message' => 'Data Percobaan tidak ditemukan atau gagal dihapus'];
+        }
+
+        // Untuk Order, kita hanya mengosongkan parameter di json_value agar terlepas dari mesin/jadwal
+        $isUpdated = false;
+
+        if (!empty($nk) && !empty($prosesName)) {
+            // Cek Dyeing
+            $queryDyeing = \common\models\ar\TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $nk]);
+            if (!empty($wo) && $wo !== '-') {
+                $queryDyeing->joinWith('wo', false)->andWhere(['trn_wo.no' => $wo]);
+            }
+            $kpd = $queryDyeing->one();
+            if ($kpd) {
+                $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $prosesName]);
+                if ($mstProcess) {
+                    $kpProcesses = \common\models\ar\KartuProcessDyeingProcess::find()->where(['kartu_process_id' => $kpd->id, 'process_id' => $mstProcess->id])->all();
+                    foreach ($kpProcesses as $kpProcess) {
+                        $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
+                        unset($vals['tanggal'], $vals['no_mesin'], $vals['temp'], $vals['panjang_jadi']);
+                        $kpProcess->value = \yii\helpers\Json::encode($vals);
+                        $kpProcess->save(false);
+                        $isUpdated = true;
+                    }
+                }
+            }
+
+            // Cek PFP
+            if (!$isUpdated) {
+                $queryPfp = \common\models\ar\TrnKartuProsesPfp::find()->where(['nomor_kartu' => $nk]);
+                $kpp = $queryPfp->one();
+                if ($kpp) {
+                    $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $prosesName]);
+                    if ($mstProcess) {
+                        $kpProcesses = \common\models\ar\KartuProcessPfpProcess::find()->where(['kartu_process_id' => $kpp->id, 'process_id' => $mstProcess->id])->all();
+                        foreach ($kpProcesses as $kpProcess) {
+                            $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
+                            unset($vals['tanggal'], $vals['no_mesin'], $vals['temp'], $vals['panjang_jadi']);
+                            $kpProcess->value = \yii\helpers\Json::encode($vals);
+                            $kpProcess->save(false);
+                            $isUpdated = true;
+                        }
+                    }
+                }
+            }
+
+            // Cek Printing
+            if (!$isUpdated) {
+                $queryPrinting = \common\models\ar\TrnKartuProsesPrinting::find()->where(['nomor_kartu' => $nk]);
+                $kppr = $queryPrinting->one();
+                if ($kppr) {
+                    $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $prosesName]);
+                    if ($mstProcess) {
+                        $kpProcesses = \common\models\ar\KartuProcessPrintingProcess::find()->where(['kartu_process_id' => $kppr->id, 'process_id' => $mstProcess->id])->all();
+                        foreach ($kpProcesses as $kpProcess) {
+                            $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
+                            unset($vals['tanggal'], $vals['no_mesin'], $vals['temp'], $vals['panjang_jadi']);
+                            $kpProcess->value = \yii\helpers\Json::encode($vals);
+                            $kpProcess->save(false);
+                            $isUpdated = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($isUpdated) {
+            return ['success' => true];
+        }
+
+        return ['success' => false, 'message' => 'Data Order tidak ditemukan atau gagal diupdate'];
+    }
+
     public function actionGabung($id)
     {
         $model = $this->findModel($id);
