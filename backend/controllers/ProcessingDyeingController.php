@@ -3191,8 +3191,14 @@ class ProcessingDyeingController extends Controller
                         $mstProcess = \common\models\ar\MstProcessDyeing::findOne(['nama_proses' => $prosesName]);
                         if ($mstProcess) {
                             $kpProcesses = \common\models\ar\KartuProcessDyeingProcess::find()->where(['kartu_process_id' => $kpd->id, 'process_id' => $mstProcess->id])->all();
+                            if (empty($kpProcesses)) {
+                                $newKp = new \common\models\ar\KartuProcessDyeingProcess();
+                                $newKp->kartu_process_id = $kpd->id;
+                                $newKp->process_id = $mstProcess->id;
+                                $kpProcesses[] = $newKp;
+                            }
                             foreach ($kpProcesses as $kpProcess) {
-                                $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
                                 if (true) {
                                     if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                     if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
@@ -3221,8 +3227,14 @@ class ProcessingDyeingController extends Controller
                             $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $prosesName]);
                             if ($mstProcess) {
                                 $kpProcesses = \common\models\ar\KartuProcessPfpProcess::find()->where(['kartu_process_id' => $kpp->id, 'process_id' => $mstProcess->id])->all();
+                                if (empty($kpProcesses)) {
+                                    $newKp = new \common\models\ar\KartuProcessPfpProcess();
+                                    $newKp->kartu_process_id = $kpp->id;
+                                    $newKp->process_id = $mstProcess->id;
+                                    $kpProcesses[] = $newKp;
+                                }
                                 foreach ($kpProcesses as $kpProcess) {
-                                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                    $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
                                     if (true) {
                                         if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                         if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
@@ -3252,8 +3264,14 @@ class ProcessingDyeingController extends Controller
                             $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $prosesName]);
                             if ($mstProcess) {
                                 $kpProcesses = \common\models\ar\KartuProcessPrintingProcess::find()->where(['kartu_process_id' => $kppr->id, 'process_id' => $mstProcess->id])->all();
+                                if (empty($kpProcesses)) {
+                                    $newKp = new \common\models\ar\KartuProcessPrintingProcess();
+                                    $newKp->kartu_process_id = $kppr->id;
+                                    $newKp->process_id = $mstProcess->id;
+                                    $kpProcesses[] = $newKp;
+                                }
                                 foreach ($kpProcesses as $kpProcess) {
-                                    $vals = \yii\helpers\Json::decode($kpProcess->value);
+                                    $vals = $kpProcess->isNewRecord ? [] : (\yii\helpers\Json::decode($kpProcess->value) ?: []);
                                     if (true) {
                                         if (isset($row['temp']) && $row['temp'] !== '') $vals['temp'] = $row['temp'];
                                         if (isset($row['panjang_jadi']) && $row['panjang_jadi'] !== '') $vals['panjang_jadi'] = $row['panjang_jadi'];
