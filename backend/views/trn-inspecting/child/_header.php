@@ -56,11 +56,13 @@ use yii\widgets\DetailView;
                     'attributes' => [
                         [
                             'attribute'=>'kombinasi',
-                            'value'=>$model->kombinasi. ' '. Html::a(' ganti', ['ganti-warna', 'id' => $model->id], [
+                            'value'=>$model->kombinasi. 
+                                (!in_array($model->status, [TrnInspecting::STATUS_DELIVERED, TrnInspecting::STATUS_APPROVED_PARTIAL]) ? 
+                                ' '. Html::a(' ganti', ['ganti-warna', 'id' => $model->id], [
                                 'class' => 'label label-default',
                                 'onclick' => 'gantiWarna(event);',
                                 'title' => 'Ganti Warna Kartu Proses: '.$model->id
-                            ]),
+                            ]) : ''),
                             'format'=>'raw'
                         ],
                         'no_lot',

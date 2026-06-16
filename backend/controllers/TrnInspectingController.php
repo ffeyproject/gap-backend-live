@@ -1263,8 +1263,8 @@ class TrnInspectingController extends Controller
 
             $model = $this->findModel($id);
 
-            if($model->status != $model::STATUS_DRAFT){
-                throw new ForbiddenHttpException('Status tidak valid, hanya status draft yang bisa diproses.');
+            if(in_array($model->status, [$model::STATUS_DELIVERED, $model::STATUS_APPROVED_PARTIAL])){
+                throw new ForbiddenHttpException('Status tidak valid, Diterima Gudang Jadi atau Diterima Partial tidak bisa diganti warnanya.');
             }
 
             $post = Yii::$app->request->post('data');
