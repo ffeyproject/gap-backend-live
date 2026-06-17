@@ -52,7 +52,8 @@ class LaporanController extends Controller
                 $queryDyeing->andWhere($shiftConditions);
             }
             if (!empty($tanggalFilter)) {
-                $dates = explode(' to ', $tanggalFilter);
+                $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+                $dates = explode(' - ', $normalizedFilter);
                 if (count($dates) == 2) {
                     $startDate = $dates[0];
                     $endDate = $dates[1];
@@ -94,7 +95,8 @@ class LaporanController extends Controller
                 $queryPfp->andWhere($shiftConditions);
             }
             if (!empty($tanggalFilter)) {
-                $dates = explode(' to ', $tanggalFilter);
+                $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+                $dates = explode(' - ', $normalizedFilter);
                 if (count($dates) == 2) {
                     $startDate = $dates[0];
                     $endDate = $dates[1];
@@ -175,7 +177,8 @@ class LaporanController extends Controller
                 $queryDyeing->andWhere($shiftConditions);
             }
             if (!empty($tanggalFilter)) {
-                $dates = explode(' to ', $tanggalFilter);
+                $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+                $dates = explode(' - ', $normalizedFilter);
                 if (count($dates) == 2) {
                     $startDate = $dates[0];
                     $endDate = $dates[1];
@@ -217,7 +220,8 @@ class LaporanController extends Controller
                 $queryPfp->andWhere($shiftConditions);
             }
             if (!empty($tanggalFilter)) {
-                $dates = explode(' to ', $tanggalFilter);
+                $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+                $dates = explode(' - ', $normalizedFilter);
                 if (count($dates) == 2) {
                     $startDate = $dates[0];
                     $endDate = $dates[1];
@@ -258,6 +262,9 @@ class LaporanController extends Controller
             if ($filterModel->gabungan_nomor_wo && stripos($nomor_wo, $filterModel->gabungan_nomor_wo) === false) continue;
             if ($filterModel->nomor_kartu && stripos($model->nomor_kartu, $filterModel->nomor_kartu) === false) continue;
 
+            $model->gabungan_shift = $shift;
+            $model->gabungan_tanggal = $tanggal;
+            $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessDyeingProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessDyeingProcess)) : '-');
             $allModels[] = $model;
         }
         foreach ($dataProviderPfp->getModels() as $model) {
@@ -279,6 +286,9 @@ class LaporanController extends Controller
             if ($filterModel->gabungan_nomor_wo && stripos($nomor_wo, $filterModel->gabungan_nomor_wo) === false) continue;
             if ($filterModel->nomor_kartu && stripos($model->nomor_kartu, $filterModel->nomor_kartu) === false) continue;
 
+            $model->gabungan_shift = $shift;
+            $model->gabungan_tanggal = $tanggal;
+            $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessPfpProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessPfpProcess)) : '-');
             $allModels[] = $model;
         }
         
@@ -286,6 +296,15 @@ class LaporanController extends Controller
             'allModels' => $allModels,
             'pagination' => [
                 'pageSize' => 50,
+            ],
+            'sort' => [
+                'attributes' => [
+                    'gabungan_shift',
+                    'gabungan_tanggal' => [
+                        'asc' => ['gabungan_tanggal_sort' => SORT_ASC],
+                        'desc' => ['gabungan_tanggal_sort' => SORT_DESC],
+                    ],
+                ],
             ],
         ]);
         
@@ -400,7 +419,8 @@ class LaporanController extends Controller
             }
             
             if (!empty($tanggalFilter)) {
-                $dates = explode(' to ', $tanggalFilter);
+                $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+                $dates = explode(' - ', $normalizedFilter);
                 if (count($dates) == 2) {
                     $startDate = $dates[0];
                     $endDate = $dates[1];
@@ -488,7 +508,8 @@ class LaporanController extends Controller
         }
         
         if (!empty($tanggalFilter)) {
-            $dates = explode(' to ', $tanggalFilter);
+            $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+            $dates = explode(' - ', $normalizedFilter);
             if (count($dates) == 2) {
                 $startDate = $dates[0];
                 $endDate = $dates[1];
