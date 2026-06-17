@@ -442,6 +442,20 @@ $(document).on('click', '.btn-tambah-row', function(e) {
     });
 });
 
+$(document).on('click', '.btn-hapus-existing', function(e) {
+    e.preventDefault();
+    var url = $(this).attr('href');
+    if (!confirm("Yakin ingin menghapus data input ini?")) {
+        return false;
+    }
+    if (!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) {
+        return false;
+    }
+    var form = $('<form/>', {action: url, method: 'POST'});
+    form.append($('<input/>', {type: 'hidden', name: yii.getCsrfParam(), value: yii.getCsrfToken()}));
+    form.appendTo('body').submit();
+});
+
 $(document).on('click', '.btn-hapus-row', function(e) {
     e.preventDefault();
     if (!confirm('Yakin ingin menghapus baris input ini?')) {
@@ -488,12 +502,13 @@ $('#form-tambahan-input').on('submit', function(e) {
             });
             
             if (hasData) {
-                if (!wo || !nk || !proses) {
+                if (!wo || !nk || !proses || !mesin) {
                     valid = false;
-                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": WO, NK, dan Proses HARUS diisi! (Atau hapus baris jika tidak digunakan)";
+                    errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": WO, NK, Proses, dan No Mesin HARUS diisi! (Atau hapus baris jika tidak digunakan)";
                     return false;
                 }
-                if ((proses === 'Cuci' || proses === 'Cuci 2-5') && (!ket || ket.trim() === '')) {
+                var prosesName = (proses || '').trim().toLowerCase();
+                if ((prosesName === 'cuci' || prosesName === 'cuci 2-5') && (!ket || ket.trim() === '')) {
                     valid = false;
                     errMsg = "Pada baris " + label + " ke-" + (index + 1) + ": Proses '" + proses + "' mewajibkan kolom Keterangan diisi!";
                     return false;
@@ -696,12 +711,8 @@ if (is_array($no_mesin)) {
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'dyeing', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
-                                    'class' => 'btn btn-danger btn-xs',
+                                    'class' => 'btn btn-danger btn-xs btn-hapus-existing',
                                     'title' => 'Hapus Data Input',
-                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { event.preventDefault(); event.stopPropagation(); return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { event.preventDefault(); event.stopPropagation(); return false; }',
-                                    'data' => [
-                                        'method' => 'post',
-                                    ],
                                 ]) ?>
                             </td>
                         </tr>
@@ -826,12 +837,8 @@ if (is_array($no_mesin)) {
                                     title="Edit via Tambahan Input"
                                 ><i class="glyphicon glyphicon-pencil"></i></button>
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'pfp', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
-                                    'class' => 'btn btn-danger btn-xs',
+                                    'class' => 'btn btn-danger btn-xs btn-hapus-existing',
                                     'title' => 'Hapus Data Input',
-                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { event.preventDefault(); event.stopPropagation(); return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { event.preventDefault(); event.stopPropagation(); return false; }',
-                                    'data' => [
-                                        'method' => 'post',
-                                    ],
                                 ]) ?>
                             </td>
                         </tr>

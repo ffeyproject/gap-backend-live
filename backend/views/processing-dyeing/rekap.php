@@ -423,6 +423,24 @@ $gridColumns = [
         'contentOptions' => $groupWarnaContentOptions,
     ],
     [
+        'attribute' => 'nama_warna',
+        'label' => 'Nama Warna',
+        'value' => function($data) {
+            $val = !empty($data->nama_warna) ? $data->nama_warna : '';
+            $display = $val !== '' ? $val : '<i class="fa fa-edit text-muted"></i> Isi Warna';
+            return \yii\helpers\Html::a($display, 'javascript:void(0)', [
+                'class' => 'btn-edit-nama-warna-trn',
+                'data-id' => $data->id,
+                'data-val' => $val,
+                'title' => 'Klik untuk edit Nama Warna'
+            ]);
+        },
+        'format' => 'raw',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+        'contentOptions' => $groupWarnaContentOptions,
+    ],
+    [
         'attribute' => 'nomor_kartu',
         'label'=>'NK',
         'contentOptions' => function($model, $key, $index, $column) use (&$actionLogMap, &$processMap, $relaxProcessId, $scutcherProcessId) {
@@ -1454,9 +1472,36 @@ $columnToggleDropdown .= '</ul></div>';
     background-color: #f1f3f5;
 }
 </style>
+<iframe id="printIframe" style="display:none;"></iframe>
+
+<!-- Modal Nama Warna Trn -->
+<div class="modal fade" id="modal-nama-warna-trn" tabindex="-1" role="dialog" aria-labelledby="modalNamaWarnaTrnLabel">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <form id="form-nama-warna-trn">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="modalNamaWarnaTrnLabel">Isi Nama Warna</h4>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="nwt-id" name="id">
+            <div class="form-group">
+                <label>Nama Warna</label>
+                <input type="text" class="form-control" id="nwt-nama-warna" name="nama_warna" placeholder="Masukkan Nama Warna...">
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-nama-warna-trn">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <?php
-$urlUpdateColor = \yii\helpers\Url::to(['/processing-dyeing/update-mo-color']);
+$urlUpdateColor = \yii\helpers\Url::to(['/ajax/update-wo-color']);
+$urlUpdateNamaWarnaTrn = \yii\helpers\Url::to(['/processing-dyeing/update-nama-warna-trn']);
 $jsCode = <<<JS
 window.filterWoMonth = function(selectElement) {
     var val = selectElement.value;
@@ -1665,6 +1710,63 @@ $(document).on('click', '.editable-color', function(e) {
         });
     }
 });
+
+// Modal Nama Warna Trn Logic
+var currentTargetNamaWarnaTrn = null;
+$(document).on('click', '.btn-edit-nama-warna-trn', function(e) {
+    e.preventDefault();
+    currentTargetNamaWarnaTrn = $(this);
+    
+    var id = $(this).data('id');
+    var namaWarna = $(this).data('val');
+    
+    $('#nwt-id').val(id);
+    $('#nwt-nama-warna').val(namaWarna);
+    
+    $('#modal-nama-warna-trn').modal('show');
+    
+    setTimeout(function() {
+        $('#nwt-nama-warna').focus();
+    }, 500);
+});
+
+$('#form-nama-warna-trn').on('submit', function(e) {
+    e.preventDefault();
+    var btn = $('#btn-save-nama-warna-trn');
+    var originalText = btn.text();
+    btn.text('Menyimpan...').prop('disabled', true);
+    
+    $.ajax({
+        url: '{$urlUpdateNamaWarnaTrn}',
+        type: 'POST',
+        data: $(this).serialize() + '&YII_CSRF_TOKEN=' + yii.getCsrfToken(),
+        success: function(res) {
+            btn.text(originalText).prop('disabled', false);
+            if (res.success) {
+                $('#modal-nama-warna-trn').modal('hide');
+                if (currentTargetNamaWarnaTrn) {
+                    currentTargetNamaWarnaTrn.data('val', res.nama_warna);
+                    if (res.nama_warna && res.nama_warna.trim() !== '') {
+                        currentTargetNamaWarnaTrn.text(res.nama_warna);
+                    } else {
+                        currentTargetNamaWarnaTrn.html('<i class="fa fa-edit text-muted"></i> Isi Warna');
+                    }
+                    currentTargetNamaWarnaTrn.closest('td').css('background-color', '#d4edda');
+                    setTimeout(function() {
+                        currentTargetNamaWarnaTrn.closest('td').css('background-color', '');
+                    }, 1500);
+                }
+            } else {
+                alert('Gagal menyimpan: ' + res.message);
+            }
+        },
+        error: function() {
+            btn.text(originalText).prop('disabled', false);
+            alert('Terjadi kesalahan jaringan.');
+        }
+    });
+});
+
 JS;
 
 $this->registerJs($jsCode, \yii\web\View::POS_READY);

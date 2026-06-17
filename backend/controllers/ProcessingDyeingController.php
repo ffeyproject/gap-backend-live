@@ -3519,7 +3519,41 @@ class ProcessingDyeingController extends Controller
             return ['success' => true];
         }
 
-        return ['success' => false, 'message' => 'Data Order tidak ditemukan atau gagal diupdate'];
+        return ['success' => false, 'message' => 'Invalid request.'];
+    }
+
+    public function actionUpdateNamaWarnaTrn()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $request = Yii::$app->request;
+        
+        if ($request->isPost) {
+            $id = $request->post('id');
+            $namaWarna = $request->post('nama_warna');
+
+            if (!$id) {
+                return ['success' => false, 'message' => 'ID Kartu Proses tidak ditemukan.'];
+            }
+
+            $model = \common\models\ar\TrnKartuProsesDyeing::findOne($id);
+            if ($model) {
+                // Update ke semua kartu dengan wo_id dan wo_color_id yang sama agar sinkron
+                $updatedCount = \common\models\ar\TrnKartuProsesDyeing::updateAll(
+                    ['nama_warna' => $namaWarna],
+                    ['wo_id' => $model->wo_id, 'wo_color_id' => $model->wo_color_id]
+                );
+                
+                if ($updatedCount !== false) {
+                    return ['success' => true, 'nama_warna' => \yii\helpers\Html::encode($namaWarna)];
+                } else {
+                    return ['success' => false, 'message' => 'Gagal menyimpan data.'];
+                }
+            }
+
+            return ['success' => false, 'message' => 'Data tidak ditemukan.'];
+        }
+
+        return ['success' => false, 'message' => 'Invalid request.'];
     }
 
     public function actionGabung($id)
