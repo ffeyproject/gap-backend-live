@@ -698,7 +698,7 @@ if (is_array($no_mesin)) {
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'dyeing', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
                                     'class' => 'btn btn-danger btn-xs',
                                     'title' => 'Hapus Data Input',
-                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { return false; }',
+                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { event.preventDefault(); event.stopPropagation(); return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { event.preventDefault(); event.stopPropagation(); return false; }',
                                     'data' => [
                                         'method' => 'post',
                                     ],
@@ -828,7 +828,7 @@ if (is_array($no_mesin)) {
                                 <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'pfp', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
                                     'class' => 'btn btn-danger btn-xs',
                                     'title' => 'Hapus Data Input',
-                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { return false; }',
+                                    'onclick' => 'if(!confirm("Yakin ingin menghapus data input ini?")) { event.preventDefault(); event.stopPropagation(); return false; } if(!confirm("Anda benar-benar yakin? Data yang sudah dihapus tidak bisa dikembalikan!")) { event.preventDefault(); event.stopPropagation(); return false; }',
                                     'data' => [
                                         'method' => 'post',
                                     ],

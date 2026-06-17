@@ -745,7 +745,14 @@ $('#btn-tambah-input').click(function() {
 $('#btn-tambah-input').click();
 
 // Remove row
-$(document).on('click', '.btn-hapus-baris', function() {
+$(document).on('click', '.btn-hapus-baris', function(e) {
+    e.preventDefault();
+    if (!confirm('Yakin ingin menghapus baris input ini?')) {
+        return;
+    }
+    if (!confirm('Anda benar-benar yakin? Data yang belum disimpan akan hilang!')) {
+        return;
+    }
     $(this).closest('tr').remove();
 });
 

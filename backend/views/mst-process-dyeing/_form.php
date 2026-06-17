@@ -73,6 +73,8 @@ if (!empty($selectedModelMesin)) {
                     <?= $form->field($model, 'start')->checkbox() ?>
 
                     <?= $form->field($model, 'stop')->checkbox() ?>
+                    
+                    <?= $form->field($model, 'no_mesin')->checkbox() ?>
 
                     <div class="form-group">
                         <label class="control-label">Model Mesin</label>
