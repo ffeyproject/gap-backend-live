@@ -2869,7 +2869,7 @@ class ProcessingDyeingController extends Controller
                     'panjang_greige' => $rec->panjang_greige
                 ]);
                 $nk = $rec->nk_no;
-                $processRecord($valJson, $processName, stripos($rec->tipe, 'pfp') !== false ? 'pfp' : 'dyeing', $isPerbaikan, $nk);
+                $processRecord($valJson, $processName, stripos($rec->tipe, 'pfp') !== false ? 'pfp' : 'dyeing', $isPerbaikan, $nk, null);
             }
 
             $totalBatchCount = 0;

@@ -41,6 +41,11 @@ use yii\behaviors\TimestampBehavior;
 class MstProcessPrinting extends \yii\db\ActiveRecord
 {
     /**
+     * @var array Selected mesin proses IDs
+     */
+    public $mesin_proses_ids = [];
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()
@@ -67,6 +72,7 @@ class MstProcessPrinting extends \yii\db\ActiveRecord
             [['order', 'max_pengulangan', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['tanggal', 'start', 'stop', 'no_mesin', 'operator', 'temp', 'speed_depan', 'speed_belakang', 'speed', 'resep', 'density', 'jumlah_pcs', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'over_feed'], 'boolean'],
             [['nama_proses'], 'string', 'max' => 255],
+            [['mesin_proses_ids'], 'safe'],
         ];
     }
 
@@ -122,5 +128,23 @@ class MstProcessPrinting extends \yii\db\ActiveRecord
     public function getKartuProcesses()
     {
         return $this->hasMany(TrnKartuProsesPrinting::className(), ['id' => 'kartu_process_id'])->viaTable('kartu_process_printing_process', ['process_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMstMesinProseses()
+    {
+        return $this->hasMany(MstMesinProses::className(), ['id' => 'mst_mesin_proses_id'])
+            ->viaTable('mst_process_printing_mesin', ['mst_process_printing_id' => 'id']);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterFind()
+    {
+        parent::afterFind();
+        $this->mesin_proses_ids = \yii\helpers\ArrayHelper::getColumn($this->mstMesinProseses, 'id');
     }
 }
