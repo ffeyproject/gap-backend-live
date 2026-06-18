@@ -30,6 +30,8 @@ $urlGetInfoWo = \yii\helpers\Url::to(['/laporan/get-info-by-wo']);
 
 $urlLookupOrderPfp = \yii\helpers\Url::to(['/ajax/lookup-order-pfp']);
 $urlGetInfoOrderPfp = \yii\helpers\Url::to(['/laporan/get-info-by-order-pfp']);
+$urlUpdateNamaWarnaTrn = \yii\helpers\Url::to(['/processing-dyeing/update-nama-warna-trn']);
+
 
 $mesinOptionsJson = json_encode($mesinInputOptions);
 
@@ -295,6 +297,57 @@ $(document).on('submit', '#form-inputan-bawah', function(e) {
         });
     }
 });
+// Modal Nama Warna Trn Logic
+var currentTargetNamaWarnaTrn = null;
+$(document).on('click', '.btn-edit-nama-warna-trn', function(e) {
+    e.preventDefault();
+    currentTargetNamaWarnaTrn = $(this);
+    
+    var id = $(this).data('id');
+    var namaWarna = $(this).data('val');
+    
+    $('#nwt-id').val(id);
+    $('#nwt-nama-warna').val(namaWarna);
+    
+    $('#modal-nama-warna-trn').modal('show');
+    
+    setTimeout(function() {
+        $('#nwt-nama-warna').focus();
+    }, 500);
+});
+
+$('#form-nama-warna-trn').on('submit', function(e) {
+    e.preventDefault();
+    var btn = $('#btn-save-nama-warna-trn');
+    var originalText = btn.text();
+    btn.text('Menyimpan...').prop('disabled', true);
+    
+    $.ajax({
+        url: '{$urlUpdateNamaWarnaTrn}',
+        type: 'POST',
+        data: $(this).serialize(),
+        success: function(res) {
+            btn.text(originalText).prop('disabled', false);
+            if (res.success) {
+                $('#modal-nama-warna-trn').modal('hide');
+                if (currentTargetNamaWarnaTrn) {
+                    currentTargetNamaWarnaTrn.data('val', res.nama_warna);
+                    if (res.nama_warna && res.nama_warna.trim() !== '') {
+                        currentTargetNamaWarnaTrn.text(res.nama_warna);
+                    } else {
+                        currentTargetNamaWarnaTrn.html('<i class="glyphicon glyphicon-pencil text-muted"></i> Isi Warna');
+                    }
+                }
+            } else {
+                alert(res.message || 'Gagal menyimpan data.');
+            }
+        },
+        error: function() {
+            btn.text(originalText).prop('disabled', false);
+            alert('Terjadi kesalahan pada server.');
+        }
+    });
+});
 JS;
 $this->registerJs($js);
 
@@ -449,6 +502,24 @@ $this->registerCss($css);
                             }
                             return '-';
                         }
+                    ],
+                    [
+                        'attribute' => 'nama_warna',
+                        'label' => 'Nama Warna',
+                        'value' => function($data) {
+                            if($data->tipe_laporan === 'Dyeing'){
+                                $val = !empty($data->nama_warna) ? $data->nama_warna : '';
+                                $display = $val !== '' ? $val : '<i class="glyphicon glyphicon-pencil text-muted"></i> Isi Warna';
+                                return \yii\helpers\Html::a($display, 'javascript:void(0)', [
+                                    'class' => 'btn-edit-nama-warna-trn',
+                                    'data-id' => $data->id,
+                                    'data-val' => $val,
+                                    'title' => 'Klik untuk edit Nama Warna'
+                                ]);
+                            }
+                            return '-';
+                        },
+                        'format' => 'raw',
                     ],
                     [
                         'label' => 'Nomor Kartu',
@@ -652,4 +723,29 @@ $this->registerCss($css);
             <?= Html::endForm() ?>
         </div>
     </div>
+</div>
+
+<!-- Modal Edit Nama Warna Trn -->
+<div class="modal fade" id="modal-nama-warna-trn" tabindex="-1" role="dialog" aria-labelledby="modalNamaWarnaTrnLabel">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <?php yii\widgets\ActiveForm::begin(['id' => 'form-nama-warna-trn']); ?>
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="modalNamaWarnaTrnLabel">Edit Nama Warna</h4>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="id" id="nwt-id">
+        <div class="form-group">
+            <label>Nama Warna</label>
+            <input type="text" name="nama_warna" id="nwt-nama-warna" class="form-control" autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary" id="btn-save-nama-warna-trn">Simpan</button>
+      </div>
+      <?php yii\widgets\ActiveForm::end(); ?>
+    </div>
+  </div>
 </div>

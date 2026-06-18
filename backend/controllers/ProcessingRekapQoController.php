@@ -281,6 +281,11 @@ class ProcessingRekapQoController extends Controller
                 }
                 $stats['wo']['total']++;
             }
+
+            // Sort records by wo_no ascending
+            usort($records, function ($a, $b) {
+                return strnatcasecmp($a['wo_no'], $b['wo_no']);
+            });
         }
 
         // Calculate Percentages

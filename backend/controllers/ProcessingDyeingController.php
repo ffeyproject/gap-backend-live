@@ -3537,13 +3537,8 @@ class ProcessingDyeingController extends Controller
 
             $model = \common\models\ar\TrnKartuProsesDyeing::findOne($id);
             if ($model) {
-                // Update ke semua kartu dengan wo_id dan wo_color_id yang sama agar sinkron
-                $updatedCount = \common\models\ar\TrnKartuProsesDyeing::updateAll(
-                    ['nama_warna' => $namaWarna],
-                    ['wo_id' => $model->wo_id, 'wo_color_id' => $model->wo_color_id]
-                );
-                
-                if ($updatedCount !== false) {
+                $model->nama_warna = $namaWarna;
+                if ($model->save(false)) {
                     return ['success' => true, 'nama_warna' => \yii\helpers\Html::encode($namaWarna)];
                 } else {
                     return ['success' => false, 'message' => 'Gagal menyimpan data.'];

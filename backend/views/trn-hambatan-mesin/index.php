@@ -34,23 +34,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'id',
                 'label' => 'ID',
             ],
-            [
-                'attribute' => 'mst_mesin_proses_id',
-                'label' => 'Nama/Nomor Mesin',
-                'value' => function ($data) {
-                    /* @var $data TrnHambatanMesin */
-                    return $data->mstMesinProses->nama_mesin ?? '-';
-                },
-                'filter' => \yii\helpers\ArrayHelper::map(\common\models\ar\MstMesinProses::find()->asArray()->all(), 'id', 'nama_mesin'),
-            ],
-            [
-                'attribute' => 'model_mesin',
-                'label' => 'Model Mesin',
-                'value' => function ($data) {
-                    /* @var $data TrnHambatanMesin */
-                    return $data->mstMesinProses->model_mesin ?? '-';
-                },
-            ],
+            'shift',
             [
                 'attribute' => 'tanggal',
                 'label' => 'Tanggal',

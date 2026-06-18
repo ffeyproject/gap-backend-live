@@ -20,6 +20,8 @@ $shiftOptions = [
 
 $urlLookupWo = \yii\helpers\Url::to(['/ajax/lookup-wo-dyeing']);
 $urlGetInfoWo = \yii\helpers\Url::to(['/laporan/get-info-by-wo']);
+$urlUpdateNamaWarnaTrn = \yii\helpers\Url::to(['/processing-dyeing/update-nama-warna-trn']);
+
 
 $mesinOptionsJson = json_encode($mesinInputOptions);
 

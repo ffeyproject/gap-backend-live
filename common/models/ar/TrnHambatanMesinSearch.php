@@ -18,8 +18,8 @@ class TrnHambatanMesinSearch extends TrnHambatanMesin
     public function rules()
     {
         return [
-            [['id', 'mst_mesin_proses_id'], 'integer'],
-            [['tanggal', 'created_at', 'updated_at', 'model_mesin'], 'safe'],
+            [['id'], 'integer'],
+            [['tanggal', 'created_at', 'updated_at', 'shift'], 'safe'],
         ];
     }
 
@@ -42,17 +42,10 @@ class TrnHambatanMesinSearch extends TrnHambatanMesin
     {
         $query = TrnHambatanMesin::find();
 
-        $query->joinWith(['mstMesinProses']);
-
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => ['defaultOrder' => ['id' => SORT_DESC]],
         ]);
-
-        $dataProvider->sort->attributes['model_mesin'] = [
-            'asc' => ['mst_mesin_proses.model_mesin' => SORT_ASC],
-            'desc' => ['mst_mesin_proses.model_mesin' => SORT_DESC],
-        ];
 
         $this->load($params);
 
@@ -62,11 +55,10 @@ class TrnHambatanMesinSearch extends TrnHambatanMesin
 
         $query->andFilterWhere([
             'trn_hambatan_mesin.id' => $this->id,
-            'trn_hambatan_mesin.mst_mesin_proses_id' => $this->mst_mesin_proses_id,
             'trn_hambatan_mesin.tanggal' => $this->tanggal,
         ]);
 
-        $query->andFilterWhere(['like', 'mst_mesin_proses.model_mesin', $this->model_mesin]);
+        $query->andFilterWhere(['like', 'trn_hambatan_mesin.shift', $this->shift]);
 
         return $dataProvider;
     }

@@ -78,13 +78,18 @@ class TrnHambatanMesinController extends Controller
                 try {
                     if ($model->save()) {
                         foreach ($itemsData as $itemData) {
+                            // Skip completely empty rows
+                            if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id'])) {
+                                continue;
+                            }
+
                             $item = new TrnHambatanMesinItem();
                             $item->trn_hambatan_mesin_id = $model->id;
                             $item->start_time = $itemData['start_time'] ?? '';
                             $item->stop_time = $itemData['stop_time'] ?? '';
+                            $item->mst_mesin_proses_id = $itemData['mst_mesin_proses_id'] ?? null;
                             $item->no_kartu = $itemData['no_kartu'] ?? null;
                             $item->no_wo = $itemData['no_wo'] ?? null;
-                            $item->shift = $itemData['shift'] ?? null;
                             $item->keterangan = $itemData['keterangan'] ?? null;
                             
                             if (!$item->save()) {
@@ -103,6 +108,12 @@ class TrnHambatanMesinController extends Controller
                                     ])->execute();
                                 }
                             }
+                        }
+                        
+                        // Validasi minimal 1 hambatan
+                        $savedItemsCount = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->count();
+                        if ($savedItemsCount == 0) {
+                            throw new \Exception('Minimal harus ada satu hambatan yang diisi.');
                         }
                         
                         $transaction->commit();
@@ -158,13 +169,18 @@ class TrnHambatanMesinController extends Controller
                         }
                         
                         foreach ($itemsData as $itemData) {
+                            // Skip completely empty rows
+                            if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id'])) {
+                                continue;
+                            }
+
                             $item = new TrnHambatanMesinItem();
                             $item->trn_hambatan_mesin_id = $model->id;
                             $item->start_time = $itemData['start_time'] ?? '';
                             $item->stop_time = $itemData['stop_time'] ?? '';
+                            $item->mst_mesin_proses_id = $itemData['mst_mesin_proses_id'] ?? null;
                             $item->no_kartu = $itemData['no_kartu'] ?? null;
                             $item->no_wo = $itemData['no_wo'] ?? null;
-                            $item->shift = $itemData['shift'] ?? null;
                             $item->keterangan = $itemData['keterangan'] ?? null;
                             
                             if (!$item->save()) {
@@ -183,6 +199,12 @@ class TrnHambatanMesinController extends Controller
                                     ])->execute();
                                 }
                             }
+                        }
+                        
+                        // Validasi minimal 1 hambatan
+                        $savedItemsCount = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->count();
+                        if ($savedItemsCount == 0) {
+                            throw new \Exception('Minimal harus ada satu hambatan yang diisi.');
                         }
                         
                         $transaction->commit();

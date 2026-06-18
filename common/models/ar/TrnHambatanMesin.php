@@ -11,14 +11,14 @@ use yii\db\Expression;
  * This is the model class for table "trn_hambatan_mesin".
  *
  * @property int $id
- * @property int $mst_mesin_proses_id
+ * @property string|null $shift
  * @property string $tanggal
  * @property string|null $created_at
  * @property int|null $created_by
  * @property string|null $updated_at
  * @property int|null $updated_by
  *
- * @property MstMesinProses $mstMesinProses
+ *
  * @property TrnHambatanMesinItem[] $trnHambatanMesinItems
  * @property User $createdBy
  * @property User $updatedBy
@@ -56,10 +56,10 @@ class TrnHambatanMesin extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['mst_mesin_proses_id', 'tanggal'], 'required'],
-            [['mst_mesin_proses_id', 'created_by', 'updated_by'], 'integer'],
+            [['tanggal'], 'required'],
+            [['created_by', 'updated_by'], 'integer'],
+            [['shift'], 'string', 'max' => 50],
             [['tanggal', 'created_at', 'updated_at'], 'safe'],
-            [['mst_mesin_proses_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstMesinProses::className(), 'targetAttribute' => ['mst_mesin_proses_id' => 'id']],
         ];
     }
 
@@ -70,7 +70,7 @@ class TrnHambatanMesin extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'mst_mesin_proses_id' => 'Mesin',
+            'shift' => 'Shift',
             'tanggal' => 'Tanggal',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
@@ -79,13 +79,7 @@ class TrnHambatanMesin extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getMstMesinProses()
-    {
-        return $this->hasOne(MstMesinProses::className(), ['id' => 'mst_mesin_proses_id']);
-    }
+
 
     /**
      * @return \yii\db\ActiveQuery

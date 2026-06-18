@@ -88,6 +88,10 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
                     $motif = trim($lusi . ' ' . $motifName . ' ' . $pakan);
                     
                     $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : '-';
+                    $nama_warna = $isDyeing ? (!empty($model->nama_warna) ? $model->nama_warna : '') : '';
+                    if ($nama_warna !== '') {
+                        $warna .= ' (' . $nama_warna . ')';
+                    }
                     $nomor_kartu = $model->nomor_kartu;
                     
                     if ($isDyeing) {

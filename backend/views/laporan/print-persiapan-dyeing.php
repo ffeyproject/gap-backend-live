@@ -121,6 +121,10 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                     $motif = trim($lusi . ' ' . $motifName . ' ' . $pakan);
                     
                     $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '-';
+                    $nama_warna = !empty($model->nama_warna) ? $model->nama_warna : '';
+                    if ($nama_warna !== '') {
+                        $warna .= ' (' . $nama_warna . ')';
+                    }
                     $nomorKartu = $model->nomor_kartu;
                     
                     $panjang = 0;

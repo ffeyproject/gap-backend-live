@@ -484,6 +484,12 @@ $moduleId = $controller->module->id;
                                 'url' => ['/processing-dyeing/rekap-proses-mesin'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='rekap-proses-mesin'
                             ],
+                            [
+                                'label'=> 'Rekap Produksi Bulanan',
+                                'icon' => 'circle-o',
+                                'url' => ['/laporan/rekap-bulanan-processing'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'laporan' && $actionId=='rekap-bulanan-processing'
+                            ],
                         ]
                     ],
                 ],

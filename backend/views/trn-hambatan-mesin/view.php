@@ -6,7 +6,7 @@ use kartik\dialog\Dialog;
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\TrnHambatanMesin */
 
-$this->title = 'Detail Hambatan Per Mesin: ' . $model->mstMesinProses->nama_mesin;
+$this->title = 'Detail Hambatan: Shift ' . $model->shift . ' (' . $model->tanggal . ')';
 $this->params['breadcrumbs'][] = ['label' => 'Hambatan Per Mesin', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 
@@ -29,21 +29,14 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         <div class="col-md-6">
             <div class="box box-default">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Informasi Mesin & Tanggal</h3>
+                    <h3 class="box-title">Informasi Shift & Tanggal</h3>
                 </div>
                 <div class="box-body">
                     <?= DetailView::widget([
                         'model' => $model,
                         'attributes' => [
                             'id',
-                            [
-                                'label' => 'Mesin',
-                                'value' => $model->mstMesinProses->nama_mesin ?? '-'
-                            ],
-                            [
-                                'label' => 'Model Mesin',
-                                'value' => $model->mstMesinProses->model_mesin ?? '-'
-                            ],
+                            'shift',
                             'tanggal:date',
                             'created_at:datetime',
                             'updated_at:datetime',
@@ -64,7 +57,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     <tr>
                         <th style="width: 100px;">Start</th>
                         <th style="width: 100px;">Stop</th>
-                        <th style="width: 100px;">Shift</th>
+                        <th style="width: 250px;">Mesin</th>
                         <th>Keterangan</th>
                         <th style="width: 200px;">WO (jika ada)</th>
                         <th style="width: 200px;">NK (jika ada)</th>
@@ -76,7 +69,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                         <tr>
                             <td><?= Html::encode($item->start_time) ?></td>
                             <td><?= Html::encode($item->stop_time) ?></td>
-                            <td><?= Html::encode($item->shift ?? '-') ?></td>
+                            <td><?= Html::encode($item->mstMesinProses->nama_mesin ?? '-') ?></td>
                             <td><?= Html::encode($item->keterangan ?? '-') ?></td>
                             <td><?= Html::encode($item->no_wo ?? '-') ?></td>
                             <td><?= Html::encode($item->no_kartu ?? '-') ?></td>

@@ -13,11 +13,12 @@ use Yii;
  * @property string $stop_time
  * @property string|null $no_kartu
  * @property string|null $keterangan
- * @property string|null $shift
+ * @property int $mst_mesin_proses_id
  * @property string|null $no_wo
  *
  * @property TrnHambatanMesin $trnHambatanMesin
  * @property MstJenisHambatan[] $mstJenisHambatans
+ * @property MstMesinProses $mstMesinProses
  */
 class TrnHambatanMesinItem extends \yii\db\ActiveRecord
 {
@@ -40,13 +41,14 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['trn_hambatan_mesin_id', 'start_time', 'stop_time'], 'required'],
-            [['trn_hambatan_mesin_id'], 'integer'],
+            [['trn_hambatan_mesin_id', 'mst_mesin_proses_id', 'start_time', 'stop_time'], 'required'],
+            [['trn_hambatan_mesin_id', 'mst_mesin_proses_id'], 'integer'],
             [['keterangan'], 'string'],
-            [['start_time', 'stop_time', 'shift'], 'string', 'max' => 50],
+            [['start_time', 'stop_time'], 'string', 'max' => 50],
             [['no_kartu', 'no_wo'], 'string', 'max' => 100],
             [['jenis_hambatan_ids'], 'safe'],
             [['trn_hambatan_mesin_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnHambatanMesin::className(), 'targetAttribute' => ['trn_hambatan_mesin_id' => 'id']],
+            [['mst_mesin_proses_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstMesinProses::className(), 'targetAttribute' => ['mst_mesin_proses_id' => 'id']],
         ];
     }
 
@@ -63,7 +65,7 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
             'jenis_hambatan_ids' => 'Jenis Hambatan',
             'no_kartu' => 'NK (jika ada)',
             'no_wo' => 'WO (jika ada)',
-            'shift' => 'Shift',
+            'mst_mesin_proses_id' => 'Mesin',
             'keterangan' => 'Keterangan',
         ];
     }
@@ -83,6 +85,14 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
     {
         return $this->hasMany(MstJenisHambatan::className(), ['id' => 'mst_jenis_hambatan_id'])
             ->viaTable('trn_hambatan_mesin_item_hambatan', ['trn_hambatan_mesin_item_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMstMesinProses()
+    {
+        return $this->hasOne(MstMesinProses::className(), ['id' => 'mst_mesin_proses_id']);
     }
 
     /**
