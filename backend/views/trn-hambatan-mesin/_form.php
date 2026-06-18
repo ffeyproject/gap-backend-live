@@ -74,6 +74,64 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
         </div>
     </div>
 
+    <?php if (isset($dataProviderItems)): ?>
+    <div class="box box-info">
+        <div class="box-header with-border">
+            <h3 class="box-title">Data Hambatan yang Sudah Diinput (Hari Ini)</h3>
+        </div>
+        <div class="box-body no-padding" style="overflow-x: auto;">
+            <?= \kartik\grid\GridView::widget([
+                'dataProvider' => $dataProviderItems,
+                'responsiveWrap' => false,
+                'layout' => "{items}\n{pager}",
+                'columns' => [
+                    ['class' => 'yii\grid\SerialColumn'],
+                    [
+                        'label' => 'Shift',
+                        'value' => 'trnHambatanMesin.shift',
+                    ],
+                    'start_time',
+                    'stop_time',
+                    [
+                        'label' => 'Mesin',
+                        'value' => function ($data) {
+                            return $data->mstMesinProses ? $data->mstMesinProses->nama_mesin : '-';
+                        },
+                    ],
+                    'keterangan',
+                    'no_wo',
+                    'no_kartu',
+                    [
+                        'label' => 'Jenis Hambatan',
+                        'value' => function ($data) {
+                            $names = [];
+                            foreach ($data->mstJenisHambatans as $jh) {
+                                $names[] = $jh->nama;
+                            }
+                            return implode(', ', $names);
+                        },
+                    ],
+                    [
+                        'label' => 'Aksi',
+                        'format' => 'raw',
+                        'value' => function ($data) {
+                            $editBtn = Html::a('<i class="glyphicon glyphicon-pencil"></i> Edit Set', ['update', 'id' => $data->trn_hambatan_mesin_id], ['class' => 'btn btn-xs btn-primary']);
+                            $delBtn = Html::a('<i class="glyphicon glyphicon-trash"></i> Hapus Set', ['delete', 'id' => $data->trn_hambatan_mesin_id], [
+                                'class' => 'btn btn-xs btn-danger',
+                                'data' => [
+                                    'confirm' => 'Apakah Anda yakin ingin menghapus seluruh set data hambatan ini?',
+                                    'method' => 'post',
+                                ],
+                            ]);
+                            return $editBtn . ' ' . $delBtn;
+                        },
+                    ],
+                ],
+            ]); ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php
     $dyeingItems = [];
     $pfpItems = [];

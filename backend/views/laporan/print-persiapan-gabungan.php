@@ -95,13 +95,13 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
                     $nomor_kartu = $model->nomor_kartu;
                     
                     if ($isDyeing) {
-                        $panjangTotal = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m') ?: 0;
-                        $jumlahRoll = $model->getTrnKartuProsesDyeingItems()->count('id') ?: 0;
+                        $panjangTotal = (float)($model->getTrnKartuProsesDyeingItems()->sum('panjang_m') ?: 0);
+                        $jumlahRoll = (int)($model->getTrnKartuProsesDyeingItems()->count('id') ?: 0);
                     } else {
-                        $panjangTotal = $model->getTrnKartuProsesPfpItems()->sum('panjang_m') ?: 0;
-                        $jumlahRoll = $model->getTrnKartuProsesPfpItems()->count('id') ?: 0;
+                        $panjangTotal = (float)($model->getTrnKartuProsesPfpItems()->sum('panjang_m') ?: 0);
+                        $jumlahRoll = (int)($model->getTrnKartuProsesPfpItems()->count('id') ?: 0);
                     }
-                    $berat = $model->berat ?: 0;
+                    $berat = (float)($model->berat ?: 0);
                     
                     $totalPanjang += $panjangTotal;
                     $totalBerat += $berat;

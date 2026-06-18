@@ -559,9 +559,9 @@ $this->registerCss($css);
                         'pageSummary' => true,
                         'value' => function($data) {
                             if($data->tipe_laporan === 'Dyeing'){
-                                return $data->getTrnKartuProsesDyeingItems()->count('id') ?: 0;
+                                return (int)($data->getTrnKartuProsesDyeingItems()->count('id') ?: 0);
                             }else{
-                                return $data->getTrnKartuProsesPfpItems()->count('id') ?: 0;
+                                return (int)($data->getTrnKartuProsesPfpItems()->count('id') ?: 0);
                             }
                         }
                     ],
@@ -647,11 +647,11 @@ $this->registerCss($css);
                                 $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : '-';
                                 
                                 if($isDyeing){
-                                    $panjangTotal = $model->getTrnKartuProsesDyeingItems()->sum('panjang_m') ?: 0;
-                                    $jumlahRoll = $model->getTrnKartuProsesDyeingItems()->count('id') ?: 0;
+                                    $panjangTotal = (float)($model->getTrnKartuProsesDyeingItems()->sum('panjang_m') ?: 0);
+                                    $jumlahRoll = (int)($model->getTrnKartuProsesDyeingItems()->count('id') ?: 0);
                                 }else{
-                                    $panjangTotal = $model->getTrnKartuProsesPfpItems()->sum('panjang_m') ?: 0;
-                                    $jumlahRoll = $model->getTrnKartuProsesPfpItems()->count('id') ?: 0;
+                                    $panjangTotal = (float)($model->getTrnKartuProsesPfpItems()->sum('panjang_m') ?: 0);
+                                    $jumlahRoll = (int)($model->getTrnKartuProsesPfpItems()->count('id') ?: 0);
                                 }
                                 $panjangTotal = number_format((float)$panjangTotal, 0);
                                 $berat = number_format((float)($model->berat ?: 0), 1);

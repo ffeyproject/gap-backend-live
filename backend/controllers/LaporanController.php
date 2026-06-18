@@ -113,15 +113,56 @@ class LaporanController extends Controller
         $dataProviderDyeing->pagination = false;
         $dataProviderPfp->pagination = false;
         
+        $shiftOrders = [];
         $allModels = [];
         foreach ($dataProviderDyeing->getModels() as $model) {
             $model->tipe_laporan = 'Dyeing';
+            
+            $json = [];
+            $kpdp = $model->getKartuProcessDyeingProcesses()->where(['process_id'=>1])->one();
+            if ($kpdp) {
+                try { $json = \yii\helpers\Json::decode($kpdp->value); } catch (\Throwable $t) {}
+            }
+            $shift = !empty($json['shift_group']) ? $json['shift_group'] : '-';
+            
+            $shift_order = 3;
+            if ($shiftPagiFilter && $shift === $shiftPagiFilter) $shift_order = 1;
+            elseif ($shiftSiangFilter && $shift === $shiftSiangFilter) $shift_order = 2;
+            $shiftOrders[spl_object_hash($model)] = $shift_order;
+            
+            $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessDyeingProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessDyeingProcess)) : '-');
+            
             $allModels[] = $model;
         }
         foreach ($dataProviderPfp->getModels() as $model) {
             $model->tipe_laporan = 'PFP';
+            
+            $processIdPfp = \common\models\ar\MstProcessPfp::find()->select('id')->where(['order'=>1])->scalar() ?: 1;
+            $json = [];
+            $kpdp = $model->getKartuProcessPfpProcesses()->where(['process_id'=>$processIdPfp])->one();
+            if ($kpdp) {
+                try { $json = \yii\helpers\Json::decode($kpdp->value); } catch (\Throwable $t) {}
+            }
+            $shift = !empty($json['shift_operator']) ? $json['shift_operator'] : '-';
+            
+            $shift_order = 3;
+            if ($shiftPagiFilter && $shift === $shiftPagiFilter) $shift_order = 1;
+            elseif ($shiftSiangFilter && $shift === $shiftSiangFilter) $shift_order = 2;
+            $shiftOrders[spl_object_hash($model)] = $shift_order;
+            
+            $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessPfpProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessPfpProcess)) : '-');
+            
             $allModels[] = $model;
         }
+        
+        usort($allModels, function($a, $b) use ($shiftOrders) {
+            if ($a->gabungan_tanggal_sort == $b->gabungan_tanggal_sort) {
+                $aOrder = isset($shiftOrders[spl_object_hash($a)]) ? $shiftOrders[spl_object_hash($a)] : 3;
+                $bOrder = isset($shiftOrders[spl_object_hash($b)]) ? $shiftOrders[spl_object_hash($b)] : 3;
+                return $aOrder <=> $bOrder;
+            }
+            return strcmp($a->gabungan_tanggal_sort, $b->gabungan_tanggal_sort);
+        });
         
         $dataProvider = new \yii\data\ArrayDataProvider([
             'allModels' => $allModels,
@@ -284,6 +325,7 @@ class LaporanController extends Controller
         $filterModel->addRule(['gabungan_shift', 'gabungan_tanggal', 'gabungan_nomor_wo', 'nomor_kartu'], 'string');
         $filterModel->load($params);
 
+        $shiftOrders = [];
         $allModels = [];
         foreach ($dataProviderDyeing->getModels() as $model) {
             $model->tipe_laporan = 'Dyeing';
@@ -306,6 +348,12 @@ class LaporanController extends Controller
             $model->gabungan_shift = $shift;
             $model->gabungan_tanggal = $tanggal;
             $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessDyeingProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessDyeingProcess)) : '-');
+            
+            $shift_order = 3;
+            if ($shiftPagiFilter && $shift === $shiftPagiFilter) $shift_order = 1;
+            elseif ($shiftSiangFilter && $shift === $shiftSiangFilter) $shift_order = 2;
+            $shiftOrders[spl_object_hash($model)] = $shift_order;
+            
             $allModels[] = $model;
         }
         foreach ($dataProviderPfp->getModels() as $model) {
@@ -330,23 +378,30 @@ class LaporanController extends Controller
             $model->gabungan_shift = $shift;
             $model->gabungan_tanggal = $tanggal;
             $model->gabungan_tanggal_sort = !empty($json['tanggal']) ? date('Y-m-d', strtotime($json['tanggal'])) : ($model->tanggalKartuProcessPfpProcess ? date('Y-m-d', strtotime($model->tanggalKartuProcessPfpProcess)) : '-');
+            
+            $shift_order = 3;
+            if ($shiftPagiFilter && $shift === $shiftPagiFilter) $shift_order = 1;
+            elseif ($shiftSiangFilter && $shift === $shiftSiangFilter) $shift_order = 2;
+            $shiftOrders[spl_object_hash($model)] = $shift_order;
+
             $allModels[] = $model;
         }
+        
+        usort($allModels, function($a, $b) use ($shiftOrders) {
+            if ($a->gabungan_tanggal_sort == $b->gabungan_tanggal_sort) {
+                $aOrder = isset($shiftOrders[spl_object_hash($a)]) ? $shiftOrders[spl_object_hash($a)] : 3;
+                $bOrder = isset($shiftOrders[spl_object_hash($b)]) ? $shiftOrders[spl_object_hash($b)] : 3;
+                return $aOrder <=> $bOrder;
+            }
+            return strcmp($a->gabungan_tanggal_sort, $b->gabungan_tanggal_sort);
+        });
         
         $dataProvider = new \yii\data\ArrayDataProvider([
             'allModels' => $allModels,
             'pagination' => [
                 'pageSize' => 50,
             ],
-            'sort' => [
-                'attributes' => [
-                    'gabungan_shift',
-                    'gabungan_tanggal' => [
-                        'asc' => ['gabungan_tanggal_sort' => SORT_ASC],
-                        'desc' => ['gabungan_tanggal_sort' => SORT_DESC],
-                    ],
-                ],
-            ],
+            // Removed default sort array so it preserves our custom sorting
         ]);
         
         $mesinOptions = [];

@@ -154,8 +154,22 @@ $(document).on('click', '.btn-edit-row', function() {
     var target = $(this).data('target'); // 'dyeing' or 'pfp'
     var tbody = $('#tbody-input-' + target);
     
-    // We populate the first row of the corresponding input table
-    var row = tbody.find('tr').first();
+    var lastRow = tbody.find('tr').last();
+    var hasData = false;
+    lastRow.find('input[type!="hidden"], select').each(function() {
+        var val = $(this).val();
+        if (val && val !== '') {
+            hasData = true;
+        }
+    });
+    
+    var row;
+    if (!hasData) {
+        row = lastRow;
+    } else {
+        $('.btn-tambah-row[data-target="' + target + '"]').trigger('click');
+        row = tbody.find('tr').last();
+    }
     
     var woVal = $(this).data('wo');
     var woId = $(this).data('wo-id');
@@ -470,10 +484,8 @@ $(document).on('click', '.btn-hapus-row', function(e) {
         $(this).closest('tr').remove();
     } else {
         var tr = $(this).closest('tr');
-        // Hanya kosongkan input parameter, biarkan readonly Motif dan Warna
-        tr.find('input').not('[id$="-motif-input"], [id$="-warna-input"]').val('');
-        // Kosongkan juga select no_mesin dengan menghapusnya dari list .not()
-        tr.find('select').not('.input-wo-dyeing, .input-nk-dyeing, .input-proses-dyeing, .input-wo-pfp, .input-nk-pfp, .input-proses-pfp').val(null).trigger('change');
+        tr.find('input').val('');
+        tr.find('select').val(null).trigger('change');
     }
 });
 
@@ -951,7 +963,7 @@ if (is_array($no_mesin)) {
                     <td><input type="text" name="InputDyeing[0][program_number]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][density]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][over_feed]" class="form-control"></td>
-                    <td><input type="text" name="InputDyeing[0][lebar_jadi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][lebar_jadi]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputDyeing[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][info_kualitas]" class="form-control"></td>
                     <td><input type="text" name="InputDyeing[0][keterangan]" class="form-control"></td>
@@ -1062,7 +1074,7 @@ if (is_array($no_mesin)) {
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][jamur]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][karat]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][over_feed]" class="form-control"></td>
-                    <td><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][lebar_jadi]" class="form-control"></td>
                     <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPfp[0][panjang_jadi]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][info_kualitas]" class="form-control"></td>
                     <td><input type="text" name="InputPfp[0][keterangan]" class="form-control"></td>

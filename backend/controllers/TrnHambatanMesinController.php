@@ -118,7 +118,7 @@ class TrnHambatanMesinController extends Controller
                         
                         $transaction->commit();
                         Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil disimpan.');
-                        return $this->redirect(['view', 'id' => $model->id]);
+                        return $this->redirect(['create']);
                     } else {
                         throw new \Exception('Gagal menyimpan data hambatan.');
                     }
@@ -129,9 +129,22 @@ class TrnHambatanMesinController extends Controller
             }
         }
 
+        $queryItems = \common\models\ar\TrnHambatanMesinItem::find()
+            ->joinWith('trnHambatanMesin')
+            ->where(['trn_hambatan_mesin.tanggal' => date('Y-m-d')])
+            ->orderBy(['trn_hambatan_mesin_item.id' => SORT_DESC]);
+            
+        $dataProviderItems = new \yii\data\ActiveDataProvider([
+            'query' => $queryItems,
+            'pagination' => [
+                'pageSize' => 50,
+            ],
+        ]);
+
         return $this->render('create', [
             'model' => $model,
             'items' => [new TrnHambatanMesinItem()],
+            'dataProviderItems' => $dataProviderItems,
         ]);
     }
 
