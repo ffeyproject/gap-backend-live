@@ -87,8 +87,8 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
                     $motifName = $isDyeing ? ($model->wo->greigeNamaKain ?? '') : ($model->greige->nama_kain ?? '');
                     $motif = trim($lusi . ' ' . $motifName . ' ' . $pakan);
                     
-                    $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : '-';
-                    $nama_warna = $isDyeing ? (!empty($model->nama_warna) ? $model->nama_warna : '') : '';
+                    $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : (!empty($model->orderPfp->dasar_warna) ? $model->orderPfp->dasar_warna : '-');
+                    $nama_warna = !empty($model->nama_warna) ? $model->nama_warna : '';
                     if ($nama_warna !== '') {
                         $warna .= ' (' . $nama_warna . ')';
                     }
@@ -140,4 +140,99 @@ $this->title = 'Print Laporan Persiapan (Gabungan)';
         </tfoot>
         <?php endif; ?>
     </table>
+    
+    <?php
+    $mesinBukaGreigeIds = [];
+    $processDyeing = \common\models\ar\MstProcessDyeing::findOne(1);
+    if ($processDyeing) {
+        foreach ($processDyeing->mstMesinProseses as $mesin) {
+            if (!empty($mcFilter)) {
+                if (in_array($mesin->model_mesin, $mcFilter) || in_array($mesin->nama_mesin, $mcFilter)) {
+                    $mesinBukaGreigeIds[] = $mesin->id;
+                }
+            } else {
+                $mesinBukaGreigeIds[] = $mesin->id;
+            }
+        }
+    }
+
+    if (!empty($mesinBukaGreigeIds) && !empty($tanggalFilter)) {
+        $normalizedFilter = str_replace(' to ', ' - ', $tanggalFilter);
+        $dates = explode(' - ', $normalizedFilter);
+        $isRange = count($dates) == 2;
+        
+        $hambatanQuery = \common\models\ar\TrnHambatanMesin::find()
+            ->joinWith(['trnHambatanMesinItems.mstJenisHambatans', 'trnHambatanMesinItems.mstMesinProses']);
+            
+        if ($isRange) {
+            $hambatanQuery->where(['>=', 'trn_hambatan_mesin.tanggal', $dates[0]])
+                          ->andWhere(['<=', 'trn_hambatan_mesin.tanggal', $dates[1]]);
+        } else {
+            $hambatanQuery->where(['trn_hambatan_mesin.tanggal' => $tanggalFilter]);
+        }
+
+        $shiftConditions = ['or'];
+        if (!empty($shiftPagiFilter)) {
+            $shiftConditions[] = ['trn_hambatan_mesin.shift' => $shiftPagiFilter];
+        }
+        if (!empty($shiftSiangFilter)) {
+            $shiftConditions[] = ['trn_hambatan_mesin.shift' => $shiftSiangFilter];
+        }
+        if (count($shiftConditions) > 1) {
+            $hambatanQuery->andWhere($shiftConditions);
+        }
+
+        $hambatanQuery->andWhere(['trn_hambatan_mesin_item.mst_mesin_proses_id' => $mesinBukaGreigeIds]);
+        
+        // Ensure distinct header results or we process properly
+        $hambatans = $hambatanQuery->all();
+        
+        $hasItem = false;
+        ob_start();
+        echo '<div class="row" style="margin-top: 20px;">';
+        echo '<div class="col-xs-12">';
+        echo '<strong>HAMBATAN MESIN BUKA GREIGE:</strong>';
+        echo '<table class="table table-bordered table-condensed" style="font-size: 11px; margin-top: 5px;">';
+        echo '<thead><tr><th>Tanggal</th><th>Shift</th><th>Mesin</th><th>Jenis Hambatan</th><th>Mulai</th><th>Selesai</th><th>Total Menit</th><th>Keterangan</th></tr></thead>';
+        echo '<tbody>';
+        foreach ($hambatans as $h) {
+            foreach ($h->trnHambatanMesinItems as $item) {
+                if (in_array($item->mst_mesin_proses_id, $mesinBukaGreigeIds)) {
+                    $hasItem = true;
+                    $jenisHambatans = [];
+                    foreach ($item->mstJenisHambatans as $jh) {
+                        $jenisHambatans[] = $jh->nama;
+                    }
+                    $start_time = strtotime($h->tanggal . ' ' . $item->start_time);
+                    $stop_time = strtotime($h->tanggal . ' ' . $item->stop_time);
+                    $menit = 0;
+                    if ($start_time && $stop_time) {
+                        if ($stop_time < $start_time) {
+                            $stop_time += 86400; // +1 day if crosses midnight
+                        }
+                        $menit = round(($stop_time - $start_time) / 60);
+                    }
+                    
+                    echo '<tr>';
+                    echo '<td>' . Html::encode(date('d M Y', strtotime($h->tanggal))) . '</td>';
+                    echo '<td>' . Html::encode($h->shift) . '</td>';
+                    echo '<td>' . Html::encode($item->mstMesinProses ? $item->mstMesinProses->nama_mesin : '-') . '</td>';
+                    echo '<td>' . Html::encode(implode(', ', $jenisHambatans)) . '</td>';
+                    echo '<td>' . Html::encode($item->start_time) . '</td>';
+                    echo '<td>' . Html::encode($item->stop_time) . '</td>';
+                    echo '<td>' . Html::encode($menit) . '</td>';
+                    echo '<td>' . Html::encode($item->keterangan) . '</td>';
+                    echo '</tr>';
+                }
+            }
+        }
+        echo '</tbody></table>';
+        echo '</div></div>';
+        $hambatanHtml = ob_get_clean();
+        
+        if ($hasItem) {
+            echo $hambatanHtml;
+        }
+    }
+    ?>
 </div>

@@ -63,13 +63,27 @@ class TrnHambatanMesinController extends Controller
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
-    public function actionCreate()
+    public function actionCreate($id = null)
     {
-        $model = new TrnHambatanMesin();
-        $model->tanggal = date('Y-m-d'); // Default to today's date
+        if ($id) {
+            $model = $this->findModel($id);
+            $items = $model->trnHambatanMesinItems;
+            if (empty($items)) {
+                $items = [new TrnHambatanMesinItem()];
+            }
+        } else {
+            $model = new TrnHambatanMesin();
+            $model->tanggal = date('Y-m-d'); // Default to today's date
+            $items = [new TrnHambatanMesinItem()];
+        }
 
         if (Yii::$app->request->isPost) {
             $post = Yii::$app->request->post();
+            $postId = $post['id'] ?? null;
+            if ($postId) {
+                $model = $this->findModel($postId);
+                $id = $postId;
+            }
             
             if ($model->load($post)) {
                 $itemsData = $post['Items'] ?? [];
@@ -77,6 +91,17 @@ class TrnHambatanMesinController extends Controller
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
                     if ($model->save()) {
+                        // Jika update, hapus item lama terlebih dahulu
+                        if ($id) {
+                            $existingItems = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->all();
+                            foreach ($existingItems as $existingItem) {
+                                Yii::$app->db->createCommand()->delete('trn_hambatan_mesin_item_hambatan', [
+                                    'trn_hambatan_mesin_item_id' => $existingItem->id
+                                ])->execute();
+                                $existingItem->delete();
+                            }
+                        }
+
                         foreach ($itemsData as $itemData) {
                             // Skip completely empty rows
                             if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id'])) {
@@ -143,7 +168,7 @@ class TrnHambatanMesinController extends Controller
 
         return $this->render('create', [
             'model' => $model,
-            'items' => [new TrnHambatanMesinItem()],
+            'items' => $items,
             'dataProviderItems' => $dataProviderItems,
         ]);
     }
@@ -157,86 +182,7 @@ class TrnHambatanMesinController extends Controller
      */
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
-        $items = $model->trnHambatanMesinItems;
-        if (empty($items)) {
-            $items = [new TrnHambatanMesinItem()];
-        }
-
-        if (Yii::$app->request->isPost) {
-            $post = Yii::$app->request->post();
-            
-            if ($model->load($post)) {
-                $itemsData = $post['Items'] ?? [];
-                
-                $transaction = Yii::$app->db->beginTransaction();
-                try {
-                    if ($model->save()) {
-                        // Delete existing items
-                        $existingItems = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->all();
-                        foreach ($existingItems as $existingItem) {
-                            Yii::$app->db->createCommand()->delete('trn_hambatan_mesin_item_hambatan', [
-                                'trn_hambatan_mesin_item_id' => $existingItem->id
-                            ])->execute();
-                            $existingItem->delete();
-                        }
-                        
-                        foreach ($itemsData as $itemData) {
-                            // Skip completely empty rows
-                            if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id'])) {
-                                continue;
-                            }
-
-                            $item = new TrnHambatanMesinItem();
-                            $item->trn_hambatan_mesin_id = $model->id;
-                            $item->start_time = $itemData['start_time'] ?? '';
-                            $item->stop_time = $itemData['stop_time'] ?? '';
-                            $item->mst_mesin_proses_id = $itemData['mst_mesin_proses_id'] ?? null;
-                            $item->no_kartu = $itemData['no_kartu'] ?? null;
-                            $item->no_wo = $itemData['no_wo'] ?? null;
-                            $item->keterangan = $itemData['keterangan'] ?? null;
-                            
-                            if (!$item->save()) {
-                                throw new \Exception('Gagal menyimpan item hambatan: ' . implode(', ', $item->getFirstErrors()));
-                            }
-
-                            $hambatanIds = $itemData['jenis_hambatan_ids'] ?? [];
-                            if (!is_array($hambatanIds)) {
-                                $hambatanIds = [$hambatanIds];
-                            }
-                            foreach ($hambatanIds as $hambatanId) {
-                                if ($hambatanId) {
-                                    Yii::$app->db->createCommand()->insert('trn_hambatan_mesin_item_hambatan', [
-                                        'trn_hambatan_mesin_item_id' => $item->id,
-                                        'mst_jenis_hambatan_id' => $hambatanId
-                                    ])->execute();
-                                }
-                            }
-                        }
-                        
-                        // Validasi minimal 1 hambatan
-                        $savedItemsCount = TrnHambatanMesinItem::find()->where(['trn_hambatan_mesin_id' => $model->id])->count();
-                        if ($savedItemsCount == 0) {
-                            throw new \Exception('Minimal harus ada satu hambatan yang diisi.');
-                        }
-                        
-                        $transaction->commit();
-                        Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil diperbarui.');
-                        return $this->redirect(['view', 'id' => $model->id]);
-                    } else {
-                        throw new \Exception('Gagal memperbarui data hambatan.');
-                    }
-                } catch (\Exception $e) {
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', $e->getMessage());
-                }
-            }
-        }
-
-        return $this->render('update', [
-            'model' => $model,
-            'items' => $items,
-        ]);
+        return $this->redirect(['create', 'id' => $id, '#' => 'hambatan-mesin-form']);
     }
 
     /**
@@ -252,6 +198,40 @@ class TrnHambatanMesinController extends Controller
         Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil dihapus.');
 
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Returns set data for AJAX editing
+     */
+    public function actionGetSetData($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $model = $this->findModel($id);
+        $items = $model->trnHambatanMesinItems;
+        
+        $itemsArray = [];
+        foreach ($items as $item) {
+            $itemsArray[] = [
+                'id' => $item->id,
+                'start_time' => $item->start_time,
+                'stop_time' => $item->stop_time,
+                'keterangan' => $item->keterangan,
+                'no_wo' => $item->no_wo,
+                'no_kartu' => $item->no_kartu,
+                'mst_mesin_proses_id' => $item->mst_mesin_proses_id,
+                'model_mesin' => $item->mstMesinProses ? ($item->mstMesinProses->model_mesin ?: '_empty_') : '_empty_',
+                'nama_mesin' => $item->mstMesinProses ? $item->mstMesinProses->nama_mesin : '',
+                'jenis_hambatan_ids' => $item->jenis_hambatan_ids,
+                'jenis_hambatan_names' => \yii\helpers\ArrayHelper::map($item->mstJenisHambatans, 'id', 'nama')
+            ];
+        }
+
+        return [
+            'id' => $model->id,
+            'shift' => $model->shift,
+            'tanggal' => $model->tanggal,
+            'items' => $itemsArray
+        ];
     }
 
     /**
@@ -285,17 +265,24 @@ class TrnHambatanMesinController extends Controller
     /**
      * Returns hambatans associated with selected machine
      */
-    public function actionGetHambatansByMachine($machine_id)
+    public function actionGetHambatansByMachine($machine_id = null)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        $machine = \common\models\ar\MstMesinProses::findOne($machine_id);
-        if ($machine) {
-            $hambatans = $machine->mstJenisHambatans;
-            return \yii\helpers\ArrayHelper::toArray($hambatans, [
-                \common\models\ar\MstJenisHambatan::class => ['id', 'nama']
-            ]);
+        if ($machine_id) {
+            $machine = \common\models\ar\MstMesinProses::findOne($machine_id);
+            if ($machine && !empty($machine->mstJenisHambatans)) {
+                $hambatans = $machine->mstJenisHambatans;
+                return \yii\helpers\ArrayHelper::toArray($hambatans, [
+                    \common\models\ar\MstJenisHambatan::class => ['id', 'nama']
+                ]);
+            }
         }
-        return [];
+        
+        // Fallback: If no machine selected or machine has no specific hambatans, return all hambatans
+        $allHambatans = \common\models\ar\MstJenisHambatan::find()->all();
+        return \yii\helpers\ArrayHelper::toArray($allHambatans, [
+            \common\models\ar\MstJenisHambatan::class => ['id', 'nama']
+        ]);
     }
 
     /**

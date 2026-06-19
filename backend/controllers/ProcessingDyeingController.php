@@ -3529,13 +3529,19 @@ class ProcessingDyeingController extends Controller
         
         if ($request->isPost) {
             $id = $request->post('id');
+            $tipe = $request->post('tipe');
             $namaWarna = $request->post('nama_warna');
 
             if (!$id) {
                 return ['success' => false, 'message' => 'ID Kartu Proses tidak ditemukan.'];
             }
 
-            $model = \common\models\ar\TrnKartuProsesDyeing::findOne($id);
+            if ($tipe === 'PFP') {
+                $model = \common\models\ar\TrnKartuProsesPfp::findOne($id);
+            } else {
+                $model = \common\models\ar\TrnKartuProsesDyeing::findOne($id);
+            }
+            
             if ($model) {
                 $model->nama_warna = $namaWarna;
                 if ($model->save(false)) {

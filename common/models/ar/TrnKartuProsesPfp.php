@@ -108,7 +108,7 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             [['order_pfp_id', 'asal_greige', 'date', 'lusi', 'pakan', 'nomor_kartu'], 'required'],
             [['greige_group_id', 'greige_id', 'order_pfp_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
             [['greige_group_id', 'greige_id', 'order_pfp_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'integer'],
-            [['note', 'reject_notes', 'nomor_kartu'], 'string'],
+            [['note', 'reject_notes', 'nomor_kartu', 'nama_warna'], 'string'],
 
             [['date'], 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
@@ -173,6 +173,7 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             'handling' => 'Handling',
             'no_limit_item' => 'Item Tidak Dibatasi',
             'nomor_kartu' => 'Nomor Kartu',
+            'nama_warna' => 'Nama Warna',
         ];
     }
 

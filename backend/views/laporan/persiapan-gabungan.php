@@ -304,9 +304,11 @@ $(document).on('click', '.btn-edit-nama-warna-trn', function(e) {
     currentTargetNamaWarnaTrn = $(this);
     
     var id = $(this).data('id');
+    var tipe = $(this).data('tipe');
     var namaWarna = $(this).data('val');
     
     $('#nwt-id').val(id);
+    $('#nwt-tipe').val(tipe);
     $('#nwt-nama-warna').val(namaWarna);
     
     $('#modal-nama-warna-trn').modal('show');
@@ -500,24 +502,22 @@ $this->registerCss($css);
                             if($data->tipe_laporan === 'Dyeing'){
                                 return $data->woColor->moColor->color ?? '-';
                             }
-                            return '-';
+                            return (!empty($data->orderPfp->dasar_warna) ? $data->orderPfp->dasar_warna : '-');
                         }
                     ],
                     [
                         'attribute' => 'nama_warna',
                         'label' => 'Nama Warna',
                         'value' => function($data) {
-                            if($data->tipe_laporan === 'Dyeing'){
-                                $val = !empty($data->nama_warna) ? $data->nama_warna : '';
-                                $display = $val !== '' ? $val : '<i class="glyphicon glyphicon-pencil text-muted"></i> Isi Warna';
-                                return \yii\helpers\Html::a($display, 'javascript:void(0)', [
-                                    'class' => 'btn-edit-nama-warna-trn',
-                                    'data-id' => $data->id,
-                                    'data-val' => $val,
-                                    'title' => 'Klik untuk edit Nama Warna'
-                                ]);
-                            }
-                            return '-';
+                            $val = !empty($data->nama_warna) ? $data->nama_warna : '';
+                            $display = $val !== '' ? $val : '<i class="glyphicon glyphicon-pencil text-muted"></i> Isi Warna';
+                            return \yii\helpers\Html::a($display, 'javascript:void(0)', [
+                                'class' => 'btn-edit-nama-warna-trn',
+                                'data-id' => $data->id,
+                                'data-tipe' => $data->tipe_laporan,
+                                'data-val' => $val,
+                                'title' => 'Klik untuk edit Nama Warna'
+                            ]);
                         },
                         'format' => 'raw',
                     ],
@@ -644,7 +644,7 @@ $this->registerCss($css);
                                 $motifName = $isDyeing ? ($model->wo->greigeNamaKain ?? '') : ($model->greige->nama_kain ?? '');
                                 $motif = trim($lusi . ' ' . $motifName . ' ' . $pakan);
                                 
-                                $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : '-';
+                                $warna = $isDyeing ? ($model->woColor->moColor->color ?? '-') : (!empty($model->orderPfp->dasar_warna) ? $model->orderPfp->dasar_warna : '-');
                                 
                                 if($isDyeing){
                                     $panjangTotal = (float)($model->getTrnKartuProsesDyeingItems()->sum('panjang_m') ?: 0);
@@ -736,6 +736,7 @@ $this->registerCss($css);
       </div>
       <div class="modal-body">
         <input type="hidden" name="id" id="nwt-id">
+        <input type="hidden" name="tipe" id="nwt-tipe">
         <div class="form-group">
             <label>Nama Warna</label>
             <input type="text" name="nama_warna" id="nwt-nama-warna" class="form-control" autocomplete="off">

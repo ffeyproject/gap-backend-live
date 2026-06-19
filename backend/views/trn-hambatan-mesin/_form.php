@@ -115,7 +115,10 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                         'label' => 'Aksi',
                         'format' => 'raw',
                         'value' => function ($data) {
-                            $editBtn = Html::a('<i class="glyphicon glyphicon-pencil"></i> Edit Set', ['update', 'id' => $data->trn_hambatan_mesin_id], ['class' => 'btn btn-xs btn-primary']);
+                            $editBtn = Html::a('<i class="glyphicon glyphicon-pencil"></i> Edit Set', 'javascript:void(0)', [
+                                'class' => 'btn btn-xs btn-primary btn-edit-set',
+                                'data-id' => $data->trn_hambatan_mesin_id
+                            ]);
                             $delBtn = Html::a('<i class="glyphicon glyphicon-trash"></i> Hapus Set', ['delete', 'id' => $data->trn_hambatan_mesin_id], [
                                 'class' => 'btn btn-xs btn-danger',
                                 'data' => [
@@ -226,7 +229,11 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                             <td>
                                 <select name="Items[<?= $index ?>][jenis_hambatan_ids][]" class="form-control jenis-hambatan-select2" multiple="multiple">
                                     <?php 
-                                    $hambatanList = $item->mst_mesin_proses_id && $item->mstMesinProses ? ArrayHelper::map($item->mstMesinProses->mstJenisHambatans, 'id', 'nama') : [];
+                                    if ($item->mst_mesin_proses_id && $item->mstMesinProses && !empty($item->mstMesinProses->mstJenisHambatans)) {
+                                        $hambatanList = ArrayHelper::map($item->mstMesinProses->mstJenisHambatans, 'id', 'nama');
+                                    } else {
+                                        $hambatanList = ArrayHelper::map(MstJenisHambatan::find()->all(), 'id', 'nama');
+                                    }
                                     foreach ($hambatanList as $id => $nama): 
                                         $selected = in_array($id, (array)$item->jenis_hambatan_ids) ? 'selected' : '';
                                     ?>
@@ -329,7 +336,11 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                             <td>
                                 <select name="Items[<?= $idx ?>][jenis_hambatan_ids][]" class="form-control jenis-hambatan-select2" multiple="multiple">
                                     <?php 
-                                    $hambatanList = $item->mst_mesin_proses_id && $item->mstMesinProses ? ArrayHelper::map($item->mstMesinProses->mstJenisHambatans, 'id', 'nama') : [];
+                                    if ($item->mst_mesin_proses_id && $item->mstMesinProses && !empty($item->mstMesinProses->mstJenisHambatans)) {
+                                        $hambatanList = ArrayHelper::map($item->mstMesinProses->mstJenisHambatans, 'id', 'nama');
+                                    } else {
+                                        $hambatanList = ArrayHelper::map(MstJenisHambatan::find()->all(), 'id', 'nama');
+                                    }
                                     foreach ($hambatanList as $id => $nama): 
                                         $selected = in_array($id, (array)$item->jenis_hambatan_ids) ? 'selected' : '';
                                     ?>
@@ -417,19 +428,21 @@ $(document).on('change', '.model-mesin-select2', function() {
                     text: item.nama_mesin
                 }));
             });
+            
+            var preset = mesinSelect.data('preset-value');
+            if (preset) {
+                mesinSelect.val(preset);
+                mesinSelect.data('preset-value', null); // clear after use
+            }
             mesinSelect.trigger('change');
         }
     });
 });
 
 function fetchHambatans(machineId, dropdown, selectedVals) {
-    if (!machineId) {
-        dropdown.empty().trigger('change');
-        return;
-    }
     $.ajax({
         url: '{$hambatansUrl}',
-        data: { machine_id: machineId },
+        data: { machine_id: machineId || '' },
         dataType: 'json',
         success: function(data) {
             dropdown.empty();
@@ -439,7 +452,12 @@ function fetchHambatans(machineId, dropdown, selectedVals) {
                     text: item.nama
                 }));
             });
-            if (selectedVals) {
+            
+            var preset = dropdown.data('preset-value');
+            if (preset) {
+                dropdown.val(preset);
+                dropdown.data('preset-value', null); // clear after use
+            } else if (selectedVals) {
                 dropdown.val(selectedVals);
             }
             dropdown.trigger('change');
@@ -587,6 +605,7 @@ $('#add-row-btn').on('click', function() {
     
     $('#hambatan-tbody').append(newRow);
     
+    
     initModelSelect2(newRow.find('.model-mesin-select2'));
     initMesinSelect2(newRow.find('.mesin-select2'));
     initSelect2(newRow.find('.nk-select2'));
@@ -594,6 +613,9 @@ $('#add-row-btn').on('click', function() {
     initJenisHambatanSelect2(newRow.find('.jenis-hambatan-select2'));
     initTimeMask(newRow.find('.start-time-input'));
     initTimeMask(newRow.find('.stop-time-input'));
+    
+    // Fetch initial hambatans for new row
+    fetchHambatans('', newRow.find('.jenis-hambatan-select2'), null);
     
     rowIndex++;
 });
@@ -613,6 +635,7 @@ $('#add-row-btn-pfp').on('click', function() {
     
     $('#hambatan-tbody-pfp').append(newRow);
     
+    
     initModelSelect2(newRow.find('.model-mesin-select2'));
     initMesinSelect2(newRow.find('.mesin-select2'));
     initSelect2(newRow.find('.nk-select2'));
@@ -621,11 +644,80 @@ $('#add-row-btn-pfp').on('click', function() {
     initTimeMask(newRow.find('.start-time-input'));
     initTimeMask(newRow.find('.stop-time-input'));
     
+    // Fetch initial hambatans for new row
+    fetchHambatans('', newRow.find('.jenis-hambatan-select2'), null);
+    
     pfpRowIndex++;
 });
 
 $(document).on('click', '.remove-row-btn, .remove-row-btn-pfp', function() {
     $(this).closest('tr').remove();
+});
+
+$(document).on('click', '.btn-edit-set', function() {
+    var id = $(this).data('id');
+    $.ajax({
+        url: '/trn-hambatan-mesin/get-set-data',
+        data: {id: id},
+        dataType: 'json',
+        success: function(data) {
+            // Populate basic form
+            $('#trnhambatanmesin-shift').val(data.shift).trigger('change');
+            $('#trnhambatanmesin-tanggal').val(data.tanggal);
+            
+            // Set hidden ID
+            if ($('#form-hambatan-id').length === 0) {
+                $('#hambatan-mesin-form').append('<input type="hidden" name="id" id="form-hambatan-id">');
+            }
+            $('#form-hambatan-id').val(data.id);
+            
+            // Empty tables
+            $('#hambatan-tbody').empty();
+            $('#hambatan-tbody-pfp').empty();
+            
+            // Re-populate rows
+            $.each(data.items, function(i, item) {
+                var isPfp = (item.no_wo && item.no_wo.indexOf('OPFP') !== -1) || (item.no_kartu && item.no_kartu.indexOf('PFP') !== -1);
+                
+                if (isPfp) {
+                    $('#add-row-btn-pfp').click();
+                    var newRow = $('#hambatan-tbody-pfp tr.hambatan-row').last();
+                } else {
+                    $('#add-row-btn').click();
+                    var newRow = $('#hambatan-tbody tr.hambatan-row').last();
+                }
+                
+                newRow.find('.start-time-input').val(item.start_time);
+                newRow.find('.stop-time-input').val(item.stop_time);
+                newRow.find('.keterangan-input').val(item.keterangan);
+                
+                // For model mesin, when we trigger change, it will load machines. We pass preset-value so it selects the correct machine when done loading.
+                if (item.mst_mesin_proses_id) {
+                    newRow.find('.mesin-select2').data('preset-value', item.mst_mesin_proses_id);
+                }
+                
+                // Set model_mesin and trigger change to fetch machines
+                newRow.find('.model-mesin-select2').val(item.model_mesin).trigger('change');
+                
+                if (item.no_wo) {
+                    newRow.find(isPfp ? '.order-pfp-select2' : '.wo-select2').append(new Option(item.no_wo, item.no_wo, true, true)).val(item.no_wo);
+                }
+                
+                if (item.no_kartu) {
+                    newRow.find('.nk-select2').append(new Option(item.no_kartu, item.no_kartu, true, true)).val(item.no_kartu);
+                }
+                
+                if (item.jenis_hambatan_ids && item.jenis_hambatan_ids.length > 0) {
+                    newRow.find('.jenis-hambatan-select2').data('preset-value', item.jenis_hambatan_ids);
+                }
+            });
+            
+            // Scroll to form
+            $('html, body').animate({
+                scrollTop: $("#hambatan-mesin-form").offset().top - 50
+            }, 500);
+        }
+    });
 });
 JS;
 
