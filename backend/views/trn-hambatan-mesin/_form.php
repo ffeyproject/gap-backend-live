@@ -49,7 +49,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
         </div>
         <div class="box-body">
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <?= $form->field($model, 'shift')->widget(Select2::classname(), [
                         'data' => ['A'=>'A', 'B'=>'B', 'C'=>'C', 'D'=>'D'],
                         'options' => ['placeholder' => 'Pilih Shift...'],
@@ -59,7 +59,17 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                     ]) ?>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <?= $form->field($model, 'model_mesin')->widget(Select2::classname(), [
+                        'data' => $modelsMap,
+                        'options' => ['placeholder' => 'Pilih Model Mesin...'],
+                        'pluginOptions' => [
+                            'allowClear' => true
+                        ],
+                    ]) ?>
+                </div>
+
+                <div class="col-md-4">
                     <?= $form->field($model, 'tanggal')->widget(DatePicker::classname(), [
                         'disabled' => !$model->isNewRecord,
                         'options' => ['placeholder' => 'Pilih Tanggal ...'],
@@ -75,6 +85,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
     </div>
 
     <?php if (isset($dataProviderItems)): ?>
+    <?php \yii\widgets\Pjax::begin(['id' => 'grid-hambatan-pjax', 'timeout' => false]); ?>
     <div class="box box-info">
         <div class="box-header with-border">
             <h3 class="box-title">Data Hambatan yang Sudah Diinput (Hari Ini)</h3>
@@ -92,6 +103,12 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                     ],
                     'start_time',
                     'stop_time',
+                    [
+                        'label' => 'Model Mesin',
+                        'value' => function ($data) {
+                            return $data->mstMesinProses && $data->mstMesinProses->model_mesin ? $data->mstMesinProses->model_mesin : ($data->trnHambatanMesin->model_mesin ? $data->trnHambatanMesin->model_mesin : '-');
+                        },
+                    ],
                     [
                         'label' => 'Mesin',
                         'value' => function ($data) {
@@ -133,6 +150,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
             ]); ?>
         </div>
     </div>
+    <?php \yii\widgets\Pjax::end(); ?>
     <?php endif; ?>
 
     <?php
@@ -593,6 +611,8 @@ function buildModelOptions() {
 $('#add-row-btn').on('click', function() {
     var newRow = $('<tr class="hambatan-row" data-index="' + rowIndex + '">');
     
+    var defaultModel = $('#trnhambatanmesin-model_mesin').val() || '';
+    
     newRow.append('<td><input type="text" name="Items[' + rowIndex + '][start_time]" class="form-control start-time-input" placeholder="HH:MM"></td>');
     newRow.append('<td><input type="text" name="Items[' + rowIndex + '][stop_time]" class="form-control stop-time-input" placeholder="HH:MM"></td>');
     newRow.append('<td><select name="Items[' + rowIndex + '][model_mesin_dummy]" class="form-control model-mesin-select2">' + buildModelOptions() + '</select></td>');
@@ -607,6 +627,9 @@ $('#add-row-btn').on('click', function() {
     
     
     initModelSelect2(newRow.find('.model-mesin-select2'));
+    if (defaultModel) {
+        newRow.find('.model-mesin-select2').val(defaultModel).trigger('change');
+    }
     initMesinSelect2(newRow.find('.mesin-select2'));
     initSelect2(newRow.find('.nk-select2'));
     initWoSelect2(newRow.find('.wo-select2'));
@@ -623,6 +646,8 @@ $('#add-row-btn').on('click', function() {
 $('#add-row-btn-pfp').on('click', function() {
     var newRow = $('<tr class="hambatan-row" data-index="' + pfpRowIndex + '">');
     
+    var defaultModel = $('#trnhambatanmesin-model_mesin').val() || '';
+
     newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][start_time]" class="form-control start-time-input" placeholder="HH:MM"></td>');
     newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][stop_time]" class="form-control stop-time-input" placeholder="HH:MM"></td>');
     newRow.append('<td><select name="Items[' + pfpRowIndex + '][model_mesin_dummy]" class="form-control model-mesin-select2">' + buildModelOptions() + '</select></td>');
@@ -637,6 +662,9 @@ $('#add-row-btn-pfp').on('click', function() {
     
     
     initModelSelect2(newRow.find('.model-mesin-select2'));
+    if (defaultModel) {
+        newRow.find('.model-mesin-select2').val(defaultModel).trigger('change');
+    }
     initMesinSelect2(newRow.find('.mesin-select2'));
     initSelect2(newRow.find('.nk-select2'));
     initOrderPfpSelect2(newRow.find('.order-pfp-select2'));
@@ -663,6 +691,11 @@ $(document).on('click', '.btn-edit-set', function() {
         success: function(data) {
             // Populate basic form
             $('#trnhambatanmesin-shift').val(data.shift).trigger('change');
+            if (data.model_mesin) {
+                $('#trnhambatanmesin-model_mesin').val(data.model_mesin).trigger('change');
+            } else {
+                $('#trnhambatanmesin-model_mesin').val(null).trigger('change');
+            }
             $('#trnhambatanmesin-tanggal').val(data.tanggal);
             
             // Set hidden ID
@@ -674,6 +707,9 @@ $(document).on('click', '.btn-edit-set', function() {
             // Empty tables
             $('#hambatan-tbody').empty();
             $('#hambatan-tbody-pfp').empty();
+            
+            // Avoid Pjax reload when pre-filling from Edit Set
+            window.isEditingSet = true;
             
             // Re-populate rows
             $.each(data.items, function(i, item) {
@@ -716,8 +752,22 @@ $(document).on('click', '.btn-edit-set', function() {
             $('html, body').animate({
                 scrollTop: $("#hambatan-mesin-form").offset().top - 50
             }, 500);
+            
+            setTimeout(function() {
+                window.isEditingSet = false;
+            }, 500);
         }
     });
+});
+
+$(document).on('change', '#trnhambatanmesin-model_mesin', function() {
+    if (window.isEditingSet) return; // Prevent reload if being populated by Edit Set
+    var val = $(this).val() || '';
+    if ($('#grid-hambatan-pjax').length > 0) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('model_mesin', val);
+        $.pjax.reload({container: '#grid-hambatan-pjax', url: url.toString(), replace: false, timeout: false});
+    }
 });
 JS;
 

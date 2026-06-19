@@ -159,6 +159,13 @@ class TrnHambatanMesinController extends Controller
             ->where(['trn_hambatan_mesin.tanggal' => date('Y-m-d')])
             ->orderBy(['trn_hambatan_mesin_item.id' => SORT_DESC]);
             
+        $filterModelMesin = Yii::$app->request->get('model_mesin');
+        if (!empty($filterModelMesin)) {
+            // Filter by mst_mesin_proses.model_mesin to cover existing data
+            $queryItems->joinWith('mstMesinProses', true, 'LEFT JOIN');
+            $queryItems->andWhere(['mst_mesin_proses.model_mesin' => $filterModelMesin]);
+        }
+            
         $dataProviderItems = new \yii\data\ActiveDataProvider([
             'query' => $queryItems,
             'pagination' => [
@@ -230,6 +237,7 @@ class TrnHambatanMesinController extends Controller
             'id' => $model->id,
             'shift' => $model->shift,
             'tanggal' => $model->tanggal,
+            'model_mesin' => $model->model_mesin,
             'items' => $itemsArray
         ];
     }

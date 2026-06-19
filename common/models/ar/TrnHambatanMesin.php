@@ -57,8 +57,9 @@ class TrnHambatanMesin extends \yii\db\ActiveRecord
     {
         return [
             [['tanggal'], 'required'],
+            [['created_by', 'updated_by'], 'default', 'value' => null],
             [['created_by', 'updated_by'], 'integer'],
-            [['shift'], 'string', 'max' => 50],
+            [['shift', 'model_mesin'], 'string', 'max' => 255],
             [['tanggal', 'created_at', 'updated_at'], 'safe'],
         ];
     }
@@ -76,6 +77,7 @@ class TrnHambatanMesin extends \yii\db\ActiveRecord
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
+            'model_mesin' => 'Model Mesin',
         ];
     }
 
