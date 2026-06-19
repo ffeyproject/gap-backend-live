@@ -134,7 +134,8 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                         $panjang += ($item->stock ? $item->stock->panjang_m : 0);
                     }
                     
-                    $berat = $model->berat ? number_format((float)$model->berat, 1) : '-';
+                    $berat = is_numeric($model->berat) ? (float)$model->berat : 0;
+                    $beratStr = $berat > 0 ? number_format($berat, 1) : '-';
                     
                     $totalPanjang += $panjang;
                     $totalGul += $gul;
@@ -146,7 +147,7 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                     <td style="white-space: nowrap;"><?= Html::encode($warna) ?></td>
                     <td><?= $nomorKartu ?></td>
                     <td><?= number_format($panjang, 0) ?></td>
-                    <td><?= $berat ?></td>
+                    <td><?= $beratStr ?></td>
                     <td><?= $gul ?></td>
                     <td><?= Html::encode($noMesin) ?></td>
                     <td><?= Html::encode($keterangan) ?></td>
