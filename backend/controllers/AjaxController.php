@@ -102,6 +102,7 @@ class AjaxController extends Controller
                 $query->select(new Expression('id, nama_kain "text"'))
                     ->from('mst_greige_group')
                     ->where(['ilike', 'nama_kain', $q])
+                    ->andWhere(['aktif' => true])
                     ->limit(20);
                 $command = $query->createCommand();
                 $out['results'] = $command->queryAll();
