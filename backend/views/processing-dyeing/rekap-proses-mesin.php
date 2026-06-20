@@ -403,7 +403,7 @@ $this->registerCss('
                         <tr>
                             <td><?= Html::encode($item->start_time) ?></td>
                             <td><?= Html::encode($item->stop_time) ?></td>
-                            <td><?= Html::encode($item->shift ?? '-') ?></td>
+                            <td><?= Html::encode($item->trnHambatanMesin->shift ?? '-') ?></td>
                             <td>
                                 <?php 
                                 $jenisNames = [];

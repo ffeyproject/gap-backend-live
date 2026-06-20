@@ -96,6 +96,14 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return string|null
+     */
+    public function getShift()
+    {
+        return $this->trnHambatanMesin ? $this->trnHambatanMesin->shift : null;
+    }
+
+    /**
      * Populate `jenis_hambatan_ids` after find
      */
     public function afterFind()

@@ -3191,12 +3191,13 @@ class ProcessingDyeingController extends Controller
         // Fetch hambatan for this machine on this date
         $hambatanItems = [];
         if ($mesin) {
-            $hambatan = \common\models\ar\TrnHambatanMesin::find()
-                ->where(['mst_mesin_proses_id' => $mesin->id, 'tanggal' => $tanggal])
-                ->one();
-            if ($hambatan) {
-                $hambatanItems = $hambatan->trnHambatanMesinItems;
-            }
+            $hambatanItems = \common\models\ar\TrnHambatanMesinItem::find()
+                ->joinWith('trnHambatanMesin')
+                ->where([
+                    'trn_hambatan_mesin_item.mst_mesin_proses_id' => $mesin->id,
+                    'trn_hambatan_mesin.tanggal' => $tanggal
+                ])
+                ->all();
         }
 
         return $this->render('rekap-proses-mesin', [
