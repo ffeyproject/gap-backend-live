@@ -3817,7 +3817,7 @@ class ProcessingDyeingController extends Controller
                 'trn_wo.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
                 'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
             ]);
-            $query->andWhere(['>=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_DELIVERED]);
+            $query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
 
             // Filter by terakhir_proses as of date $tanggal
             if (!empty($terakhirProsesNames)) {

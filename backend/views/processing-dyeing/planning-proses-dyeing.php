@@ -542,7 +542,6 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                     $selectData[$opt->id] = $opt->label;
                 }
             }
-            $colorMapJson = Json::encode($colorMap);
 
             $beforeHeaderColumns[] = [
                 'content' => Html::encode($proc->nama_proses),
@@ -571,21 +570,25 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                 'filter' => $selectData,
                 'filterInputOptions' => [
                     'class' => 'form-control kp-filter-opt-select',
-                    'data-proc' => $proc->id,
-                    'data-colors' => $colorMapJson,
+                    'data' => [
+                        'proc' => $proc->id,
+                        'colors' => $colorMap,
+                    ],
                     'prompt' => ''
                 ],
                 'headerOptions' => ['style' => 'text-align: center; vertical-align: middle; background-color: #f4f4f4;'],
                 'contentOptions' => ['style' => 'text-align: center; vertical-align: middle; padding: 5px;'],
-                'value' => function($data) use ($proc, &$kartuPlanningsMap, $selectData, $colorMapJson) {
+                'value' => function($data) use ($proc, &$kartuPlanningsMap, $selectData, $colorMap) {
                     $kp = isset($kartuPlanningsMap[$data->id][$proc->id]) ? $kartuPlanningsMap[$data->id][$proc->id] : null;
                     $option_id = $kp ? $kp->option_id : '';
                     return Html::dropDownList('opt', $option_id, $selectData, [
                         'class' => 'form-control input-sm kp-opt-select',
                         'prompt' => '- Pilih -',
-                        'data-kp' => $data->id,
-                        'data-proc' => $proc->id,
-                        'data-colors' => $colorMapJson,
+                        'data' => [
+                            'kp' => $data->id,
+                            'proc' => $proc->id,
+                            'colors' => $colorMap,
+                        ],
                         'style' => 'min-width: 120px;'
                     ]);
                 },
@@ -617,8 +620,23 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
         <div class="box box-success">
             <div class="box-header with-border">
                 <h3 class="box-title"><i class="fa fa-table"></i> Hasil Teropong Planning</h3>
+                <div class="box-tools pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-columns"></i> Atur Kolom <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu" id="column-selector" style="max-height: 300px; overflow-y: auto; padding: 10px;">
+                            <!-- Checkboxes will be populated by JS -->
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="box-body">
+                <div class="top-scrollbar" style="overflow-x: auto; margin-bottom: 5px; height: 15px;">
+                    <div class="top-scrollbar-fake-content" style="height: 1px;"></div>
+                </div>
+                <div class="table-wrapper" style="overflow-x: auto;">
+
                 <?= GridView::widget([
                     'dataProvider' => $dataProvider,
                     'filterModel' => $searchModel,
@@ -638,6 +656,7 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                         'after' => '',
                     ],
                 ]); ?>
+                </div>
             </div>
         </div>
     <?php endif; ?>
@@ -647,162 +666,257 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
 $updateOptUrl = Url::to(['update-planning-option']);
 $updateKpUrl = Url::to(['update-kartu-planning']);
 
-$js = <<<JS
-// Apply Select2 to filter dropdowns
-$('#planning-ids-select, #terakhir-proses-select').select2();
+$jsVariables = "var updateOptUrl = '{$updateOptUrl}';\nvar updateKpUrl = '{$updateKpUrl}';\n";
 
-// Auto-save Planning Option labels (Bagian 4)
-$('.opt-label-input').on('change', function() {
-    var \$this = \$(this);
-    var id = \$this.data('id');
-    var proc = \$this.data('proc');
-    var label = \$this.val().trim();
+$js = <<<'JS'
+$(document).ready(function() {
+    // 1. Sync Top Scrollbar
+    var gridContainer = $('.table-wrapper .kv-grid-container');
+    if (gridContainer.length === 0) {
+        gridContainer = $('.table-wrapper .table-responsive');
+    }
+    if (gridContainer.length === 0) {
+        gridContainer = $('.table-wrapper');
+    }
+
+    function syncScroll() {
+        var tableWidth = gridContainer.find('table').outerWidth();
+        $('.top-scrollbar-fake-content').width(tableWidth);
+    }
     
-    \$.post('{$updateOptUrl}', {id: id, label: label}, function(res) {
-        if (!res.success) {
-            alert('Gagal menyimpan keterangan');
-        } else {
-            // Optional: Show a subtle success indicator
-            \$this.css('background-color', '#e8f5e9');
-            setTimeout(function() { \$this.css('background-color', 'transparent'); }, 1000);
-            
-            // Sync with Bagian 2 dropdowns dynamically
-            $('.kp-opt-select[data-proc="' + proc + '"], .kp-filter-opt-select[data-proc="' + proc + '"]').each(function() {
-                var \$select = \$(this);
-                var \$option = \$select.find('option[value="' + id + '"]');
-                
-                if (label === '') {
-                    // Remove option if label was cleared
-                    if (\$option.length > 0) {
-                        \$option.remove();
-                    }
-                } else {
-                    if (\$option.length > 0) {
-                        // Rename existing option
-                        \$option.text(label);
-                    } else {
-                        // Add new option if it didn't exist
-                        \$select.append(new Option(label, id));
-                    }
-                }
-            });
-            colorizeSelect(); // re-apply colors
+    // Run after a short delay to ensure table is fully rendered
+    setTimeout(syncScroll, 500);
+    $(window).on('resize', syncScroll);
+
+    $('.top-scrollbar').on('scroll', function() {
+        gridContainer.scrollLeft($(this).scrollLeft());
+    });
+    gridContainer.on('scroll', function() {
+        $('.top-scrollbar').scrollLeft($(this).scrollLeft());
+    });
+
+    // 2. Atur Kolom (Column Visibility Toggle)
+    var table = $('.table-wrapper table');
+    var thead = table.find('thead');
+    // The last tr in thead is usually the filter row (which has td, not th). We need the actual header row.
+    var trHeaders = thead.find('tr').not('.filters').last(); 
+
+    // Clear and build the column selector
+    $('#column-selector').empty();
+    
+    // Add "Pilih Semua" option
+    var liPilihSemua = $('<li><label style="font-weight: bold; margin-bottom: 0; cursor: pointer; display: block; padding: 5px 15px; white-space: nowrap;"><input type="checkbox" id="col-toggle-all" checked style="margin-right: 10px; vertical-align: text-top;"> Pilih Semua</label></li>');
+    $('#column-selector').append(liPilihSemua);
+    $('#column-selector').append('<li role="separator" class="divider" style="margin: 5px 0;"></li>');
+    
+    trHeaders.find('th').each(function(index) {
+        var th = $(this);
+        var label = th.text().trim();
+        if (label === '') {
+            label = 'Kolom ' + (index + 1);
+        }
+        
+        var li = $('<li><label style="font-weight: normal; margin-bottom: 0; cursor: pointer; display: block; padding: 5px 15px; white-space: nowrap;"><input type="checkbox" checked class="col-toggle" data-idx="'+index+'" style="margin-right: 10px; vertical-align: text-top;"> ' + label + '</label></li>');
+        $('#column-selector').append(li);
+        
+        // Restore saved state from localStorage if exists
+        var savedState = localStorage.getItem('planning_col_' + index);
+        if (savedState === 'hidden') {
+            li.find('input').prop('checked', false);
+            hideColumn(index);
         }
     });
-});
 
-// Helper function to colorize Select options
-function colorizeSelect() {
-    $('.kp-opt-select, .kp-filter-opt-select').each(function() {
-        var \$select = \$(this);
-        var colors = \$select.data('colors');
-        if (typeof colors === 'string') {
-            try { colors = JSON.parse(colors); } catch(e) {}
-        }
-        if (!colors) return;
-        
-        var val = \$select.val();
-        if (val && colors[val]) {
-            \$select.css('background-color', colors[val]);
-        } else {
-            \$select.css('background-color', '#fff');
-        }
-        
-        \$select.find('option').each(function() {
-            var optVal = \$(this).attr('value');
-            if (optVal && colors[optVal]) {
-                \$(this).css('background-color', colors[optVal]);
-            } else {
-                \$(this).css('background-color', '#fff');
+    // Update "Pilih Semua" state initially
+    function updatePilihSemuaState() {
+        var total = $('.col-toggle').length;
+        var checked = $('.col-toggle:checked').length;
+        $('#col-toggle-all').prop('checked', total > 0 && total === checked);
+    }
+    updatePilihSemuaState();
+
+    // Prevent dropdown from closing when clicking inside
+    $('#column-selector').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    // Handle "Pilih Semua" click
+    $('#col-toggle-all').on('change', function() {
+        var isChecked = $(this).is(':checked');
+        $('.col-toggle').each(function() {
+            if ($(this).is(':checked') !== isChecked) {
+                $(this).prop('checked', isChecked).trigger('change');
             }
         });
     });
-}
-colorizeSelect();
 
-// For the filter select, apply color on change
-\$(document).on('change', '.kp-filter-opt-select', function() {
-    colorizeSelect();
-});
-
-// Live update counters
-function updateLiveCounts() {
-    // Reset JML badges to 0
-    $('.jml-badge').text('0');
-    // Count occurrences for Keterangan
-    var optCounts = {};
-    $('.kp-opt-select').each(function() {
-        var val = \$(this).val();
-        if (val) {
-            optCounts[val] = (optCounts[val] || 0) + 1;
+    $('.col-toggle').on('change', function() {
+        var idx = $(this).data('idx');
+        if ($(this).is(':checked')) {
+            showColumn(idx);
+            localStorage.setItem('planning_col_' + idx, 'visible');
+        } else {
+            hideColumn(idx);
+            localStorage.setItem('planning_col_' + idx, 'hidden');
         }
-    });
-    // Update Jml Badges
-    \$.each(optCounts, function(optId, count) {
-        $('.jml-badge[data-opt="' + optId + '"]').text(count);
+        updatePilihSemuaState();
+        syncScroll();
     });
 
-    // Count occurrences for Siap
-    var siapCounts = {};
-    $('.kp-siap-chk').each(function() {
-        var proc = \$(this).data('proc');
-        if (\$(this).is(':checked')) {
-            siapCounts[proc] = (siapCounts[proc] || 0) + 1;
-        }
-    });
-    // Update Siap Header counts
-    $('.siap-count').each(function() {
-        var proc = \$(this).data('proc');
-        var count = siapCounts[proc] || 0;
-        \$(this).text(count);
-    });
-}
+    function hideColumn(idx) {
+        table.find('tr').each(function() {
+            $(this).find('th, td').eq(idx).hide();
+        });
+    }
 
-// Auto-save Grid Inputs (Bagian 2)
-$('.kp-siap-chk, .kp-opt-select, .kp-catatan-input').on('change', function() {
-    var \$this = \$(this);
-    var kp = \$this.data('kp');
-    var proc = \$this.data('proc');
-    var field = '';
-    var value = '';
-    
-    if (\$this.hasClass('kp-siap-chk')) {
-        field = 'is_siap';
-        value = \$this.is(':checked') ? 1 : 0;
-        updateLiveCounts();
-    } else if (\$this.hasClass('kp-opt-select')) {
-        field = 'option_id';
-        value = \$this.val();
-        colorizeSelect();
-        updateLiveCounts();
-    } else if (\$this.hasClass('kp-catatan-input')) {
-        field = 'catatan';
-        value = \$this.val();
+    function showColumn(idx) {
+        table.find('tr').each(function() {
+            $(this).find('th, td').eq(idx).show();
+        });
+    }
+
+    // Auto-save Planning Option labels (Bagian 4)
+    $('.opt-label-input').on('change', function() {
+        var el = $(this);
+        var id = el.data('id');
+        var proc = el.data('proc');
+        var label = el.val().trim();
         
-        // Optional: show visual feedback
-        \$this.css('background-color', '#e8f5e9');
-        setTimeout(function() { \$this.css('background-color', 'transparent'); }, 1000);
+        $.post(updateOptUrl, {id: id, label: label}, function(res) {
+            if (!res.success) {
+                alert('Gagal menyimpan keterangan');
+            } else {
+                el.css('background-color', '#e8f5e9');
+                setTimeout(function() { el.css('background-color', 'transparent'); }, 1000);
+                
+                $('.kp-opt-select[data-proc="' + proc + '"], .kp-filter-opt-select[data-proc="' + proc + '"]').each(function() {
+                    var selectEl = $(this);
+                    var optionEl = selectEl.find('option[value="' + id + '"]');
+                    
+                    if (label === '') {
+                        if (optionEl.length > 0) {
+                            optionEl.remove();
+                        }
+                    } else {
+                        if (optionEl.length > 0) {
+                            optionEl.text(label);
+                        } else {
+                            selectEl.append(new Option(label, id));
+                        }
+                    }
+                });
+                colorizeSelect(); // re-apply colors
+            }
+        });
+    });
+
+    // Helper function to colorize Select options
+    function colorizeSelect() {
+        $('.kp-opt-select, .kp-filter-opt-select').each(function() {
+            var selectEl = $(this);
+            var colors = selectEl.data('colors');
+            if (typeof colors === 'string') {
+                try { colors = JSON.parse(colors); } catch(e) {}
+            }
+            if (!colors) return;
+            
+            var val = selectEl.val();
+            if (val && colors[val]) {
+                selectEl.css('background-color', colors[val]);
+            } else {
+                selectEl.css('background-color', '#fff');
+            }
+            
+            selectEl.find('option').each(function() {
+                var optVal = $(this).attr('value');
+                if (optVal && colors[optVal]) {
+                    $(this).css('background-color', colors[optVal]);
+                } else {
+                    $(this).css('background-color', '#fff');
+                }
+            });
+        });
     }
-    
-    \$.post('{$updateKpUrl}', {
-        kartu_process_id: kp,
-        process_id: proc,
-        field: field,
-        value: value
-    }, function(res) {
-        if (!res.success) {
-            alert('Gagal menyimpan data');
+    colorizeSelect();
+
+    // For the filter select, apply color on change
+    $(document).on('change', '.kp-filter-opt-select', function() {
+        colorizeSelect();
+    });
+
+    // Live update counters
+    function updateLiveCounts() {
+        $('.jml-badge').text('0');
+        var optCounts = {};
+        $('.kp-opt-select').each(function() {
+            var val = $(this).val();
+            if (val) {
+                optCounts[val] = (optCounts[val] || 0) + 1;
+            }
+        });
+        $.each(optCounts, function(optId, count) {
+            $('.jml-badge[data-opt="' + optId + '"]').text(count);
+        });
+
+        var siapCounts = {};
+        $('.kp-siap-chk').each(function() {
+            var proc = $(this).data('proc');
+            if ($(this).is(':checked')) {
+                siapCounts[proc] = (siapCounts[proc] || 0) + 1;
+            }
+        });
+        $('.siap-count').each(function() {
+            var proc = $(this).data('proc');
+            var count = siapCounts[proc] || 0;
+            $(this).text(count);
+        });
+    }
+
+    // Auto-save Grid Inputs (Bagian 2)
+    $('.kp-siap-chk, .kp-opt-select, .kp-catatan-input').on('change', function() {
+        var el = $(this);
+        var kp = el.data('kp');
+        var proc = el.data('proc');
+        var field = '';
+        var value = '';
+        
+        if (el.hasClass('kp-siap-chk')) {
+            field = 'is_siap';
+            value = el.is(':checked') ? 1 : 0;
+            updateLiveCounts();
+        } else if (el.hasClass('kp-opt-select')) {
+            field = 'option_id';
+            value = el.val();
+            colorizeSelect();
+            updateLiveCounts();
+        } else if (el.hasClass('kp-catatan-input')) {
+            field = 'catatan';
+            value = el.val();
+            
+            el.css('background-color', '#e8f5e9');
+            setTimeout(function() { el.css('background-color', 'transparent'); }, 1000);
+        }
+        
+        $.post(updateKpUrl, {
+            kartu_process_id: kp,
+            process_id: proc,
+            field: field,
+            value: value
+        }, function(res) {
+            if (!res.success) {
+                alert('Gagal menyimpan data');
+            }
+        });
+    });
+
+    // Pressing Enter inside Catatan saves it without submitting the form
+    $('.kp-catatan-input').on('keypress', function(e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            $(this).blur();
         }
     });
-});
-
-// Pressing Enter inside Catatan saves it without submitting the form
-$('.kp-catatan-input').on('keypress', function(e) {
-    if (e.which == 13) { // Enter key
-        e.preventDefault();
-        \$(this).blur(); // Blur triggers the 'change' event to save
-    }
 });
 JS;
-$this->registerJs($js);
+$this->registerJs($jsVariables . $js);
 ?>
