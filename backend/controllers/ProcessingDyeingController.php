@@ -3747,4 +3747,230 @@ class ProcessingDyeingController extends Controller
             'colors' => $colors
         ];
     }
+
+    public function actionPlanningProsesDyeing()
+    {
+        $searchModel = new TrnKartuProsesDyeingSearch();
+        $queryParams = Yii::$app->request->queryParams;
+
+        $planningIds = Yii::$app->request->get('planning_ids', []);
+        $terakhirProsesNames = Yii::$app->request->get('terakhir_proses_names', []);
+        $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
+        $tampilkan = Yii::$app->request->get('tampilkan', 0);
+
+        // Fetch all processes options from MstProcessDyeing
+        $processOptions = \common\models\ar\MstProcessDyeing::find()
+            ->orderBy(['order' => SORT_ASC])
+            ->all();
+
+        // --- Bagian 4 Initialization: Generate options if missing ---
+        $fixedColors = ['#FFFFA6', '#FCDCB2', '#D1C7DF', '#BACCE3', '#CFFFCE', '#FFBA00', '#00FFFF', '#FFFF00', '#00FF00', '#FF00FF'];
+        if (!empty($planningIds)) {
+            foreach ($planningIds as $pId) {
+                $count = \common\models\ar\MstProcessDyeingPlanningOption::find()->where(['process_id' => $pId])->count();
+                if ($count < 10) {
+                    for ($i = 1; $i <= 10; $i++) {
+                        $exists = \common\models\ar\MstProcessDyeingPlanningOption::find()->where(['process_id' => $pId, 'slot' => $i])->exists();
+                        if (!$exists) {
+                            $opt = new \common\models\ar\MstProcessDyeingPlanningOption();
+                            $opt->process_id = $pId;
+                            $opt->slot = $i;
+                            $opt->label = ''; // Default empty label
+                            $opt->color = isset($fixedColors[$i - 1]) ? $fixedColors[$i - 1] : '#FFFFFF';
+                            $opt->created_at = time();
+                            $opt->updated_at = time();
+                            $opt->save(false);
+                        }
+                    }
+                }
+            }
+        }
+        
+        $planningOptionsMap = [];
+        if (!empty($planningIds)) {
+            $options = \common\models\ar\MstProcessDyeingPlanningOption::find()
+                ->where(['process_id' => $planningIds])
+                ->orderBy(['process_id' => SORT_ASC, 'slot' => SORT_ASC])
+                ->all();
+            foreach ($options as $opt) {
+                $planningOptionsMap[$opt->process_id][] = $opt;
+            }
+        }
+        // --- End Initialization ---
+
+        $dataProvider = null;
+        $showTable = false;
+        $lastProcessesMap = [];
+        $processMap = [];
+
+        if ($tampilkan) {
+            $showTable = true;
+            $dataProvider = $searchModel->search($queryParams);
+            $dataProvider->sort->defaultOrder = ['woDateRange' => SORT_ASC, 'woNo' => SORT_ASC, 'openDateRange' => SORT_ASC];
+            $dataProvider->pagination = [
+                'pageSize' => 50,
+            ];
+
+            $query = $dataProvider->query;
+            $query->joinWith(['wo.greige', 'sc', 'mo.scGreige.sc.marketing as mkt', 'woColor.moColor as moColor']);
+            $query->andWhere([
+                'trn_wo.jenis_order' => \common\models\ar\TrnSc::JENIS_ORDER_FRESH_ORDER,
+                'trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_DYEING
+            ]);
+            $query->andWhere(['>=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_DELIVERED]);
+
+            // Filter by terakhir_proses as of date $tanggal
+            if (!empty($terakhirProsesNames)) {
+                $placeholders = [];
+                $params = [':tanggal' => $tanggal];
+                foreach ($terakhirProsesNames as $i => $name) {
+                    $key = ':name' . $i;
+                    $placeholders[] = $key;
+                    $params[$key] = $name;
+                }
+                $placeholdersStr = implode(',', $placeholders);
+                
+                $validKartuIdsRaw = Yii::$app->db->createCommand("
+                    SELECT sub.kartu_process_id
+                    FROM (
+                        SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses
+                        FROM kartu_process_dyeing_process k
+                        INNER JOIN mst_process_dyeing m ON k.process_id = m.id
+                        WHERE k.value IS NOT NULL AND k.value <> '' AND k.value <> '[]'
+                          AND (CAST(k.value AS jsonb)->>'tanggal') <= :tanggal
+                        ORDER BY k.kartu_process_id, m.order DESC
+                    ) sub
+                    WHERE sub.nama_proses IN ($placeholdersStr)
+                ", $params)->queryColumn();
+
+                if (empty($validKartuIdsRaw)) {
+                    $query->andWhere('0=1');
+                } else {
+                    $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $validKartuIdsRaw]);
+                }
+            }
+
+            // Retrieve models for the current page to map processes
+            $models = $dataProvider->getModels();
+            $modelIds = array_filter(\yii\helpers\ArrayHelper::getColumn($models, 'id'));
+
+            if (!empty($modelIds)) {
+                // 1. Fetch process data
+                $allProcessData = (new \yii\db\Query())
+                    ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                    ->where(['in', 'kartu_process_id', $modelIds])
+                    ->all();
+                foreach ($allProcessData as $pd) {
+                    $processMap[$pd['kartu_process_id']][$pd['process_id']] = $pd;
+                }
+
+                // 2. Fetch last processes as of the selected date
+                $lastProcessesRaw = Yii::$app->db->createCommand("
+                    SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses
+                    FROM kartu_process_dyeing_process k
+                    INNER JOIN mst_process_dyeing m ON k.process_id = m.id
+                    WHERE k.kartu_process_id IN (" . implode(',', $modelIds) . ")
+                      AND k.value IS NOT NULL AND k.value <> '' AND k.value <> '[]'
+                      AND (CAST(k.value AS jsonb)->>'tanggal') <= :tanggal
+                    ORDER BY k.kartu_process_id, m.order DESC
+                ", [':tanggal' => $tanggal])->queryAll();
+
+                foreach ($lastProcessesRaw as $row) {
+                    $lastProcessesMap[$row['kartu_process_id']] = $row['nama_proses'];
+                }
+            }
+
+            // Calculations for Jml and Siap counts
+            $planningCounts = [];
+            $siapCounts = [];
+            $kartuPlanningsMap = [];
+            
+            if (!empty($modelIds) && !empty($planningIds)) {
+                $plannings = \common\models\ar\TrnKartuProsesDyeingPlanning::find()
+                    ->where(['in', 'kartu_process_id', $modelIds])
+                    ->andWhere(['in', 'process_id', $planningIds])
+                    ->all();
+                    
+                foreach ($plannings as $p) {
+                    $kartuPlanningsMap[$p->kartu_process_id][$p->process_id] = $p;
+                    if ($p->option_id) {
+                        if (!isset($planningCounts[$p->option_id])) {
+                            $planningCounts[$p->option_id] = 0;
+                        }
+                        $planningCounts[$p->option_id]++;
+                    }
+                    if ($p->is_siap) {
+                        if (!isset($siapCounts[$p->process_id])) {
+                            $siapCounts[$p->process_id] = 0;
+                        }
+                        $siapCounts[$p->process_id]++;
+                    }
+                }
+            }
+        }
+
+        return $this->render('planning-proses-dyeing', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'showTable' => $showTable,
+            'processOptions' => $processOptions,
+            'planningIds' => $planningIds,
+            'terakhirProsesNames' => $terakhirProsesNames,
+            'tanggal' => $tanggal,
+            'lastProcessesMap' => $lastProcessesMap,
+            'processMap' => $processMap,
+            'planningOptionsMap' => $planningOptionsMap ?? [],
+            'planningCounts' => $planningCounts ?? [],
+            'siapCounts' => $siapCounts ?? [],
+            'kartuPlanningsMap' => $kartuPlanningsMap ?? [],
+        ]);
+    }
+
+    public function actionUpdatePlanningOption()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $id = Yii::$app->request->post('id');
+        $label = Yii::$app->request->post('label');
+        
+        if ($id && $label !== null) {
+            $model = \common\models\ar\MstProcessDyeingPlanningOption::findOne($id);
+            if ($model) {
+                $model->label = $label;
+                if ($model->save(false)) {
+                    return ['success' => true];
+                }
+            }
+        }
+        return ['success' => false];
+    }
+
+    public function actionUpdateKartuPlanning()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $kartu_process_id = Yii::$app->request->post('kartu_process_id');
+        $process_id = Yii::$app->request->post('process_id');
+        $field = Yii::$app->request->post('field');
+        $value = Yii::$app->request->post('value');
+
+        if ($kartu_process_id && $process_id && $field) {
+            $model = \common\models\ar\TrnKartuProsesDyeingPlanning::findOne(['kartu_process_id' => $kartu_process_id, 'process_id' => $process_id]);
+            if (!$model) {
+                $model = new \common\models\ar\TrnKartuProsesDyeingPlanning();
+                $model->kartu_process_id = $kartu_process_id;
+                $model->process_id = $process_id;
+            }
+            if ($field === 'is_siap') {
+                $model->is_siap = $value ? 1 : 0;
+            } elseif ($field === 'option_id') {
+                $model->option_id = $value ? $value : null;
+            } elseif ($field === 'catatan') {
+                $model->catatan = $value;
+            }
+            
+            if ($model->save(false)) {
+                return ['success' => true];
+            }
+        }
+        return ['success' => false];
+    }
 }

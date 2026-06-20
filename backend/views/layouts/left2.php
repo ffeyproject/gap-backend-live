@@ -456,6 +456,19 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'processing-printing' && $actionId=='index'
                     ],
                     [
+                        'label' => 'PLANNING',
+                        'icon' => 'calendar',
+                        'url' => '#',
+                        'items' => [
+                            [
+                                'label' => 'Planning Proses Dyeing',
+                                'icon' => 'circle-o',
+                                'url' => ['/processing-dyeing/planning-proses-dyeing'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='planning-proses-dyeing'
+                            ],
+                        ]
+                    ],
+                    [
                         'label' => 'REKAP',
                         'icon' => 'th-list',
                         'url' => '#',

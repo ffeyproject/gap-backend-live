@@ -30,6 +30,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $woMonth;
     public $processDates = [];
     public $terakhir_proses;
+    public $dynamicFilters = [];
 
     /**
      * {@inheritdoc}
@@ -46,25 +47,22 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
 
     public function isAttributeActive($attribute)
     {
-        if (strpos($attribute, 'processDates[') === 0) {
-            return true;
-        }
+        if (strpos($attribute, 'processDates[') === 0) return true;
+        if (preg_match('/^(siap|opt|catatan)_\d+$/', $attribute)) return true;
         return parent::isAttributeActive($attribute);
     }
 
     public function canGetProperty($name, $checkVars = true, $checkBehaviors = true)
     {
-        if (strpos($name, 'processDates[') === 0) {
-            return true;
-        }
+        if (strpos($name, 'processDates[') === 0) return true;
+        if (preg_match('/^(siap|opt|catatan)_\d+$/', $name)) return true;
         return parent::canGetProperty($name, $checkVars, $checkBehaviors);
     }
 
     public function canSetProperty($name, $checkVars = true, $checkBehaviors = true)
     {
-        if (strpos($name, 'processDates[') === 0) {
-            return true;
-        }
+        if (strpos($name, 'processDates[') === 0) return true;
+        if (preg_match('/^(siap|opt|catatan)_\d+$/', $name)) return true;
         return parent::canSetProperty($name, $checkVars, $checkBehaviors);
     }
 
@@ -74,6 +72,9 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             $pId = $matches[1];
             return isset($this->processDates[$pId]) ? $this->processDates[$pId] : null;
         }
+        if (preg_match('/^(siap|opt|catatan)_(\d+)$/', $name, $matches)) {
+            return isset($this->dynamicFilters[$matches[1]][$matches[2]]) ? $this->dynamicFilters[$matches[1]][$matches[2]] : null;
+        }
         return parent::__get($name);
     }
 
@@ -82,6 +83,10 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         if (preg_match('/^processDates\[(\d+)\]$/', $name, $matches)) {
             $pId = $matches[1];
             $this->processDates[$pId] = $value;
+            return;
+        }
+        if (preg_match('/^(siap|opt|catatan)_(\d+)$/', $name, $matches)) {
+            $this->dynamicFilters[$matches[1]][$matches[2]] = $value;
             return;
         }
         parent::__set($name, $value);
@@ -362,9 +367,41 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         ;
 
        if ($isFiltering) {
-    $query->andWhere(['IS NOT', 'kpd.value', null])
-          ->addOrderBy([new Expression("CAST(kpd.value AS jsonb)->>'tanggal' ASC")]);
-}
+            $query->andWhere(['IS NOT', 'kpd.value', null])
+                  ->addOrderBy([new Expression("CAST(kpd.value AS jsonb)->>'tanggal' ASC")]);
+        }
+
+        // --- Bagian 3: Dynamic Filters for Planning ---
+        if (!empty($this->dynamicFilters)) {
+            $joinedPids = [];
+            foreach (['siap', 'opt', 'catatan'] as $type) {
+                if (!empty($this->dynamicFilters[$type])) {
+                    foreach ($this->dynamicFilters[$type] as $pId => $val) {
+                        if ($val !== '' && $val !== null) {
+                            $alias = "plan_{$pId}";
+                            if (!in_array($pId, $joinedPids)) {
+                                $query->leftJoin(["$alias" => 'trn_kartu_proses_dyeing_planning'], "$alias.kartu_process_id = trn_kartu_proses_dyeing.id AND $alias.process_id = " . (int)$pId);
+                                $joinedPids[] = $pId;
+                            }
+                            
+                            if ($type === 'siap') {
+                                if ($val == '1') {
+                                    $query->andWhere(["$alias.is_siap" => true]);
+                                } elseif ($val == '0') {
+                                    $query->andWhere(['or', ["$alias.is_siap" => false], ["$alias.is_siap" => null]]);
+                                }
+                            } elseif ($type === 'opt') {
+                                $query->andWhere(["$alias.option_id" => $val]);
+                            } elseif ($type === 'catatan') {
+                                $query->andWhere(['ilike', "$alias.catatan", $val]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // --- End Bagian 3 Filters ---
+
         $this->to_date = null;
         $this->from_date = null;
 
