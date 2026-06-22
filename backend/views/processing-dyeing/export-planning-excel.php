@@ -15,18 +15,17 @@ $formatIndoDate = function($date) {
     return $d . ' ' . $months[$m] . ' ' . $y;
 };
 
-// Convert string to array
 $visibleColsArr = $visibleColsStr !== '' ? explode(',', $visibleColsStr) : [];
 
 $gridColumns = [
-    ['class' => 'kartik\grid\SerialColumn'],
+    ['class' => 'kartik\grid\SerialColumn'], // 0
     [
-        'attribute' => 'id',
+        'attribute' => 'id', // 1
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'woDateRange',
+        'attribute' => 'woDateRange', // 2
         'label' => 'Tgl. WO',
         'value' => function($data) use ($formatIndoDate) {
             return $data->wo ? $formatIndoDate($data->wo->date) : null;
@@ -35,15 +34,7 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
-        'label' => 'Tgl. Terima',
-        'value' => function($data) use ($formatIndoDate) {
-            return $formatIndoDate($data->date);
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Tgl. Janji',
+        'label' => 'Tgl. Terima', // 3
         'value' => function($data) use ($formatIndoDate) {
             return $data->wo ? $formatIndoDate($data->wo->tgl_kirim) : null;
         },
@@ -51,34 +42,111 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'woNo',
-        'label' => 'No. WO',
+        'label' => 'Handling', // 4
         'value' => function($data) {
+            return ($data->wo && $data->wo->handling) ? $data->wo->handling->name : '-';
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label' => 'Target Finish', // 5
+        'value' => function($data) {
+            $cleanNum = function($val) {
+                return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+            };
+            return $data->wo ? (\Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyFinish), 1) .'M / '. \Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyFinishToYard), 1).'Y') : null;
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label' => 'Panjang', // 6
+        'value' => function($data) {
+            $cleanNum = function($val) {
+                return (float)str_replace([' ', ','], ['', '.'], (string)$val);
+            };
+            return $data->wo ? (\Yii::$app->formatter->asDecimal($cleanNum($data->wo->colorQtyBatchToMeter)) . ' M') : null;
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label' => 'Note WO', // 7
+        'value' => function($data) {
+            $note = '';
+            if ($data->wo && !empty($data->wo->note)) {
+                $rawNote = $data->wo->note;
+                $rawNote = html_entity_decode($rawNote, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $rawNote = strip_tags($rawNote);
+                $rawNote = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $rawNote);
+                $rawNote = str_replace(["\r\n", "\r"], "\n", $rawNote);
+                $rawNote = trim($rawNote);
+                $note = preg_replace("/\n{2,}/", "\n", $rawNote);
+            }
+            return !empty($note) ? $note : '-';
+        },
+        'vAlign' => 'middle',
+    ],
+    [
+        'label' => 'Memo Perubahan', // 8
+        'value' => function($data) {
+            $memos = $data->wo ? $data->wo->trnWoMemos : [];
+            $memoTexts = [];
+            if (!empty($memos)) {
+                foreach ($memos as $memoModel) {
+                    $mText = $memoModel->memo;
+                    $mText = html_entity_decode($mText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $mText = strip_tags($mText);
+                    $mText = str_replace([chr(194).chr(160), '&nbsp;'], ' ', $mText);
+                    $mText = trim($mText);
+                    if (!empty($mText)) {
+                        $memoTexts[] = 'No. ' . $memoModel->no . ': ' . $mText;
+                    }
+                }
+            }
+            return !empty($memoTexts) ? implode(" | ", $memoTexts) : 'Tidak ada Memo';
+        },
+        'vAlign' => 'middle',
+    ],
+    [
+        'attribute' => 'customerName', // 9
+        'label'=>'Buyer',
+        'value'=>function($data){
+            return $data->sc ? $data->sc->customerCode : '';
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'attribute' => 'woNo', // 10
+        'label'=>'No. WO',
+        'value'=>function($data){
             return $data->wo ? $data->wo->no : null;
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'motif',
-        'label' => 'Motif',
-        'value' => function($data) {
-            return $data->wo && $data->wo->greige ? $data->wo->greige->nama_kain : null;
+        'attribute' => 'motif', // 11
+        'label'=>'Motif',
+        'value'=>function($data){
+            return $data->wo ? $data->wo->greigeNamaKain : null;
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'warna',
-        'label' => 'Warna',
-        'value' => function($data) {
+        'attribute' => 'warna', // 12
+        'label'=>'Warna',
+        'value'=>function($data){
             return $data->woColor->moColor->color ?? '';
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'nama_warna',
+        'attribute' => 'nama_warna', // 13
         'label' => 'Nama Warna',
         'value' => function($data) {
             return !empty($data->nama_warna) ? $data->nama_warna : '';
@@ -87,7 +155,7 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'nomor_kartu',
+        'attribute' => 'nomor_kartu', // 14
         'label'=>'NK',
         'value'=>function($data){
             $result = $data->nomor_kartu;
@@ -100,116 +168,64 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
-        'label' => 'L/B',
-        'value' => function($data) {
-            return ($data->panjang ?? 0) . ' / ' . ($data->berat ?? 0);
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'attribute' => 'marketingName',
-        'label' => 'Marketing',
-        'value' => function($data) {
-            return $data->mo && $data->mo->scGreige && $data->mo->scGreige->sc && $data->mo->scGreige->sc->marketing 
-                ? $data->mo->scGreige->sc->marketing->full_name 
-                : null;
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'attribute' => 'customerName',
-        'label' => 'Customer',
-        'value' => function($data) {
-            return $data->sc && $data->sc->cust ? $data->sc->cust->name : null;
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Toping / Matching',
-        'attribute' => 'toping_matching',
-        'value' => function($data) {
-            return $data->toping_matching ? 'Ya' : 'Tidak';
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Tgl Toping / Matching',
-        'attribute' => 'dateReangeTopingMatching',
+        'label' => 'Matching Colour', // 15
         'value' => function($data) use ($formatIndoDate) {
-            return $formatIndoDate($data->date_toping_matching);
+            return ($data->woColor && $data->woColor->date_ready_colour) ? $formatIndoDate($data->woColor->date_ready_colour) : null;
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'attribute' => 'status',
-        'label' => 'Status',
-        'value' => function($data) {
-            $statuses = [
-                1 => 'Draft', 2 => 'Posted', 3 => 'Approved', 
-                4 => 'Inspected', 5 => 'Ganti Greige', 6 => 'Batal'
-            ];
-            return isset($statuses[$data->status]) ? $statuses[$data->status] : '';
+        'label' => 'Matching Toping', // 16
+        'value' => function($data) use ($formatIndoDate) {
+            return $data->date_toping_matching ? $formatIndoDate($data->date_toping_matching) : null;
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
     [
-        'label' => 'Terakhir Proses',
+        'label'=>'Panjang Greige', // 17
+        'value'=>function($data){
+            return $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+        },
+        'format'=>'decimal',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label'=>'Berat Greige', // 18
+        'value'=>function($data){
+            return $data->berat;
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label'=>'Pcs', // 19
+        'value'=>function($data){
+            return $data->getTrnKartuProsesDyeingItems()->count();
+        },
+        'format'=>'decimal',
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ],
+    [
+        'label' => 'Terakhir Proses', // 20
         'value' => function($data) use (&$lastProcessesMap) {
             return isset($lastProcessesMap[$data->id]) ? $lastProcessesMap[$data->id] : '-';
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
     ],
-    [
-        'label' => 'Keterangan Planning Dyeing',
-        'value' => function($data) {
-            return $data->memo_pg;
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Tgl. Masuk Packing',
-        'attribute' => 'dateRangeMasukPacking',
-        'value' => function($data) use ($formatIndoDate) {
-            return $formatIndoDate($data->approved_at);
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Ready Colour',
-        'attribute' => 'ready_colour',
-        'value' => function($data) {
-            return $data->woColor->ready_colour ? 'Ya' : 'Tidak';
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-    [
-        'label' => 'Tgl Ready Colour',
-        'attribute' => 'dateRangeReadyColour',
-        'value' => function($data) use ($formatIndoDate) {
-            return $formatIndoDate($data->woColor->date_ready_colour);
-        },
-        'hAlign' => 'center',
-        'vAlign' => 'middle',
-    ],
-];
-
-// Rebuild dynamic columns
-$beforeHeaderColumns = [
-    ['content' => '', 'options' => ['colspan' => 21, 'class' => 'text-center']],
 ];
 
 // Determine the starting index of dynamic columns
 $dynStartIdx = count($gridColumns);
+
+// Rebuild dynamic columns
+$beforeHeaderColumns = [
+    ['content' => '', 'options' => ['colspan' => $dynStartIdx, 'class' => 'text-center']],
+];
 
 // Fetch selected processes based on filter
 $selectedProcessIds = [];
