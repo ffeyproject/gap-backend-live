@@ -3757,6 +3757,8 @@ class ProcessingDyeingController extends Controller
         $terakhirProsesNames = Yii::$app->request->get('terakhir_proses_names', []);
         $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
         $tampilkan = Yii::$app->request->get('tampilkan', 0);
+        $exportExcel = Yii::$app->request->get('export_excel', 0);
+        $visibleColsStr = Yii::$app->request->get('visible_cols', '');
 
         // Fetch all processes options from MstProcessDyeing
         $processOptions = \common\models\ar\MstProcessDyeing::find()
@@ -3819,6 +3821,42 @@ class ProcessingDyeingController extends Controller
             ]);
             $query->andWhere(['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_DELIVERED]);
 
+            // Filter dynamically generated process columns (Siap, Keterangan, Catatan)
+            $searchParams = isset($queryParams['TrnKartuProsesDyeingSearch']) ? $queryParams['TrnKartuProsesDyeingSearch'] : [];
+            if (!empty($planningIds) && !empty($searchParams)) {
+                foreach ($planningIds as $pId) {
+                    if (isset($searchParams["siap_{$pId}"]) && $searchParams["siap_{$pId}"] !== '') {
+                        $siapVal = (int)$searchParams["siap_{$pId}"];
+                        $subQuery = (new \yii\db\Query())
+                            ->select('kartu_process_id')
+                            ->from('trn_kartu_proses_dyeing_planning')
+                            ->where(['process_id' => $pId, 'is_siap' => 1]);
+                        if ($siapVal === 1) {
+                            $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $subQuery]);
+                        } else {
+                            $query->andWhere(['not in', 'trn_kartu_proses_dyeing.id', $subQuery]);
+                        }
+                    }
+                    if (isset($searchParams["opt_{$pId}"]) && $searchParams["opt_{$pId}"] !== '') {
+                        $optVal = (int)$searchParams["opt_{$pId}"];
+                        $subQueryOpt = (new \yii\db\Query())
+                            ->select('kartu_process_id')
+                            ->from('trn_kartu_proses_dyeing_planning')
+                            ->where(['process_id' => $pId, 'option_id' => $optVal]);
+                        $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $subQueryOpt]);
+                    }
+                    if (isset($searchParams["catatan_{$pId}"]) && $searchParams["catatan_{$pId}"] !== '') {
+                        $catatanVal = $searchParams["catatan_{$pId}"];
+                        $subQueryCat = (new \yii\db\Query())
+                            ->select('kartu_process_id')
+                            ->from('trn_kartu_proses_dyeing_planning')
+                            ->where(['process_id' => $pId])
+                            ->andWhere(['ilike', 'catatan', $catatanVal]);
+                        $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $subQueryCat]);
+                    }
+                }
+            }
+
             // Filter by terakhir_proses as of date $tanggal
             if (!empty($terakhirProsesNames)) {
                 $placeholders = [];
@@ -3866,7 +3904,7 @@ class ProcessingDyeingController extends Controller
 
                 // 2. Fetch last processes as of the selected date
                 $lastProcessesRaw = Yii::$app->db->createCommand("
-                    SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses
+                    SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses, k.value
                     FROM kartu_process_dyeing_process k
                     INNER JOIN mst_process_dyeing m ON k.process_id = m.id
                     WHERE k.kartu_process_id IN (" . implode(',', $modelIds) . ")
@@ -3876,7 +3914,30 @@ class ProcessingDyeingController extends Controller
                 ", [':tanggal' => $tanggal])->queryAll();
 
                 foreach ($lastProcessesRaw as $row) {
-                    $lastProcessesMap[$row['kartu_process_id']] = $row['nama_proses'];
+                    $namaProses = $row['nama_proses'];
+                    $valArr = json_decode($row['value'], true);
+                    
+                    $tgl = isset($valArr['tanggal']) ? $valArr['tanggal'] : '';
+                    $shift = isset($valArr['shift_group']) ? $valArr['shift_group'] : '';
+                    $mesin = isset($valArr['no_mesin']) ? $valArr['no_mesin'] : '';
+                    
+                    $extra = [];
+                    if ($tgl) {
+                        $time = strtotime($tgl);
+                        if ($time) {
+                            $extra[] = date('j/n/y', $time);
+                        } else {
+                            $extra[] = $tgl;
+                        }
+                    }
+                    if ($shift) $extra[] = $shift;
+                    if ($mesin) $extra[] = $mesin;
+                    
+                    if (!empty($extra)) {
+                        $namaProses .= ' (' . implode('-', $extra) . ')';
+                    }
+                    
+                    $lastProcessesMap[$row['kartu_process_id']] = $namaProses;
                 }
             }
 
@@ -3893,7 +3954,7 @@ class ProcessingDyeingController extends Controller
                     
                 foreach ($plannings as $p) {
                     $kartuPlanningsMap[$p->kartu_process_id][$p->process_id] = $p;
-                    if ($p->option_id) {
+                    if ($p->option_id && $p->is_siap) {
                         if (!isset($planningCounts[$p->option_id])) {
                             $planningCounts[$p->option_id] = 0;
                         }
@@ -3907,6 +3968,85 @@ class ProcessingDyeingController extends Controller
                     }
                 }
             }
+        }
+
+        if ($exportExcel) {
+            $dataProvider->pagination = false;
+            // Need to retrieve models again because pagination is disabled
+            $models = $dataProvider->getModels();
+            $modelIds = array_filter(\yii\helpers\ArrayHelper::getColumn($models, 'id'));
+            
+            // Re-fetch maps for all data
+            if (!empty($modelIds)) {
+                $allProcessData = (new \yii\db\Query())
+                    ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
+                    ->where(['in', 'kartu_process_id', $modelIds])
+                    ->all();
+                $processMap = [];
+                foreach ($allProcessData as $pd) {
+                    $processMap[$pd['kartu_process_id']][$pd['process_id']] = $pd;
+                }
+
+                $lastProcessesRaw = Yii::$app->db->createCommand("
+                    SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses, k.value
+                    FROM kartu_process_dyeing_process k
+                    INNER JOIN mst_process_dyeing m ON k.process_id = m.id
+                    WHERE k.kartu_process_id IN (" . implode(',', $modelIds) . ")
+                      AND k.value IS NOT NULL AND k.value <> '' AND k.value <> '[]'
+                      AND (CAST(k.value AS jsonb)->>'tanggal') <= :tanggal
+                    ORDER BY k.kartu_process_id, m.order DESC
+                ", [':tanggal' => $tanggal])->queryAll();
+
+                $lastProcessesMap = [];
+                foreach ($lastProcessesRaw as $row) {
+                    $namaProses = $row['nama_proses'];
+                    $valArr = json_decode($row['value'], true);
+                    $tgl = isset($valArr['tanggal']) ? $valArr['tanggal'] : '';
+                    $shift = isset($valArr['shift_group']) ? $valArr['shift_group'] : '';
+                    $mesin = isset($valArr['no_mesin']) ? $valArr['no_mesin'] : '';
+                    $extra = [];
+                    if ($tgl) {
+                        $time = strtotime($tgl);
+                        $extra[] = $time ? date('j/n/y', $time) : $tgl;
+                    }
+                    if ($shift) $extra[] = $shift;
+                    if ($mesin) $extra[] = $mesin;
+                    if (!empty($extra)) $namaProses .= ' (' . implode('-', $extra) . ')';
+                    $lastProcessesMap[$row['kartu_process_id']] = $namaProses;
+                }
+
+                $kartuPlanningsMap = [];
+                if (!empty($planningIds)) {
+                    $plannings = \common\models\ar\TrnKartuProsesDyeingPlanning::find()
+                        ->where(['in', 'kartu_process_id', $modelIds])
+                        ->andWhere(['in', 'process_id', $planningIds])
+                        ->all();
+                    foreach ($plannings as $p) {
+                        $kartuPlanningsMap[$p->kartu_process_id][$p->process_id] = $p;
+                    }
+                }
+            }
+            
+            $this->layout = false;
+            header("Content-Type: application/vnd.ms-excel");
+            header("Content-Disposition: attachment; filename=Planning_Proses_Dyeing_" . date('Y-m-d') . ".xls");
+            header("Pragma: no-cache");
+            header("Expires: 0");
+            
+            return $this->render('export-planning-excel', [
+                'searchModel' => $searchModel,
+                'dataProvider' => $dataProvider,
+                'showTable' => $showTable,
+                'processOptions' => $processOptions,
+                'planningIds' => $planningIds,
+                'terakhirProsesNames' => $terakhirProsesNames,
+                'tanggal' => $tanggal,
+                'lastProcessesMap' => $lastProcessesMap ?? [],
+                'processMap' => $processMap ?? [],
+                'planningOptionsMap' => $planningOptionsMap ?? [],
+                'kartuPlanningsMap' => $kartuPlanningsMap ?? [],
+                'visibleColsStr' => $visibleColsStr,
+            ]);
         }
 
         return $this->render('planning-proses-dyeing', [
@@ -3968,6 +4108,26 @@ class ProcessingDyeingController extends Controller
             }
             
             if ($model->save(false)) {
+                return ['success' => true];
+            }
+        }
+        return ['success' => false];
+    }
+
+    public function actionUpdateNamaWarna()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $id = Yii::$app->request->post('id');
+        $nama_warna = Yii::$app->request->post('nama_warna');
+        
+        if ($id && $nama_warna !== null) {
+            $model = \common\models\ar\TrnKartuProsesDyeing::findOne($id);
+            if ($model) {
+                // Update all cards with the same wo_id and wo_color_id since the column is visually grouped
+                \common\models\ar\TrnKartuProsesDyeing::updateAll(
+                    ['nama_warna' => $nama_warna],
+                    ['wo_id' => $model->wo_id, 'wo_color_id' => $model->wo_color_id]
+                );
                 return ['success' => true];
             }
         }

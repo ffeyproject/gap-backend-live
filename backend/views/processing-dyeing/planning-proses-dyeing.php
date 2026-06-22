@@ -448,7 +448,13 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                 'attribute' => 'nama_warna',
                 'label' => 'Nama Warna',
                 'value' => function($data) {
-                    return !empty($data->nama_warna) ? $data->nama_warna : '';
+                    $nama_warna = !empty($data->nama_warna) ? $data->nama_warna : '';
+                    return Html::textInput('nama_warna', $nama_warna, [
+                        'class' => 'form-control input-sm kp-nama-warna-input',
+                        'placeholder' => 'Isi nama warna...',
+                        'data-id' => $data->id,
+                        'style' => 'min-width: 120px;'
+                    ]);
                 },
                 'format' => 'raw',
                 'hAlign' => 'center',
@@ -548,11 +554,18 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                 'options' => ['colspan' => 3, 'class' => 'text-center warning', 'style' => 'vertical-align: middle; font-weight: bold; background-color: #fcf8e3;']
             ];
 
+            $searchParams = Yii::$app->request->get('TrnKartuProsesDyeingSearch', []);
+
             $gridColumns[] = [
                 'attribute' => "siap_{$proc->id}",
                 'label' => "Siap (<span class='siap-count' data-proc='{$proc->id}'>{$siapCount}</span>x)",
                 'encodeLabel' => false,
-                'filter' => [1 => 'Sudah', 0 => 'Belum'],
+                'filter' => Html::dropDownList(
+                    "TrnKartuProsesDyeingSearch[siap_{$proc->id}]",
+                    isset($searchParams["siap_{$proc->id}"]) ? $searchParams["siap_{$proc->id}"] : '',
+                    [1 => 'Sudah', 0 => 'Belum'],
+                    ['class' => 'form-control', 'prompt' => '']
+                ),
                 'headerOptions' => ['style' => 'text-align: center; vertical-align: middle; background-color: #f4f4f4; white-space: pre-line; min-width: 80px;'],
                 'contentOptions' => ['style' => 'text-align: center; vertical-align: middle;'],
                 'value' => function($data) use ($proc, &$kartuPlanningsMap) {
@@ -567,15 +580,19 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
             $gridColumns[] = [
                 'attribute' => "opt_{$proc->id}",
                 'label' => "Keterangan",
-                'filter' => $selectData,
-                'filterInputOptions' => [
-                    'class' => 'form-control kp-filter-opt-select',
-                    'data' => [
-                        'proc' => $proc->id,
-                        'colors' => $colorMap,
-                    ],
-                    'prompt' => ''
-                ],
+                'filter' => Html::dropDownList(
+                    "TrnKartuProsesDyeingSearch[opt_{$proc->id}]",
+                    isset($searchParams["opt_{$proc->id}"]) ? $searchParams["opt_{$proc->id}"] : '',
+                    $selectData,
+                    [
+                        'class' => 'form-control kp-filter-opt-select',
+                        'data' => [
+                            'proc' => $proc->id,
+                            'colors' => $colorMap,
+                        ],
+                        'prompt' => ''
+                    ]
+                ),
                 'headerOptions' => ['style' => 'text-align: center; vertical-align: middle; background-color: #f4f4f4;'],
                 'contentOptions' => ['style' => 'text-align: center; vertical-align: middle; padding: 5px;'],
                 'value' => function($data) use ($proc, &$kartuPlanningsMap, $selectData, $colorMap) {
@@ -598,7 +615,11 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
             $gridColumns[] = [
                 'attribute' => "catatan_{$proc->id}",
                 'label' => "Catatan",
-                'filterInputOptions' => ['class' => 'form-control', 'placeholder' => 'Search'],
+                'filter' => Html::textInput(
+                    "TrnKartuProsesDyeingSearch[catatan_{$proc->id}]",
+                    isset($searchParams["catatan_{$proc->id}"]) ? $searchParams["catatan_{$proc->id}"] : '',
+                    ['class' => 'form-control', 'placeholder' => 'Search']
+                ),
                 'headerOptions' => ['style' => 'text-align: center; vertical-align: middle; background-color: #f4f4f4;'],
                 'contentOptions' => ['style' => 'text-align: center; vertical-align: middle; padding: 5px;'],
                 'value' => function($data) use ($proc, &$kartuPlanningsMap) {
@@ -624,6 +645,9 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                     <div class="btn-group">
                         <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
                             <i class="fa fa-columns"></i> Atur Kolom <span class="caret"></span>
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" id="btn-export-excel" style="margin-left: 5px;">
+                            <i class="fa fa-file-excel-o"></i> Export Excel
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right" role="menu" id="column-selector" style="max-height: 300px; overflow-y: auto; padding: 10px;">
                             <!-- Checkboxes will be populated by JS -->
@@ -665,8 +689,9 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
 <?php
 $updateOptUrl = Url::to(['update-planning-option']);
 $updateKpUrl = Url::to(['update-kartu-planning']);
+$updateNamaWarnaUrl = Url::to(['update-nama-warna']);
 
-$jsVariables = "var updateOptUrl = '{$updateOptUrl}';\nvar updateKpUrl = '{$updateKpUrl}';\n";
+$jsVariables = "var updateOptUrl = '{$updateOptUrl}';\nvar updateKpUrl = '{$updateKpUrl}';\nvar updateNamaWarnaUrl = '{$updateNamaWarnaUrl}';\n";
 
 $js = <<<'JS'
 $(document).ready(function() {
@@ -700,6 +725,35 @@ $(document).ready(function() {
     var thead = table.find('thead');
     // The last tr in thead is usually the filter row (which has td, not th). We need the actual header row.
     var trHeaders = thead.find('tr').not('.filters').last(); 
+    var trBefore = thead.find('tr').first();
+
+    // Inject CSS for hiding columns without breaking inline styles
+    if ($('#hidden-column-style').length === 0) {
+        $('<style id="hidden-column-style">.hidden-column { display: none !important; }</style>').appendTo('head');
+    }
+
+    // Map data-col-seq to beforeHeader cell
+    var beforeHeaderCells = trBefore.find('th, td');
+    var colToGroup = {}; // Maps colSeq to beforeHeader cell element
+    
+    if (beforeHeaderCells.length > 0 && beforeHeaderCells.first().attr('colspan')) {
+        var groupIdx = 0;
+        var colsLeftInGroup = parseInt(beforeHeaderCells.eq(groupIdx).attr('colspan') || 1);
+        
+        trHeaders.find('th').each(function() {
+            var colSeq = $(this).attr('data-col-seq');
+            if (colSeq !== undefined) {
+                if (colsLeftInGroup === 0) {
+                    groupIdx++;
+                    if (groupIdx < beforeHeaderCells.length) {
+                        colsLeftInGroup = parseInt(beforeHeaderCells.eq(groupIdx).attr('colspan') || 1);
+                    }
+                }
+                colToGroup[colSeq] = beforeHeaderCells.eq(groupIdx);
+                colsLeftInGroup--;
+            }
+        });
+    }
 
     // Clear and build the column selector
     $('#column-selector').empty();
@@ -709,21 +763,25 @@ $(document).ready(function() {
     $('#column-selector').append(liPilihSemua);
     $('#column-selector').append('<li role="separator" class="divider" style="margin: 5px 0;"></li>');
     
-    trHeaders.find('th').each(function(index) {
+    trHeaders.find('th').each(function() {
         var th = $(this);
         var label = th.text().trim();
+        var colSeq = th.attr('data-col-seq');
+        
+        if (colSeq === undefined) return;
+        
         if (label === '') {
-            label = 'Kolom ' + (index + 1);
+            label = 'Kolom ' + (parseInt(colSeq) + 1);
         }
         
-        var li = $('<li><label style="font-weight: normal; margin-bottom: 0; cursor: pointer; display: block; padding: 5px 15px; white-space: nowrap;"><input type="checkbox" checked class="col-toggle" data-idx="'+index+'" style="margin-right: 10px; vertical-align: text-top;"> ' + label + '</label></li>');
+        var li = $('<li><label style="font-weight: normal; margin-bottom: 0; cursor: pointer; display: block; padding: 5px 15px; white-space: nowrap;"><input type="checkbox" checked class="col-toggle" data-idx="'+colSeq+'" style="margin-right: 10px; vertical-align: text-top;"> ' + label + '</label></li>');
         $('#column-selector').append(li);
         
         // Restore saved state from localStorage if exists
-        var savedState = localStorage.getItem('planning_col_' + index);
+        var savedState = localStorage.getItem('planning_col_' + colSeq);
         if (savedState === 'hidden') {
             li.find('input').prop('checked', false);
-            hideColumn(index);
+            hideColumn(colSeq);
         }
     });
 
@@ -764,16 +822,59 @@ $(document).ready(function() {
     });
 
     function hideColumn(idx) {
-        table.find('tr').each(function() {
-            $(this).find('th, td').eq(idx).hide();
-        });
+        table.find('th[data-col-seq="' + idx + '"], td[data-col-seq="' + idx + '"]').addClass('hidden-column');
+        var groupTh = colToGroup[idx];
+        if (groupTh) {
+            var cs = parseInt(groupTh.attr('colspan') || 1);
+            if (cs > 1) {
+                groupTh.attr('colspan', cs - 1);
+            } else {
+                groupTh.addClass('hidden-column');
+            }
+        }
     }
 
     function showColumn(idx) {
-        table.find('tr').each(function() {
-            $(this).find('th, td').eq(idx).show();
-        });
+        table.find('th[data-col-seq="' + idx + '"], td[data-col-seq="' + idx + '"]').removeClass('hidden-column');
+        var groupTh = colToGroup[idx];
+        if (groupTh) {
+            if (groupTh.hasClass('hidden-column')) {
+                groupTh.removeClass('hidden-column');
+                groupTh.attr('colspan', 1);
+            } else {
+                var cs = parseInt(groupTh.attr('colspan') || 1);
+                groupTh.attr('colspan', cs + 1);
+            }
+        }
     }
+
+    // Handle Export Excel
+    $('#btn-export-excel').on('click', function() {
+        var visibleCols = [];
+        $('.col-toggle:checked').each(function() {
+            visibleCols.push($(this).data('idx'));
+        });
+        
+        var form = $('<form method="GET" target="_blank"></form>');
+        var currentUrl = new URL(window.location.href);
+        var searchParams = currentUrl.searchParams;
+        
+        // Use the current action URL for form submission
+        form.attr('action', currentUrl.pathname);
+        
+        // Append all existing query params
+        for (var pair of searchParams.entries()) {
+            form.append($('<input type="hidden">').attr('name', pair[0]).val(pair[1]));
+        }
+        
+        // Add export trigger and visible columns
+        form.append($('<input type="hidden" name="export_excel" value="1">'));
+        form.append($('<input type="hidden" name="visible_cols" value="' + visibleCols.join(',') + '">'));
+        
+        $('body').append(form);
+        form.submit();
+        form.remove();
+    });
 
     // Auto-save Planning Option labels (Bagian 4)
     $('.opt-label-input').on('change', function() {
@@ -850,7 +951,11 @@ $(document).ready(function() {
         var optCounts = {};
         $('.kp-opt-select').each(function() {
             var val = $(this).val();
-            if (val) {
+            var proc = $(this).data('proc');
+            var kp = $(this).data('kp');
+            var isSiap = $('.kp-siap-chk[data-kp="' + kp + '"][data-proc="' + proc + '"]').is(':checked');
+            
+            if (val && isSiap) {
                 optCounts[val] = (optCounts[val] || 0) + 1;
             }
         });
@@ -871,6 +976,16 @@ $(document).ready(function() {
             $(this).text(count);
         });
     }
+
+    // Make Jml badges and label boxes clickable to filter table
+    $('.jml-badge').css('cursor', 'pointer').attr('title', 'Klik untuk memfilter tabel').on('click', function() {
+        var optId = $(this).data('opt');
+        var procId = $(this).data('proc');
+        var filterSelect = $('select[name="TrnKartuProsesDyeingSearch[opt_' + procId + ']"]');
+        if (filterSelect.length) {
+            filterSelect.val(optId).trigger('change');
+        }
+    });
 
     // Auto-save Grid Inputs (Bagian 2)
     $('.kp-siap-chk, .kp-opt-select, .kp-catatan-input').on('change', function() {
@@ -909,8 +1024,27 @@ $(document).ready(function() {
         });
     });
 
-    // Pressing Enter inside Catatan saves it without submitting the form
-    $('.kp-catatan-input').on('keypress', function(e) {
+    // Auto-save Nama Warna
+    $('.kp-nama-warna-input').on('change', function() {
+        var el = $(this);
+        var id = el.data('id');
+        var nama_warna = el.val();
+        
+        el.css('background-color', '#e8f5e9');
+        setTimeout(function() { el.css('background-color', 'transparent'); }, 1000);
+        
+        $.post(updateNamaWarnaUrl, {
+            id: id,
+            nama_warna: nama_warna
+        }, function(res) {
+            if (!res.success) {
+                alert('Gagal menyimpan nama warna');
+            }
+        });
+    });
+
+    // Pressing Enter inside inputs saves it without submitting the form
+    $('.kp-catatan-input, .kp-nama-warna-input').on('keypress', function(e) {
         if (e.which == 13) {
             e.preventDefault();
             $(this).blur();
