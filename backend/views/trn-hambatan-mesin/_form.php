@@ -765,9 +765,14 @@ $(document).on('click', '.btn-edit-set', function() {
     });
 });
 
-$(document).on('change', '#trnhambatanmesin-model_mesin, #trnhambatanmesin-tanggal', function() {
+$(document).on('change', '#trnhambatanmesin-model_mesin, #trnhambatanmesin-tanggal', function(e) {
     if (window.isEditingSet) return; // Prevent reload if being populated by Edit Set
     var modelVal = $('#trnhambatanmesin-model_mesin').val() || '';
+    
+    if (e.target.id === 'trnhambatanmesin-model_mesin') {
+        $('.model-mesin-select2').val(modelVal).trigger('change');
+    }
+    
     var tanggalVal = $('#trnhambatanmesin-tanggal').val() || '';
     if ($('#grid-hambatan-pjax').length > 0) {
         var url = new URL(window.location.href);

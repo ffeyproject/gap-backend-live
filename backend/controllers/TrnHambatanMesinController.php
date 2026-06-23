@@ -73,7 +73,9 @@ class TrnHambatanMesinController extends Controller
             }
         } else {
             $model = new TrnHambatanMesin();
-            $model->tanggal = date('Y-m-d'); // Default to today's date
+            $model->tanggal = Yii::$app->request->get('tanggal', date('Y-m-d')); // Default to requested date or today's date
+            $model->shift = Yii::$app->request->get('shift');
+            $model->model_mesin = Yii::$app->request->get('model_mesin');
             $items = [new TrnHambatanMesinItem()];
         }
 
@@ -143,7 +145,12 @@ class TrnHambatanMesinController extends Controller
                         
                         $transaction->commit();
                         Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil disimpan.');
-                        return $this->redirect(['create']);
+                        return $this->redirect([
+                            'create',
+                            'tanggal' => $model->tanggal,
+                            'shift' => $model->shift,
+                            'model_mesin' => $model->model_mesin
+                        ]);
                     } else {
                         throw new \Exception('Gagal menyimpan data hambatan.');
                     }
