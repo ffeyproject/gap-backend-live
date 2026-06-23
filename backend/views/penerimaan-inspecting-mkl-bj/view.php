@@ -104,6 +104,13 @@ $joinPieces = [
                 'data-title' => 'Penerimaan Packing Makloon Dan Barang Jadi'
             ]);
             echo ' ';
+        } else if ($model->status == $model::STATUS_POSTED || $model->status == $model::STATUS_POSTED_PARTIAL) {
+            echo Html::a('<i class="fa fa-refresh"></i> Selesaikan Dokumen', ['sync-status', 'id' => $model->id], [
+                'class' => 'btn btn-warning',
+                'title' => 'Selesaikan dokumen ini karena item sudah diterima semua',
+                'data-confirm' => 'Selesaikan dokumen ini?'
+            ]);
+            echo ' ';
         }
 
         if(!$anyReceived && $model->status == $model::STATUS_POSTED){

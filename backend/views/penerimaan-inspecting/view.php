@@ -113,6 +113,14 @@ if($model->kartu_process_dyeing_id !== null){
                 'data-title' => 'Penerimaan Packing'
             ]);
             echo ' ';
+        } else if ($model->status == $model::STATUS_APPROVED || $model->status == $model::STATUS_APPROVED_PARTIAL) {
+            // Jika sudah received semua tapi status masih nyangkut, beri tombol sync khusus dokumen ini
+            echo Html::a('<i class="fa fa-refresh"></i> Selesaikan Dokumen', ['sync-status'], [
+                'class' => 'btn btn-warning',
+                'title' => 'Selesaikan dokumen ini karena item sudah diterima semua',
+                'data-confirm' => 'Selesaikan dokumen ini?'
+            ]);
+            echo ' ';
         }
 
         if(!$anyReceived && $model->status == $model::STATUS_APPROVED){

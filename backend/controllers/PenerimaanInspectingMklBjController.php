@@ -183,11 +183,27 @@ class PenerimaanInspectingMklBjController extends Controller
                             }
                         }
 
+                        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
+                            ->select('id_from')
+                            ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($model->items, 'id'), 'trans_from' => 'MKL'])
+                            ->column();
+
+                        $joinPieceHasReceived = [];
+                        foreach ($model->items as $ii) {
+                            if (!empty($ii->join_piece) && in_array($ii->id, $receivedItemIds)) {
+                                $joinPieceHasReceived[$ii->join_piece] = true;
+                            }
+                        }
+
                         // Cek apakah semua item sudah diterima
                         $allReceived = true;
                         foreach ($model->items as $item) {
-                            if($item->is_head == 1){
-                                if($item->qty > 0 && !\common\models\ar\TrnGudangJadi::find()->where(['id_from'=>$item->id, 'trans_from'=>'MKL'])->exists()){
+                            if($item->is_head == 1 && $item->qty > 0){
+                                $isReceived = in_array($item->id, $receivedItemIds);
+                                if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
+                                    $isReceived = true;
+                                }
+                                if(!$isReceived){
                                     $allReceived = false;
                                     break;
                                 }
@@ -293,5 +309,80 @@ class PenerimaanInspectingMklBjController extends Controller
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    public function actionSyncStatus($id = null, $bulan = null, $tahun = null)
+    {
+        $query = \common\models\ar\InspectingMklBj::find()
+            ->with('items')
+            ->where(['in', 'status', [\common\models\ar\InspectingMklBj::STATUS_POSTED, \common\models\ar\InspectingMklBj::STATUS_POSTED_PARTIAL]]);
+        
+        if ($id !== null) {
+            $query->andWhere(['id' => $id]);
+        }
+        
+        if ($bulan !== null && $tahun !== null) {
+            $startDate = $tahun . '-' . $bulan . '-01';
+            $endDate = date('Y-m-t', strtotime($startDate));
+            $query->andWhere(['between', 'tgl_kirim', $startDate, $endDate]);
+        }
+
+        $models = $query->all();
+        $fixed = 0;
+        
+        $allItemIds = [];
+        foreach ($models as $model) {
+            foreach ($model->items as $item) {
+                $allItemIds[] = $item->id;
+            }
+        }
+        
+        $allReceivedItemIds = [];
+        if (!empty($allItemIds)) {
+            $allReceivedItemIds = \common\models\ar\TrnGudangJadi::find()
+                ->select('id_from')
+                ->where(['id_from' => $allItemIds, 'trans_from' => 'MKL'])
+                ->column();
+            $allReceivedItemIds = array_flip($allReceivedItemIds);
+        }
+
+        foreach ($models as $model) {
+            $joinPieceHasReceived = [];
+            foreach ($model->items as $ii) {
+                if (!empty($ii->join_piece) && isset($allReceivedItemIds[$ii->id])) {
+                    $joinPieceHasReceived[$ii->join_piece] = true;
+                }
+            }
+
+            $allReceived = true;
+            foreach ($model->items as $item) {
+                if($item->is_head == 1 && $item->qty > 0){
+                    $isReceived = isset($allReceivedItemIds[$item->id]);
+                    if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
+                        $isReceived = true;
+                    }
+                    if(!$isReceived){
+                        $allReceived = false;
+                        break;
+                    }
+                }
+            }
+
+            if ($allReceived) {
+                $model->status = \common\models\ar\InspectingMklBj::STATUS_DELIVERED;
+                if(!$model->delivered_at) {
+                    $model->delivered_at = time();
+                }
+                if(!$model->delivered_by) {
+                    $model->delivered_by = Yii::$app->user->id ?? 1;
+                }
+                $model->save(false, ['status', 'delivered_at', 'delivered_by']);
+                $fixed++;
+            }
+        }
+
+        $totalChecked = count($models);
+        Yii::$app->session->setFlash('success', "Memeriksa {$totalChecked} data pada periode tersebut. Berhasil menyinkronkan status {$fixed} data yang stuck ke 'Delivered'.");
+        return $this->redirect(['index']);
     }
 }

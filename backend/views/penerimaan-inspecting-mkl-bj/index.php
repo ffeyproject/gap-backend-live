@@ -19,6 +19,15 @@ if(!empty($searchModel->wo_id)){
 }
 ?>
 <div class="inspecting-index">
+    <p>
+        <?= Html::button('<i class="fa fa-refresh"></i> Sync Data Stuck', [
+            'class' => 'btn btn-warning',
+            'title' => 'Perbaiki data yang sudah di-receive semua tapi masih muncul',
+            'data-toggle' => 'modal',
+            'data-target' => '#syncModal'
+        ]) ?>
+    </p>
+
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
     <?= GridView::widget([
@@ -128,4 +137,43 @@ if(!empty($searchModel->wo_id)){
     ]); ?>
 
 
+</div>
+
+<!-- Modal Sync -->
+<div class="modal fade" id="syncModal" tabindex="-1" role="dialog" aria-labelledby="syncModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <?php $form = \yii\widgets\ActiveForm::begin(['action' => ['sync-status'], 'method' => 'get']); ?>
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="syncModalLabel">Sync Data Stuck</h4>
+      </div>
+      <div class="modal-body">
+        <p>Proses sinkronisasi akan mengecek semua data yang sudah di-receive namun statusnya masih nyangkut di Penerimaan. Karena proses ini membutuhkan waktu, silakan filter berdasarkan bulan dan tahun.</p>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Bulan</label>
+                    <?= Html::dropDownList('bulan', date('m'), [
+                        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+                        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+                    ], ['class' => 'form-control']) ?>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Tahun</label>
+                    <?= Html::dropDownList('tahun', date('Y'), array_combine(range(date('Y')-5, date('Y')), range(date('Y')-5, date('Y'))), ['class' => 'form-control']) ?>
+                </div>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-warning"><i class="fa fa-refresh"></i> Mulai Sync</button>
+      </div>
+      <?php \yii\widgets\ActiveForm::end(); ?>
+    </div>
+  </div>
 </div>
