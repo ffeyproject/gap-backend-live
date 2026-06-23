@@ -88,7 +88,12 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
     <?php \yii\widgets\Pjax::begin(['id' => 'grid-hambatan-pjax', 'timeout' => false]); ?>
     <div class="box box-info">
         <div class="box-header with-border">
-            <h3 class="box-title">Data Hambatan yang Sudah Diinput (Hari Ini)</h3>
+            <?php
+            $displayDate = Yii::$app->request->get('tanggal', $model->tanggal);
+            $formattedDate = \Yii::$app->formatter->asDate($displayDate, 'php:d M Y');
+            $hariIni = ($displayDate == date('Y-m-d')) ? ' (Hari Ini)' : '';
+            ?>
+            <h3 class="box-title">Data Hambatan yang Sudah Diinput - <?= $formattedDate . $hariIni ?></h3>
         </div>
         <div class="box-body no-padding" style="overflow-x: auto;">
             <?= \kartik\grid\GridView::widget([
@@ -760,12 +765,14 @@ $(document).on('click', '.btn-edit-set', function() {
     });
 });
 
-$(document).on('change', '#trnhambatanmesin-model_mesin', function() {
+$(document).on('change', '#trnhambatanmesin-model_mesin, #trnhambatanmesin-tanggal', function() {
     if (window.isEditingSet) return; // Prevent reload if being populated by Edit Set
-    var val = $(this).val() || '';
+    var modelVal = $('#trnhambatanmesin-model_mesin').val() || '';
+    var tanggalVal = $('#trnhambatanmesin-tanggal').val() || '';
     if ($('#grid-hambatan-pjax').length > 0) {
         var url = new URL(window.location.href);
-        url.searchParams.set('model_mesin', val);
+        url.searchParams.set('model_mesin', modelVal);
+        url.searchParams.set('tanggal', tanggalVal);
         $.pjax.reload({container: '#grid-hambatan-pjax', url: url.toString(), replace: false, timeout: false});
     }
 });

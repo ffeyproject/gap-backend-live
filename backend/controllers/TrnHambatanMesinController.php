@@ -154,9 +154,11 @@ class TrnHambatanMesinController extends Controller
             }
         }
 
+        $filterTanggal = Yii::$app->request->get('tanggal', $model->tanggal);
+        
         $queryItems = \common\models\ar\TrnHambatanMesinItem::find()
             ->joinWith('trnHambatanMesin')
-            ->where(['trn_hambatan_mesin.tanggal' => date('Y-m-d')])
+            ->where(['trn_hambatan_mesin.tanggal' => $filterTanggal])
             ->orderBy(['trn_hambatan_mesin_item.id' => SORT_DESC]);
             
         $filterModelMesin = Yii::$app->request->get('model_mesin');
@@ -204,7 +206,7 @@ class TrnHambatanMesinController extends Controller
         $this->findModel($id)->delete();
         Yii::$app->session->setFlash('success', 'Data hambatan per mesin berhasil dihapus.');
 
-        return $this->redirect(['index']);
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }
 
     /**
