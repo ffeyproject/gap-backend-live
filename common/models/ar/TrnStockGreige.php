@@ -135,12 +135,12 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         return [self::STATUS_PENDING => 'Pending', self::STATUS_VALID => 'Valid', self::STATUS_ON_PROCESS_CARD => 'Masuk Kartu Proses', self::STATUS_DIPOTONG => 'Dipotong', self::STATUS_KELUAR_GUDANG => 'Dikeluarkan Dari Gudang', self::STATUS_MIXED => 'Di Mix'];
     }
 
-    const JG_FRESH = 1;const JG_WIP = 2;const JG_PFP = 3; const JG_EX_FINISH = 4;
+    const JG_FRESH = 1;const JG_WIP = 2;const JG_PFP = 3; const JG_EX_FINISH = 4; const JG_PFP_PERSIAPAN = 5;
     /**
      * @return array
      */
     public static function jenisGudangOptions(){
-        return [self::JG_FRESH => 'Fresh', self::JG_WIP => 'WIP', self::JG_PFP => 'PFP', self::JG_EX_FINISH => 'EX Finish'];
+        return [self::JG_FRESH => 'Fresh', self::JG_WIP => 'WIP', self::JG_PFP => 'PFP', self::JG_EX_FINISH => 'EX Finish', self::JG_PFP_PERSIAPAN => 'Gudang Persiapan PFP'];
     }
 
     const PFP_JG_ONE = 1;const PFP_JG_TWO = 2;
@@ -190,7 +190,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             ['status', 'in', 'range' => [self::STATUS_PENDING, self::STATUS_VALID, self::STATUS_ON_PROCESS_CARD, self::STATUS_ON_PROCESS_CARD, self::STATUS_DIPOTONG, self::STATUS_KELUAR_GUDANG]],
 
             ['jenis_gudang', 'default', 'value'=>self::JG_FRESH],
-            ['jenis_gudang', 'in', 'range' => [self::JG_FRESH, self::JG_WIP, self::JG_PFP, self::JG_EX_FINISH]],
+            ['jenis_gudang', 'in', 'range' => [self::JG_FRESH, self::JG_WIP, self::JG_PFP, self::JG_EX_FINISH, self::JG_PFP_PERSIAPAN]],
 
             ['pfp_jenis_gudang', 'in', 'range' => [self::PFP_JG_ONE, self::PFP_JG_TWO]],
 

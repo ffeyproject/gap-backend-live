@@ -464,6 +464,29 @@ class AjaxController extends Controller
      * @return array
      * @throws \yii\db\Exception
      */
+    public function actionLookupOrderPfpPersiapan($q = null){
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['results' => ['id' => '', 'text' => '']];
+        if (!is_null($q)) {
+            $query = TrnOrderPfp::find()
+                ->select(new Expression('id, status, no "text"'))
+                ->where(['ilike', 'no', $q])
+                ->andWhere(['<>', 'status', TrnOrderPfp::STATUS_DRAFT])
+                ->andWhere(['jenis_gudang' => TrnStockGreige::JG_PFP_PERSIAPAN])
+                ->orderBy(['id' => SORT_DESC])
+                ->limit(20)
+                ->asArray()
+            ;
+            $out['results'] = $query->all();
+        }
+        return $out;
+    }
+
+    /**
+     * @param null $q
+     * @return array
+     * @throws \yii\db\Exception
+     */
     public function actionLookupOrderCelup($q = null){
         Yii::$app->response->format = Response::FORMAT_JSON;
         $out = ['results' => ['id' => '', 'text' => '']];

@@ -14,6 +14,7 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
     public $dateRange;
     public $namaKain;
     public $shift;
+    public $jenis_gudang;
 
     private $from_date;
     private $to_date;
@@ -23,7 +24,7 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
         return [
             [['id','greige_group_id','greige_id','order_pfp_id','no_urut','asal_greige',
               'posted_at','approved_at','approved_by','status','created_at','created_by',
-              'updated_at','updated_by','delivered_at','delivered_by'], 'integer'],
+              'updated_at','updated_by','delivered_at','delivered_by','jenis_gudang'], 'integer'],
 
             [['no','no_proses','dikerjakan_oleh','lusi','pakan','note','date',
               'reject_notes','nomor_kartu','namaKain','orderPfpNo','dateRange','shift'], 'safe'],
@@ -48,17 +49,18 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
         /** JOIN */
         $query->joinWith(['orderPfp']);
         $query->joinWith(['greige']);
-        $query->joinWith(['kartuProcessPfpProcesses kp']);
+        $query->joinWith(['kartuProcessPfpProcesses kp' => function($q) use ($processId) {
+            if ($processId) {
+                $q->onCondition(['kp.process_id' => $processId]);
+            }
+        }]);
 
         $query->select([
             'trn_kartu_proses_pfp.*',
             new Expression("kp.value::jsonb->>'shift_operator' AS shift"),
         ]);
 
-        /** FILTER hanya process awal */
-        if ($processId) {
-            $query->andWhere(['kp.process_id' => $processId]);
-        }
+        /** FILTER hanya process awal dipindahkan ke ON clause di atas */
 
         /** GROUP BY wajib (PostgreSQL) */
         $query->groupBy([
@@ -69,9 +71,9 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => [
-                /** DEFAULT SORT: SHIFT ASC (A → Z) */
+                /** DEFAULT SORT: ID DESC (Nomor ID Terbesar) */
                 'defaultOrder' => [
-                    'shift' => SORT_ASC,
+                    'id' => SORT_DESC,
                 ],
             ],
         ]);
@@ -129,6 +131,7 @@ class TrnKartuProsesPfpSearch extends TrnKartuProsesPfp
             'trn_kartu_proses_pfp.no_urut' => $this->no_urut,
             'trn_kartu_proses_pfp.asal_greige' => $this->asal_greige,
             'trn_kartu_proses_pfp.status' => $this->status,
+            'trn_order_pfp.jenis_gudang' => $this->jenis_gudang,
         ]);
 
         /** FILTER STRING */

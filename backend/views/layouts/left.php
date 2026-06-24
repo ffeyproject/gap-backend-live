@@ -447,6 +447,12 @@ $moduleId = $controller->module->id;
                         'url' => ['/trn-pfp-keluar/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-pfp-keluar'
                     ],
+                    [
+                        'label' => 'Mutasi PFP',
+                        'icon' => 'circle',
+                        'url' => ['/mutasi-pfp/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'mutasi-pfp'
+                    ],
                 ]
             ],
 
@@ -514,10 +520,22 @@ $moduleId = $controller->module->id;
             ],
 
             [
-                'label' => 'PENERIMAAN',
+                'label' => 'PERSIAPAN',
                 'icon' => 'bars',
                 'url' => '#',
                 'items' => [
+                    [
+                        'label' => 'Penerimaan Mutasi PFP', 'icon' => 'circle-o', 'url' => ['/penerimaan-mutasi-pfp/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'penerimaan-mutasi-pfp'
+                    ],
+                    [
+                        'label' => 'Stock Gudang PFP Persiapan', 'icon' => 'circle-o', 'url' => ['/trn-stock-pfp-persiapan/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-pfp-persiapan'
+                    ],
+                    [
+                        'label' => 'Pembuatan Kartu PFP', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-pfp-persiapan/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-pfp-persiapan'
+                    ],
                     [
                         'label' => 'Kartu Proses PFP', 'icon' => 'circle-o', 'url' => ['/penerimaan-kartu-proses-pfp/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'penerimaan-kartu-proses-pfp'

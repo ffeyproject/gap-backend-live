@@ -111,6 +111,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'kppNo',
             'memoRepairNo',
             [
+                'attribute' => 'no_lot',
                 'label' => 'No. Lot',
                 'value'=>function($data){
                     /* @var $data TrnInspecting*/

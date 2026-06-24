@@ -105,7 +105,7 @@ use yii\web\JsExpression;
                                     'allowClear' => true,
                                 ],
                                 'data' => array_filter(TrnStockGreige::jenisGudangOptions(), function($key) {
-                                    return $key === TrnStockGreige::JG_PFP || $key === TrnStockGreige::JG_FRESH;
+                                    return $key === TrnStockGreige::JG_PFP || $key === TrnStockGreige::JG_FRESH || $key === TrnStockGreige::JG_PFP_PERSIAPAN;
                                 }, ARRAY_FILTER_USE_KEY),
                             ]);
                             ?>
