@@ -134,6 +134,7 @@ $formatNumber = function($panjang, $count) {
                             <th class="freeze-col-2" style="width: 250px;">Nama Proses</th>
                             <th>Jumlah Dyeing</th>
                             <th>Jumlah PFP</th>
+                            <th>Jumlah Printing</th>
                             <th>Total</th>
                         </tr>
                     </thead>
@@ -142,12 +143,14 @@ $formatNumber = function($panjang, $count) {
                         $no = 1;
                         $totDyeingP = 0; $totDyeingC = 0;
                         $totPfpP = 0; $totPfpC = 0;
+                        $totPrintingP = 0; $totPrintingC = 0;
                         $totAllP = 0; $totAllC = 0;
                         
                         foreach ($allProsesNames as $proses): 
                             $data = $rekapProses[$proses];
                             $totDyeingP += $data['dyeing']['p']; $totDyeingC += $data['dyeing']['c'];
                             $totPfpP += $data['pfp']['p']; $totPfpC += $data['pfp']['c'];
+                            $totPrintingP += $data['printing']['p']; $totPrintingC += $data['printing']['c'];
                             $totAllP += $data['total']['p']; $totAllC += $data['total']['c'];
                         ?>
                         <tr>
@@ -155,6 +158,7 @@ $formatNumber = function($panjang, $count) {
                             <td class="freeze-col-2"><strong><?= Html::encode($proses) ?></strong></td>
                             <td class="text-right"><?= $formatNumber($data['dyeing']['p'], $data['dyeing']['c']) ?></td>
                             <td class="text-right"><?= $formatNumber($data['pfp']['p'], $data['pfp']['c']) ?></td>
+                            <td class="text-right"><?= $formatNumber($data['printing']['p'], $data['printing']['c']) ?></td>
                             <td class="text-right" style="background-color: #f9f9f9; font-weight: bold;"><?= $formatNumber($data['total']['p'], $data['total']['c']) ?></td>
                         </tr>
                         <?php endforeach; ?>
@@ -164,6 +168,7 @@ $formatNumber = function($panjang, $count) {
                             <th class="freeze-col-1" colspan="2" style="text-align: right;">GRAND TOTAL</th>
                             <th class="text-right"><?= $formatNumber($totDyeingP, $totDyeingC) ?></th>
                             <th class="text-right"><?= $formatNumber($totPfpP, $totPfpC) ?></th>
+                            <th class="text-right"><?= $formatNumber($totPrintingP, $totPrintingC) ?></th>
                             <th class="text-right"><?= $formatNumber($totAllP, $totAllC) ?></th>
                         </tr>
                     </tfoot>

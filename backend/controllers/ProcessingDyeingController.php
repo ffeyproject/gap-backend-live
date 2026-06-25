@@ -2665,7 +2665,18 @@ class ProcessingDyeingController extends Controller
                 ->select('nama_proses')
                 ->column();
                 
-            $allowedProcessNames = array_merge($allowedProcessNames, $allowedProcessNamesPfp);
+            $allowedProcessIdsPrinting = (new \yii\db\Query())
+                ->select('mst_process_printing_id')
+                ->from('mst_process_printing_mesin')
+                ->where(['in', 'mst_mesin_proses_id', $machineIds])
+                ->column();
+                
+            $allowedProcessNamesPrinting = \common\models\ar\MstProcessPrinting::find()
+                ->where(['in', 'id', $allowedProcessIdsPrinting])
+                ->select('nama_proses')
+                ->column();
+                
+            $allowedProcessNames = array_merge($allowedProcessNames, $allowedProcessNamesPfp, $allowedProcessNamesPrinting);
 
             // Prepopulate machines and shifts so they always appear
             foreach ($machineNames as $mName) {
@@ -2677,6 +2688,7 @@ class ProcessingDyeingController extends Controller
 
             $dyeingRecords = [];
             $pfpRecords = [];
+            $printingRecords = [];
 
             $minUpdatedAt = strtotime($startDate . ' 00:00:00') - (86400 * 90);
 
@@ -2710,6 +2722,19 @@ class ProcessingDyeingController extends Controller
                         ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
                         ->with(['kartuProcess.trnKartuProsesPfpItems', 'process']);
                     $pfpRecords = array_merge($pfpRecords, $qPfp->all());
+
+                    // PRINTING
+                    $qPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+                        ->alias('kp')
+                        ->innerJoin('trn_kartu_proses_printing kpd', 'kp.kartu_process_id = kpd.id')
+                        ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                        ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+                        ->andWhere(['in', 'kp.process_id', $allowedProcessIdsPrinting])
+                        ->andWhere(['>=', 'kpd.updated_at', $minUpdatedAt])
+                        ->andWhere(['like', 'kp.value', '"tanggal":"' . $currentDate . '"'])
+                        ->andWhere(['like', 'kp.value', '"no_mesin":"' . $mNameSafe . '"'])
+                        ->with(['kartuProcess.trnKartuProsesPrintingItems', 'process']);
+                    $printingRecords = array_merge($printingRecords, $qPrinting->all());
                 }
                 
                 $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
@@ -2730,7 +2755,6 @@ class ProcessingDyeingController extends Controller
             ) {
                 $vals = \yii\helpers\Json::decode($valJson);
                 $noMesin = isset($vals['no_mesin']) ? $vals['no_mesin'] : null;
-                $tanggalVal = isset($vals['tanggal']) ? $vals['tanggal'] : null;
                 $shift = isset($vals['shift_group']) ? $vals['shift_group'] : (isset($vals['shift_operator']) ? $vals['shift_operator'] : '-');
                 
                 if (!$noMesin || !in_array($noMesin, $machineNames)) return;
@@ -2775,6 +2799,10 @@ class ProcessingDyeingController extends Controller
                             foreach($parentCard->trnKartuProsesPfpItems as $item) {
                                 $panjang += floatval($item->panjang_m);
                             }
+                        } elseif ($tipeKategori === 'printing' && $parentCard) {
+                            foreach($parentCard->trnKartuProsesPrintingItems as $item) {
+                                $panjang += floatval($item->panjang_m);
+                            }
                         } else {
                             $panjang = floatval($vals['panjang_greige'] ?? 0);
                         }
@@ -2796,7 +2824,12 @@ class ProcessingDyeingController extends Controller
                 
                 // Init Process Array
                 if (!isset($rekapProses[$processKey])) {
-                    $rekapProses[$processKey] = ['dyeing' => ['p' => 0, 'c' => 0], 'pfp' => ['p' => 0, 'c' => 0], 'total' => ['p' => 0, 'c' => 0]];
+                    $rekapProses[$processKey] = [
+                        'dyeing' => ['p' => 0, 'c' => 0], 
+                        'pfp' => ['p' => 0, 'c' => 0], 
+                        'printing' => ['p' => 0, 'c' => 0],
+                        'total' => ['p' => 0, 'c' => 0]
+                    ];
                 }
                 
                 $batchCount = in_array($noMesin, $jumboMachines) ? 0.5 : 1;
@@ -2842,9 +2875,17 @@ class ProcessingDyeingController extends Controller
             foreach ($pfpRecords as $rec) {
                 if (!isset($rec->kartuProcess)) continue;
                 $processName = $rec->process ? $rec->process->nama_proses : '';
-                $isPerbaikan = false; // Assuming PFP doesn't use the perbaikan flag in the same way, or it's mapped.
+                $isPerbaikan = false;
                 $nk = 'PFP-'.$rec->kartuProcess->no;
                 $processRecord($rec->value, $processName, 'pfp', $isPerbaikan, $nk, $rec->kartuProcess);
+            }
+
+            foreach ($printingRecords as $rec) {
+                if (!isset($rec->kartuProcess)) continue;
+                $processName = $rec->process ? $rec->process->nama_proses : '';
+                $isPerbaikan = false;
+                $nk = $rec->kartuProcess->nomor_kartu;
+                $processRecord($rec->value, $processName, 'printing', $isPerbaikan, $nk, $rec->kartuProcess);
             }
 
             foreach ($tambahanQuery as $rec) {
