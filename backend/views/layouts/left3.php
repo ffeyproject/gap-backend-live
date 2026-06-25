@@ -503,6 +503,12 @@ $moduleId = $controller->module->id;
                                 'url' => ['/processing-dyeing/rekap-proses-mesin'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId=='rekap-proses-mesin'
                             ],
+                            [
+                                'label'=> 'Rekap Produksi Harian',
+                                'icon' => 'circle-o',
+                                'url' => ['/laporan/rekap-harian-processing'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'laporan' && $actionId=='rekap-harian-processing'
+                            ],
                         ]
                     ],
                 ],

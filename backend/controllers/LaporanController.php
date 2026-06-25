@@ -1022,7 +1022,599 @@ class LaporanController extends Controller
             'data' => $data
         ]);
     }
-    
+
+    public function actionRekapHarianProcessing()
+    {
+        $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
+        
+        // 1. Fetch Hisaka Machines and map
+        $machineMap = \yii\helpers\ArrayHelper::index(\common\models\ar\MstMesinProses::find()->all(), 'nama_mesin');
+        
+        // 2. Query Dyeing Processes for the selected date
+        $qDyeing = \common\models\ar\KartuProcessDyeingProcess::find()
+            ->alias('kp')
+            ->innerJoin('trn_kartu_proses_dyeing kpd', 'kp.kartu_process_id = kpd.id')
+            ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
+            ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_BATAL]])
+            ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+            ->with(['kartuProcess.trnKartuProsesDyeingItems', 'process', 'kartuProcess.wo.greige', 'kartuProcess.woColor.moColor'])
+            ->all();
+
+        // 3. Query PFP Processes for the selected date
+        $qPfp = \common\models\ar\KartuProcessPfpProcess::find()
+            ->alias('kp')
+            ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
+            ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
+            ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
+            ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+            ->with(['kartuProcess.trnKartuProsesPfpItems', 'process', 'kartuProcess.greige'])
+            ->all();
+
+        // 4. Query Printing Processes for the selected date
+        $qPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+            ->alias('kp')
+            ->innerJoin('trn_kartu_proses_printing kpd', 'kp.kartu_process_id = kpd.id')
+            ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+            ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+            ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+            ->with(['kartuProcess.trnKartuProsesPrintingItems', 'process', 'kartuProcess.wo.greige', 'kartuProcess.woColor.moColor'])
+            ->all();
+
+        // Parse all records
+        $parsedRecords = [];
+        $parseRecordHelper = function($record, $type) use ($machineMap) {
+            $val = \yii\helpers\Json::decode($record->value);
+            if (!is_array($val)) $val = [];
+            
+            $noMesin = isset($val['no_mesin']) ? $val['no_mesin'] : null;
+            if (!$noMesin) return null;
+            
+            $shift = isset($val['shift_group']) ? $val['shift_group'] : (isset($val['shift_operator']) ? $val['shift_operator'] : (isset($val['shift']) ? $val['shift'] : null));
+            if (!$shift || $shift === '-') {
+                $shift = '-';
+            }
+            $shift = strtoupper(trim($shift));
+            
+            $modelMesin = isset($machineMap[$noMesin]) ? $machineMap[$noMesin]->model_mesin : '';
+            $processName = $record->process ? $record->process->nama_proses : '';
+            
+            $panjang = 0;
+            $kartuProcess = $record->kartuProcess;
+            $motif = '';
+            $warna = '-';
+            $woNo = '';
+            $nomorKartu = '';
+            
+            if ($kartuProcess) {
+                $nomorKartu = $kartuProcess->nomor_kartu;
+                if ($type === 'dyeing') {
+                    $motif = $kartuProcess->wo ? ($kartuProcess->wo->greige ? $kartuProcess->wo->greige->nama_kain : '') : '';
+                    $panjang = array_sum(array_column($kartuProcess->trnKartuProsesDyeingItems, 'panjang_m'));
+                    $woNo = $kartuProcess->wo ? $kartuProcess->wo->no : '';
+                    $warna = ($kartuProcess->woColor && $kartuProcess->woColor->moColor) ? $kartuProcess->woColor->moColor->color : '';
+                } elseif ($type === 'pfp') {
+                    $motif = $kartuProcess->greige ? $kartuProcess->greige->nama_kain : '';
+                    $panjang = array_sum(array_column($kartuProcess->trnKartuProsesPfpItems, 'panjang_m'));
+                    $woNo = 'F-PFP-' . $kartuProcess->no;
+                } elseif ($type === 'printing') {
+                    $motif = $kartuProcess->wo ? ($kartuProcess->wo->greige ? $kartuProcess->wo->greige->nama_kain : '') : '';
+                    $panjang = array_sum(array_column($kartuProcess->trnKartuProsesPrintingItems, 'panjang_m'));
+                    $woNo = $kartuProcess->wo ? $kartuProcess->wo->no : '';
+                    $warna = ($kartuProcess->woColor && $kartuProcess->woColor->moColor) ? $kartuProcess->woColor->moColor->color : '';
+                }
+            }
+            
+            if (isset($val['panjang_greige']) && $val['panjang_greige'] !== '') {
+                $panjang = floatval($val['panjang_greige']);
+            }
+            
+            return [
+                'type' => $type,
+                'record' => $record,
+                'no_mesin' => $noMesin,
+                'model_mesin' => $modelMesin,
+                'shift' => $shift,
+                'proses' => $processName,
+                'panjang' => $panjang,
+                'motif' => $motif,
+                'warna' => $warna,
+                'wo_no' => $woNo,
+                'nk' => $nomorKartu,
+                'val' => $val
+            ];
+        };
+
+        foreach ($qDyeing as $rec) {
+            $p = $parseRecordHelper($rec, 'dyeing');
+            if ($p) $parsedRecords[] = $p;
+        }
+        foreach ($qPfp as $rec) {
+            $p = $parseRecordHelper($rec, 'pfp');
+            if ($p) $parsedRecords[] = $p;
+        }
+        foreach ($qPrinting as $rec) {
+            $p = $parseRecordHelper($rec, 'printing');
+            if ($p) $parsedRecords[] = $p;
+        }
+
+        // --- HISAKA CALCULATIONS ---
+        $hisakaStandard = [];
+        $hisakaRepair = [];
+        $hisakaShifts = ['C' => 0, 'D' => 0, 'A' => 0];
+        $hisakaJumboBatchesByShift = ['C' => 0, 'D' => 0, 'A' => 0];
+        
+        $totalHisakaJumboCards = 0;
+        $totalHisakaStandardCards = 0;
+        
+        $hisakaCategories = [
+            'RELAX' => ['cards' => 0, 'jumbo_cards' => 0],
+            'REL CLP PR' => ['cards' => 0, 'jumbo_cards' => 0],
+            'REL CLP DY' => ['cards' => 0, 'jumbo_cards' => 0],
+            'CELUP' => ['cards' => 0, 'jumbo_cards' => 0],
+            'CUCI WR' => ['cards' => 0, 'jumbo_cards' => 0]
+        ];
+
+        $hisakaShiftCards = [
+            'C' => ['total' => 0, 'jumbo' => 0],
+            'D' => ['total' => 0, 'jumbo' => 0],
+            'A' => ['total' => 0, 'jumbo' => 0]
+        ];
+
+        foreach ($parsedRecords as $p) {
+            $isHisaka = (stripos($p['model_mesin'], 'Hisaka') !== false) || (stripos($p['no_mesin'], 'Hisaka') !== false);
+            if (!$isHisaka) continue;
+
+            $isJumbo = false;
+            if (stripos($p['model_mesin'], 'Jumbo') !== false || preg_match('/\b(22|23)\b/', $p['no_mesin'])) {
+                $isJumbo = true;
+            }
+
+            $proses = $p['proses'];
+            $isRepair = (stripos($proses, 'Toping') !== false) 
+                || (stripos($proses, 'Topping') !== false)
+                || (stripos($proses, 'Level') !== false)
+                || (stripos($proses, 'Stripping') !== false)
+                || (stripos($proses, 'Ulang') !== false)
+                || (stripos($proses, 'Repair') !== false)
+                || (stripos($proses, 'Redyeing') !== false)
+                || (stripos($proses, 'Cuci H2O2') !== false)
+                || ($p['record']->kartuProcess && $p['record']->kartuProcess->kartu_proses_id !== null);
+
+            $shift = $p['shift'];
+            if ($shift !== '-') {
+                if (!isset($hisakaShiftCards[$shift])) {
+                    $hisakaShiftCards[$shift] = ['total' => 0, 'jumbo' => 0];
+                }
+                $hisakaShiftCards[$shift]['total']++;
+                if ($isJumbo) {
+                    $hisakaShiftCards[$shift]['jumbo']++;
+                }
+            }
+
+            if ($isRepair) {
+                $hisakaRepair[] = $p;
+                if ($isJumbo) {
+                    $totalHisakaJumboCards++;
+                }
+            } else {
+                $cat = 'CELUP';
+                if (stripos($proses, 'Relax') !== false) {
+                    if ((stripos($proses, 'Celup') !== false || stripos($proses, 'Clp') !== false)) {
+                        if (stripos($proses, 'Print') !== false || stripos($proses, 'Pr') !== false) {
+                            $cat = 'REL CLP PR';
+                        } else {
+                            $cat = 'REL CLP DY';
+                        }
+                    } else {
+                        $cat = 'RELAX';
+                    }
+                } elseif (stripos($proses, 'Cuci') !== false || stripos($proses, 'RC') !== false || stripos($proses, 'WR') !== false) {
+                    $cat = 'CUCI WR';
+                }
+                
+                if (!isset($hisakaCategories[$cat])) {
+                    $hisakaCategories[$cat] = ['cards' => 0, 'jumbo_cards' => 0];
+                }
+                $hisakaCategories[$cat]['cards']++;
+                if ($isJumbo) {
+                    $hisakaCategories[$cat]['jumbo_cards']++;
+                    $totalHisakaJumboCards++;
+                }
+                
+                $totalHisakaStandardCards++;
+            }
+        }
+
+        // Calculate batches for standard categories
+        $produksiHisakaRows = [];
+        $totalStandardCards = 0;
+        $totalStandardBatches = 0;
+        foreach ($hisakaCategories as $name => $counts) {
+            $cards = $counts['cards'];
+            $jumbo = $counts['jumbo_cards'];
+            $jumboBatches = $jumbo / 2;
+            $batches = $cards - $jumboBatches;
+            
+            $produksiHisakaRows[$name] = [
+                'cards' => $cards,
+                'batches' => $batches
+            ];
+            $totalStandardCards += $cards;
+            $totalStandardBatches += $batches;
+        }
+
+        // Total for Perbaikan
+        $totalRepairCards = count($hisakaRepair);
+        $totalRepairJumboCards = 0;
+        foreach ($hisakaRepair as $r) {
+            $isJumbo = stripos($r['model_mesin'], 'Jumbo') !== false || preg_match('/\b(22|23)\b/', $r['no_mesin']);
+            if ($isJumbo) $totalRepairJumboCards++;
+        }
+        $totalRepairBatches = $totalRepairCards - ($totalRepairJumboCards / 2);
+
+        // Total + PRK (standard + repair)
+        $totalAllCards = $totalStandardCards + $totalRepairCards;
+        $totalAllBatches = $totalStandardBatches + $totalRepairBatches;
+
+        // Calculate Shift Batches
+        $shiftRows = [];
+        $sumShiftBatches = 0;
+        $allShifts = ['C', 'D', 'A'];
+        foreach ($allShifts as $s) {
+            $totalCardsInShift = isset($hisakaShiftCards[$s]) ? $hisakaShiftCards[$s]['total'] : 0;
+            $jumboCardsInShift = isset($hisakaShiftCards[$s]) ? $hisakaShiftCards[$s]['jumbo'] : 0;
+            $batchesInShift = $totalCardsInShift - ($jumboCardsInShift / 2);
+            
+            $shiftRows[$s] = $batchesInShift;
+            $sumShiftBatches += $batchesInShift;
+        }
+        
+        // Handle other custom shifts
+        foreach ($hisakaShiftCards as $s => $counts) {
+            if (!in_array($s, $allShifts) && $s !== '-') {
+                $batchesInShift = $counts['total'] - ($counts['jumbo'] / 2);
+                $shiftRows[$s] = $batchesInShift;
+                $sumShiftBatches += $batchesInShift;
+            }
+        }
+
+        // JUMBO row in shift table
+        $totalJumboBatches = $totalHisakaJumboCards / 2;
+        $shiftTableTotal = $sumShiftBatches + $totalJumboBatches;
+
+        // --- HAMBATAN HISAKA ---
+        $hambatanItems = \common\models\ar\TrnHambatanMesinItem::find()
+            ->joinWith(['trnHambatanMesin', 'mstMesinProses'])
+            ->where(['trn_hambatan_mesin.tanggal' => $tanggal])
+            ->andWhere(['like', 'mst_mesin_proses.model_mesin', 'Hisaka'])
+            ->orderBy(['mst_mesin_proses.nama_mesin' => SORT_ASC])
+            ->all();
+
+        // --- OTHER SECTIONS ---
+        
+        // 1. PERSIAPAN
+        $firstDyeingProcessId = \common\models\ar\MstProcessDyeing::find()->select('id')->where(['order' => 1])->scalar() ?: 1;
+        $firstPrintingProcessId = \common\models\ar\MstProcessPrinting::find()->select('id')->where(['order' => 1])->scalar() ?: 1;
+        $firstPfpProcessId = \common\models\ar\MstProcessPfp::find()->select('id')->where(['order' => 1])->scalar() ?: 1;
+
+        $persiapanShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isFirst = false;
+            if ($p['type'] === 'dyeing' && $p['record']->process_id == $firstDyeingProcessId) {
+                $isFirst = true;
+            } elseif ($p['type'] === 'printing' && $p['record']->process_id == $firstPrintingProcessId) {
+                $isFirst = true;
+            } elseif ($p['type'] === 'pfp' && $p['record']->process_id == $firstPfpProcessId) {
+                $isFirst = true;
+            }
+
+            if ($isFirst) {
+                $shift = $p['shift'];
+                if ($shift === '-') continue;
+                if (!isset($persiapanShifts[$shift])) {
+                    $persiapanShifts[$shift] = ['jml' => 0, 'dy_count' => 0, 'dy_len' => 0, 'pr_count' => 0, 'pr_len' => 0];
+                }
+                
+                $persiapanShifts[$shift]['jml'] += $p['panjang'];
+                if ($p['type'] === 'dyeing') {
+                    $persiapanShifts[$shift]['dy_count']++;
+                    $persiapanShifts[$shift]['dy_len'] += $p['panjang'];
+                } elseif ($p['type'] === 'printing') {
+                    $persiapanShifts[$shift]['pr_count']++;
+                    $persiapanShifts[$shift]['pr_len'] += $p['panjang'];
+                } else {
+                    $persiapanShifts[$shift]['dy_count']++;
+                    $persiapanShifts[$shift]['dy_len'] += $p['panjang'];
+                }
+            }
+        }
+
+        // 2. CONTINUOUS WINCH
+        $winchShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isWinch = (stripos($p['model_mesin'], 'Continuous') !== false) || (stripos($p['model_mesin'], 'Winch') !== false);
+            if (!$isWinch) continue;
+
+            $shift = $p['shift'];
+            if ($shift === '-') continue;
+            if (!isset($winchShifts[$shift])) {
+                $winchShifts[$shift] = ['jml' => 0, 'ulang' => 0];
+            }
+            $winchShifts[$shift]['jml'] += $p['panjang'];
+            
+            $isUlang = (stripos($p['proses'], 'Ulang') !== false) || (stripos($p['proses'], 'Cuci') !== false);
+            if ($isUlang) {
+                $winchShifts[$shift]['ulang']++;
+            }
+        }
+
+        // 3. BO FUKUSHIN
+        $fukushinShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isFukushin = (stripos($p['model_mesin'], 'Fukushin') !== false) || (stripos($p['model_mesin'], 'BO') !== false) || (stripos($p['no_mesin'], 'Fukushin') !== false);
+            if (!$isFukushin) continue;
+
+            $shift = $p['shift'];
+            if ($shift === '-') continue;
+            if (!isset($fukushinShifts[$shift])) {
+                $fukushinShifts[$shift] = ['jml' => 0, 'batch' => 0, 'bo_ul' => 0];
+            }
+            $fukushinShifts[$shift]['jml'] += $p['panjang'];
+            $fukushinShifts[$shift]['batch']++;
+            
+            $isUlang = (stripos($p['proses'], 'Ulang') !== false) || (stripos($p['proses'], 'Cuci') !== false);
+            if ($isUlang) {
+                $fukushinShifts[$shift]['bo_ul']++;
+            }
+        }
+
+        // 4. WASHING
+        $washingShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isWashing = (stripos($p['model_mesin'], 'Washing') !== false) || (stripos($p['model_mesin'], 'Wash') !== false) || (stripos($p['no_mesin'], 'Washing') !== false);
+            if (!$isWashing) continue;
+
+            $shift = $p['shift'];
+            if ($shift === '-') continue;
+            if (!isset($washingShifts[$shift])) {
+                $washingShifts[$shift] = ['jml' => 0, 'gul' => 0];
+            }
+            $washingShifts[$shift]['jml'] += $p['panjang'];
+            
+            $rolls = 0;
+            if ($p['record']->kartuProcess) {
+                if ($p['type'] === 'dyeing') {
+                    $rolls = count($p['record']->kartuProcess->trnKartuProsesDyeingItems);
+                } elseif ($p['type'] === 'pfp') {
+                    $rolls = count($p['record']->kartuProcess->trnKartuProsesPfpItems);
+                } elseif ($p['type'] === 'printing') {
+                    $rolls = count($p['record']->kartuProcess->trnKartuProsesPrintingItems);
+                }
+            }
+            $washingShifts[$shift]['gul'] += $rolls;
+        }
+
+        // 5. SLANGER
+        $slangerShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isSlanger = (stripos($p['model_mesin'], 'Slanger') !== false) || (stripos($p['no_mesin'], 'Slanger') !== false);
+            if (!$isSlanger) continue;
+
+            $shift = $p['shift'];
+            if ($shift === '-') continue;
+            if (!isset($slangerShifts[$shift])) {
+                $slangerShifts[$shift] = ['mc_1_2' => 0, 'mc_3' => 0, 'mc_4' => 0];
+            }
+            
+            $noMc = $p['no_mesin'];
+            if (preg_match('/(1|2)\b/', $noMc)) {
+                $slangerShifts[$shift]['mc_1_2']++;
+            } elseif (preg_match('/3\b/', $noMc)) {
+                $slangerShifts[$shift]['mc_3']++;
+            } elseif (preg_match('/4\b/', $noMc)) {
+                $slangerShifts[$shift]['mc_4']++;
+            } else {
+                $slangerShifts[$shift]['mc_1_2']++;
+            }
+        }
+
+        // 6. PADDING
+        $paddingDetail = [];
+        $paddingShifts = [];
+        foreach ($parsedRecords as $p) {
+            $isPadding = (stripos($p['model_mesin'], 'Padding') !== false) || (stripos($p['no_mesin'], 'Padding') !== false) || (stripos($p['model_mesin'], 'Padder') !== false);
+            if (!$isPadding) continue;
+
+            $paddingDetail[] = $p;
+
+            $shift = $p['shift'];
+            if ($shift === '-') continue;
+            if (!isset($paddingShifts[$shift])) {
+                $paddingShifts[$shift] = [
+                    'jml' => 0,
+                    'pad_pr_jml' => 0, 'pad_pr_card' => 0,
+                    'pad_dy_jml' => 0, 'pad_dy_card' => 0,
+                    'prk_dy_jml' => 0, 'prk_dy_card' => 0,
+                    'prk_pr_jml' => 0, 'prk_pr_card' => 0,
+                    'tes_jml' => 0, 'tes_card' => 0
+                ];
+            }
+            
+            $paddingShifts[$shift]['jml'] += $p['panjang'];
+            
+            $proses = $p['proses'];
+            $isRepair = (stripos($proses, 'Ulang') !== false) || (stripos($proses, 'Repair') !== false) || (stripos($proses, 'Redyeing') !== false);
+            $isTest = (stripos($proses, 'Tes') !== false) || (stripos($proses, 'Test') !== false) || (stripos($proses, 'Percobaan') !== false);
+            
+            if ($isTest) {
+                $paddingShifts[$shift]['tes_jml'] += $p['panjang'];
+                $paddingShifts[$shift]['tes_card']++;
+            } elseif ($isRepair) {
+                if ($p['type'] === 'printing') {
+                    $paddingShifts[$shift]['prk_pr_jml'] += $p['panjang'];
+                    $paddingShifts[$shift]['prk_pr_card']++;
+                } else {
+                    $paddingShifts[$shift]['prk_dy_jml'] += $p['panjang'];
+                    $paddingShifts[$shift]['prk_dy_card']++;
+                }
+            } else {
+                if ($p['type'] === 'printing') {
+                    $paddingShifts[$shift]['pad_pr_jml'] += $p['panjang'];
+                    $paddingShifts[$shift]['pad_pr_card']++;
+                } else {
+                    $paddingShifts[$shift]['pad_dy_jml'] += $p['panjang'];
+                    $paddingShifts[$shift]['pad_dy_card']++;
+                }
+            }
+        }
+
+        // --- LAIN-LAIN ---
+        $masukPackingDyeing = \common\models\ar\TrnKartuProsesDyeing::find()
+            ->where(['between', 'approved_at', strtotime($tanggal . ' 00:00:00'), strtotime($tanggal . ' 23:59:59')])
+            ->count();
+            
+        $masukPackingPrinting = \common\models\ar\TrnKartuProsesPrinting::find()
+            ->where(['between', 'approved_at', strtotime($tanggal . ' 00:00:00'), strtotime($tanggal . ' 23:59:59')])
+            ->count();
+
+        $produksiPrintingLength = 0;
+        foreach ($parsedRecords as $p) {
+            if ($p['type'] === 'printing') {
+                $produksiPrintingLength += $p['panjang'];
+            }
+        }
+
+        $produksiDigitalLength = 0;
+        foreach ($parsedRecords as $p) {
+            if ($p['type'] === 'printing' && stripos($p['model_mesin'], 'Digital') !== false) {
+                $produksiDigitalLength += $p['panjang'];
+            }
+        }
+
+        $cuciMesinHisaka = [];
+        foreach ($parsedRecords as $p) {
+            $isHisaka = (stripos($p['model_mesin'], 'Hisaka') !== false) || (stripos($p['no_mesin'], 'Hisaka') !== false);
+            if ($isHisaka && (stripos($p['proses'], 'Cuci Mesin') !== false || stripos($p['proses'], 'Wash Machine') !== false)) {
+                $mcNum = preg_replace('/[^0-9]/', '', $p['no_mesin']);
+                if ($mcNum) {
+                    $cuciMesinHisaka[] = $mcNum;
+                }
+            }
+        }
+        $cuciMesinHisaka = array_unique($cuciMesinHisaka);
+        sort($cuciMesinHisaka);
+
+        $wipDyeingCount = \common\models\ar\TrnKartuProsesDyeing::find()
+            ->where(['status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
+            ->count();
+
+        // If print parameters are set, render PDF
+        if (Yii::$app->request->get('print') == 1) {
+            $content = $this->renderPartial('rekap-harian-processing', [
+                'tanggal' => $tanggal,
+                'produksiHisakaRows' => $produksiHisakaRows,
+                'totalStandardCards' => $totalStandardCards,
+                'totalStandardBatches' => $totalStandardBatches,
+                'totalRepairCards' => $totalRepairCards,
+                'totalRepairBatches' => $totalRepairBatches,
+                'totalAllCards' => $totalAllCards,
+                'totalAllBatches' => $totalAllBatches,
+                'hisakaRepair' => $hisakaRepair,
+                'shiftRows' => $shiftRows,
+                'totalJumboBatches' => $totalJumboBatches,
+                'shiftTableTotal' => $shiftTableTotal,
+                'hambatanItems' => $hambatanItems,
+                'persiapanShifts' => $persiapanShifts,
+                'winchShifts' => $winchShifts,
+                'fukushinShifts' => $fukushinShifts,
+                'washingShifts' => $washingShifts,
+                'slangerShifts' => $slangerShifts,
+                'paddingDetail' => $paddingDetail,
+                'paddingShifts' => $paddingShifts,
+                'masukPackingDyeing' => $masukPackingDyeing,
+                'masukPackingPrinting' => $masukPackingPrinting,
+                'produksiPrintingLength' => $produksiPrintingLength,
+                'produksiDigitalLength' => $produksiDigitalLength,
+                'cuciMesinHisaka' => $cuciMesinHisaka,
+                'wipDyeingCount' => $wipDyeingCount,
+                'isPrint' => true
+            ]);
+
+            $pdf = new \kartik\mpdf\Pdf([
+                'mode' => \kartik\mpdf\Pdf::MODE_BLANK,
+                'format' => \kartik\mpdf\Pdf::FORMAT_A4,
+                'orientation' => \kartik\mpdf\Pdf::ORIENT_PORTRAIT,
+                'destination' => \kartik\mpdf\Pdf::DEST_BROWSER,
+                'content' => $content,
+                'cssInline' => '
+                    @page {
+                        margin: 4mm 4mm 4mm 4mm;
+                    }
+                    body {
+                        font-family: sans-serif;
+                        font-size: 8px;
+                        margin: 0;
+                        padding: 0;
+                        background: #fff;
+                        color: #000;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        font-size: 8px;
+                        margin-bottom: 2px;
+                    }
+                    th, td {
+                        border: 1px solid #000;
+                        padding: 1px 2px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f0f0f0;
+                        font-weight: bold;
+                        text-align: center;
+                    }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .text-bold { font-weight: bold; }
+                    .bg-shading { background-color: #ffeeba !important; font-weight: bold; }
+                ',
+                'options' => ['title' => 'Laporan Produksi Harian Processing'],
+            ]);
+            return $pdf->render();
+        }
+
+        return $this->render('rekap-harian-processing', [
+            'tanggal' => $tanggal,
+            'produksiHisakaRows' => $produksiHisakaRows,
+            'totalStandardCards' => $totalStandardCards,
+            'totalStandardBatches' => $totalStandardBatches,
+            'totalRepairCards' => $totalRepairCards,
+            'totalRepairBatches' => $totalRepairBatches,
+            'totalAllCards' => $totalAllCards,
+            'totalAllBatches' => $totalAllBatches,
+            'hisakaRepair' => $hisakaRepair,
+            'shiftRows' => $shiftRows,
+            'totalJumboBatches' => $totalJumboBatches,
+            'shiftTableTotal' => $shiftTableTotal,
+            'hambatanItems' => $hambatanItems,
+            'persiapanShifts' => $persiapanShifts,
+            'winchShifts' => $winchShifts,
+            'fukushinShifts' => $fukushinShifts,
+            'washingShifts' => $washingShifts,
+            'slangerShifts' => $slangerShifts,
+            'paddingDetail' => $paddingDetail,
+            'paddingShifts' => $paddingShifts,
+            'masukPackingDyeing' => $masukPackingDyeing,
+            'masukPackingPrinting' => $masukPackingPrinting,
+            'produksiPrintingLength' => $produksiPrintingLength,
+            'produksiDigitalLength' => $produksiDigitalLength,
+            'cuciMesinHisaka' => $cuciMesinHisaka,
+            'wipDyeingCount' => $wipDyeingCount,
+            'isPrint' => false
+        ]);
+    }
+
     public function actionUpdatePersiapanGabungan()
     {
         $request = Yii::$app->request;
