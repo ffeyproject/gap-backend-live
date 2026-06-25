@@ -249,15 +249,20 @@ $fmtDate = function($date) {
                     </thead>
                     <tbody>
                         <?php 
-                        $maxRows = 10;
-                        for ($i = 0; $i < $maxRows; $i++): 
-                            if (isset($hisakaRepair[$i])):
-                                $p = $hisakaRepair[$i];
+                        if (empty($hisakaRepair)):
+                        ?>
+                        <tr>
+                            <td colspan="7" class="text-center">Tidak ada data</td>
+                        </tr>
+                        <?php 
+                        else:
+                            $i = 1;
+                            foreach ($hisakaRepair as $p):
                                 $isTopping = (stripos($p['proses'], 'Toping') !== false) || (stripos($p['proses'], 'Topping') !== false);
                                 $rowClass = $isTopping ? 'bg-shading' : '';
                         ?>
                         <tr class="<?= $rowClass ?>">
-                            <td class="text-center"><?= $i + 1 ?></td>
+                            <td class="text-center"><?= $i++ ?></td>
                             <td><?= Html::encode($p['wo_no']) ?></td>
                             <td><?= Html::encode($p['motif']) ?></td>
                             <td><?= Html::encode($p['warna']) ?></td>
@@ -265,18 +270,10 @@ $fmtDate = function($date) {
                             <td class="text-right"><?= $fmt($p['panjang']) ?></td>
                             <td><?= Html::encode($p['proses']) ?></td>
                         </tr>
-                        <?php else: ?>
-                        <tr>
-                            <td class="text-center"><?= $i + 1 ?></td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <?php endif; 
-                        endfor; ?>
+                        <?php 
+                            endforeach;
+                        endif; 
+                        ?>
                     </tbody>
                 </table>
             </div>
@@ -491,7 +488,7 @@ $fmtDate = function($date) {
         <!-- RIGHT COLUMN (36% width - HAMBATAN HISAKA) -->
         <div style="width: 36%; display: flex; flex-direction: column;">
             <div class="section-title">HAMBATAN HISAKA</div>
-            <table class="report-table" style="flex: 1; height: 100%;">
+            <table class="report-table">
                 <thead>
                     <tr>
                         <th style="width: 25px;">MC</th>
@@ -501,10 +498,14 @@ $fmtDate = function($date) {
                 </thead>
                 <tbody>
                     <?php 
-                    $maxHambatanRows = 22;
-                    for ($i = 0; $i < $maxHambatanRows; $i++): 
-                        if (isset($hambatanItems[$i])):
-                            $item = $hambatanItems[$i];
+                    if (empty($hambatanItems)):
+                    ?>
+                    <tr>
+                        <td colspan="3" class="text-center" style="font-size: 7px;">Tidak ada hambatan</td>
+                    </tr>
+                    <?php 
+                    else:
+                        foreach ($hambatanItems as $item):
                             $mcName = $item->mstMesinProses ? $item->mstMesinProses->nama_mesin : '';
                             $mcNum = preg_replace('/[^0-9]/', '', $mcName);
                             if (empty($mcNum)) $mcNum = $mcName;
@@ -515,14 +516,10 @@ $fmtDate = function($date) {
                         <td class="text-center" style="font-size: 7px;"><?= Html::encode($waktu) ?></td>
                         <td style="font-size: 7px;"><?= Html::encode($item->keterangan) ?></td>
                     </tr>
-                    <?php else: ?>
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>
-                    <?php endif; 
-                    endfor; ?>
+                    <?php 
+                        endforeach;
+                    endif; 
+                    ?>
                 </tbody>
             </table>
         </div>
@@ -550,13 +547,18 @@ $fmtDate = function($date) {
                 </thead>
                 <tbody>
                     <?php 
-                    $maxPaddingRows = 6;
-                    for ($i = 0; $i < $maxPaddingRows; $i++): 
-                        if (isset($paddingDetail[$i])):
-                            $p = $paddingDetail[$i];
+                    if (empty($paddingDetail)):
                     ?>
                     <tr>
-                        <td class="text-center"><?= $i + 1 ?></td>
+                        <td colspan="7" class="text-center">Tidak ada data</td>
+                    </tr>
+                    <?php 
+                    else:
+                        $i = 1;
+                        foreach ($paddingDetail as $p):
+                    ?>
+                    <tr>
+                        <td class="text-center"><?= $i++ ?></td>
                         <td><?= Html::encode($p['wo_no']) ?></td>
                         <td><?= Html::encode($p['motif']) ?></td>
                         <td><?= Html::encode($p['warna']) ?></td>
@@ -564,18 +566,10 @@ $fmtDate = function($date) {
                         <td class="text-right"><?= $fmt($p['panjang']) ?></td>
                         <td class="text-center">M</td>
                     </tr>
-                    <?php else: ?>
-                    <tr>
-                        <td class="text-center"><?= $i + 1 ?></td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>
-                    <?php endif; 
-                    endfor; ?>
+                    <?php 
+                        endforeach;
+                    endif; 
+                    ?>
                 </tbody>
             </table>
 

@@ -3755,7 +3755,12 @@ class ProcessingDyeingController extends Controller
 
         $planningIds = Yii::$app->request->get('planning_ids', []);
         $terakhirProsesNames = Yii::$app->request->get('terakhir_proses_names', []);
-        $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
+        $tanggalRaw = Yii::$app->request->get('tanggal', date('Y-m-d'));
+        $time = strtotime($tanggalRaw);
+        if (!$time) {
+            $time = time();
+        }
+        $tanggal = date('Y-m-d', $time);
         $tampilkan = Yii::$app->request->get('tampilkan', 0);
         $exportExcel = Yii::$app->request->get('export_excel', 0);
         $visibleColsStr = Yii::$app->request->get('visible_cols', '');
@@ -3857,10 +3862,20 @@ class ProcessingDyeingController extends Controller
                 }
             }
 
-            // Filter by terakhir_proses as of date $tanggal
+            // Filter by terakhir_proses as of date $tanggal (going backward within current year)
             if (!empty($terakhirProsesNames)) {
+                $time = strtotime($tanggal);
+                if (!$time) {
+                    $time = time();
+                }
+                $year = date('Y', $time);
+                $startOfYear = $year . '-01-01';
+
                 $placeholders = [];
-                $params = [':tanggal' => $tanggal];
+                $params = [
+                    ':tanggal' => $tanggal,
+                    ':start_of_year' => $startOfYear,
+                ];
                 foreach ($terakhirProsesNames as $i => $name) {
                     $key = ':name' . $i;
                     $placeholders[] = $key;
@@ -3868,10 +3883,24 @@ class ProcessingDyeingController extends Controller
                 }
                 $placeholdersStr = implode(',', $placeholders);
                 
+                $planningCondition = '';
+                if (!empty($planningIds)) {
+                    $pIdsStr = implode(',', array_map('intval', $planningIds));
+                    $planningCondition = "
+                        AND NOT EXISTS (
+                            SELECT 1 
+                            FROM kartu_process_dyeing_process kp_plan
+                            WHERE kp_plan.kartu_process_id = sub.kartu_process_id
+                              AND kp_plan.process_id IN ($pIdsStr)
+                              AND kp_plan.value IS NOT NULL AND kp_plan.value <> '' AND kp_plan.value <> '[]'
+                        )
+                    ";
+                }
+
                 $validKartuIdsRaw = Yii::$app->db->createCommand("
                     SELECT sub.kartu_process_id
                     FROM (
-                        SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses
+                        SELECT DISTINCT ON (k.kartu_process_id) k.kartu_process_id, m.nama_proses, (CAST(k.value AS jsonb)->>'tanggal') as tgl
                         FROM kartu_process_dyeing_process k
                         INNER JOIN mst_process_dyeing m ON k.process_id = m.id
                         WHERE k.value IS NOT NULL AND k.value <> '' AND k.value <> '[]'
@@ -3879,6 +3908,9 @@ class ProcessingDyeingController extends Controller
                         ORDER BY k.kartu_process_id, m.order DESC
                     ) sub
                     WHERE sub.nama_proses IN ($placeholdersStr)
+                      AND sub.tgl <= :tanggal
+                      AND sub.tgl >= :start_of_year
+                      $planningCondition
                 ", $params)->queryColumn();
 
                 if (empty($validKartuIdsRaw)) {
