@@ -116,7 +116,7 @@ if(!empty($searchModel->wo_id)){
                     ],
                 ],
             ],
-            /*[
+            [
                 'attribute'=>'status',
                 'value'=>'statusName',
                 'filterType' => GridView::FILTER_SELECT2,
@@ -127,7 +127,7 @@ if(!empty($searchModel->wo_id)){
                         'allowClear' => true
                     ],
                 ],
-            ],*/
+            ],
             //'created_at',
             //'created_by',
             //'updated_at',

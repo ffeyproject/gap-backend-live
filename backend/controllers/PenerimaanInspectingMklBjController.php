@@ -195,17 +195,21 @@ class PenerimaanInspectingMklBjController extends Controller
                             }
                         }
 
-                        // Cek apakah semua item sudah diterima
+                        // Cek status penerimaan (apakah semua diterima, sebagian diterima, atau belum ada yang diterima)
                         $allReceived = true;
+                        $receivedCount = 0;
+                        $totalItemsCount = 0;
                         foreach ($model->items as $item) {
                             if($item->is_head == 1 && $item->qty > 0){
+                                $totalItemsCount++;
                                 $isReceived = in_array($item->id, $receivedItemIds);
                                 if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
                                     $isReceived = true;
                                 }
-                                if(!$isReceived){
+                                if($isReceived){
+                                    $receivedCount++;
+                                } else {
                                     $allReceived = false;
-                                    break;
                                 }
                             }
                         }
@@ -217,6 +221,12 @@ class PenerimaanInspectingMklBjController extends Controller
                             if(!$model->save(false, ['status', 'delivered_by', 'delivered_at'])){
                                 $transaction->rollBack();
                                 throw new HttpException(500, 'Gagal, coba lagi. (1)');
+                            }
+                        } else if ($receivedCount > 0) {
+                            $model->status = $model::STATUS_POSTED_PARTIAL;
+                            if(!$model->save(false, ['status'])){
+                                $transaction->rollBack();
+                                throw new HttpException(500, 'Gagal, coba lagi. (3)');
                             }
                         }
 
@@ -355,15 +365,19 @@ class PenerimaanInspectingMklBjController extends Controller
             }
 
             $allReceived = true;
+            $receivedCount = 0;
+            $totalItemsCount = 0;
             foreach ($model->items as $item) {
                 if($item->is_head == 1 && $item->qty > 0){
+                    $totalItemsCount++;
                     $isReceived = isset($allReceivedItemIds[$item->id]);
                     if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
                         $isReceived = true;
                     }
-                    if(!$isReceived){
+                    if($isReceived){
+                        $receivedCount++;
+                    } else {
                         $allReceived = false;
-                        break;
                     }
                 }
             }
@@ -377,6 +391,14 @@ class PenerimaanInspectingMklBjController extends Controller
                     $model->delivered_by = Yii::$app->user->id ?? 1;
                 }
                 $model->save(false, ['status', 'delivered_at', 'delivered_by']);
+                $fixed++;
+            } elseif ($receivedCount > 0) {
+                $model->status = \common\models\ar\InspectingMklBj::STATUS_POSTED_PARTIAL;
+                $model->save(false, ['status']);
+                $fixed++;
+            } else {
+                $model->status = \common\models\ar\InspectingMklBj::STATUS_POSTED;
+                $model->save(false, ['status']);
                 $fixed++;
             }
         }

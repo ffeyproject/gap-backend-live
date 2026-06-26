@@ -3,16 +3,16 @@
 namespace backend\modules\rawdata\controllers;
 
 use Yii;
-use backend\modules\rawdata\models\TrnInspecting;
-use backend\modules\rawdata\models\TrnInspectingSearch;
+use common\models\ar\InspectingMklBj;
+use backend\modules\rawdata\models\InspectingMklBjSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
- * TrnInspectingController implements the CRUD actions for TrnInspecting model.
+ * InspectingMklBjController implements the CRUD actions for InspectingMklBj model.
  */
-class TrnInspectingController extends Controller
+class InspectingMklBjController extends Controller
 {
     /**
      * {@inheritdoc}
@@ -30,12 +30,12 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Lists all TrnInspecting models.
+     * Lists all InspectingMklBj models.
      * @return mixed
      */
     public function actionIndex()
     {
-        $searchModel = new TrnInspectingSearch();
+        $searchModel = new InspectingMklBjSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
         $dataProvider->query->orderBy(['id' => SORT_DESC]);
 
@@ -46,7 +46,7 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Displays a single TrnInspecting model.
+     * Displays a single InspectingMklBj model.
      * @param integer $id
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
@@ -59,13 +59,13 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Creates a new TrnInspecting model.
+     * Creates a new InspectingMklBj model.
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
     public function actionCreate()
     {
-        $model = new TrnInspecting();
+        $model = new InspectingMklBj();
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
@@ -77,7 +77,7 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Updates an existing TrnInspecting model.
+     * Updates an existing InspectingMklBj model.
      * If update is successful, the browser will be redirected to the 'view' page.
      * @param integer $id
      * @return mixed
@@ -97,7 +97,7 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Deletes an existing TrnInspecting model.
+     * Deletes an existing InspectingMklBj model.
      * If deletion is successful, the browser will be redirected to the 'index' page.
      * @param integer $id
      * @return mixed
@@ -111,14 +111,14 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Updates an existing InspectingItem model.
+     * Updates an existing InspectingMklBjItems model.
      * @param integer $itemId
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionUpdateItem($itemId)
     {
-        $itemModel = \common\models\ar\InspectingItem::findOne($itemId);
+        $itemModel = \common\models\ar\InspectingMklBjItems::findOne($itemId);
         if ($itemModel === null) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
@@ -133,15 +133,15 @@ class TrnInspectingController extends Controller
     }
 
     /**
-     * Finds the TrnInspecting model based on its primary key value.
+     * Finds the InspectingMklBj model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param integer $id
-     * @return TrnInspecting the loaded model
+     * @return InspectingMklBj the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {
-        if (($model = TrnInspecting::findOne($id)) !== null) {
+        if (($model = InspectingMklBj::findOne($id)) !== null) {
             return $model;
         }
 

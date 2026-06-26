@@ -1139,6 +1139,10 @@ $moduleId = $controller->module->id;
                                         'label' => 'Inspecting Items', 'icon' => 'circle', 'url' => ['/rawdata/trn-inspecting-item/index'],
                                         'active' => $moduleId=='rawdata' && $controllerId == 'trn-inspecting-item'
                                     ],
+                                    [
+                                        'label' => 'Inspecting MklBj', 'icon' => 'circle', 'url' => ['/rawdata/inspecting-mkl-bj/index'],
+                                        'active' => $moduleId=='rawdata' && $controllerId == 'inspecting-mkl-bj'
+                                    ],
                                 ]
                             ],
                         ],

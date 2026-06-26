@@ -38,7 +38,7 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
 
-    <?= $form->field($model, 'status')->textInput() ?>
+    <?= $form->field($model, 'status')->dropDownList(\common\models\ar\TrnInspecting::statusOptions()) ?>
 
     <?= $form->field($model, 'unit')->textInput() ?>
 

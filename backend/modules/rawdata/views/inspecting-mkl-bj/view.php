@@ -4,14 +4,14 @@ use yii\helpers\Html;
 use yii\widgets\DetailView;
 
 /* @var $this yii\web\View */
-/* @var $model backend\modules\rawdata\models\TrnInspecting */
+/* @var $model common\models\ar\InspectingMklBj */
 
 $this->title = $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Trn Inspectings', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Inspecting Mkl Bjs', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
-<div class="trn-inspecting-view">
+<div class="inspecting-mkl-bj-view">
 
     <h1><?= Html::encode($this->title) ?></h1>
 
@@ -30,33 +30,29 @@ $this->params['breadcrumbs'][] = $this->title;
         'model' => $model,
         'attributes' => [
             'id',
-            'sc_id',
-            'sc_greige_id',
-            'mo_id',
             'wo_id',
-            'kartu_process_dyeing_id',
-            'jenis_process',
-            'no_urut',
-            'no',
-            'date',
-            'tanggal_inspeksi',
+            'wo_color_id',
+            'tgl_inspeksi',
+            'tgl_kirim',
             'no_lot',
-            'kombinasi',
-            'note:ntext',
-            'status',
-            'unit',
+            'jenis',
+            'satuan',
             'created_at',
             'created_by',
             'updated_at',
             'updated_by',
-            'approved_at',
-            'approved_by',
-            'approval_reject_note:ntext',
+            'status',
+            'no_urut',
+            'no',
             'delivered_at',
             'delivered_by',
             'delivery_reject_note:ntext',
-            'kartu_process_printing_id',
-            'memo_repair_id',
+            'k3l_code',
+            'defect',
+            'inspection_table',
+            'jenis_inspek',
+            'no_memo',
+            'note:ntext',
         ],
     ]) ?>
 
@@ -67,6 +63,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 <th>ID</th>
                 <th>No Urut</th>
                 <th>Grade</th>
+                <th>Defect</th>
+                <th>Lot No</th>
                 <th>Qty</th>
                 <th>Join Piece</th>
                 <th>Note</th>
@@ -74,11 +72,13 @@ $this->params['breadcrumbs'][] = $this->title;
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($model->inspectingItems as $item): ?>
+            <?php foreach ($model->inspectingMklBjItems as $item): ?>
                 <tr>
                     <td><?= $item->id ?></td>
                     <td><?= $item->no_urut ?></td>
-                    <td><?= \common\models\ar\InspectingItem::gradeOptions()[$item->grade] ?? $item->grade ?></td>
+                    <td><?= \common\models\ar\InspectingMklBjItems::gradeOptions()[$item->grade] ?? $item->grade ?></td>
+                    <td><?= Html::encode($item->defect) ?></td>
+                    <td><?= Html::encode($item->lot_no) ?></td>
                     <td><?= $item->qty ?></td>
                     <td><?= $item->join_piece ?></td>
                     <td><?= Html::encode($item->note) ?></td>
