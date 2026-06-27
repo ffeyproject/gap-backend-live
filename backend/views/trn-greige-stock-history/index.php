@@ -67,21 +67,63 @@ function formatChange($old, $new) {
                 'value' => 'greige.nama_kain',
             ],
             [
-                'label' => 'PERUBAHAN DETAIL',
+                'attribute' => 'stock_new',
+                'label' => 'STOCK CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->stock_old, $data->stock_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'attribute' => 'available_new',
+                'label' => 'AVAILABLE CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->available_old, $data->available_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'attribute' => 'booked_wo_new',
+                'label' => 'BOOKED WO CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->booked_wo_old, $data->booked_wo_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'attribute' => 'booked_pfp_new',
+                'label' => 'BOOKED PFP CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->booked_pfp_old, $data->booked_pfp_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'attribute' => 'booked_new',
+                'label' => 'BOOKED CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->booked_old, $data->booked_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'attribute' => 'booked_opfp_new',
+                'label' => 'BOOKED OPFP CHANGE',
+                'value' => function($data) {
+                    return formatChange($data->booked_opfp_old, $data->booked_opfp_new);
+                },
+                'format' => 'raw',
+            ],
+            [
+                'label' => 'PERUBAHAN LAINNYA',
                 'value' => function($data) {
                     $fields = [
                         'gap' => 'Gap',
-                        'stock' => 'Stock',
-                        'available' => 'Available',
-                        'booked_wo' => 'Booked WO',
                         'stock_pfp' => 'Stock PFP',
                         'stock_wip' => 'Stock WIP',
                         'stock_ef' => 'Stock EF',
-                        'booked' => 'Booked',
-                        'booked_pfp' => 'Booked PFP',
                         'booked_wip' => 'Booked WIP',
                         'booked_ef' => 'Booked EF',
-                        'booked_opfp' => 'Booked OPFP',
                         'available_pfp' => 'Available PFP',
                         'stock_opname' => 'Stock Opname',
                     ];
@@ -95,9 +137,9 @@ function formatChange($old, $new) {
                         
                         if ($oldVal !== $newVal) {
                             $changes[] = Html::tag('div', 
-                                Html::tag('span', $label, ['style' => 'display:inline-block; width:120px; font-weight:bold;']) . ': ' . 
+                                Html::tag('span', $label, ['style' => 'display:inline-block; font-weight:bold;']) . ': ' . 
                                 formatChange($oldVal, $newVal),
-                                ['style' => 'margin-bottom: 2px;']
+                                ['style' => 'margin-bottom: 2px; font-size: 12px;']
                             );
                         }
                     }
@@ -105,6 +147,7 @@ function formatChange($old, $new) {
                     return empty($changes) ? '-' : implode('', $changes);
                 },
                 'format' => 'raw',
+                'contentOptions' => ['style' => 'min-width: 150px;'],
             ],
             [
                 'attribute' => 'context',
