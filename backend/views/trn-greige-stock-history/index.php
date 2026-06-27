@@ -67,34 +67,42 @@ function formatChange($old, $new) {
                 'value' => 'greige.nama_kain',
             ],
             [
-                'attribute' => 'stock_new',
-                'label' => 'STOCK CHANGE',
+                'label' => 'PERUBAHAN DETAIL',
                 'value' => function($data) {
-                    return formatChange($data->stock_old, $data->stock_new);
-                },
-                'format' => 'raw',
-            ],
-            [
-                'attribute' => 'available_new',
-                'label' => 'AVAILABLE CHANGE',
-                'value' => function($data) {
-                    return formatChange($data->available_old, $data->available_new);
-                },
-                'format' => 'raw',
-            ],
-            [
-                'attribute' => 'booked_wo_new',
-                'label' => 'BOOKED WO CHANGE',
-                'value' => function($data) {
-                    return formatChange($data->booked_wo_old, $data->booked_wo_new);
-                },
-                'format' => 'raw',
-            ],
-            [
-                'attribute' => 'booked_pfp_new',
-                'label' => 'BOOKED PFP CHANGE',
-                'value' => function($data) {
-                    return formatChange($data->booked_pfp_old, $data->booked_pfp_new);
+                    $fields = [
+                        'gap' => 'Gap',
+                        'stock' => 'Stock',
+                        'available' => 'Available',
+                        'booked_wo' => 'Booked WO',
+                        'stock_pfp' => 'Stock PFP',
+                        'stock_wip' => 'Stock WIP',
+                        'stock_ef' => 'Stock EF',
+                        'booked' => 'Booked',
+                        'booked_pfp' => 'Booked PFP',
+                        'booked_wip' => 'Booked WIP',
+                        'booked_ef' => 'Booked EF',
+                        'booked_opfp' => 'Booked OPFP',
+                        'available_pfp' => 'Available PFP',
+                        'stock_opname' => 'Stock Opname',
+                    ];
+                    
+                    $changes = [];
+                    foreach ($fields as $field => $label) {
+                        $oldAttr = $field . '_old';
+                        $newAttr = $field . '_new';
+                        $oldVal = (float)$data->$oldAttr;
+                        $newVal = (float)$data->$newAttr;
+                        
+                        if ($oldVal !== $newVal) {
+                            $changes[] = Html::tag('div', 
+                                Html::tag('span', $label, ['style' => 'display:inline-block; width:120px; font-weight:bold;']) . ': ' . 
+                                formatChange($oldVal, $newVal),
+                                ['style' => 'margin-bottom: 2px;']
+                            );
+                        }
+                    }
+                    
+                    return empty($changes) ? '-' : implode('', $changes);
                 },
                 'format' => 'raw',
             ],

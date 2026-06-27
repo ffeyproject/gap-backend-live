@@ -21,7 +21,24 @@ class TrnGreigeStockHistorySearch extends TrnGreigeStockHistory
     {
         return [
             [['id', 'greige_id', 'created_by'], 'integer'],
-            [['stock_old', 'stock_new', 'available_old', 'available_new', 'booked_wo_old', 'booked_wo_new', 'booked_pfp_old', 'booked_pfp_new'], 'number'],
+            [
+                [
+                    'gap_old', 'gap_new',
+                    'stock_old', 'stock_new',
+                    'available_old', 'available_new',
+                    'booked_wo_old', 'booked_wo_new',
+                    'stock_pfp_old', 'stock_pfp_new',
+                    'stock_wip_old', 'stock_wip_new',
+                    'stock_ef_old', 'stock_ef_new',
+                    'booked_old', 'booked_new',
+                    'booked_pfp_old', 'booked_pfp_new',
+                    'booked_wip_old', 'booked_wip_new',
+                    'booked_ef_old', 'booked_ef_new',
+                    'booked_opfp_old', 'booked_opfp_new',
+                    'available_pfp_old', 'available_pfp_new',
+                    'stock_opname_old', 'stock_opname_new'
+                ], 'number'
+            ],
             [['created_at', 'context', 'dateRange', 'greigeName'], 'safe'],
         ];
     }
