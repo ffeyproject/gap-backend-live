@@ -1,20 +1,5 @@
 <?php
 return [
-    'on beforeAction' => function ($event) {
-        if (Yii::$app->has('db') && Yii::$app->db) {
-            try {
-                $context = Yii::$app->request->isConsoleRequest ? 'CLI: ' . implode(' ', $_SERVER['argv']) : Yii::$app->request->url;
-                $userId = (Yii::$app->has('user') && !Yii::$app->user->isGuest) ? Yii::$app->user->id : null;
-                
-                Yii::$app->db->createCommand("SET app.context = :context", [':context' => $context])->execute();
-                if ($userId !== null) {
-                    Yii::$app->db->createCommand("SET app.user_id = :userId", [':userId' => $userId])->execute();
-                }
-            } catch (\Exception $e) {
-                // Ignore DB connection errors if DB is not ready or open
-            }
-        }
-    },
     'timeZone' => 'Asia/Jakarta',
     'language' => 'id-ID',
     'aliases' => [
@@ -23,6 +8,28 @@ return [
     ],
     'vendorPath' => dirname(dirname(__DIR__)) . '/vendor',
     'components' => [
+        'db' => [
+            'on afterOpen' => function ($event) {
+                static $inAfterOpen = false;
+                if ($inAfterOpen) {
+                    return;
+                }
+                $inAfterOpen = true;
+                try {
+                    $context = Yii::$app->request->isConsoleRequest ? 'CLI: ' . implode(' ', $_SERVER['argv']) : Yii::$app->request->url;
+                    $event->sender->createCommand("SET app.context = :context", [':context' => $context])->execute();
+                    
+                    if (Yii::$app->has('user') && Yii::$app->user && Yii::$app->user->hasProperty('identity') && Yii::$app->user->identity) {
+                        $userId = Yii::$app->user->id;
+                        $event->sender->createCommand("SET app.user_id = :userId", [':userId' => $userId])->execute();
+                    }
+                } catch (\Exception $e) {
+                    // Safe fallback
+                } finally {
+                    $inAfterOpen = false;
+                }
+            },
+        ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],

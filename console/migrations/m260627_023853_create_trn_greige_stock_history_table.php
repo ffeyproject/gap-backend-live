@@ -105,7 +105,7 @@ SQL;
 CREATE TRIGGER trigger_mst_greige_stock_changes
 AFTER UPDATE ON mst_greige
 FOR EACH ROW
-EXECUTE FUNCTION log_mst_greige_stock_changes();
+EXECUTE PROCEDURE log_mst_greige_stock_changes();
 SQL;
 
         $this->execute($sqlTrigger);
