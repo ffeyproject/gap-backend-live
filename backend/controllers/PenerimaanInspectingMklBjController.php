@@ -382,29 +382,32 @@ class PenerimaanInspectingMklBjController extends Controller
                 }
             }
 
+            $targetStatus = \common\models\ar\InspectingMklBj::STATUS_POSTED;
             if ($allReceived) {
-                $model->status = \common\models\ar\InspectingMklBj::STATUS_DELIVERED;
-                if(!$model->delivered_at) {
-                    $model->delivered_at = time();
-                }
-                if(!$model->delivered_by) {
-                    $model->delivered_by = Yii::$app->user->id ?? 1;
-                }
-                $model->save(false, ['status', 'delivered_at', 'delivered_by']);
-                $fixed++;
+                $targetStatus = \common\models\ar\InspectingMklBj::STATUS_DELIVERED;
             } elseif ($receivedCount > 0) {
-                $model->status = \common\models\ar\InspectingMklBj::STATUS_POSTED_PARTIAL;
-                $model->save(false, ['status']);
-                $fixed++;
-            } else {
-                $model->status = \common\models\ar\InspectingMklBj::STATUS_POSTED;
-                $model->save(false, ['status']);
+                $targetStatus = \common\models\ar\InspectingMklBj::STATUS_POSTED_PARTIAL;
+            }
+
+            if ($model->status !== $targetStatus) {
+                $model->status = $targetStatus;
+                if ($targetStatus === \common\models\ar\InspectingMklBj::STATUS_DELIVERED) {
+                    if(!$model->delivered_at) {
+                        $model->delivered_at = time();
+                    }
+                    if(!$model->delivered_by) {
+                        $model->delivered_by = Yii::$app->user->id ?? 1;
+                    }
+                    $model->save(false, ['status', 'delivered_at', 'delivered_by']);
+                } else {
+                    $model->save(false, ['status']);
+                }
                 $fixed++;
             }
         }
 
         $totalChecked = count($models);
-        Yii::$app->session->setFlash('success', "Memeriksa {$totalChecked} data pada periode tersebut. Berhasil menyinkronkan status {$fixed} data yang stuck ke 'Delivered'.");
+        Yii::$app->session->setFlash('success', "Memeriksa {$totalChecked} data pada periode tersebut. Berhasil memperbaiki status {$fixed} data yang stuck.");
         return $this->redirect(['index']);
     }
 }
