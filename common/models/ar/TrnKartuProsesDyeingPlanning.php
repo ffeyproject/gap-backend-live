@@ -29,21 +29,19 @@ class TrnKartuProsesDyeingPlanning extends \yii\db\ActiveRecord
         return 'trn_kartu_proses_dyeing_planning';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function rules()
     {
         return [
             [['kartu_process_id', 'process_id'], 'required'],
-            [['kartu_process_id', 'process_id', 'option_id', 'created_at', 'updated_at'], 'default', 'value' => null],
-            [['kartu_process_id', 'process_id', 'option_id', 'created_at', 'updated_at'], 'integer'],
+            [['kartu_process_id', 'process_id', 'option_id', 'mesin_id', 'created_at', 'updated_at'], 'default', 'value' => null],
+            [['kartu_process_id', 'process_id', 'option_id', 'mesin_id', 'created_at', 'updated_at'], 'integer'],
             [['is_siap'], 'boolean'],
             [['catatan'], 'string'],
             [['kartu_process_id', 'process_id'], 'unique', 'targetAttribute' => ['kartu_process_id', 'process_id']],
             [['process_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstProcessDyeing::className(), 'targetAttribute' => ['process_id' => 'id']],
             [['option_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstProcessDyeingPlanningOption::className(), 'targetAttribute' => ['option_id' => 'id']],
             [['kartu_process_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnKartuProsesDyeing::className(), 'targetAttribute' => ['kartu_process_id' => 'id']],
+            [['mesin_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstMesinProses::className(), 'targetAttribute' => ['mesin_id' => 'id']],
         ];
     }
 
@@ -57,6 +55,7 @@ class TrnKartuProsesDyeingPlanning extends \yii\db\ActiveRecord
             'process_id' => 'Process ID',
             'is_siap' => 'Is Siap',
             'option_id' => 'Option ID',
+            'mesin_id' => 'Mesin ID',
             'catatan' => 'Catatan',
             'created_at' => 'Created At',
             'updated_at' => 'Updated At',
@@ -91,5 +90,15 @@ class TrnKartuProsesDyeingPlanning extends \yii\db\ActiveRecord
     public function getKartuProcess()
     {
         return $this->hasOne(TrnKartuProsesDyeing::className(), ['id' => 'kartu_process_id']);
+    }
+
+    /**
+     * Gets query for [[MesinProses]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMesinProses()
+    {
+        return $this->hasOne(MstMesinProses::className(), ['id' => 'mesin_id']);
     }
 }

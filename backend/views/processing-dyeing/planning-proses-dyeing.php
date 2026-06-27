@@ -551,7 +551,7 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
 
             $beforeHeaderColumns[] = [
                 'content' => Html::encode($proc->nama_proses),
-                'options' => ['colspan' => 3, 'class' => 'text-center warning', 'style' => 'vertical-align: middle; font-weight: bold; background-color: #fcf8e3;']
+                'options' => ['colspan' => 4, 'class' => 'text-center warning', 'style' => 'vertical-align: middle; font-weight: bold; background-color: #fcf8e3;']
             ];
 
             $searchParams = Yii::$app->request->get('TrnKartuProsesDyeingSearch', []);
@@ -573,6 +573,36 @@ $groupWarnaContentOptions = function($model, $key, $index, $column) {
                     $is_siap = $kp ? $kp->is_siap : false;
                     $siapChecked = $is_siap ? 'checked' : '';
                     return '<input type="checkbox" class="kp-siap-chk" data-kp="'.$data->id.'" data-proc="'.$proc->id.'" '.$siapChecked.'>';
+                },
+                'format' => 'raw',
+            ];
+
+            $machines = $proc->mstMesinProseses;
+            $machineOptions = ArrayHelper::map($machines, 'id', 'nama_mesin');
+
+            $gridColumns[] = [
+                'attribute' => "mesin_{$proc->id}",
+                'label' => "Mesin",
+                'filter' => Html::dropDownList(
+                    "TrnKartuProsesDyeingSearch[mesin_{$proc->id}]",
+                    isset($searchParams["mesin_{$proc->id}"]) ? $searchParams["mesin_{$proc->id}"] : '',
+                    $machineOptions,
+                    ['class' => 'form-control', 'prompt' => '']
+                ),
+                'headerOptions' => ['style' => 'text-align: center; vertical-align: middle; background-color: #f4f4f4; min-width: 180px;'],
+                'contentOptions' => ['style' => 'text-align: center; vertical-align: middle; padding: 5px;'],
+                'value' => function($data) use ($proc, &$kartuPlanningsMap, $machineOptions) {
+                    $kp = isset($kartuPlanningsMap[$data->id][$proc->id]) ? $kartuPlanningsMap[$data->id][$proc->id] : null;
+                    $mesin_id = $kp ? $kp->mesin_id : '';
+                    return Html::dropDownList('mesin', $mesin_id, $machineOptions, [
+                        'class' => 'form-control input-sm kp-mesin-select',
+                        'prompt' => '- Pilih -',
+                        'data' => [
+                            'kp' => $data->id,
+                            'proc' => $proc->id,
+                        ],
+                        'style' => 'min-width: 180px;'
+                    ]);
                 },
                 'format' => 'raw',
             ];
@@ -695,6 +725,19 @@ $jsVariables = "var updateOptUrl = '{$updateOptUrl}';\nvar updateKpUrl = '{$upda
 
 $js = <<<'JS'
 $(document).ready(function() {
+    function initSelect2() {
+        $('.kp-mesin-select').select2({
+            allowClear: true,
+            placeholder: '- Pilih -',
+            width: 'resolve'
+        });
+    }
+    initSelect2();
+
+    $(document).on('pjax:end', function() {
+        initSelect2();
+    });
+
     // 1. Sync Top Scrollbar
     var gridContainer = $('.table-wrapper .kv-grid-container');
     if (gridContainer.length === 0) {
@@ -988,7 +1031,7 @@ $(document).ready(function() {
     });
 
     // Auto-save Grid Inputs (Bagian 2)
-    $('.kp-siap-chk, .kp-opt-select, .kp-catatan-input').on('change', function() {
+    $(document).on('change', '.kp-siap-chk, .kp-opt-select, .kp-mesin-select, .kp-catatan-input', function() {
         var el = $(this);
         var kp = el.data('kp');
         var proc = el.data('proc');
@@ -1004,6 +1047,9 @@ $(document).ready(function() {
             value = el.val();
             colorizeSelect();
             updateLiveCounts();
+        } else if (el.hasClass('kp-mesin-select')) {
+            field = 'mesin_id';
+            value = el.val();
         } else if (el.hasClass('kp-catatan-input')) {
             field = 'catatan';
             value = el.val();

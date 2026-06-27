@@ -254,7 +254,7 @@ foreach ($selectedPlanningProcesses as $proc) {
 
     $beforeHeaderColumns[] = [
         'content' => Html::encode($proc->nama_proses),
-        'options' => ['colspan' => 3, 'class' => 'text-center warning', 'style' => 'vertical-align: middle; font-weight: bold; background-color: #fcf8e3;']
+        'options' => ['colspan' => 4, 'class' => 'text-center warning', 'style' => 'vertical-align: middle; font-weight: bold; background-color: #fcf8e3;']
     ];
 
     $gridColumns[] = [
@@ -262,6 +262,20 @@ foreach ($selectedPlanningProcesses as $proc) {
         'value' => function($data) use ($proc, &$kartuPlanningsMap) {
             $kp = isset($kartuPlanningsMap[$data->id][$proc->id]) ? $kartuPlanningsMap[$data->id][$proc->id] : null;
             return ($kp && $kp->is_siap) ? 'Sudah' : 'Belum';
+        },
+        'hAlign' => 'center',
+        'vAlign' => 'middle',
+    ];
+
+    $machines = $proc->mstMesinProseses;
+    $machineOptions = \yii\helpers\ArrayHelper::map($machines, 'id', 'nama_mesin');
+
+    $gridColumns[] = [
+        'label' => "Mesin",
+        'value' => function($data) use ($proc, &$kartuPlanningsMap, $machineOptions) {
+            $kp = isset($kartuPlanningsMap[$data->id][$proc->id]) ? $kartuPlanningsMap[$data->id][$proc->id] : null;
+            $mesin_id = $kp ? $kp->mesin_id : '';
+            return isset($machineOptions[$mesin_id]) ? $machineOptions[$mesin_id] : '';
         },
         'hAlign' => 'center',
         'vAlign' => 'middle',
@@ -328,10 +342,10 @@ if ($baseSpan > 0) {
 $curIdx = $dynStartIdx;
 foreach ($selectedPlanningProcesses as $proc) {
     $procSpan = 0;
-    for ($i = 0; $i < 3; $i++) {
+    for ($i = 0; $i < 4; $i++) {
         if ($colIndexMap[$curIdx + $i]) $procSpan++;
     }
-    $curIdx += 3;
+    $curIdx += 4;
     
     if ($procSpan > 0) {
         $filteredBeforeHeaderColumns[] = [

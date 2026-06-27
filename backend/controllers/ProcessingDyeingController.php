@@ -3891,6 +3891,14 @@ class ProcessingDyeingController extends Controller
                             ->where(['process_id' => $pId, 'option_id' => $optVal]);
                         $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $subQueryOpt]);
                     }
+                    if (isset($searchParams["mesin_{$pId}"]) && $searchParams["mesin_{$pId}"] !== '') {
+                        $mesinVal = (int)$searchParams["mesin_{$pId}"];
+                        $subQueryMesin = (new \yii\db\Query())
+                            ->select('kartu_process_id')
+                            ->from('trn_kartu_proses_dyeing_planning')
+                            ->where(['process_id' => $pId, 'mesin_id' => $mesinVal]);
+                        $query->andWhere(['in', 'trn_kartu_proses_dyeing.id', $subQueryMesin]);
+                    }
                     if (isset($searchParams["catatan_{$pId}"]) && $searchParams["catatan_{$pId}"] !== '') {
                         $catatanVal = $searchParams["catatan_{$pId}"];
                         $subQueryCat = (new \yii\db\Query())
@@ -4176,6 +4184,8 @@ class ProcessingDyeingController extends Controller
                 $model->is_siap = $value ? 1 : 0;
             } elseif ($field === 'option_id') {
                 $model->option_id = $value ? $value : null;
+            } elseif ($field === 'mesin_id') {
+                $model->mesin_id = $value ? $value : null;
             } elseif ($field === 'catatan') {
                 $model->catatan = $value;
             }
