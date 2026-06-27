@@ -101,31 +101,61 @@ class TrnKartuProsesPrintingItemController extends Controller
             }
 
             if ($model->load(Yii::$app->request->post())) {
-                if(!$model->validate()){
-                    $result = [];
-                    // The code below comes from ActiveForm::validate(). We do not need to validate the model
-                    // again, as it was already validated by save(). Just collect the messages.
-                    foreach ($model->getErrors() as $attribute => $errors) {
-                        $result[Html::getInputId($model, $attribute)] = $errors;
+                $stockIds = $model->stock_ids;
+                if (!is_array($stockIds)) {
+                    $stockIds = [$stockIds];
+                }
+
+                $successCount = 0;
+                $hasError = false;
+                $result = [];
+
+                foreach ($stockIds as $stockId) {
+                    if (empty($stockId)) continue;
+
+                    $itemModel = new TrnKartuProsesPrintingItem([
+                        'kartu_process_id' => $processId,
+                        'date' => $model->date,
+                        'wo_id' => $kartuProses->wo_id,
+                        'mo_id' => $kartuProses->mo_id,
+                        'sc_greige_id' => $kartuProses->sc_greige_id,
+                        'sc_id' => $kartuProses->sc_id,
+                        'note' => $model->note,
+                        'stock_id' => $stockId,
+                        'stock_ids' => [$stockId] // Pass validation for stock_ids
+                    ]);
+
+                    if(!$itemModel->validate()){
+                        foreach ($itemModel->getErrors() as $attribute => $errors) {
+                            $result[Html::getInputId($model, 'stock_ids')] = $errors;
+                        }
+                        $hasError = true;
+                        break;
                     }
 
+                    $itemModel->panjang_m = (float)$itemModel->stock->panjang_m;
+
+                    $total = $kartuProses->getTrnKartuProsesPrintingItems()->sum('panjang_m');
+                    $total = $total !== null ? $total : 0;
+                    $total += $itemModel->panjang_m;
+
+                    if(!$kartuProses->no_limit_item){
+                        if($total > $perBatchToleransiAtas){
+                            //kelebihan diatas 2% dari panjang per batch dibagi dua diizinkan.
+                            throw new ForbiddenHttpException('Jumlah greige tidak valid, hanya kelebihan sebanyak 2% dari per batch yang diizinkan.');
+                        }
+                    }
+
+                    if($itemModel->save(false)){
+                        $successCount++;
+                    }
+                }
+
+                if($hasError){
                     return $this->asJson(['validation' => $result]);
                 }
 
-                $model->panjang_m = (float)$model->stock->panjang_m;
-
-                $total = $kartuProses->getTrnKartuProsesPrintingItems()->sum('panjang_m');
-                $total = $total !== null ? $total : 0;
-                $total += $model->panjang_m;
-
-                if(!$kartuProses->no_limit_item){
-                    if($total > $perBatchToleransiAtas){
-                        //kelebihan diatas 2% dari panjang per batch dibagi dua diizinkan.
-                        throw new ForbiddenHttpException('Jumlah greige tidak valid, hanya kelebihan sebanyak 2% dari per batch yang diizinkan.');
-                    }
-                }
-
-                if($model->save(false)){
+                if($successCount > 0){
                     return $this->asJson(['success' => true]);
                 }
             }

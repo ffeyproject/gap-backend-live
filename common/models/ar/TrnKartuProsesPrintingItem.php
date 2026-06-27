@@ -37,6 +37,8 @@ use yii\behaviors\TimestampBehavior;
  */
 class TrnKartuProsesPrintingItem extends \yii\db\ActiveRecord
 {
+    public $stock_ids;
+
     const STATUS_PENDING = 1;const STATUS_VALID = 2;
     /**
      * @return array
@@ -67,7 +69,8 @@ class TrnKartuProsesPrintingItem extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['kartu_process_id', 'stock_id', 'date'], 'required'],
+            [['kartu_process_id', 'date'], 'required'],
+            [['stock_id'], 'required', 'when' => function($model) { return empty($model->stock_ids); }],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'panjang_m', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_id', 'stock_id', 'panjang_m', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['note'], 'string'],
@@ -83,6 +86,7 @@ class TrnKartuProsesPrintingItem extends \yii\db\ActiveRecord
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
+            [['stock_ids'], 'safe'],
         ];
     }
 

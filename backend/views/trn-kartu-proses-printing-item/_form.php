@@ -21,8 +21,8 @@ JqueryUiAsset::register($this);
     <?php $form = ActiveForm::begin(['id'=>'KartuProsesItemForm']); ?>
 
     <?php
-    echo $form->field($model, 'stock_id')->widget(Select2::classname(), [
-        'options' => ['placeholder' => 'Format pencarian: {no_document}*{qty}*{grade}*{no_lot_lusi}*{no_lot_pakan}'],
+    echo $form->field($model, 'stock_ids')->widget(Select2::classname(), [
+        'options' => ['placeholder' => 'Format pencarian: {no_document}*{qty}*{grade}*{no_lot_lusi}*{no_lot_pakan}', 'multiple' => true],
         'pluginOptions' => [
             'allowClear' => true,
             'minimumInputLength' => 1,
@@ -38,7 +38,7 @@ JqueryUiAsset::register($this);
             'templateResult' => new JsExpression('function(response) { return response.text; }'),
             'templateSelection' => new JsExpression('function (response) { return response.text; }'),
         ],
-    ])->hint($searchHint);
+    ])->hint($searchHint)->label('Stock Items');
     ?>
 
     <div class="row">
