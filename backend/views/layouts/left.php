@@ -80,6 +80,10 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'mst-greige'
                     ],
                     [
+                        'label' => 'Greige Stock History', 'icon' => 'circle', 'url' => ['/trn-greige-stock-history/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-greige-stock-history'
+                    ],
+                    [
                         'label' => 'Customer', 'icon' => 'circle', 'url' => ['/mst-customer/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'mst-customer'
                     ],

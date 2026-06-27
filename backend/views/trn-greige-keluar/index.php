@@ -46,6 +46,30 @@ $this->params['breadcrumbs'][] = $this->title;
             'no_urut',
             'no',
             [
+                'label' => 'Nama Greige',
+                'value' => function($data){
+                    /* @var $data TrnGreigeKeluar*/
+                    if ($data->wo) {
+                        return $data->wo->greigeNamaKain;
+                    }
+                    
+                    $items = $data->trnGreigeKeluarItems;
+                    $names = [];
+                    foreach($items as $item) {
+                        if ($item->stockGreige && $item->stockGreige->greigeNamaKain) {
+                            $names[] = $item->stockGreige->greigeNamaKain;
+                        }
+                    }
+                    
+                    if (!empty($names)) {
+                        $names = array_unique($names);
+                        return implode(', ', $names);
+                    }
+                    
+                    return '-';
+                }
+            ],
+            [
                 'attribute'=>'jenis',
                 'value'=>function($data){
                     /* @var $data TrnGreigeKeluar*/
