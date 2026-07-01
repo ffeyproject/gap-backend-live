@@ -132,22 +132,10 @@ $lookupWoColorUrl = Url::to(['/ajax/lookup-wo-color']);
                         </div>
                     </div>
 
-                    <?= $form->field($model, 'nomor_kartu')->textInput() ?>
+                    <?= $form->field($model, 'nomor_kartu')->textInput(['readonly' => true]) ?>
                 </div>
 
                 <div class="col-md-6">
-                    <?= $form->field($model, 'kombinasi')->textInput(['maxlength' => true]) ?>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'lusi')->textInput(['maxlength' => true]) ?>
-                        </div>
-
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'pakan')->textInput(['maxlength' => true]) ?>
-                        </div>
-                    </div>
-
                     <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
                 </div>
             </div>

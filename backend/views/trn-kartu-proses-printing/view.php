@@ -50,6 +50,14 @@ $formatter = Yii::$app->formatter;
                         'method' => 'post',
                     ],
                 ]);
+            } else {
+                echo Html::a('Set Limited Item', ['set-limited-item', 'id' => $model->id], [
+                    'class' => 'btn btn-warning',
+                    'data' => [
+                        'confirm' => 'Jumlah item pada kartu proses akan dibatasi, lanjutkan?',
+                        'method' => 'post',
+                    ],
+                ]);
             }
             ?>
         <?php endif;?>

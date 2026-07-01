@@ -45,13 +45,14 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
     return strcmp($a, $b);
 });
 ?>
+
 <?php if (empty($groupedModels)): ?>
 <div class="row">
         <p style="text-align: right; font-weight: bold; margin-bottom: 5px;">
             Tanggal: <?= !empty($tanggalFilter) ? Html::encode($tanggalFilter) : '-' ?>
         </p>
         <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP</h3>
-        <table class="table table-bordered small">
+        <table class="table custom-table small">
         <thead>
             <tr>
                 <th>NO</th>
@@ -104,7 +105,7 @@ uksort($groupedModels, function($a, $b) use ($shiftPagiFilter, $shiftSiangFilter
                     Tanggal: <?= Html::encode($headerDate) ?>
                 </p>
                 <h3 style="text-align: center; font-weight: bold;">LAPORAN HARIAN PERSIAPAN PFP SHIFT: <?= Html::encode($shiftLabel) ?></h3>
-                <table class="table table-bordered small">
+                <table class="table custom-table small">
             <thead>
                 <tr>
                     <th>NO</th>

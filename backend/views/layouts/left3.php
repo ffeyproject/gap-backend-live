@@ -446,6 +446,10 @@ $moduleId = $controller->module->id;
                 'url' => '#',
                 'items' => [
                     [
+                        'label' => 'Inputan Produksi Printing', 'icon' => 'circle-o', 'url' => ['/processing-printing/input-produksi'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-printing' && $actionId=='input-produksi'
+                    ],
+                    [
                         'label' => 'PFP', 'icon' => 'circle-o', 'url' => ['/processing-pfp/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp'
                     ],

@@ -209,6 +209,8 @@ class LaporanController extends Controller
                 body, .row, .col-xs-12 { background-color: #fff; color: #000; }
                 table { page-break-inside: auto; background-color: #fff; color: #000; }
                 tr { page-break-inside: avoid; page-break-after: auto; }
+                table.custom-table { border: 2px solid #000 !important; border-collapse: collapse !important; }
+                table.custom-table th, table.custom-table td { border: 1px solid #000 !important; }
             ',
             'options' => ['title' => 'Laporan Harian Persiapan Gabungan'],
             'methods' => [
@@ -665,6 +667,8 @@ class LaporanController extends Controller
                 body, .row, .col-xs-12 { background-color: #fff; color: #000; }
                 table { page-break-inside: auto; background-color: #fff; color: #000; }
                 tr { page-break-inside: avoid; page-break-after: auto; }
+                table.custom-table { border: 2px solid #000 !important; border-collapse: collapse !important; }
+                table.custom-table th, table.custom-table td { border: 1px solid #000 !important; }
             ',
             'options' => ['title' => 'Laporan Harian Persiapan Dyeing'],
             'methods' => [
@@ -2019,6 +2023,8 @@ class LaporanController extends Controller
                 body, .row, .col-xs-12 { background-color: #fff; color: #000; }
                 table { page-break-inside: auto; background-color: #fff; color: #000; }
                 tr { page-break-inside: avoid; page-break-after: auto; }
+                table.custom-table { border: 2px solid #000 !important; border-collapse: collapse !important; }
+                table.custom-table th, table.custom-table td { border: 1px solid #000 !important; }
             ',
             'options' => ['title' => 'Laporan Harian Persiapan PFP'],
             'methods' => [

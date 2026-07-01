@@ -138,7 +138,11 @@ class TrnKartuProsesPrintingController extends Controller
      */
     public function actionCreate()
     {
-        $model = new TrnKartuProsesPrinting(['date'=>date('Y-m-d')]);
+        $model = new TrnKartuProsesPrinting([
+            'date' => date('Y-m-d'),
+            'nomor_kartu' => TrnKartuProsesPrinting::generateNomorKartu(),
+            'no_limit_item' => true,
+        ]);
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()){
             if($model->wo_id !== null && $model->kartu_proses_id !== null){
@@ -281,9 +285,30 @@ class TrnKartuProsesPrintingController extends Controller
     public function actionSetUnlimitItem($id)
     {
         $model = $this->findModel($id);
+
+        if($model->status != $model::STATUS_DRAFT){
+            Yii::$app->session->setFlash('error', 'Status tidak valid untuk diseting.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
         $model->no_limit_item = true;
         $model->save(false, ['no_limit_item']);
         Yii::$app->session->setFlash('success', 'Berhasil, sekarang kartu proses ini sudah tidak dibatasi jumlah item nya.');
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    public function actionSetLimitedItem($id)
+    {
+        $model = $this->findModel($id);
+
+        if($model->status != $model::STATUS_DRAFT){
+            Yii::$app->session->setFlash('error', 'Status tidak valid untuk diseting.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $model->no_limit_item = false;
+        $model->save(false, ['no_limit_item']);
+        Yii::$app->session->setFlash('success', 'Berhasil, sekarang kartu proses ini sudah dibatasi jumlah item nya.');
         return $this->redirect(['view', 'id' => $model->id]);
     }
 

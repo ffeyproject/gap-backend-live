@@ -128,13 +128,13 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['wo_color_id', 'asal_greige', 'date', 'dikerjakan_oleh', 'lusi', 'pakan', 'nomor_kartu'], 'required'],
+            [['wo_color_id', 'asal_greige', 'date', 'dikerjakan_oleh', 'nomor_kartu'], 'required'],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
             [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id'], 'integer'],
             [['note', 'memo_pg', 'reject_notes', 'nomor_kartu'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
-            ['no_limit_item', 'default', 'value'=>false],
+            ['no_limit_item', 'default', 'value'=>true],
             [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'kombinasi', 'berat'], 'string', 'max' => 255],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::className(), 'targetAttribute' => ['sc_id' => 'id']],
@@ -427,5 +427,31 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
         }
 
         return true;
+    }
+
+    /**
+     * Generate automatic nomor kartu with format [urut]/[year2d] (e.g., 1000/26)
+     * Resets to 1 if year changes.
+     * @return string
+     */
+    public static function generateNomorKartu()
+    {
+        $year2d = date('y');
+        $lastRecord = self::find()
+            ->where(['like', 'nomor_kartu', '/' . $year2d])
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
+
+        $nextUrut = ($year2d === '26') ? 1000 : 1;
+        if ($lastRecord) {
+            $pos = strrpos($lastRecord->nomor_kartu, '/');
+            if ($pos !== false) {
+                $prefix = substr($lastRecord->nomor_kartu, 0, $pos);
+                if (is_numeric($prefix)) {
+                    $nextUrut = max($nextUrut, (int)$prefix + 1);
+                }
+            }
+        }
+        return $nextUrut . '/' . $year2d;
     }
 }

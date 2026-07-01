@@ -523,6 +523,488 @@ class ProcessingPrintingController extends Controller
      * @return TrnKartuProsesPrinting the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
+    public function actionInputProduksi()
+    {
+        $request = Yii::$app->request;
+        $jenis_mesin = $request->get('jenis_mesin');
+        $mesin_id = $request->get('mesin_id');
+        $tanggal = $request->get('tanggal', date('Y-m-d'));
+        $shift = $request->get('shift');
+        $pembagian_hari = $request->get('pembagian_hari');
+
+        $jenisMesins = ['Rotary' => 'Rotary', 'Flat' => 'Flat', 'Digital' => 'Digital'];
+
+        $machines = [];
+        if ($jenis_mesin) {
+            $machines = \common\models\ar\MstMesinProses::find()
+                ->where(['like', 'model_mesin', $jenis_mesin])
+                ->all();
+        }
+
+        $mesin = null;
+        if ($mesin_id) {
+            $mesin = \common\models\ar\MstMesinProses::findOne($mesin_id);
+        }
+
+        $existingData = [];
+        if ($mesin && $tanggal && $shift && $pembagian_hari) {
+            // 1. Query from TrnProduksiMesinPrinting
+            $rekapRecords = \common\models\ar\TrnProduksiMesinPrinting::find()
+                ->where([
+                    'mst_mesin_proses_id' => $mesin->id,
+                    'tanggal' => $tanggal,
+                    'shift' => $shift,
+                    'pembagian_hari' => $pembagian_hari
+                ])
+                ->all();
+
+            foreach ($rekapRecords as $record) {
+                $existingData[] = [
+                    'id' => 'rekap_' . $record->id,
+                    'jenis_input' => $record->jenis_input,
+                    'start' => $record->start,
+                    'stop' => $record->stop,
+                    'no_mc' => $record->mstMesinProses->nama_mesin,
+                    'no_wo' => $record->wo_no,
+                    'nk' => $record->nk_no,
+                    'kartu_proses_id' => $record->kartu_proses_id,
+                    'design' => $record->design,
+                    'motif' => $record->motif,
+                    'warna' => $record->warna,
+                    'jumlah_pesanan' => number_format((float)$record->jumlah_pesanan, 2, '.', ''),
+                    'realisasi' => number_format((float)$record->realisasi, 2, '.', ''),
+                    'kurang' => number_format((float)$record->kurang, 2, '.', ''),
+                    'panjang_greige' => number_format((float)$record->panjang_greige, 2, '.', ''),
+                    'panjang_jadi' => number_format((float)$record->panjang_jadi, 2, '.', ''),
+                    'keterangan' => $record->keterangan,
+                    'jenis_hambatan' => $record->mstJenisHambatan ? $record->mstJenisHambatan->nama : '-',
+                    'raw_id' => $record->id,
+                    'tipe_record' => 'rekap',
+                ];
+            }
+
+            // 2. Query from KartuProcessPrintingProcess (card records)
+            $existingCardIds = \common\models\ar\TrnProduksiMesinPrinting::find()
+                ->select('kartu_proses_id')
+                ->where(['mst_mesin_proses_id' => $mesin->id, 'tanggal' => $tanggal, 'shift' => $shift])
+                ->andWhere(['not', ['kartu_proses_id' => null]])
+                ->column();
+
+            $queryPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_printing kpp', 'kp.kartu_process_id = kpp.id')
+                ->where(['>=', 'kpp.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpp.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"']);
+
+            if (!empty($existingCardIds)) {
+                $queryPrinting->andWhere(['not', ['kpp.id' => $existingCardIds]]);
+            }
+
+            $queryPrinting->with(['kartuProcess.trnKartuProsesPrintingItems', 'kartuProcess.wo', 'kartuProcess.woColor.moColor', 'process']);
+
+            $printingRecords = $queryPrinting->all();
+            foreach ($printingRecords as $record) {
+                $values = Json::decode($record->value);
+                $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : (isset($values['shift_operator']) ? $values['shift_operator'] : '-');
+                
+                if ($shiftGroup !== $shift) {
+                    continue;
+                }
+
+                $kpp = $record->kartuProcess;
+                $pcs = count($kpp->trnKartuProsesPrintingItems);
+                $panjangGreige = $kpp->getTrnKartuProsesPrintingItems()->sum('panjang_m') ?: 0;
+                $woNo = $kpp->wo ? $kpp->wo->no : '';
+                $warna = ($kpp->woColor && $kpp->woColor->moColor) ? $kpp->woColor->moColor->color : '';
+                $qtyOrder = $kpp->woColor ? $kpp->woColor->qtyFinishToMeter : 0;
+
+                $realisasi = 0;
+                if ($kpp->wo_color_id) {
+                    $cards = \common\models\ar\TrnKartuProsesPrinting::find()
+                        ->where(['wo_color_id' => $kpp->wo_color_id])
+                        ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                        ->all();
+                    foreach ($cards as $card) {
+                        $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
+                    }
+                }
+
+                $existingData[] = [
+                    'id' => 'card_' . $kpp->id . '_' . $record->process_id,
+                    'jenis_input' => 'Produksi',
+                    'start' => isset($values['start']) ? $values['start'] : '',
+                    'stop' => isset($values['stop']) ? $values['stop'] : '',
+                    'no_mc' => $mesin->nama_mesin,
+                    'no_wo' => $woNo,
+                    'nk' => $kpp->nomor_kartu,
+                    'kartu_proses_id' => $kpp->id,
+                    'design' => $kpp->wo ? ($kpp->wo->mo ? $kpp->wo->mo->design : '') : '',
+                    'motif' => $kpp->wo ? ($kpp->wo->greige ? $kpp->wo->greige->nama_kain : '') : '',
+                    'warna' => $warna,
+                    'jumlah_pesanan' => number_format((float)$qtyOrder, 2, '.', ''),
+                    'realisasi' => number_format((float)$realisasi, 2, '.', ''),
+                    'kurang' => number_format((float)($qtyOrder - $realisasi), 2, '.', ''),
+                    'panjang_greige' => number_format((float)(isset($values['panjang_greige']) ? $values['panjang_greige'] : $panjangGreige), 2, '.', ''),
+                    'panjang_jadi' => isset($values['panjang_jadi']) ? number_format((float)$values['panjang_jadi'], 2, '.', '') : '',
+                    'keterangan' => isset($values['keterangan']) ? $values['keterangan'] : '',
+                    'jenis_hambatan' => '-',
+                    'raw_id' => $kpp->id,
+                    'process_id' => $record->process_id,
+                    'tipe_record' => 'card',
+                ];
+            }
+
+            usort($existingData, function($a, $b) {
+                return strcmp($a['start'], $b['start']);
+            });
+        }
+
+        $hambatanList = \common\models\ar\MstJenisHambatan::find()->asArray()->all();
+
+        return $this->render('input-produksi', [
+            'jenisMesins' => $jenisMesins,
+            'machines' => $machines,
+            'mesin' => $mesin,
+            'jenis_mesin' => $jenis_mesin,
+            'mesin_id' => $mesin_id,
+            'tanggal' => $tanggal,
+            'shift' => $shift,
+            'pembagian_hari' => $pembagian_hari,
+            'existingData' => $existingData,
+            'hambatanList' => $hambatanList,
+        ]);
+    }
+
+    public function actionTambahInputProduksi()
+    {
+        $request = Yii::$app->request;
+        if ($request->isPost) {
+            $mesinId = $request->post('mesin_id');
+            $tanggal = $request->post('tanggal');
+            $shift = $request->post('shift');
+            $pembagian_hari = $request->post('pembagian_hari');
+
+            $jenis_input = $request->post('jenis_input');
+            $start = $request->post('start');
+            $stop = $request->post('stop');
+            $nk_no = trim($request->post('nk_no'));
+            $wo_no = trim($request->post('wo_no'));
+            $design = $request->post('design');
+            $motif = $request->post('motif');
+            $warna = $request->post('warna');
+            $jumlah_pesanan = $request->post('jumlah_pesanan');
+            $realisasi = $request->post('realisasi');
+            $kurang = $request->post('kurang');
+            $panjang_greige = $request->post('panjang_greige');
+            $panjang_jadi = $request->post('panjang_jadi');
+            $keterangan = $request->post('keterangan');
+            $mst_jenis_hambatan_id = $request->post('mst_jenis_hambatan_id');
+            $record_id = $request->post('record_id');
+            $tipe_record = $request->post('tipe_record');
+
+            $mesin = \common\models\ar\MstMesinProses::findOne($mesinId);
+            if (!$mesin) {
+                Yii::$app->session->setFlash('error', 'Mesin tidak valid.');
+                return $this->redirect(['input-produksi', 'jenis_mesin' => $request->post('jenis_mesin'), 'mesin_id' => $mesinId, 'tanggal' => $tanggal, 'shift' => $shift, 'pembagian_hari' => $pembagian_hari]);
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                $kpp = null;
+                if (!empty($nk_no)) {
+                    $kpp = \common\models\ar\TrnKartuProsesPrinting::findOne(['nomor_kartu' => $nk_no]);
+                }
+
+                if (($jenis_input === 'Produksi' || $jenis_input === 'Percobaan') && $kpp) {
+                    $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => 'Printing']);
+                    if (!$mstProcess) {
+                        $mstProcess = \common\models\ar\MstProcessPrinting::find()->orderBy('order')->one();
+                    }
+
+                    if ($mstProcess) {
+                        $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
+                            'kartu_process_id' => $kpp->id,
+                            'process_id' => $mstProcess->id
+                        ]);
+                        if (!$kpProcess) {
+                            $kpProcess = new \common\models\ar\KartuProcessPrintingProcess();
+                            $kpProcess->kartu_process_id = $kpp->id;
+                            $kpProcess->process_id = $mstProcess->id;
+                        }
+
+                        $vals = $kpProcess->isNewRecord ? [] : (Json::decode($kpProcess->value) ?: []);
+                        $vals['tanggal'] = $tanggal;
+                        $vals['no_mesin'] = $mesin->nama_mesin;
+                        $vals['shift_group'] = $shift;
+                        $vals['start'] = $start;
+                        $vals['stop'] = $stop;
+                        $vals['panjang_greige'] = $panjang_greige;
+                        $vals['panjang_jadi'] = $panjang_jadi;
+                        $vals['keterangan'] = $keterangan;
+
+                        $kpProcess->value = Json::encode($vals);
+                        if (!$kpProcess->save(false)) {
+                            throw new \Exception('Gagal menyimpan data proses kartu.');
+                        }
+                    }
+                }
+
+                $model = null;
+                if (!empty($record_id) && $tipe_record === 'rekap') {
+                    $model = \common\models\ar\TrnProduksiMesinPrinting::findOne($record_id);
+                }
+
+                if (!$model && $kpp) {
+                    $model = \common\models\ar\TrnProduksiMesinPrinting::findOne([
+                        'kartu_proses_id' => $kpp->id,
+                        'tanggal' => $tanggal,
+                        'shift' => $shift,
+                        'pembagian_hari' => $pembagian_hari,
+                    ]);
+                }
+
+                if (!$model) {
+                    $model = new \common\models\ar\TrnProduksiMesinPrinting();
+                }
+
+                $model->jenis_input = $jenis_input;
+                $model->tanggal = $tanggal;
+                $model->shift = $shift;
+                $model->pembagian_hari = $pembagian_hari;
+                $model->start = $start;
+                $model->stop = $stop;
+                $model->mst_mesin_proses_id = $mesin->id;
+                $model->kartu_proses_id = $kpp ? $kpp->id : null;
+
+                if ($kpp) {
+                    $model->wo_id = $kpp->wo_id;
+                    $model->wo_no = $kpp->wo ? $kpp->wo->no : '';
+                    $model->nk_no = $kpp->nomor_kartu;
+                } else {
+                    if (!empty($wo_no)) {
+                        $wo = \common\models\ar\TrnWo::findOne(['no' => $wo_no]);
+                        if ($wo) {
+                            $model->wo_id = $wo->id;
+                        }
+                    }
+                    $model->wo_no = $wo_no;
+                    $model->nk_no = $nk_no;
+                }
+
+                $model->design = $design;
+                $model->motif = $motif;
+                $model->warna = $warna;
+                $model->jumlah_pesanan = $jumlah_pesanan;
+                $model->realisasi = $realisasi;
+                $model->kurang = $kurang;
+                $model->panjang_greige = $panjang_greige;
+                $model->panjang_jadi = $panjang_jadi;
+                $model->keterangan = $keterangan;
+                $model->mst_jenis_hambatan_id = !empty($mst_jenis_hambatan_id) ? $mst_jenis_hambatan_id : null;
+
+                if (!$model->save()) {
+                    throw new \Exception('Gagal menyimpan data rekap: ' . Json::encode($model->getErrors()));
+                }
+
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Data input produksi berhasil disimpan.');
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
+
+            return $this->redirect([
+                'input-produksi',
+                'jenis_mesin' => $request->post('jenis_mesin'),
+                'mesin_id' => $mesinId,
+                'tanggal' => $tanggal,
+                'shift' => $shift,
+                'pembagian_hari' => $pembagian_hari
+            ]);
+        }
+
+        return $this->redirect(['input-produksi']);
+    }
+
+    public function actionHapusInputProduksi($id, $tipe)
+    {
+        $request = Yii::$app->request;
+        $jenis_mesin = $request->get('jenis_mesin');
+        $mesin_id = $request->get('mesin_id');
+        $tanggal = $request->get('tanggal');
+        $shift = $request->get('shift');
+        $pembagian_hari = $request->get('pembagian_hari');
+
+        if ($tipe === 'rekap') {
+            $model = \common\models\ar\TrnProduksiMesinPrinting::findOne($id);
+            if ($model) {
+                if ($model->kartu_proses_id) {
+                    $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => 'Printing']);
+                    if (!$mstProcess) {
+                        $mstProcess = \common\models\ar\MstProcessPrinting::find()->orderBy('order')->one();
+                    }
+                    if ($mstProcess) {
+                        $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
+                            'kartu_process_id' => $model->kartu_proses_id,
+                            'process_id' => $mstProcess->id
+                        ]);
+                        if ($kpProcess) {
+                            $kpProcess->delete();
+                        }
+                    }
+                }
+                $model->delete();
+                Yii::$app->session->setFlash('success', 'Data input berhasil dihapus.');
+            }
+        } elseif ($tipe === 'card') {
+            $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => 'Printing']);
+            if (!$mstProcess) {
+                $mstProcess = \common\models\ar\MstProcessPrinting::find()->orderBy('order')->one();
+            }
+            if ($mstProcess) {
+                $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
+                    'kartu_process_id' => $id,
+                    'process_id' => $mstProcess->id
+                ]);
+                if ($kpProcess) {
+                    $kpProcess->delete();
+                }
+            }
+
+            \common\models\ar\TrnProduksiMesinPrinting::deleteAll(['kartu_proses_id' => $id]);
+            Yii::$app->session->setFlash('success', 'Data input kartu berhasil dihapus.');
+        }
+
+        return $this->redirect([
+            'input-produksi',
+            'jenis_mesin' => $jenis_mesin,
+            'mesin_id' => $mesin_id,
+            'tanggal' => $tanggal,
+            'shift' => $shift,
+            'pembagian_hari' => $pembagian_hari
+        ]);
+    }
+
+    public function actionGetNkDetails($nk)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        try {
+            $model = \common\models\ar\TrnKartuProsesPrinting::findOne(['nomor_kartu' => $nk]);
+            if ($model) {
+                $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
+                $panjangGreige = $model->getTrnKartuProsesPrintingItems()->sum('panjang_m') ?: 0;
+                
+                $realisasi = 0;
+                if ($model->wo_color_id) {
+                    $cards = \common\models\ar\TrnKartuProsesPrinting::find()
+                        ->where(['wo_color_id' => $model->wo_color_id])
+                        ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                        ->all();
+                    foreach ($cards as $card) {
+                        $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
+                    }
+                }
+
+                $qtyOrder = $model->woColor ? $model->woColor->qtyFinishToMeter : 0;
+
+                return [
+                    'success' => true,
+                    'wo_no' => $model->wo ? $model->wo->no : '',
+                    'design' => ($model->wo && $model->wo->mo) ? $model->wo->mo->design : '',
+                    'motif' => ($model->wo && $model->wo->greige) ? $model->wo->greige->nama_kain : '',
+                    'warna' => $warna,
+                    'jumlah_pesanan' => number_format((float)$qtyOrder, 2, '.', ''),
+                    'realisasi' => number_format((float)$realisasi, 2, '.', ''),
+                    'kurang' => number_format((float)($qtyOrder - $realisasi), 2, '.', ''),
+                    'panjang_greige' => number_format((float)$panjangGreige, 2, '.', ''),
+                ];
+            }
+            return ['success' => false, 'message' => 'NK tidak ditemukan.'];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+        }
+    }
+
+    public function actionGetNks($q, $wo_no = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $query = \common\models\ar\TrnKartuProsesPrinting::find()
+            ->where(['like', 'nomor_kartu', $q])
+            ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED]);
+        
+        if ($wo_no) {
+            $wo = \common\models\ar\TrnWo::findOne(['no' => $wo_no]);
+            if ($wo) {
+                $query->andWhere(['wo_id' => $wo->id]);
+            } else {
+                $query->andWhere('1=0');
+            }
+        }
+        
+        $nks = $query->limit(20)->all();
+        
+        $out = [];
+        foreach ($nks as $nk) {
+            $out[] = ['id' => $nk->nomor_kartu, 'text' => $nk->nomor_kartu];
+        }
+        return ['results' => $out];
+    }
+
+    public function actionGetWos($q)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $wos = \common\models\ar\TrnWo::find()
+            ->joinWith('scGreige', false)
+            ->where(['like', 'trn_wo.no', $q])
+            ->andWhere(['trn_sc_greige.process' => \common\models\ar\TrnScGreige::PROCESS_PRINTING])
+            ->andWhere(['trn_wo.status' => \common\models\ar\TrnWo::STATUS_APPROVED])
+            ->limit(20)
+            ->all();
+        
+        $out = [];
+        foreach ($wos as $wo) {
+            $out[] = ['id' => $wo->no, 'text' => $wo->no];
+        }
+        return ['results' => $out];
+    }
+
+    public function actionGetWoDetails($wo_no)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $wo = \common\models\ar\TrnWo::findOne(['no' => $wo_no]);
+        if ($wo) {
+             $colors = [];
+             foreach ($wo->trnWoColors as $wc) {
+                 if ($wc->moColor) {
+                     $realisasi = 0;
+                     $cards = \common\models\ar\TrnKartuProsesPrinting::find()
+                         ->where(['wo_color_id' => $wc->id])
+                         ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                         ->all();
+                     foreach ($cards as $card) {
+                         $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
+                     }
+
+                     $colors[] = [
+                         'color' => $wc->moColor->color,
+                         'qty_finish_yard' => number_format((float)$wc->qtyFinishToMeter, 2, '.', ''),
+                         'realisasi' => number_format((float)$realisasi, 2, '.', ''),
+                     ];
+                 }
+             }
+
+            return [
+                'success' => true,
+                'design' => $wo->mo ? $wo->mo->design : '',
+                'motif' => $wo->greige ? $wo->greige->nama_kain : '',
+                'colors' => $colors,
+            ];
+        }
+        return ['success' => false];
+    }
+
     protected function findModel($id)
     {
         if (($model = TrnKartuProsesPrinting::findOne($id)) !== null) {
@@ -532,3 +1014,4 @@ class ProcessingPrintingController extends Controller
         throw new NotFoundHttpException('The requested page does not exist.');
     }
 }
+
