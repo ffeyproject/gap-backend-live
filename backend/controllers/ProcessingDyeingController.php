@@ -398,7 +398,7 @@ class ProcessingDyeingController extends Controller
         header('Expires: 0');
         
         $masterProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['perbaikan' => false])
+            ->where(['use_jetblack' => false])
             ->orderBy('order')
             ->all();
 
@@ -422,6 +422,7 @@ class ProcessingDyeingController extends Controller
             'col-motif' => 'Motif',
             'col-warna' => 'Warna',
             'col-nomor-kartu' => 'NK',
+            'col-keterangan' => 'Keterangan',
             'col-matching-colour' => 'Matching Colour',
             'col-matching-toping' => 'Matching Toping',
             'col-panjang-greige' => 'Panjang Greige',
@@ -431,7 +432,7 @@ class ProcessingDyeingController extends Controller
         ];
 
         $jetblackProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['use_jetblack' => true, 'perbaikan' => false])
+            ->where(['use_jetblack' => true])
             ->orderBy('order')
             ->all();
 
@@ -571,6 +572,7 @@ class ProcessingDyeingController extends Controller
                 'col-target-finish' => $tFinish,
                 'col-warna' => $warna,
                 'col-nomor-kartu' => $nk,
+                'col-keterangan' => $model->note,
                 'col-matching-colour' => ($model->woColor && $model->woColor->date_ready_colour) ? $formatIndoDate($model->woColor->date_ready_colour) : '',
                 'col-matching-toping' => $model->date_toping_matching ? $formatIndoDate($model->date_toping_matching) : '',
                 'col-panjang' => $panjang,

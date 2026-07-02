@@ -62,7 +62,22 @@ use yii\helpers\Json;
  */
 class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
 {
+    public $copy_nk;
     const STATUS_DRAFT = 1;const STATUS_POSTED = 2;const STATUS_DELIVERED = 3;const STATUS_APPROVED = 4;const STATUS_INSPECTED = 5;const STATUS_GANTI_GREIGE = 6;const STATUS_GANTI_GREIGE_LINKED = 7;const STATUS_BATAL = 8;const STATUS_SELESAI_INSPECT = 9;const STATUS_ROLLING_PACKING = 10; const STATUS_MAKE_UP_PACKING = 11; const STATUS_FOLDED_PACKING = 12; const STATUS_TERIMA_GUDANG_JADI = 13; const STATUS_PERIKSA_PENGIRIMAN = 14; const STATUS_CLOSE = 15; const STATUS_SELVEDGE_PACKING = 16;
+
+    const JENIS_PRINTING_DIGITAL = 1;
+    const JENIS_PRINTING_KONVENSIONAL = 2;
+
+    /**
+     * @return array
+     */
+    public static function jenisPrintingOptions()
+    {
+        return [
+            self::JENIS_PRINTING_DIGITAL => 'Digital',
+            self::JENIS_PRINTING_KONVENSIONAL => 'Konvensional',
+        ];
+    }
     /**
      * @return array
      */
@@ -128,9 +143,9 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['wo_color_id', 'asal_greige', 'date', 'dikerjakan_oleh', 'nomor_kartu'], 'required'],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id'], 'integer'],
+            [['wo_color_id', 'asal_greige', 'date', 'dikerjakan_oleh', 'nomor_kartu', 'jenis_printing'], 'required'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'jenis_printing'], 'default', 'value' => null],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id', 'jenis_printing'], 'integer'],
             [['note', 'memo_pg', 'reject_notes', 'nomor_kartu'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
@@ -144,6 +159,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
             ['nomor_kartu', 'unique'],
+            [['copy_nk'], 'safe'],
         ];
     }
 
@@ -187,6 +203,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             'kombinasi' => 'Kombinasi',
             'no_limit_item' => 'Item Tidak Dibatasi',
             'nomor_kartu' => 'Nomor Kartu',
+            'jenis_printing' => 'Jenis Printing',
         ];
     }
 
@@ -453,5 +470,92 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             }
         }
         return $nextUrut . '/' . $year2d;
+    }
+
+    /**
+     * Calculate realisasi based on "panjang_jadi" of "Printing" process for a given wo_color_id.
+     * @param int $woColorId
+     * @return float
+     */
+    public static function calculateRealisasi($woColorId)
+    {
+        $realisasi = 0;
+        $mstProcess = MstProcessPrinting::findOne(['nama_proses' => 'Printing']);
+        if (!$mstProcess) {
+            $mstProcess = MstProcessPrinting::find()->orderBy('order')->one();
+        }
+        if ($mstProcess && $woColorId) {
+            $cards = self::find()
+                ->where(['wo_color_id' => $woColorId])
+                ->andWhere(['status' => self::STATUS_DELIVERED])
+                ->all();
+            foreach ($cards as $card) {
+                $kpProcess = KartuProcessPrintingProcess::findOne([
+                    'kartu_process_id' => $card->id,
+                    'process_id' => $mstProcess->id
+                ]);
+                if ($kpProcess && !empty($kpProcess->value)) {
+                    $vals = Json::decode($kpProcess->value);
+                    if (isset($vals['panjang_jadi'])) {
+                        $realisasi += (float)$vals['panjang_jadi'];
+                    }
+                }
+            }
+        }
+        return $realisasi;
+    }
+
+    /**
+     * Get the next suffix card number based on an existing NK (e.g. 10/26 -> 10B/26)
+     * @param string $baseNk
+     * @return string
+     */
+    public static function getNextNk($baseNk)
+    {
+        $parts = explode('/', $baseNk);
+        if (count($parts) !== 2) {
+            return $baseNk;
+        }
+
+        $prefix = $parts[0]; // e.g. "10" or "10B"
+        $year = $parts[1];   // e.g. "26"
+
+        if (preg_match('/^(\d+)([A-Z]*)$/', $prefix, $matches)) {
+            $num = $matches[1];
+            $suffix = $matches[2];
+        } else {
+            return $prefix . 'B/' . $year;
+        }
+
+        $nextSuffix = empty($suffix) ? 'B' : self::incrementLetterSuffix($suffix);
+
+        while (true) {
+            $testNk = $num . $nextSuffix . '/' . $year;
+            $exists = self::find()->where(['nomor_kartu' => $testNk])->exists();
+            if (!$exists) {
+                return $testNk;
+            }
+            $nextSuffix = self::incrementLetterSuffix($nextSuffix);
+        }
+    }
+
+    private static function incrementLetterSuffix($suffix)
+    {
+        $len = strlen($suffix);
+        if ($len === 0) {
+            return 'B';
+        }
+        $chars = str_split($suffix);
+        $i = count($chars) - 1;
+        while ($i >= 0) {
+            if ($chars[$i] === 'Z') {
+                $chars[$i] = 'A';
+                $i--;
+            } else {
+                $chars[$i] = chr(ord($chars[$i]) + 1);
+                return implode('', $chars);
+            }
+        }
+        return 'A' . implode('', $chars);
     }
 }

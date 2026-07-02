@@ -68,9 +68,9 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'asal_greige', 'date', 'status', 'created_at', 'created_by', 'wo_color_id'], 'required'],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id'], 'default', 'value' => null],
-            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id'], 'integer'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'asal_greige', 'date', 'status', 'created_at', 'created_by', 'wo_color_id', 'jenis_printing'], 'required'],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id', 'jenis_printing'], 'default', 'value' => null],
+            [['sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'wo_color_id', 'jenis_printing'], 'integer'],
             [['note', 'memo_pg', 'reject_notes'], 'string'],
             [['date'], 'safe'],
             [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'kombinasi','nomor_kartu'], 'string', 'max' => 255],
@@ -123,6 +123,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             'wo_color_id' => 'Wo Color ID',
             'kombinasi' => 'Kombinasi',
             'nomor_kartu' => 'Nomor Kartu',
+            'jenis_printing' => 'Jenis Printing',
         ];
     }
 

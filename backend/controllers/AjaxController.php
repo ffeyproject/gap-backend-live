@@ -1373,4 +1373,58 @@ class AjaxController extends Controller
         return $out;
     }
 
+    public function actionLookupExistingNkPrinting($q = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['results' => []];
+        $yearSuffix = '/' . date('y');
+
+        $query = TrnKartuProsesPrinting::find()
+            ->select(['id', 'nomor_kartu AS text'])
+            ->where(['like', 'nomor_kartu', $yearSuffix]);
+
+        if (!empty($q)) {
+            $query->andWhere(['like', 'nomor_kartu', $q]);
+        }
+
+        $data = $query->limit(20)->asArray()->all();
+        $out['results'] = $data;
+        return $out;
+    }
+
+    public function actionGetNkDetailsPrinting($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $card = TrnKartuProsesPrinting::findOne($id);
+        if ($card) {
+            $nextNk = TrnKartuProsesPrinting::getNextNk($card->nomor_kartu);
+
+            $colors = [];
+            if ($card->wo) {
+                foreach ($card->wo->trnWoColors as $wc) {
+                    if ($wc->moColor) {
+                        $colors[] = [
+                            'id' => $wc->id,
+                            'text' => $wc->moColor->color
+                        ];
+                    }
+                }
+            }
+
+            return [
+                'success' => true,
+                'next_nk' => $nextNk,
+                'wo_id' => $card->wo_id,
+                'wo_no' => $card->wo ? $card->wo->no : '',
+                'kartu_proses_id' => $card->kartu_proses_id,
+                'kartu_proses_no' => $card->kartuProses ? $card->kartuProses->no : '',
+                'wo_color_id' => $card->wo_color_id,
+                'colors' => $colors,
+                'asal_greige' => $card->asal_greige,
+                'dikerjakan_oleh' => $card->dikerjakan_oleh,
+                'jenis_printing' => $card->jenis_printing,
+            ];
+        }
+        return ['success' => false];
+    }
 }

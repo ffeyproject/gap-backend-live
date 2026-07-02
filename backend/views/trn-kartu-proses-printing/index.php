@@ -123,6 +123,21 @@ $this->params['breadcrumbs'][] = $this->title;
                 'hAlign' => 'right'
             ],
             'nomor_kartu',
+            [
+                'attribute'=>'jenis_printing',
+                'value'=>function($data){
+                    /* @var $data TrnKartuProsesPrinting*/
+                    return $data->jenis_printing !== null ? TrnKartuProsesPrinting::jenisPrintingOptions()[$data->jenis_printing] : '';
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => TrnKartuProsesPrinting::jenisPrintingOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
             //'created_at',
             //'created_by',
             //'updated_at',

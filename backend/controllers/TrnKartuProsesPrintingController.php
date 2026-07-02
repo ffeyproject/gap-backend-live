@@ -142,6 +142,7 @@ class TrnKartuProsesPrintingController extends Controller
             'date' => date('Y-m-d'),
             'nomor_kartu' => TrnKartuProsesPrinting::generateNomorKartu(),
             'no_limit_item' => true,
+            'jenis_printing' => TrnKartuProsesPrinting::JENIS_PRINTING_KONVENSIONAL,
         ]);
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()){

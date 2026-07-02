@@ -620,16 +620,7 @@ class ProcessingPrintingController extends Controller
                 $warna = ($kpp->woColor && $kpp->woColor->moColor) ? $kpp->woColor->moColor->color : '';
                 $qtyOrder = $kpp->woColor ? $kpp->woColor->qtyFinishToMeter : 0;
 
-                $realisasi = 0;
-                if ($kpp->wo_color_id) {
-                    $cards = \common\models\ar\TrnKartuProsesPrinting::find()
-                        ->where(['wo_color_id' => $kpp->wo_color_id])
-                        ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
-                        ->all();
-                    foreach ($cards as $card) {
-                        $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
-                    }
-                }
+                $realisasi = \common\models\ar\TrnKartuProsesPrinting::calculateRealisasi($kpp->wo_color_id);
 
                 $existingData[] = [
                     'id' => 'card_' . $kpp->id . '_' . $record->process_id,
@@ -896,16 +887,7 @@ class ProcessingPrintingController extends Controller
                 $warna = ($model->woColor && $model->woColor->moColor) ? $model->woColor->moColor->color : '';
                 $panjangGreige = $model->getTrnKartuProsesPrintingItems()->sum('panjang_m') ?: 0;
                 
-                $realisasi = 0;
-                if ($model->wo_color_id) {
-                    $cards = \common\models\ar\TrnKartuProsesPrinting::find()
-                        ->where(['wo_color_id' => $model->wo_color_id])
-                        ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
-                        ->all();
-                    foreach ($cards as $card) {
-                        $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
-                    }
-                }
+                $realisasi = \common\models\ar\TrnKartuProsesPrinting::calculateRealisasi($model->wo_color_id);
 
                 $qtyOrder = $model->woColor ? $model->woColor->qtyFinishToMeter : 0;
 
@@ -978,14 +960,7 @@ class ProcessingPrintingController extends Controller
              $colors = [];
              foreach ($wo->trnWoColors as $wc) {
                  if ($wc->moColor) {
-                     $realisasi = 0;
-                     $cards = \common\models\ar\TrnKartuProsesPrinting::find()
-                         ->where(['wo_color_id' => $wc->id])
-                         ->andWhere(['status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
-                         ->all();
-                     foreach ($cards as $card) {
-                         $realisasi += (float)$card->getTrnKartuProsesPrintingItems()->sum('panjang_m');
-                     }
+                     $realisasi = \common\models\ar\TrnKartuProsesPrinting::calculateRealisasi($wc->id);
 
                      $colors[] = [
                          'color' => $wc->moColor->color,

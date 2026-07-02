@@ -49,6 +49,10 @@ use yii\widgets\DetailView;
                         ],
                         'kombinasi',
                         'nomor_kartu',
+                        [
+                            'attribute'=>'jenis_printing',
+                            'value'=>$model->jenis_printing !== null ? TrnKartuProsesPrinting::jenisPrintingOptions()[$model->jenis_printing] : null
+                        ],
                         //'reject_notes'
                     ],
                 ]) ?>

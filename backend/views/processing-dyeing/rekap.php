@@ -495,6 +495,15 @@ $gridColumns = [
         'vAlign' => 'middle',
     ],
     [
+        'label' => 'Keterangan',
+        'value' => function($data) {
+            return $data->note;
+        },
+        'format' => 'raw',
+        'hAlign' => 'left',
+        'vAlign' => 'middle',
+    ],
+    [
         'label' => 'Matching Colour',
         'value' => function($data) use ($formatIndoDate) {
             return ($data->woColor && $data->woColor->date_ready_colour) ? $formatIndoDate($data->woColor->date_ready_colour) : null;
@@ -538,7 +547,7 @@ $gridColumns = [
         'label' => 'Terakhir Proses',
         'attribute' => 'terakhir_proses',
         'filterType' => GridView::FILTER_SELECT2,
-        'filter' => \yii\helpers\ArrayHelper::map(\common\models\ar\MstProcessDyeing::find()->where(['use_jetblack' => false, 'perbaikan' => false])->orderBy('order')->all(), 'nama_proses', 'nama_proses'),
+        'filter' => \yii\helpers\ArrayHelper::map(\common\models\ar\MstProcessDyeing::find()->where(['use_jetblack' => false])->orderBy('order')->all(), 'nama_proses', 'nama_proses'),
         'filterWidgetOptions' => [
             'pluginOptions' => [
                 'allowClear' => true,
@@ -556,7 +565,7 @@ $gridColumns = [
 
 // Query and append all processes from master process dynamically
 $masterProcesses = \common\models\ar\MstProcessDyeing::find()
-    ->where(['use_jetblack' => false, 'perbaikan' => false])
+    ->where(['use_jetblack' => false])
     ->orderBy('order')
     ->all();
 
@@ -676,7 +685,7 @@ foreach ($masterProcesses as $proc) {
 
     if ($proc->nama_proses === 'Resin Finish') {
         $jetblackProcesses = \common\models\ar\MstProcessDyeing::find()
-            ->where(['use_jetblack' => true, 'perbaikan' => false])
+            ->where(['use_jetblack' => true])
             ->orderBy('order')
             ->all();
         foreach ($jetblackProcesses as $jbProc) {
@@ -1147,8 +1156,14 @@ $columnToggleDropdown .= '</ul></div>';
 .col-warna {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
 }
+.col-nama-warna {
+    width: 100px !important; min-width: 100px !important; max-width: 100px !important;
+}
 .col-nomor-kartu {
     width: 100px !important; min-width: 100px !important; max-width: 100px !important;
+}
+.col-keterangan {
+    width: 150px !important; min-width: 150px !important; max-width: 150px !important;
 }
 .col-matching-colour {
     width: 110px !important; min-width: 110px !important; max-width: 110px !important;
@@ -1158,7 +1173,7 @@ $columnToggleDropdown .= '</ul></div>';
 }
 
 /* Horizontal Sticky Behavior for Frozen Columns */
-.col-serial, .col-id, .col-wodaterange, .col-tgl--terima, .col-handling, .col-target-finish, .col-panjang, .col-note-wo, .col-memo-perubahan, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nomor-kartu {
+.col-serial, .col-id, .col-wodaterange, .col-tgl--terima, .col-handling, .col-target-finish, .col-panjang, .col-note-wo, .col-memo-perubahan, .col-buyer, .col-wono, .col-motif, .col-warna, .col-nama-warna, .col-nomor-kartu, .col-keterangan {
     position: sticky !important;
     z-index: 5 !important;
 }
@@ -1177,7 +1192,9 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-motif,
 .kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nama-warna,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > tbody > tr > td.col-keterangan {
     background-color: #ffffff !important;
 }
 
@@ -1193,7 +1210,9 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table tbody tr:hover td.col-t--finish,
 .kartu-proses-dyeing-index .table tbody tr:hover td.col-panjang,
 .kartu-proses-dyeing-index .table tbody tr:hover td.col-warna,
-.kartu-proses-dyeing-index .table tbody tr:hover td.col-nomor-kartu {
+.kartu-proses-dyeing-index .table tbody tr:hover td.col-nama-warna,
+.kartu-proses-dyeing-index .table tbody tr:hover td.col-nomor-kartu,
+.kartu-proses-dyeing-index .table tbody tr:hover td.col-keterangan {
     background-color: #f5f8fa !important;
 }
 
@@ -1341,9 +1360,9 @@ $columnToggleDropdown .= '</ul></div>';
     background-color: #f8bbd0 !important;
 }
 
-/* Visual divider line right after NK (Nomor Kartu) column */
-.kartu-proses-dyeing-index .table-bordered th.col-nomor-kartu,
-.kartu-proses-dyeing-index .table-bordered td.col-nomor-kartu {
+/* Visual divider line right after Keterangan column */
+.kartu-proses-dyeing-index .table-bordered th.col-keterangan,
+.kartu-proses-dyeing-index .table-bordered td.col-keterangan {
     border-right: 2.5px solid #444444 !important;
 }
 
@@ -1402,7 +1421,9 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-motif,
 .kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nama-warna,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > thead > tr:first-child > th.col-keterangan {
     z-index: 30 !important; /* Must be higher than normal sticky headers and normal sticky cells */
 }
 
@@ -1435,7 +1456,9 @@ $columnToggleDropdown .= '</ul></div>';
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-wono,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-motif,
 .kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-warna,
-.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu {
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nama-warna,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-nomor-kartu,
+.kartu-proses-dyeing-index .table-bordered > thead > tr.filters > td.col-keterangan {
     z-index: 29 !important; /* Higher than normal filter cells and body cells */
 }
 
@@ -1568,7 +1591,60 @@ function updateColspans() {
     processStickyCol('.col-wono', 115);
     processStickyCol('.col-motif', 150);
     processStickyCol('.col-warna', 100);
+    processStickyCol('.col-nama-warna', 100);
     processStickyCol('.col-nomor-kartu', 100);
+    processStickyCol('.col-keterangan', 150);
+}
+
+function initDoubleScrollbar() {
+    $('.double-scrollbar-top').remove();
+
+    var tableResponsive = $('.kartu-proses-dyeing-index .table-responsive');
+    if (tableResponsive.length === 0) {
+        return;
+    }
+
+    var table = tableResponsive.find('table');
+    if (table.length === 0) {
+        return;
+    }
+
+    var topScrollbar = $('<div class="double-scrollbar-top" style="overflow-x: auto; overflow-y: hidden; width: 100%; height: 16px; margin: 0; padding: 0; border: none; background: #f9f9f9;"><div class="double-scrollbar-inner" style="height: 1px;"></div></div>');
+    topScrollbar.insertBefore(tableResponsive);
+
+    function updateScrollWidth() {
+        var scrollWidth = tableResponsive[0].scrollWidth;
+        var clientWidth = tableResponsive[0].clientWidth;
+        topScrollbar.find('.double-scrollbar-inner').width(scrollWidth);
+        if (scrollWidth <= clientWidth) {
+            topScrollbar.hide();
+        } else {
+            topScrollbar.show();
+        }
+    }
+
+    updateScrollWidth();
+
+    $(window).off('resize.doubleScrollbar').on('resize.doubleScrollbar', updateScrollWidth);
+
+    var isScrollingTop = false;
+    var isScrollingTable = false;
+
+    topScrollbar.off('scroll.doubleScrollbar').on('scroll.doubleScrollbar', function() {
+        if (!isScrollingTable) {
+            isScrollingTop = true;
+            tableResponsive.scrollLeft(topScrollbar.scrollLeft());
+        }
+        isScrollingTable = false;
+    });
+
+    tableResponsive.off('scroll.doubleScrollbar').on('scroll.doubleScrollbar', function() {
+        if (!isScrollingTop) {
+            isScrollingTable = true;
+            topScrollbar.scrollLeft(tableResponsive.scrollLeft());
+        }
+        isScrollingTop = false;
+    });
 }
 
 // Fungsi menerapkan visibilitas kolom dari localStorage dan meng-update URL Export Excel
@@ -1608,6 +1684,9 @@ function applyColumnVisibility() {
             }
         }
     }
+
+    // Initialize/Update the top double scrollbar
+    initDoubleScrollbar();
 }
 
 // Jalankan saat halaman pertama kali dimuat

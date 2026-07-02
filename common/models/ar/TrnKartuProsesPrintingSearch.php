@@ -32,7 +32,7 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
     public function rules()
     {
         return [
-            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by'], 'integer'],
+            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_proses_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'memo_pg_at', 'memo_pg_by', 'delivered_at', 'delivered_by', 'jenis_printing'], 'integer'],
             [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'memo_pg', 'memo_pg_no', 'reject_notes', 'nomor_kartu'], 'safe'],
             [['motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status','warna',], 'safe'],
             [['woNo', 'dateRange', 'moColorColor'], 'safe']
@@ -167,6 +167,7 @@ class TrnKartuProsesPrintingSearch extends TrnKartuProsesPrinting
             'trn_kartu_proses_printing.memo_pg_by' => $this->memo_pg_by,
             'trn_kartu_proses_printing.delivered_at' => $this->delivered_at,
             'trn_kartu_proses_printing.delivered_by' => $this->delivered_by,
+            'trn_kartu_proses_printing.jenis_printing' => $this->jenis_printing,
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_kartu_proses_printing.no', $this->no])
