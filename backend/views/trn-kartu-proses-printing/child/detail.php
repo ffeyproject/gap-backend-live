@@ -29,7 +29,6 @@ use yii\widgets\DetailView;
                             'value'=>$model->kartu_proses_id !== null ? Html::a($model->kartuProses->no, ['/trn-kartu-proses-printing/view', 'id'=>$model->kartu_proses_id], ['title'=>'Detail Kartu Proses PG', 'target'=>'blank']) : null,
                             'format'=>'raw'
                         ],
-                        'no_proses',
                         'no',
                         [
                             'attribute'=>'asal_greige',

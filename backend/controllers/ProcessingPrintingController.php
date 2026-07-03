@@ -475,7 +475,13 @@ class ProcessingPrintingController extends Controller
             $model->wo_color_id = TrnWoColor::find()->select('id')->where(['wo_id'=>$wo->id])->asArray()->one()['id'];
             $model->mo_id = $wo->mo_id;
             $model->sc_id = $wo->sc_id;
-            $model->save(false, ['wo_id','wo_color_id', 'mo_id', 'sc_id']);
+
+            // Update no field using the new WO's greige name and clear no_proses
+            $namaGreige = $wo->greige ? $wo->greige->nama_kain : '';
+            $model->no = $namaGreige . '/' . $model->nomor_kartu;
+            $model->no_proses = null;
+
+            $model->save(false, ['wo_id', 'wo_color_id', 'mo_id', 'sc_id', 'no', 'no_proses']);
 
             return true;
         }

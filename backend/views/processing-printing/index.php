@@ -40,7 +40,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Nomor WO',
                 'value'=>'wo.no'
             ],
-            'no_proses',
             'no',
             [
                 'label'=>'Color',
