@@ -512,6 +512,9 @@ class AjaxController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
         $out = ['results' => ['id' => '', 'text' => '']];
         if (!is_null($q)) {
+            $currentYear = (int)date('Y');
+            $previousYear = $currentYear - 1;
+
             $query = TrnWo::find()
                 ->joinWith('scGreige', false)
                 ->select(new Expression('trn_wo.sc_greige_id, trn_wo.id, trn_wo.no "text"'))
@@ -519,6 +522,7 @@ class AjaxController extends Controller
                 ->andWhere(['trn_sc_greige.process'=>TrnScGreige::PROCESS_PRINTING])
                 ->andWhere(['trn_wo.status'=>TrnWo::STATUS_APPROVED])
                 ->andWhere(['<>', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_MAKLOON])
+                ->andWhere(['between', 'trn_wo.date', "{$previousYear}-01-01", "{$currentYear}-12-31"])
                 ->limit(20)
                 ->asArray()
             ;
