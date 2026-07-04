@@ -24,12 +24,13 @@ use yii\widgets\DetailView;
                         [
                             'label'=>'No. WO',
                             'value'=>Html::a($model->wo->no, ['trn-wo/view', 'id'=>$model->wo->id], ['title'=>'Detail WO', 'target'=>'_blank']).
+                                (!in_array($model->status, [TrnInspecting::STATUS_DELIVERED, TrnInspecting::STATUS_APPROVED_PARTIAL]) ? 
                                 ' '.
                                 Html::a('ganti', ['ganti-wo', 'id' => $model->id], [
                                     'class' => 'label label-default',
                                     'onclick' => 'gantiWo(event);',
                                     'title' => 'Ganti WO Kartu Proses: '.$model->id
-                                ]),
+                                ]) : ''),
                             'format'=>'raw'
                         ],
                         [
