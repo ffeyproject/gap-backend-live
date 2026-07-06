@@ -1182,7 +1182,7 @@ class LaporanController extends Controller
                 || (stripos($proses, 'Repair') !== false)
                 || (stripos($proses, 'Redyeing') !== false)
                 || (stripos($proses, 'Cuci H2O2') !== false)
-                || ($p['record']->kartuProcess && $p['record']->kartuProcess->kartu_proses_id !== null);
+                || ($p['type'] !== 'pfp' && $p['record']->kartuProcess && $p['record']->kartuProcess->kartu_proses_id !== null);
 
             $shift = $p['shift'];
             if ($shift !== '-') {
