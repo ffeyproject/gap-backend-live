@@ -61,6 +61,11 @@ use yii\web\JsExpression;
                 'class' => 'btn btn-default',
                 'onclick' => 'mutasikanKeExFinish(event);',
                 'title' => 'Mutasi Ke GD Ex Finish'
+            ])
+            .' '.Html::a('Mutasi Ke Processing', ['mutasi-processing'], [
+                'class' => 'btn btn-primary',
+                'onclick' => 'mutasikanKeProcessing(event);',
+                'title' => 'Mutasi Ke Processing'
             ])?>
         </p>
 

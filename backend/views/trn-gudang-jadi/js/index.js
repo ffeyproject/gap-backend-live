@@ -287,6 +287,34 @@ function mutasikanKeExFinish(event) {
   }
 }
 
+function mutasikanKeProcessing(event) {
+  event.preventDefault();
+  var button = $(event.currentTarget);
+  var href = button.attr("href");
+
+  let ids = [];
+  let datas = itemTable.rows().data(),
+    i;
+  for (i = 0; i < datas.length; i++) {
+    ids.push(datas[i].id);
+  }
+
+  if (ids.length > 0) {
+    var form = $('<form action="' + href + '" method="POST"></form>');
+    form.append('<input type="hidden" name="' + yii.getCsrfParam() + '" value="' + yii.getCsrfToken() + '">');
+    for (var j = 0; j < ids.length; j++) {
+      form.append('<input type="hidden" name="ids[]" value="' + ids[j] + '">');
+    }
+    $('body').append(form);
+    form.submit();
+  } else {
+    $.alert({
+      title: "Peringatan!",
+      content: "Tidak ada data yang dipilih",
+    });
+  }
+}
+
 function pindahGudang(event) {
   event.preventDefault();
   var button = $(event.currentTarget);

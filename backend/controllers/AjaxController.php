@@ -1431,4 +1431,39 @@ class AjaxController extends Controller
         }
         return ['success' => false];
     }
+
+    public function actionLookupStockMutasi($q = null, $wo_no = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $query = TrnStockGreige::find()
+            ->with('greige')
+            ->where(['jenis_gudang' => TrnStockGreige::JG_MUTASI_GD_JADI, 'status' => TrnStockGreige::STATUS_VALID]);
+        
+        if (!empty($wo_no)) {
+            $query->andWhere(['nomor_wo' => $wo_no]);
+        }
+
+        if (!empty($q)) {
+            $query->andWhere([
+                'or',
+                ['ilike', 'nomor_wo', $q],
+                ['ilike', 'no_document', $q],
+                ['ilike', 'color', $q],
+                new \yii\db\Expression("panjang_m::text ILIKE :q", [':q' => "%{$q}%"])
+            ]);
+        }
+
+        $results = [];
+        foreach ($query->limit(50)->all() as $item) {
+            $results[] = [
+                'id' => $item->id,
+                'text' => "WO: {$item->nomor_wo} | Motif: {$item->greige->nama_kain} | Warna: {$item->color} | Qty: " . Yii::$app->formatter->asDecimal($item->panjang_m) . " M | Doc: {$item->no_document}",
+                'wo' => $item->nomor_wo,
+                'motif' => $item->greige->nama_kain,
+                'color' => $item->color,
+                'qty' => $item->panjang_m
+            ];
+        }
+        return ['results' => $results];
+    }
 }

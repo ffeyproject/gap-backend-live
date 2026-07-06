@@ -53,47 +53,47 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
         return [self::SOURCE_PACKING => 'Packing/Inspecting', self::SOURCE_MAKLOON_PROSES => 'Makloon Proses', self::SOURCE_MAKLOON_FINISH => 'Makloon Finish', self::SOURCE_RETUR => 'Retur', self::SOURCE_BELI_JADI => 'Beli Jadi'];
     }
 
-    const STATUS_STOCK = 1; const STATUS_OUT = 2; const STATUS_SIAP_KIRIM = 3; const STATUS_SURAT_JALAN = 4; const STATUS_MUTASI_EF = 5; const STATUS_PINDAH_GUDANG = 6;
+    const STATUS_STOCK = 1; const STATUS_OUT = 2; const STATUS_SIAP_KIRIM = 3; const STATUS_SURAT_JALAN = 4; const STATUS_MUTASI_EF = 5; const STATUS_PINDAH_GUDANG = 6; const STATUS_MUTASI_PROCESSING = 7;
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_STOCK => 'Stock', self::STATUS_OUT => 'Out', self::STATUS_SIAP_KIRIM => 'Siap Kirim', self::STATUS_SURAT_JALAN => 'Proses Surat Jalan', self::STATUS_MUTASI_EF => 'Mutasi Ex Finish', self::STATUS_PINDAH_GUDANG=>'Pindah Gudang'];
+        return [self::STATUS_STOCK => 'Stock', self::STATUS_OUT => 'Out', self::STATUS_SIAP_KIRIM => 'Siap Kirim', self::STATUS_SURAT_JALAN => 'Proses Surat Jalan', self::STATUS_MUTASI_EF => 'Mutasi Ex Finish', self::STATUS_PINDAH_GUDANG=>'Pindah Gudang', self::STATUS_MUTASI_PROCESSING => 'Mutasi Ke Processing'];
     }
 
     /**
      * {@inheritdoc}
      */
     public static function tableName()
-    {
-        return 'trn_gudang_jadi';
-    }
+     {
+         return 'trn_gudang_jadi';
+     }
 
-    public function behaviors()
-    {
-        return [
-            TimestampBehavior::class,
-            BlameableBehavior::class
-        ];
-    }
+     public function behaviors()
+     {
+         return [
+             TimestampBehavior::class,
+             BlameableBehavior::class
+         ];
+     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function rules()
-    {
-        return [
-            [['wo_id', 'source', 'qty', 'date', 'created_at', 'created_by'], 'required'],
+     /**
+      * {@inheritdoc}
+      */
+     public function rules()
+     {
+         return [
+             [['wo_id', 'source', 'qty', 'date', 'created_at', 'created_by'], 'required'],
 
-            [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair'], 'default', 'value' => null],
-            [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+             [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair'], 'default', 'value' => null],
+             [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
 
-            ['qty', 'number'],
+             ['qty', 'number'],
 
-            ['unit', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
+             ['unit', 'in', 'range' => [MstGreigeGroup::UNIT_YARD, MstGreigeGroup::UNIT_METER, MstGreigeGroup::UNIT_PCS, MstGreigeGroup::UNIT_KILOGRAM]],
 
-            ['status', 'default', 'value'=>self::STATUS_STOCK],
-            ['status', 'in', 'range' => [self::STATUS_STOCK, self::STATUS_OUT, self::STATUS_SIAP_KIRIM, self::STATUS_SURAT_JALAN, self::STATUS_MUTASI_EF, self::STATUS_PINDAH_GUDANG]],
+             ['status', 'default', 'value'=>self::STATUS_STOCK],
+             ['status', 'in', 'range' => [self::STATUS_STOCK, self::STATUS_OUT, self::STATUS_SIAP_KIRIM, self::STATUS_SURAT_JALAN, self::STATUS_MUTASI_EF, self::STATUS_PINDAH_GUDANG, self::STATUS_MUTASI_PROCESSING]],
 
             ['source', 'default', 'value'=>self::SOURCE_PACKING],
             ['source', 'in', 'range' => [self::SOURCE_PACKING, self::SOURCE_MAKLOON_PROSES, self::SOURCE_MAKLOON_FINISH, self::SOURCE_RETUR, self::SOURCE_BELI_JADI]],

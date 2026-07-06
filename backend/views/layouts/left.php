@@ -537,6 +537,14 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-pfp-persiapan'
                     ],
                     [
+                        'label' => 'Stock Gudang Mutasi', 'icon' => 'circle-o', 'url' => ['/trn-stock-mutasi/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-mutasi'
+                    ],
+                    [
+                        'label' => 'Pembuatan Kartu Stock Mutasi', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-mutasi/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-mutasi'
+                    ],
+                    [
                         'label' => 'Pembuatan Kartu PFP', 'icon' => 'circle-o', 'url' => ['/trn-kartu-proses-pfp-persiapan/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-kartu-proses-pfp-persiapan'
                     ],

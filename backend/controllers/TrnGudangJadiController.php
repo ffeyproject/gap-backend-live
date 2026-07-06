@@ -129,6 +129,114 @@ class TrnGudangJadiController extends Controller
         throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
     }
 
+    public function actionMutasiProcessing(){
+        $request = Yii::$app->request;
+        if($request->isPost) {
+            $ids = $request->post('ids');
+            $data = $request->post('data');
+
+            if (empty($ids) && empty($data['ids'])) {
+                Yii::$app->session->setFlash('error', 'Pilih item yang ingin dimutasi.');
+                return $this->redirect(['index']);
+            }
+
+            if (!empty($ids) && empty($data)) {
+                // Initial POST from index page, show the form
+                $models = TrnGudangJadi::find()->where(['id' => $ids])->all();
+                return $this->render('mutasi-processing', [
+                    'models' => $models,
+                    'ids' => $ids
+                ]);
+            }
+
+            // Form submitted
+            if (empty($data['ref']) || empty($data['pemohon'])) {
+                Yii::$app->session->setFlash('error', 'No. Referensi dan Pemohon wajib diisi.');
+                // Re-render form with models
+                $models = TrnGudangJadi::find()->where(['id' => $data['ids']])->all();
+                return $this->render('mutasi-processing', [
+                    'models' => $models,
+                    'ids' => $data['ids']
+                ]);
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                $flag = true;
+                foreach ($data['ids'] as $id) {
+                    $gdJadi = TrnGudangJadi::findOne($id);
+                    if($gdJadi !== null){
+                        if($gdJadi->status !== TrnGudangJadi::STATUS_STOCK){
+                            Yii::$app->session->setFlash('error', 'Hanya item dengan status Stock yang bisa dimutasi.');
+                            $transaction->rollBack();
+                            return $this->redirect(['index']);
+                        }
+                        
+                        $gdJadi->status = TrnGudangJadi::STATUS_MUTASI_PROCESSING;
+                        if(!$gdJadi->save(false, ['status'])){
+                            $flag = false;
+                            break;
+                        }
+
+                        $stockGreige = new TrnStockGreige([
+                            'greige_id' => $gdJadi->wo->greige_id,
+                            'greige_group_id' => $gdJadi->wo->greige->group_id,
+                            'asal_greige' => TrnStockGreige::ASAL_GREIGE_MUTASI,
+                            'no_lapak' => '-',
+                            'grade' => $gdJadi->grade,
+                            'lot_lusi' => $gdJadi->getNoLot(),
+                            'lot_pakan' => '-',
+                            'no_set_lusi' => '-',
+                            'panjang_m' => $gdJadi->qty,
+                            'status_tsd' => TrnStockGreige::STATUS_TSD_NORMAL,
+                            'no_document' => $data['ref'],
+                            'pengirim' => $data['pemohon'],
+                            'mengetahui' => '-',
+                            'note' => $data['note'],
+                            'status' => TrnStockGreige::STATUS_VALID,
+                            'date' => date('Y-m-d'),
+                            'jenis_gudang' => TrnStockGreige::JG_MUTASI_GD_JADI,
+                            'nomor_wo' => $gdJadi->wo->no,
+                            'color' => $gdJadi->color
+                        ]);
+
+                        if(!$stockGreige->save()){
+                            $flag = false;
+                            $errors = implode(', ', \yii\helpers\ArrayHelper::getColumn($stockGreige->getErrors(), 0));
+                            Yii::$app->session->setFlash('error', 'Gagal membuat Stock Greige: ' . $errors);
+                            $transaction->rollBack();
+                            return $this->redirect(['index']);
+                        }
+                    }
+                }
+
+                if($flag){
+                    $transaction->commit();
+                    Yii::$app->session->setFlash('success', 'Mutasi Ke Processing Berhasil.');
+                    
+                    $models = TrnGudangJadi::find()->where(['id' => $data['ids']])->all();
+                    return $this->render('mutasi-processing', [
+                        'models' => $models,
+                        'ids' => $data['ids'],
+                        'isSuccess' => true,
+                        'postedData' => $data
+                    ]);
+                } else {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Gagal memproses mutasi, coba lagi.');
+                    return $this->redirect(['index']);
+                }
+            } catch (\Throwable $t){
+                $transaction->rollBack();
+                throw $t;
+            }
+        }
+
+        // If GET request, redirect back to index
+        Yii::$app->session->setFlash('warning', 'Akses tidak valid. Harap pilih item dari Stock terlebih dahulu.');
+        return $this->redirect(['index']);
+    }
+
     public function actionSetSiapKirim(){
         if(Yii::$app->request->isAjax){
             Yii::$app->response->format = Response::FORMAT_JSON;
