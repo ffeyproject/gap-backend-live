@@ -21,13 +21,19 @@ class ProduksiMesinController extends Controller
         
         $dyeingRecords = [];
         $pfpRecords = [];
+        $printingRecords = [];
 
         $prosesDyeing = [];
         $prosesPfp = [];
+        $prosesPrinting = [];
+        
         $prosesDyeingConfig = [];
         $prosesPfpConfig = [];
+        $prosesPrintingConfig = [];
+        
         $dyeingProcessIds = [];
         $pfpProcessIds = [];
+        $printingProcessIds = [];
 
         if ($jenis_mesin) {
             $dyeingModels = \common\models\ar\MstProcessDyeing::find()
@@ -50,6 +56,17 @@ class ProduksiMesinController extends Controller
                 $pfpProcessIds[] = $model->id;
                 $prosesPfp[$model->nama_proses] = $model->nama_proses;
                 $prosesPfpConfig[$model->nama_proses] = $model->attributes;
+            }
+
+            $printingModels = \common\models\ar\MstProcessPrinting::find()
+                ->innerJoin('mst_process_printing_mesin', 'mst_process_printing_mesin.mst_process_printing_id = mst_process_printing.id')
+                ->innerJoin('mst_mesin_proses', 'mst_mesin_proses.id = mst_process_printing_mesin.mst_mesin_proses_id')
+                ->where(['mst_mesin_proses.model_mesin' => $jenis_mesin])
+                ->all();
+            foreach ($printingModels as $model) {
+                $printingProcessIds[] = $model->id;
+                $prosesPrinting[$model->nama_proses] = $model->nama_proses;
+                $prosesPrintingConfig[$model->nama_proses] = $model->attributes;
             }
         }
 
@@ -113,9 +130,35 @@ class ProduksiMesinController extends Controller
             if (count((array)$no_mesin) > 0) {
                 $queryPfp->andWhere($orConditionsPfp);
             }
-            $pfpRecords = $queryPfp->all();
+             $pfpRecords = $queryPfp->all();
             
             \Yii::info("PFP Query: " . $queryPfp->createCommand()->getRawSql(), 'produksi_mesin');
+
+            // Printing
+            $queryPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_printing kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->andWhere(['like', 'kp.value', '"shift_group":"' . $shift . '"']);
+                
+            if (!empty($printingProcessIds)) {
+                $queryPrinting->andWhere(['in', 'kp.process_id', $printingProcessIds]);
+            } else {
+                $queryPrinting->andWhere('0=1');
+            }
+
+            $queryPrinting->with(['kartuProcess.wo', 'kartuProcess.mo', 'kartuProcess.woColor', 'process']);
+
+            $orConditionsPrinting = ['or'];
+            foreach ((array)$no_mesin as $nm) {
+                $orConditionsPrinting[] = ['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $nm) . '"'];
+            }
+            if (count((array)$no_mesin) > 0) {
+                $queryPrinting->andWhere($orConditionsPrinting);
+            }
+            $printingRecords = $queryPrinting->all();
         }
 
         return $this->render('index', [
@@ -127,10 +170,13 @@ class ProduksiMesinController extends Controller
             'shift' => $shift,
             'dyeingRecords' => $dyeingRecords,
             'pfpRecords' => $pfpRecords,
+            'printingRecords' => $printingRecords,
             'prosesDyeing' => $prosesDyeing,
             'prosesPfp' => $prosesPfp,
+            'prosesPrinting' => $prosesPrinting,
             'prosesDyeingConfig' => $prosesDyeingConfig,
             'prosesPfpConfig' => $prosesPfpConfig,
+            'prosesPrintingConfig' => $prosesPrintingConfig,
         ]);
     }
 
@@ -144,6 +190,7 @@ class ProduksiMesinController extends Controller
 
         $inputDyeing = $request->post('InputDyeing', []);
         $inputPfp = $request->post('InputPfp', []);
+        $inputPrinting = $request->post('InputPrinting', []);
 
         $db = Yii::$app->db;
         $transaction = $db->beginTransaction();
@@ -266,6 +313,65 @@ class ProduksiMesinController extends Controller
                     }
                 }
             }
+
+            // Save InputPrinting
+            if (is_array($inputPrinting)) {
+                foreach ($inputPrinting as $row) {
+                    if (!empty($row['nk']) && !empty($row['proses'])) {
+                        // Find process ID
+                        $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $row['proses']]);
+                        if ($mstProcess) {
+                            $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
+                                'kartu_process_id' => $row['nk'],
+                                'process_id' => $mstProcess->id
+                            ]);
+                            
+                            if (!$kpProcess) {
+                                $kpProcess = new \common\models\ar\KartuProcessPrintingProcess();
+                                $kpProcess->kartu_process_id = $row['nk'];
+                                $kpProcess->process_id = $mstProcess->id;
+                            }
+                            
+                            $fields = ['start', 'stop', 'no_mesin', 'operator', 'temp', 'speed_depan', 'speed_belakang', 'speed', 'resep', 'density', 'jumlah_pcs', 'lebar_jadi', 'panjang_jadi', 'info_kualitas', 'gangguan_produksi', 'over_feed', 'keterangan'];
+                            
+                            $hasData = false;
+                            foreach ($fields as $f) {
+                                if (isset($row[$f]) && $row[$f] !== '') {
+                                    $hasData = true;
+                                    break;
+                                }
+                            }
+
+                            if (!$hasData) {
+                                if (!$kpProcess->isNewRecord) {
+                                    $kpProcess->delete();
+                                }
+                                continue;
+                            }
+
+                            $val = [];
+                            if ($kpProcess->value) {
+                                $val = json_decode($kpProcess->value, true) ?: [];
+                            }
+                            
+                            // Update values
+                            $val['tanggal'] = $tanggal;
+                            $val['shift_group'] = $shift;
+                            
+                            foreach ($fields as $f) {
+                                if (isset($row[$f])) {
+                                    $val[$f] = $row[$f];
+                                }
+                            }
+                            
+                            $kpProcess->value = json_encode($val);
+                            if (!$kpProcess->save(false)) {
+                                throw new \Exception('Gagal menyimpan data Printing.');
+                            }
+                        }
+                    }
+                }
+            }
             
             $transaction->commit();
             Yii::$app->session->setFlash('success', 'Data Tambahan Input berhasil disimpan.');
@@ -288,6 +394,11 @@ class ProduksiMesinController extends Controller
         if ($request->isPost) {
             if ($tipe === 'dyeing') {
                 $kpProcess = \common\models\ar\KartuProcessDyeingProcess::findOne([
+                    'kartu_process_id' => $id,
+                    'process_id' => $proses_id
+                ]);
+            } elseif ($tipe === 'printing') {
+                $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
                     'kartu_process_id' => $id,
                     'process_id' => $proses_id
                 ]);
@@ -317,7 +428,8 @@ class ProduksiMesinController extends Controller
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         $request = Yii::$app->request;
         $inputDyeing = $request->post('InputDyeing', []);
-        $inputPfp = $request->post('InputPfp', []);
+         $inputPfp = $request->post('InputPfp', []);
+        $inputPrinting = $request->post('InputPrinting', []);
 
         $exists = false;
 
@@ -348,6 +460,27 @@ class ProduksiMesinController extends Controller
                     $mstProcess = \common\models\ar\MstProcessPfp::findOne(['nama_proses' => $row['proses']]);
                     if ($mstProcess) {
                         $kpProcess = \common\models\ar\KartuProcessPfpProcess::findOne([
+                            'kartu_process_id' => $row['nk'],
+                            'process_id' => $mstProcess->id
+                        ]);
+                        if ($kpProcess && $kpProcess->value) {
+                            $val = json_decode($kpProcess->value, true);
+                            if (!empty($val['tanggal'])) {
+                                $exists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$exists && is_array($inputPrinting)) {
+            foreach ($inputPrinting as $row) {
+                if (!empty($row['nk']) && !empty($row['proses'])) {
+                    $mstProcess = \common\models\ar\MstProcessPrinting::findOne(['nama_proses' => $row['proses']]);
+                    if ($mstProcess) {
+                        $kpProcess = \common\models\ar\KartuProcessPrintingProcess::findOne([
                             'kartu_process_id' => $row['nk'],
                             'process_id' => $mstProcess->id
                         ]);

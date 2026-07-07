@@ -116,6 +116,7 @@ $urlLookupOrderPfp = \yii\helpers\Url::to(['/ajax/lookup-order-pfp']);
 $urlLookupNkAll = \yii\helpers\Url::to(['/ajax/lookup-nk-all']);
 $dyeingConfigJson = json_encode(isset($prosesDyeingConfig) ? $prosesDyeingConfig : []);
 $pfpConfigJson = json_encode(isset($prosesPfpConfig) ? $prosesPfpConfig : []);
+$printingConfigJson = json_encode(isset($prosesPrintingConfig) ? $prosesPrintingConfig : []);
 
 $js = <<<JS
 var urlLookupWoAll = '{$urlLookupWoAll}';
@@ -125,6 +126,7 @@ var mesinData = $mesinDataJson;
 var initialNoMesin = $initialNoMesin;
 var dyeingConfig = $dyeingConfigJson;
 var pfpConfig = $pfpConfigJson;
+var printingConfig = $printingConfigJson;
 
 $('#jenis-mesin-select').on('change', function() {
     var jenis = $(this).val();
@@ -151,7 +153,7 @@ if ($('#jenis-mesin-select').val()) {
 
 // Edit via Tambahan Input logic
 $(document).on('click', '.btn-edit-row', function() {
-    var target = $(this).data('target'); // 'dyeing' or 'pfp'
+    var target = $(this).data('target'); // 'dyeing', 'pfp', or 'printing'
     var tbody = $('#tbody-input-' + target);
     
     var lastRow = tbody.find('tr').last();
@@ -231,6 +233,21 @@ $(document).on('click', '.btn-edit-row', function() {
         row.find('td:eq(15) input').val($(this).data('panjangjadi'));
         row.find('td:eq(16) input').val($(this).data('infokualitas'));
         row.find('td:eq(17) input').val($(this).data('keterangan'));
+    } else if (target === 'printing') {
+        row.find('td:eq(8) input').val($(this).data('operator'));
+        row.find('td:eq(9) input').val($(this).data('temp'));
+        row.find('td:eq(10) input').val($(this).data('speeddepan'));
+        row.find('td:eq(11) input').val($(this).data('speedbelakang'));
+        row.find('td:eq(12) input').val($(this).data('speed'));
+        row.find('td:eq(13) input').val($(this).data('resep'));
+        row.find('td:eq(14) input').val($(this).data('density'));
+        row.find('td:eq(15) input').val($(this).data('jumlahpcs'));
+        row.find('td:eq(16) input').val($(this).data('lebarjadi'));
+        row.find('td:eq(17) input').val($(this).data('panjangjadi'));
+        row.find('td:eq(18) input').val($(this).data('infokualitas'));
+        row.find('td:eq(19) input').val($(this).data('gangguanproduksi'));
+        row.find('td:eq(20) input').val($(this).data('overfeed'));
+        row.find('td:eq(21) input').val($(this).data('keterangan'));
     } else {
         row.find('td:eq(8) input').val($(this).data('temp'));
         row.find('td:eq(9) input').val($(this).data('speed'));
@@ -299,6 +316,49 @@ $('#pfp-nk-input').on('change', function() {
         $('#pfp-motif-input').val('');
         $('#pfp-warna-input').val('');
     }
+});
+
+$('#printing-nk-input').on('change', function() {
+    var id = $(this).val();
+    if(id) {
+        $.ajax({
+            url: '{$urlLookupKpById}',
+            type: 'GET',
+            data: {q: 'printing', id: id},
+            success: function(data) {
+                if (data) {
+                    $('#printing-motif-input').val(data.wo && data.wo.greige ? data.wo.greige.nama_kain : '');
+                    $('#printing-warna-input').val(data.woColor && data.woColor.moColor ? data.woColor.moColor.color : '');
+                }
+            }
+        });
+    } else {
+        $('#printing-motif-input').val('');
+        $('#printing-warna-input').val('');
+    }
+});
+
+function applyPrintingProcessConfig(prosesName, targetRow) {
+    var config = printingConfig[prosesName] || {};
+    var row = targetRow || $('#tbody-input-printing tr:first');
+    row.find('input[name$="[temp]"]').prop('disabled', !config.temp);
+    row.find('input[name$="[operator]"]').prop('disabled', !config.operator);
+    row.find('input[name$="[speed_depan]"]').prop('disabled', !config.speed_depan);
+    row.find('input[name$="[speed_belakang]"]').prop('disabled', !config.speed_belakang);
+    row.find('input[name$="[speed]"]').prop('disabled', !config.speed);
+    row.find('input[name$="[resep]"]').prop('disabled', !config.resep);
+    row.find('input[name$="[density]"]').prop('disabled', !config.density);
+    row.find('input[name$="[jumlah_pcs]"]').prop('disabled', !config.jumlah_pcs);
+    row.find('input[name$="[lebar_jadi]"]').prop('disabled', !config.lebar_jadi);
+    row.find('input[name$="[panjang_jadi]"]').prop('disabled', !config.panjang_jadi);
+    row.find('input[name$="[info_kualitas]"]').prop('disabled', !config.info_kualitas);
+    row.find('input[name$="[gangguan_produksi]"]').prop('disabled', !config.gangguan_produksi);
+    row.find('input[name$="[over_feed]"]').prop('disabled', !config.over_feed);
+    row.find('input[name$="[keterangan]"]').prop('disabled', !config.keterangan);
+}
+
+$(document).on('change', '.input-proses-printing', function() {
+    applyPrintingProcessConfig($(this).val(), $(this).closest('tr'));
 });
 
 function applyDyeingProcessConfig(prosesName, targetRow) {
@@ -378,12 +438,12 @@ $(document).on('click', '.btn-tambah-row', function(e) {
     
     newRow.find('.input-wo-' + target).select2({
         allowClear: true,
-        placeholder: target === 'dyeing' ? 'Cari WO...' : 'Cari Order PFP...',
+        placeholder: target === 'pfp' ? 'Cari Order PFP...' : 'Cari WO...',
         minimumInputLength: 3,
         width: '100%',
         theme: 'krajee',
         ajax: {
-            url: target === 'dyeing' ? urlLookupWoAll : urlLookupOrderPfp,
+            url: target === 'pfp' ? urlLookupOrderPfp : urlLookupWoAll,
             dataType: 'json',
             delay: 250,
             data: function(params) { return {q: params.term}; },
@@ -419,6 +479,9 @@ $(document).on('click', '.btn-tambah-row', function(e) {
                         if (target === 'dyeing') {
                             newRow.find('input[id^="dyeing-motif-input"]').val(data.wo && data.wo.greige ? data.wo.greige.nama_kain : '');
                             newRow.find('input[id^="dyeing-warna-input"]').val(data.woColor && data.woColor.moColor ? data.woColor.moColor.color : '');
+                        } else if (target === 'printing') {
+                            newRow.find('input[id^="printing-motif-input"]').val(data.wo && data.wo.greige ? data.wo.greige.nama_kain : '');
+                            newRow.find('input[id^="printing-warna-input"]').val(data.woColor && data.woColor.moColor ? data.woColor.moColor.color : '');
                         } else {
                             newRow.find('input[id^="pfp-motif-input"]').val(data.greige ? data.greige.nama_kain : (data.orderPfp && data.orderPfp.greige ? data.orderPfp.greige.nama_kain : ''));
                             newRow.find('input[id^="pfp-warna-input"]').val(data.orderPfp && data.orderPfp.dasar_warna ? data.orderPfp.dasar_warna : '');
@@ -430,6 +493,9 @@ $(document).on('click', '.btn-tambah-row', function(e) {
             if (target === 'dyeing') {
                 newRow.find('input[id^="dyeing-motif-input"]').val('');
                 newRow.find('input[id^="dyeing-warna-input"]').val('');
+            } else if (target === 'printing') {
+                newRow.find('input[id^="printing-motif-input"]').val('');
+                newRow.find('input[id^="printing-warna-input"]').val('');
             } else {
                 newRow.find('input[id^="pfp-motif-input"]').val('');
                 newRow.find('input[id^="pfp-warna-input"]').val('');
@@ -536,6 +602,12 @@ $('#form-tambahan-input').on('submit', function(e) {
     }
     
     validateRows('#tbody-input-pfp', 'PFP');
+    if (!valid) {
+        alert(errMsg);
+        return;
+    }
+
+    validateRows('#tbody-input-printing', 'Printing');
     if (!valid) {
         alert(errMsg);
         return;
@@ -861,6 +933,121 @@ if (is_array($no_mesin)) {
     </div>
 </div>
 
+<div class="box box-danger">
+    <div class="box-header with-border">
+        <h3 class="box-title">Data Proses Printing (Existing)</h3>
+    </div>
+    <div class="box-body table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>WO</th>
+                    <th>NK</th>
+                    <th>Motif</th>
+                    <th>Warna</th>
+                    <th>Nama Proses</th>
+                    <th>Tanggal</th>
+                    <th>Start</th>
+                    <th>Stop</th>
+                    <th>No Mesin</th>
+                    <th>Shift</th>
+                    <th>Operator</th>
+                    <th>Temp</th>
+                    <th>Speed Depan</th>
+                    <th>Speed Belakang</th>
+                    <th>Speed</th>
+                    <th>Resep</th>
+                    <th>Density</th>
+                    <th>Jumlah Pcs</th>
+                    <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Over Feed</th>
+                    <th>Keterangan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($printingRecords)): ?>
+                <tr>
+                    <td colspan="25" class="text-center"><em>Tidak ada data existing.</em></td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($printingRecords as $record): ?>
+                        <?php 
+                            $val = json_decode($record->value, true); 
+                            $wo = $record->kartuProcess->wo;
+                            $mo = $record->kartuProcess->mo;
+                            $woColor = $record->kartuProcess->woColor;
+                        ?>
+                        <tr>
+                            <td><?= $wo ? Html::encode($wo->no) : '-' ?></td>
+                            <td><?= Html::a(Html::encode($record->kartuProcess->no), ['/processing-printing/view', 'id' => $record->kartuProcess->id], ['target' => '_blank', 'title' => 'Lihat Kartu Proses']) ?></td>
+                            <td><?= $mo ? Html::encode($mo->design) : '-' ?></td>
+                            <td><?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '-' ?></td>
+                            <td><?= Html::encode($record->process->nama_proses) ?></td>
+                            <td><?= Html::encode(isset($val['tanggal']) ? $val['tanggal'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['start']) ? $val['start'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['stop']) ? $val['stop'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['shift_group']) ? $val['shift_group'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['operator']) ? $val['operator'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['temp']) ? $val['temp'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['speed_depan']) ? $val['speed_depan'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['speed_belakang']) ? $val['speed_belakang'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['speed']) ? $val['speed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['resep']) ? $val['resep'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['density']) ? $val['density'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['jumlah_pcs']) ? $val['jumlah_pcs'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['gangguan_produksi']) ? $val['gangguan_produksi'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '-') ?></td>
+                            <td><?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '-') ?></td>
+                            <td>
+                                <button type="button" class="btn btn-default btn-xs btn-edit-row"
+                                    data-target="printing"
+                                    data-wo="<?= $wo ? Html::encode($wo->no) : '' ?>"
+                                    data-wo-id="<?= $wo ? Html::encode($wo->id) : '' ?>"
+                                    data-nk="<?= Html::encode($record->kartuProcess->no) ?>"
+                                    data-nk-id="<?= Html::encode($record->kartuProcess->id) ?>"
+                                    data-motif="<?= $mo ? Html::encode($mo->design) : '' ?>"
+                                    data-warna="<?= $woColor && $woColor->moColor ? Html::encode($woColor->moColor->color) : '' ?>"
+                                    data-proses="<?= Html::encode($record->process->nama_proses) ?>"
+                                    data-start="<?= Html::encode(isset($val['start']) ? $val['start'] : '') ?>"
+                                    data-stop="<?= Html::encode(isset($val['stop']) ? $val['stop'] : '') ?>"
+                                    data-nomesin="<?= Html::encode(isset($val['no_mesin']) ? $val['no_mesin'] : '') ?>"
+                                    data-operator="<?= Html::encode(isset($val['operator']) ? $val['operator'] : '') ?>"
+                                    data-temp="<?= Html::encode(isset($val['temp']) ? $val['temp'] : '') ?>"
+                                    data-speeddepan="<?= Html::encode(isset($val['speed_depan']) ? $val['speed_depan'] : '') ?>"
+                                    data-speedbelakang="<?= Html::encode(isset($val['speed_belakang']) ? $val['speed_belakang'] : '') ?>"
+                                    data-speed="<?= Html::encode(isset($val['speed']) ? $val['speed'] : '') ?>"
+                                    data-resep="<?= Html::encode(isset($val['resep']) ? $val['resep'] : '') ?>"
+                                    data-density="<?= Html::encode(isset($val['density']) ? $val['density'] : '') ?>"
+                                    data-jumlahpcs="<?= Html::encode(isset($val['jumlah_pcs']) ? $val['jumlah_pcs'] : '') ?>"
+                                    data-lebarjadi="<?= Html::encode(isset($val['lebar_jadi']) ? $val['lebar_jadi'] : '') ?>"
+                                    data-panjangjadi="<?= Html::encode(isset($val['panjang_jadi']) ? $val['panjang_jadi'] : '') ?>"
+                                    data-infokualitas="<?= Html::encode(isset($val['info_kualitas']) ? $val['info_kualitas'] : '') ?>"
+                                    data-gangguanproduksi="<?= Html::encode(isset($val['gangguan_produksi']) ? $val['gangguan_produksi'] : '') ?>"
+                                    data-overfeed="<?= Html::encode(isset($val['over_feed']) ? $val['over_feed'] : '') ?>"
+                                    data-keterangan="<?= Html::encode(isset($val['keterangan']) ? $val['keterangan'] : '') ?>"
+                                    title="Edit via Tambahan Input"
+                                ><i class="glyphicon glyphicon-pencil"></i></button>
+                                <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete-input', 'id' => $record->kartuProcess->id, 'proses_id' => $record->process->id, 'tipe' => 'printing', 'jenis_mesin' => $jenis_mesin, 'tanggal' => $tanggal, 'shift' => $shift, 'no_mesin' => $no_mesin], [
+                                    'class' => 'btn btn-danger btn-xs btn-hapus-existing',
+                                    'title' => 'Hapus Data Input',
+                                ]) ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <?= Html::beginForm(['save-input'], 'post', ['id' => 'form-tambahan-input']) ?>
 <?= Html::hiddenInput('jenis_mesin', $jenis_mesin) ?>
 <?= Html::hiddenInput('tanggal', $tanggal) ?>
@@ -1084,6 +1271,111 @@ if (is_array($no_mesin)) {
         </table>
         </div>
         <button type="button" class="btn btn-success btn-sm btn-tambah-row" data-target="pfp"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
+
+        <hr>
+
+        <h4>INPUT PRINTING</h4>
+        <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>WO</th>
+                    <th>NK</th>
+                    <th>Motif</th>
+                    <th>Warna</th>
+                    <th>Proses</th>
+                    <th>Start</th>
+                    <th>Stop</th>
+                    <th>No Mesin</th>
+                    <th>Operator</th>
+                    <th>Temp</th>
+                    <th>Speed Depan</th>
+                    <th>Speed Belakang</th>
+                    <th>Speed</th>
+                    <th>Resep</th>
+                    <th>Density</th>
+                    <th>Jumlah Pcs</th>
+                    <th>Lebar Jadi</th>
+                    <th>Panjang Jadi</th>
+                    <th>Info Kualitas</th>
+                    <th>Gangguan Produksi</th>
+                    <th>Over Feed</th>
+                    <th>Keterangan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-input-printing">
+                <tr>
+                    <td style="min-width: 150px;">
+                        <?= Select2::widget([
+                            'name' => 'InputPrinting[0][wo]',
+                            'options' => ['id' => 'printing-wo-input', 'class' => 'input-wo-printing', 'placeholder' => 'Cari WO...'],
+                            'pluginOptions' => [
+                                'allowClear' => true,
+                                'minimumInputLength' => 3,
+                                'ajax' => [
+                                    'url' => \yii\helpers\Url::to(['/ajax/lookup-wo-all']),
+                                    'dataType' => 'json',
+                                    'data' => new \yii\web\JsExpression('function(params) { return {q:params.term}; }')
+                                ],
+                            ],
+                        ]) ?>
+                    </td>
+                    <td style="min-width: 150px;">
+                        <?= Select2::widget([
+                            'name' => 'InputPrinting[0][nk]',
+                            'options' => ['id' => 'printing-nk-input', 'class' => 'input-nk-printing', 'placeholder' => 'Cari NK...'],
+                            'pluginOptions' => [
+                                'allowClear' => true,
+                                'minimumInputLength' => 0,
+                                'ajax' => [
+                                    'url' => \yii\helpers\Url::to(['/ajax/lookup-nk-all']),
+                                    'dataType' => 'json',
+                                    'data' => new \yii\web\JsExpression('function(params) { 
+                                        var wo_no = $("#printing-wo-input option:selected").text();
+                                        return {q:params.term, wo_no: wo_no}; 
+                                    }')
+                                ],
+                            ],
+                        ]) ?>
+                    </td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="printing-motif-input" class="form-control" readonly></td>
+                    <td style="min-width: 110px; width: 110px;"><input type="text" id="printing-warna-input" class="form-control" readonly></td>
+                    <td style="min-width: 150px;">
+                        <?= Select2::widget([
+                            'name' => 'InputPrinting[0][proses]',
+                            'data' => $prosesPrinting,
+                            'options' => ['id' => 'printing-proses-input', 'class' => 'input-proses-printing', 'placeholder' => 'Pilih Proses...'],
+                            'pluginOptions' => [
+                                'allowClear' => true,
+                            ],
+                        ]) ?>
+                    </td>
+                    <td><input type="time" name="InputPrinting[0][start]" class="form-control"></td>
+                    <td><input type="time" name="InputPrinting[0][stop]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;">
+                        <?= Html::dropDownList('InputPrinting[0][no_mesin]', null, $noMesinList, ['class' => 'form-control', 'prompt' => 'Pilih...']) ?>
+                    </td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][operator]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][temp]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][speed_depan]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][speed_belakang]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][speed]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][resep]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][density]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][jumlah_pcs]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][lebar_jadi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][panjang_jadi]" class="form-control"></td>
+                    <td><input type="text" name="InputPrinting[0][info_kualitas]" class="form-control"></td>
+                    <td><input type="text" name="InputPrinting[0][gangguan_produksi]" class="form-control"></td>
+                    <td style="min-width: 80px; width: 80px;"><input type="text" name="InputPrinting[0][over_feed]" class="form-control"></td>
+                    <td><input type="text" name="InputPrinting[0][keterangan]" class="form-control"></td>
+                    <td><button type="button" class="btn btn-danger btn-sm btn-hapus-row"><i class="glyphicon glyphicon-trash"></i></button></td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+        <button type="button" class="btn btn-success btn-sm btn-tambah-row" data-target="printing"><i class="glyphicon glyphicon-plus"></i> Tambah Set Inputan</button>
 
     </div>
     <div class="box-footer">
