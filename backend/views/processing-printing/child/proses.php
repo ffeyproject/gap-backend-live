@@ -77,6 +77,17 @@ $this->registerCss('.ctn-disable{background-color:black;}');
                                                     'title' => 'Set '.$label.' '.$item->nama_proses
                                                 ]);
                                                 break;
+                                            case 'no_mesin':
+                                                $curVal = '';
+                                                if ($pcModel !== null) {
+                                                    $datas = Json::decode($pcModel->value);
+                                                    $curVal = isset($datas[$key]) ? $datas[$key] : '';
+                                                }
+                                                $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
+                                                    'onclick' => 'setNoMesinInput(event, "'.$label.' '.$item->nama_proses.'", '.$item->id.', "'.$curVal.'");',
+                                                    'title' => 'Set '.$label.' '.$item->nama_proses
+                                                ]);
+                                                break;
                                             default:
                                                 $btn = Html::a($lblBtn, ['jalankan-proses', 'id'=>$model->id, 'proses_id'=>$item->id, 'attr'=>$key], [
                                                     'onclick' => 'setTextInput(event, "'.$label.' '.$item->nama_proses.'");',

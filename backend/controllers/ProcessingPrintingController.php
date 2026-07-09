@@ -986,6 +986,19 @@ class ProcessingPrintingController extends Controller
         return ['success' => false];
     }
 
+    public function actionGetMachinesByProcess($process_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $process = MstProcessPrinting::findOne($process_id);
+        if ($process !== null) {
+            $machines = $process->mstMesinProseses;
+            return \yii\helpers\ArrayHelper::toArray($machines, [
+                \common\models\ar\MstMesinProses::class => ['id', 'nama_mesin']
+            ]);
+        }
+        return [];
+    }
+
     protected function findModel($id)
     {
         if (($model = TrnKartuProsesPrinting::findOne($id)) !== null) {

@@ -3019,6 +3019,13 @@ class ProcessingDyeingController extends Controller
                 ->where(['mmp.model_mesin' => $mesin->model_mesin])
                 ->column();
 
+            $validProcessIdsPrinting = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_printing_id')
+                ->innerJoin('mst_process_printing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
             // Find kartu_process_dyeing_process entries filtered at DB level
             $query = \common\models\ar\KartuProcessDyeingProcess::find()
                 ->alias('kp')
@@ -3066,6 +3073,10 @@ class ProcessingDyeingController extends Controller
                     }
                 } elseif ($isPfp) {
                     if (!in_array($record->process_id, $validProcessIdsPfp)) {
+                        continue;
+                    }
+                } elseif ($isPrinting) {
+                    if (!in_array($record->process_id, $validProcessIdsPrinting)) {
                         continue;
                     }
                 }
