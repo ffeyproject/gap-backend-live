@@ -54,6 +54,41 @@ $this->registerCss('
     .table-sticky-container thead tr:nth-child(2) th {
         z-index: 9; /* Slightly lower z-index than first row so first row stays on top if scrolled */
     }
+    
+    @media print {
+        .main-header, .main-sidebar, .content-header, .breadcrumb, .no-print, .btn, .box-primary, .box-footer, .box-danger, .box-warning, .search-row, .col-cek {
+            display: none !important;
+        }
+        .content-wrapper {
+            margin-left: 0 !important;
+            background-color: #fff !important;
+            padding: 0 !important;
+        }
+        body {
+            background: #fff !important;
+            color: #000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .box-success {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table-sticky-container {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        th, td {
+            border: 1px solid #000 !important;
+            padding: 4px !important;
+            font-size: 10px !important;
+        }
+    }
 ');
 ?>
 
@@ -198,6 +233,17 @@ $this->registerCss('
     <div class="box box-success">
         <div class="box-header with-border">
             <h3 class="box-title"><i class="fa fa-table"></i> Data Proses - <?= Html::encode($mesin->nama_mesin) ?> (<?= date('d-m-Y', strtotime($tanggal)) ?>)</h3>
+            <div class="box-tools pull-right no-print">
+                <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', ['export-rekap-proses-mesin', 
+                    'mesin_id' => $mesin->id,
+                    'tanggal' => $tanggal,
+                    'model_mesin' => $selectedModel,
+                    'shift_pagi' => Yii::$app->request->get('shift_pagi'),
+                    'shift_siang' => Yii::$app->request->get('shift_siang'),
+                    'shift_malam' => Yii::$app->request->get('shift_malam'),
+                ], ['class' => 'btn btn-sm btn-success']) ?>
+                <button type="button" class="btn btn-sm btn-info" onclick="window.print()"><i class="fa fa-print"></i> Print</button>
+            </div>
         </div>
         <div class="box-body table-sticky-container">
             <table class="table table-bordered table-striped table-condensed" id="tabel-rekap" style="font-size: 12px;">

@@ -126,6 +126,34 @@ class ProcessingDyeingController extends Controller
             $time = strtotime("$currentYear-$monthNumber-01");
             $value = date('Y-m', $time);
             $label = date('F Y', $time);
+
+            $likePattern = $value . '-%';
+
+            // Find all Process ID 1 records for the selected month
+            $processes = KartuProcessDyeingProcess::find()
+                ->select(['kartu_process_id'])
+                ->where(['process_id' => 1])
+                ->andWhere(new \yii\db\Expression("CAST(value AS jsonb)->>'tanggal' LIKE :tgl", [':tgl' => $likePattern]))
+                ->column();
+
+            $unsyncCount = 0;
+            if (!empty($processes)) {
+                $unsyncCount = TrnKartuProsesDyeing::find()
+                    ->alias('t')
+                    ->where(['t.id' => $processes])
+                    ->andWhere(['or', ['t.approved_at' => null], ['t.approved_at' => 0]])
+                    ->andWhere(['exists', (new \yii\db\Query())
+                        ->select(['kartu_proses_id'])
+                        ->from(\common\models\ar\ActionLogKartuDyeing::tableName())
+                        ->where('kartu_proses_id = t.id')
+                    ])
+                    ->count();
+            }
+
+            if ($unsyncCount > 0) {
+                $label .= " ($unsyncCount data belum di sinkronkan)";
+            }
+
             $monthOptions[$value] = $label;
         }
 
@@ -3265,6 +3293,333 @@ class ProcessingDyeingController extends Controller
             'rangkumanProses' => $rangkumanProses,
             'hambatanItems' => $hambatanItems,
         ]);
+    }
+
+    public function actionExportRekapProsesMesin()
+    {
+        $mesinId = Yii::$app->request->get('mesin_id');
+        $tanggal = Yii::$app->request->get('tanggal', date('Y-m-d'));
+        $selectedModel = Yii::$app->request->get('model_mesin', '');
+
+        $mesin = null;
+        if ($mesinId) {
+            $mesin = \common\models\ar\MstMesinProses::findOne($mesinId);
+        }
+
+        $kartuData = [];
+        if ($mesin) {
+            $validProcessIds = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_dyeing_id')
+                ->innerJoin('mst_process_dyeing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
+            $validProcessIdsPfp = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_pfp_id')
+                ->innerJoin('mst_process_pfp_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
+            $validProcessIdsPrinting = \common\models\ar\MstMesinProses::find()
+                ->alias('mmp')
+                ->select('mpdm.mst_process_printing_id')
+                ->innerJoin('mst_process_printing_mesin mpdm', 'mmp.id = mpdm.mst_mesin_proses_id')
+                ->where(['mmp.model_mesin' => $mesin->model_mesin])
+                ->column();
+
+            $query = \common\models\ar\KartuProcessDyeingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_dyeing kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesDyeing::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesDyeing::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesDyeingItems']);
+
+            $dyeingRecords = $query->all();
+
+            $queryPfp = \common\models\ar\KartuProcessPfpProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_pfp kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPfp::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPfp::STATUS_GAGAL_PROSES]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesPfpItems']);
+                
+            $pfpRecords = $queryPfp->all();
+
+            $queryPrinting = \common\models\ar\KartuProcessPrintingProcess::find()
+                ->alias('kp')
+                ->innerJoin('trn_kartu_proses_printing kpd', 'kp.kartu_process_id = kpd.id')
+                ->where(['>=', 'kpd.status', \common\models\ar\TrnKartuProsesPrinting::STATUS_DELIVERED])
+                ->andWhere(['not', ['kpd.status' => \common\models\ar\TrnKartuProsesPrinting::STATUS_BATAL]])
+                ->andWhere(['like', 'kp.value', '"no_mesin":"' . str_replace(['%', '_'], ['\%', '\_'], $mesin->nama_mesin) . '"'])
+                ->andWhere(['like', 'kp.value', '"tanggal":"' . $tanggal . '"'])
+                ->with(['kartuProcess.trnKartuProsesPrintingItems']);
+                
+            $printingRecords = $queryPrinting->all();
+
+            $allProcessRecords = array_merge($dyeingRecords, $pfpRecords, $printingRecords);
+
+            foreach ($allProcessRecords as $record) {
+                $isDyeing = $record instanceof \common\models\ar\KartuProcessDyeingProcess;
+                $isPfp = $record instanceof \common\models\ar\KartuProcessPfpProcess;
+                $isPrinting = $record instanceof \common\models\ar\KartuProcessPrintingProcess;
+
+                if ($isDyeing) {
+                    if (!in_array($record->process_id, $validProcessIds)) {
+                        continue;
+                    }
+                } elseif ($isPfp) {
+                    if (!in_array($record->process_id, $validProcessIdsPfp)) {
+                        continue;
+                    }
+                } elseif ($isPrinting) {
+                    if (!in_array($record->process_id, $validProcessIdsPrinting)) {
+                        continue;
+                    }
+                }
+
+                $values = Json::decode($record->value);
+                if (!isset($values['no_mesin']) || $values['no_mesin'] !== $mesin->nama_mesin) {
+                    continue;
+                }
+                
+                if (!isset($values['tanggal']) || $values['tanggal'] !== $tanggal) {
+                    continue;
+                }
+
+                $kartuProses = $record->kartuProcess;
+                $process = $record->process;
+
+                $motif = '';
+                $pcs = 0;
+                $panjangGreige = 0;
+                $woNo = '';
+                $warna = '-';
+
+                if ($isDyeing) {
+                    $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
+                    $pcs = count($kartuProses->trnKartuProsesDyeingItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m'));
+                    $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
+                    $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                } elseif ($isPrinting) {
+                    $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
+                    $pcs = count($kartuProses->trnKartuProsesPrintingItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPrintingItems, 'panjang_m'));
+                    $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
+                    $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                } elseif ($isPfp) {
+                    $motif = $kartuProses->greige ? $kartuProses->greige->nama_kain : '';
+                    $pcs = count($kartuProses->trnKartuProsesPfpItems);
+                    $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPfpItems, 'panjang_m'));
+                    $woNo = 'F-PFP-' . $kartuProses->no;
+                }
+
+                $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : (isset($values['shift_operator']) ? $values['shift_operator'] : '-');
+
+                if (isset($values['panjang_greige']) && $values['panjang_greige'] !== '') {
+                    $panjangGreige = floatval($values['panjang_greige']);
+                }
+
+                $kartuData[] = [
+                    'tipe' => 'Order',
+                    'shift_group' => $shiftGroup,
+                    'no' => $kartuProses->no,
+                    'nomor_kartu' => $kartuProses->nomor_kartu,
+                    'motif' => $motif,
+                    'nk' => $kartuProses->nomor_kartu,
+                    'pcs' => $pcs,
+                    'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
+                    'warna' => $warna,
+                    'proses' => $process ? $process->nama_proses : '',
+                    'temp' => isset($values['temp']) ? $values['temp'] : '',
+                    'speed' => isset($values['speed']) ? $values['speed'] : '',
+                    'lebar' => isset($values['lebar_jadi']) ? $values['lebar_jadi'] : '',
+                    'berat' => $kartuProses->berat,
+                    'panjang_jadi' => isset($values['panjang_jadi']) ? $values['panjang_jadi'] : '',
+                    'panjang_greige' => $panjangGreige,
+                    'keterangan' => isset($values['keterangan']) ? $values['keterangan'] : '',
+                    'wo_no' => $woNo,
+                    'kartu_proses_id' => $kartuProses->id,
+                    'process_name' => $process ? $process->nama_proses : '',
+                ];
+            }
+
+            $tambahanInputs = \common\models\ar\TrnRekapProsesMesinInput::find()
+                ->where(['mst_mesin_proses_id' => $mesin->id, 'tanggal' => $tanggal])
+                ->all();
+
+            foreach ($tambahanInputs as $ti) {
+                $kartuData[] = [
+                    'tipe' => $ti->tipe,
+                    'shift_group' => $ti->shift,
+                    'no' => $ti->nk_no,
+                    'nomor_kartu' => $ti->nk_no,
+                    'motif' => $ti->tipe,
+                    'nk' => $ti->nk_no,
+                    'pcs' => '-',
+                    'no_mc' => $mesin->nama_mesin,
+                    'warna' => '-',
+                    'proses' => $ti->nama_proses,
+                    'temp' => $ti->temp,
+                    'speed' => '-',
+                    'lebar' => '-',
+                    'berat' => '-',
+                    'panjang_jadi' => $ti->panjang_jadi,
+                    'panjang_greige' => $ti->panjang_greige,
+                    'keterangan' => $ti->keterangan,
+                    'wo_no' => $ti->wo_no,
+                    'kartu_proses_id' => null,
+                    'process_name' => $ti->nama_proses,
+                    'input_id' => $ti->id,
+                ];
+            }
+
+            $reqPagi = Yii::$app->request->get('shift_pagi', '');
+            $reqSiang = Yii::$app->request->get('shift_siang', '');
+            $reqMalam = Yii::$app->request->get('shift_malam', '');
+
+            $shiftOrder = [];
+            $orderSeq = 1;
+
+            if ($reqPagi) $shiftOrder[$reqPagi] = $orderSeq++;
+            else $shiftOrder['C'] = $orderSeq++;
+
+            if ($reqSiang) $shiftOrder[$reqSiang] = $orderSeq++;
+            else $shiftOrder['D'] = $orderSeq++;
+
+            if ($reqMalam) $shiftOrder[$reqMalam] = $orderSeq++;
+            else $shiftOrder['A'] = $orderSeq++;
+
+            usort($kartuData, function ($a, $b) use ($shiftOrder) {
+                $oa = isset($shiftOrder[$a['shift_group']]) ? $shiftOrder[$a['shift_group']] : 99;
+                $ob = isset($shiftOrder[$b['shift_group']]) ? $shiftOrder[$b['shift_group']] : 99;
+                return $oa <=> $ob;
+            });
+        }
+
+        $shiftPagi = Yii::$app->request->get('shift_pagi', '');
+        $shiftSiang = Yii::$app->request->get('shift_siang', '');
+        $shiftMalam = Yii::$app->request->get('shift_malam', '');
+
+        $shiftMapping = [];
+        if ($shiftPagi) $shiftMapping[$shiftPagi] = 'PAGI';
+        if ($shiftSiang) $shiftMapping[$shiftSiang] = 'SIANG';
+        if ($shiftMalam) $shiftMapping[$shiftMalam] = 'MALAM';
+
+        $shiftLabels = [
+            'C' => 'PAGI',
+            'D' => 'SIANG',
+            'A' => 'MALAM',
+        ];
+
+        $filename = "rekap-proses-mesin-" . ($mesin ? str_replace(' ', '_', $mesin->nama_mesin) : 'mesin') . "-" . $tanggal . ".xls";
+        
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Cache-Control: post-check=0, pre-check=0', false);
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo '<?xml version="1.0" encoding="utf-8"?>' . "\n";
+        echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
+        echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        echo ' xmlns:o="urn:schemas-microsoft-com:office:office"' . "\n";
+        echo ' xmlns:x="urn:schemas-microsoft-com:office:excel"' . "\n";
+        echo ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' . "\n";
+        echo ' xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+        
+        echo ' <Styles>' . "\n";
+        echo '  <Style ss:ID="Default" ss:Name="Normal">' . "\n";
+        echo '   <Alignment ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D3D3D3"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' . "\n";
+        echo '  </Style>' . "\n";
+        echo '  <Style ss:ID="Header">' . "\n";
+        echo '   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>' . "\n";
+        echo '   <Borders>' . "\n";
+        echo '    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#777777"/>' . "\n";
+        echo '   </Borders>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Bold="1" ss:Color="#000000"/>' . "\n";
+        echo '   <Interior ss:Color="#ECF0F5" ss:Pattern="Solid"/>' . "\n";
+        echo '  </Style>' . "\n";
+        echo '  <Style ss:ID="Title">' . "\n";
+        echo '   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>' . "\n";
+        echo '   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="14" ss:Bold="1" ss:Color="#000000"/>' . "\n";
+        echo '  </Style>' . "\n";
+        echo ' </Styles>' . "\n";
+        
+        echo ' <Worksheet ss:Name="Rekap Proses Mesin">' . "\n";
+        echo '  <Table>' . "\n";
+        
+        echo '   <Column ss:Width="100"/>' . "\n"; // Shift
+        echo '   <Column ss:Width="120"/>' . "\n"; // No WO
+        echo '   <Column ss:Width="150"/>' . "\n"; // Motif
+        echo '   <Column ss:Width="100"/>' . "\n"; // NK
+        echo '   <Column ss:Width="50"/>' . "\n";  // PCS
+        echo '   <Column ss:Width="80"/>' . "\n";  // No MC
+        echo '   <Column ss:Width="100"/>' . "\n"; // Warna
+        echo '   <Column ss:Width="100"/>' . "\n"; // Proses
+        echo '   <Column ss:Width="60"/>' . "\n";  // Temp
+        echo '   <Column ss:Width="75"/>' . "\n";  // Pjg Jadi
+        echo '   <Column ss:Width="75"/>' . "\n";  // Pjg Greige
+        echo '   <Column ss:Width="60"/>' . "\n";  // Lebar
+        echo '   <Column ss:Width="60"/>' . "\n";  // Berat
+        echo '   <Column ss:Width="150"/>' . "\n"; // Keterangan
+
+        echo '   <Row ss:Height="25">' . "\n";
+        echo '    <Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">Data Proses - ' . htmlspecialchars($mesin ? $mesin->nama_mesin : '-') . ' (' . date('d-m-Y', strtotime($tanggal)) . ')</Data></Cell>' . "\n";
+        echo '   </Row>' . "\n";
+        echo '   <Row ss:Height="15"/>' . "\n";
+        
+        echo '   <Row ss:Height="20">' . "\n";
+        $headers = ['Shift', 'No. WO', 'Motif', 'NK', 'PCS', 'No MC', 'Warna', 'Proses', 'Temp°C', 'Pjg Jadi', 'Pjg Greige', 'Lebar', 'Berat', 'Keterangan'];
+        foreach ($headers as $h) {
+            echo '    <Cell ss:StyleID="Header"><Data ss:Type="String">' . htmlspecialchars($h) . '</Data></Cell>' . "\n";
+        }
+        echo '   </Row>' . "\n";
+        
+        foreach ($kartuData as $row) {
+            $sg = $row['shift_group'];
+            $shiftLabel = isset($shiftMapping[$sg]) ? $shiftMapping[$sg] : (isset($shiftLabels[$sg]) ? $shiftLabels[$sg] : $sg);
+            $shiftText = $shiftLabel . ' (' . $sg . ')';
+            
+            echo '   <Row>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($shiftText) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['wo_no']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['motif']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['nk']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['pcs']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['no_mc']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['warna']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['proses']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['temp']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="Number">' . (float)$row['panjang_jadi'] . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="Number">' . (float)$row['panjang_greige'] . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['lebar']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['berat']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['keterangan']) . '</Data></Cell>' . "\n";
+            echo '   </Row>' . "\n";
+        }
+        
+        echo '  </Table>' . "\n";
+        echo ' </Worksheet>' . "\n";
+        echo '</Workbook>' . "\n";
+        Yii::$app->end();
     }
 
     /**

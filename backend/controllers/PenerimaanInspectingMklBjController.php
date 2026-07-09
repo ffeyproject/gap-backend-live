@@ -28,9 +28,26 @@ class PenerimaanInspectingMklBjController extends Controller
         $searchModel = new InspectingMklBjSearch(['penerimaanMode' => true]);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
+        $currentYear = date('Y');
+        $stuckCounts = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $month = str_pad($i, 2, '0', STR_PAD_LEFT);
+            $startDate = "$currentYear-$month-01";
+            $endDate = date('Y-m-t', strtotime($startDate));
+
+            // We count all items in this month that have status POSTED or POSTED_PARTIAL
+            $count = InspectingMklBj::find()
+                ->where(['in', 'status', [InspectingMklBj::STATUS_POSTED, InspectingMklBj::STATUS_POSTED_PARTIAL]])
+                ->andWhere(['between', 'tgl_kirim', $startDate, $endDate])
+                ->count();
+            
+            $stuckCounts[$month] = $count;
+        }
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'stuckCounts' => $stuckCounts,
         ]);
     }
 

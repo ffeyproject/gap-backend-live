@@ -154,11 +154,23 @@ if(!empty($searchModel->wo_id)){
             <div class="col-md-6">
                 <div class="form-group">
                     <label>Bulan</label>
-                    <?= Html::dropDownList('bulan', date('m'), [
+                    <?php
+                    $bulanOptions = [
                         '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
                         '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
                         '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
-                    ], ['class' => 'form-control']) ?>
+                    ];
+                    $bulanOptionsWithCount = [];
+                    foreach ($bulanOptions as $key => $label) {
+                        $count = isset($stuckCounts[$key]) ? $stuckCounts[$key] : 0;
+                        if ($count > 0) {
+                            $bulanOptionsWithCount[$key] = $label . " ($count data)";
+                        } else {
+                            $bulanOptionsWithCount[$key] = $label;
+                        }
+                    }
+                    ?>
+                    <?= Html::dropDownList('bulan', date('m'), $bulanOptionsWithCount, ['class' => 'form-control']) ?>
                 </div>
             </div>
             <div class="col-md-6">

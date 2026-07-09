@@ -299,12 +299,12 @@ $moduleId = $controller->module->id;
 
             [
                 'label' => 'ORDER PFP', 'icon' => 'circle', 'url' => ['/trn-order-pfp/index'],
-                'active' => $moduleId=='app-backend' && $controllerId == 'trn-order-pfp' && $actionId=='index'
+                'active' => $moduleId=='app-backend' && $controllerId == 'trn-order-pfp' && $actionId !== 'rekap-actual'
             ],
 
             [
                 'label' => 'ORDER CELUP', 'icon' => 'circle', 'url' => ['/trn-order-celup/index'],
-                'active' => $moduleId=='app-backend' && $controllerId == 'trn-order-celup' && $actionId=='index'
+                'active' => $moduleId=='app-backend' && $controllerId == 'trn-order-celup'
             ],
 
             [
@@ -314,7 +314,7 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'Stock Fresh Greige', 'icon' => 'circle', 'url' => ['/trn-stock-greige/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-greige' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-greige' && !in_array($actionId, ['process', 'index-gudang-inspect', 'laporan-stock', 'rekap'])
                     ],
                     [
                         'label' => 'Proses', 'icon' => 'circle', 'url' => ['/trn-stock-greige/process'],
@@ -322,13 +322,13 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Beli Greige', 'icon' => 'circle', 'url' => ['/trn-buy-greige/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-buy-greige' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-buy-greige' && $actionId !== 'rekap'
                     ],
                     [
                         'label' => 'Potong Greige',
                         'icon' => 'circle',
                         'url' => ['/trn-potong-greige/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-greige' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-greige'
                     ],
                     [
                         'label' => 'Greige Keluar',
@@ -380,7 +380,7 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'Record Stock Opname', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-stock-opname' && !in_array($actionId, ['get-stock-keseluruhan', 'get-stock-keluar', 'index-duplicate', 'laporan-greige-opname', 'laporan-greige-opname-motif'])
                     ],
                     [
                         'label' => 'Stock Opname Keseluruhan', 'icon' => 'circle', 'url' => ['/trn-gudang-stock-opname/stock-keseluruhan'],
@@ -421,7 +421,7 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'Stock Gudang Inspect', 'icon' => 'circle', 'url' => ['/trn-gudang-inspect/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-inspect' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-inspect'
                     ],
                 ],
             ],
@@ -437,13 +437,13 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Stock PFP', 'icon' => 'circle-o', 'url' => ['/trn-stock-pfp/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-pfp' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-pfp'
                     ],
                     [
                         'label' => 'Potong Greige',
                         'icon' => 'circle',
                         'url' => ['/trn-potong-greige-pfp/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-greige-pfp' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-greige-pfp'
                     ],
                     [
                         'label' => 'PFP Keluar',
@@ -478,11 +478,11 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Memo Redyeing', 'icon' => 'circle-o', 'url' => ['/trn-memo-redyeing/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-memo-redyeing' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-memo-redyeing'
                     ],
                     [
                         'label' => 'Memo Perubahan Data', 'icon' => 'circle-o', 'url' => ['/trn-memo-perubahan-data/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-memo-perubahan-data' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-memo-perubahan-data'
                     ],
                 ]
             ],
@@ -630,7 +630,7 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Printing', 'icon' => 'circle-o', 'url' => ['/processing-printing/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-printing' && $actionId=='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-printing' && !in_array($actionId, ['input-produksi', 'rekap'])
                     ],
                     [
                         'label' => 'PLANNING',
@@ -811,7 +811,7 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'PFP Keluar', 'icon' => 'circle', 'url' => ['/pfp-keluar-verpacking/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'pfp-keluar-verpacking' && $actionId == 'index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'pfp-keluar-verpacking'
                     ],
 
                     [
@@ -821,7 +821,7 @@ $moduleId = $controller->module->id;
                         'items' => [
                             [
                                 'label' => 'Proses', 'icon' => 'circle-o', 'url' => ['/riwayat-penerimaan-makloon-proses/index'],
-                                'active' => $moduleId=='app-backend' && $controllerId == 'riwayat-penerimaan-makloon-proses' && $actionId=='index'
+                                'active' => $moduleId=='app-backend' && $controllerId == 'riwayat-penerimaan-makloon-proses'
                             ],
                             [
                                 'label' => 'Finish', 'icon' => 'circle-o', 'url' => ['/riwayat-penerimaan-makloon-finish/index'],
@@ -839,19 +839,19 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'Stock', 'icon' => 'circle', 'url' => ['/trn-gudang-jadi/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId !== 'rekap'
                     ],
                     [
                         'label' => 'Potong Stock', 'icon' => 'circle', 'url' => ['/trn-potong-stock/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-stock' && $actionId == 'index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-stock'
                     ],
                     [
                         'label' => 'Laporan Stock', 'icon' => 'circle', 'url' => ['/trn-laporan-stock/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-laporan-stock' && $actionId == 'index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-laporan-stock'
                     ],
                     [
                         'label' => 'Print Stock', 'icon' => 'circle', 'url' => ['/trn-print-stock/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-print-stock' && $actionId == 'index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-print-stock'
                     ],
                     [
                         'label' => 'Integrasi Accurate',
@@ -899,7 +899,7 @@ $moduleId = $controller->module->id;
                                 'items' => [
                                     [
                                         'label' => 'Penerimaan', 'icon' => 'circle-o', 'url' => ['/penerimaan-inspecting-mkl-bj/index'],
-                                        'active' => $moduleId=='app-backend' && $controllerId == 'penerimaan-inspecting-mkl-bj' && in_array($actionId, ['index', 'view'])
+                                        'active' => $moduleId=='app-backend' && $controllerId == 'penerimaan-inspecting-mkl-bj' && $actionId !== 'history'
                                     ],
                                     [
                                         'label' => 'Riwayat Penerimaan', 'icon' => 'circle-o', 'url' => ['/penerimaan-inspecting-mkl-bj/history'],
@@ -980,19 +980,19 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Stock Ex Finish Retur', 'icon' => 'circle-o', 'url' => ['/trn-stock-ef/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-ef' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-ef'
                     ],
                     [
                         'label' => 'Stock Ex Finish GD Jadi', 'icon' => 'circle-o', 'url' => ['/mutasi-ex-finish-alt-item/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'mutasi-ex-finish-alt-item' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'mutasi-ex-finish-alt-item'
                     ],
                     [
                         'label' => 'Penjualan', 'icon' => 'circle-o', 'url' => ['/jual-ex-finish/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'jual-ex-finish' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'jual-ex-finish'
                     ],
                     [
                         'label' => 'Pengiriman', 'icon' => 'circle-o', 'url' => ['/surat-jalan-ex-finish/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'surat-jalan-ex-finish' && $actionId='index'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'surat-jalan-ex-finish'
                     ],
                     [
                         'label' => 'PFP KELUAR',
@@ -1001,7 +1001,7 @@ $moduleId = $controller->module->id;
                         'items' => [
                             [
                                 'label' => 'Stock', 'icon' => 'circle-o', 'url' => ['/pfp-keluar-verpacking-item/index'],
-                                'active' => $moduleId=='app-backend' && $controllerId == 'pfp-keluar-verpacking-item' && $actionId == 'index'
+                                'active' => $moduleId=='app-backend' && $controllerId == 'pfp-keluar-verpacking-item'
                             ],
                         ]
                     ],
@@ -1417,15 +1417,15 @@ $moduleId = $controller->module->id;
                         'items' => [
                             [
                                 'label' => 'Stock', 'icon' => 'circle', 'url' => ['/rawdata/trn-gudang-jadi/index'],
-                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
+                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi'
                             ],
                             [
                                 'label' => 'Kirim Buyer Bal', 'icon' => 'circle', 'url' => ['/rawdata/trn-kirim-buyer-bal/index'],
-                                'active' => $moduleId == 'rawdata' && $controllerId == 'trn-kirim-buyer-bal' && $actionId == 'index'
+                                'active' => $moduleId == 'rawdata' && $controllerId == 'trn-kirim-buyer-bal'
                             ],
                             [
                                 'label' => 'Kirim Item Bal', 'icon' => 'circle', 'url' => ['/rawdata/trn-kirim-buyer-item/index'],
-                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-kirim-buyer-item' && $actionId == 'index'
+                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-kirim-buyer-item'
                             ],
                         ],
                     ],
