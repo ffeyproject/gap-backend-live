@@ -199,6 +199,7 @@ $this->registerCss('
                                 <li><a href="#" data-col="col-pcs"><input type="checkbox" checked> PCS</a></li>
                                 <li><a href="#" data-col="col-nomc"><input type="checkbox" checked> No MC</a></li>
                                 <li><a href="#" data-col="col-warna"><input type="checkbox" checked> Warna</a></li>
+                                <li><a href="#" data-col="col-nama-warna"><input type="checkbox" checked> Nama Warna</a></li>
                                 <li><a href="#" data-col="col-proses"><input type="checkbox" checked> Proses</a></li>
                                 <li><a href="#" data-col="col-temp"><input type="checkbox" checked> Temp°C</a></li>
                                 <li><a href="#" data-col="col-panjang"><input type="checkbox" checked> Pjg Jadi</a></li>
@@ -257,6 +258,7 @@ $this->registerCss('
                         <th class="col-pcs" style="min-width: 50px;">PCS</th>
                         <th class="col-nomc" style="min-width: 70px;">No MC</th>
                         <th class="col-warna" style="min-width: 80px;">Warna</th>
+                        <th class="col-nama-warna" style="min-width: 80px;">Nama Warna</th>
                         <th class="col-proses" style="min-width: 80px;">Proses</th>
                         <th class="col-temp" style="min-width: 60px;">Temp°C</th>
                         <th class="col-panjang" style="min-width: 70px;">Pjg Jadi</th>
@@ -274,6 +276,7 @@ $this->registerCss('
                         <th class="col-pcs"></th>
                         <th class="col-nomc"></th>
                         <th class="col-warna"><input type="text" class="form-control input-sm column-search" data-col="col-warna" placeholder="Cari..."></th>
+                        <th class="col-nama-warna"><input type="text" class="form-control input-sm column-search" data-col="col-nama-warna" placeholder="Cari..."></th>
                         <th class="col-proses"><input type="text" class="form-control input-sm column-search" data-col="col-proses" placeholder="Cari..."></th>
                         <th class="col-temp"></th>
                         <th class="col-panjang"></th>
@@ -288,7 +291,7 @@ $this->registerCss('
                     $currentShift = null;
                     $totalMc = 0;
                     if (empty($kartuData)): ?>
-                        <tr><td colspan="15" class="text-center text-muted">Tidak ada data untuk mesin dan tanggal ini.</td></tr>
+                        <tr><td colspan="16" class="text-center text-muted">Tidak ada data untuk mesin dan tanggal ini.</td></tr>
                     <?php else:
                         foreach ($kartuData as $row):
                             // Use user-defined shift mapping if available, otherwise fallback
@@ -304,7 +307,7 @@ $this->registerCss('
                             // Shift divider
                             if ($currentShift !== $row['shift_group']):
                                 if ($currentShift !== null): ?>
-                                    <tr><td colspan="15" style="height: 5px; background-color: #ddd; padding: 0;"></td></tr>
+                                    <tr><td colspan="16" style="height: 5px; background-color: #ddd; padding: 0;"></td></tr>
                                 <?php endif;
                                 $currentShift = $row['shift_group'];
                             endif;
@@ -339,6 +342,7 @@ $this->registerCss('
                             <td class="col-pcs"><?= Html::encode($row['pcs']) ?></td>
                             <td class="col-nomc"><?= Html::encode($row['no_mc']) ?></td>
                             <td class="col-warna"><?= Html::encode($row['warna']) ?></td>
+                            <td class="col-nama-warna"><?= Html::encode($row['nama_warna'] ?? '-') ?></td>
                             <td class="col-proses"><?= Html::encode($row['proses']) ?></td>
                             <td class="col-temp"><?= Html::encode($row['temp']) ?></td>
                             <td class="col-panjang"><?= Html::encode($row['panjang_jadi']) ?></td>

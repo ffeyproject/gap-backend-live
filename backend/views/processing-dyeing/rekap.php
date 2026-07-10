@@ -1823,18 +1823,7 @@ $('#form-nama-warna-trn').on('submit', function(e) {
             btn.text(originalText).prop('disabled', false);
             if (res.success) {
                 $('#modal-nama-warna-trn').modal('hide');
-                if (currentTargetNamaWarnaTrn) {
-                    currentTargetNamaWarnaTrn.data('val', res.nama_warna);
-                    if (res.nama_warna && res.nama_warna.trim() !== '') {
-                        currentTargetNamaWarnaTrn.text(res.nama_warna);
-                    } else {
-                        currentTargetNamaWarnaTrn.html('<i class="fa fa-edit text-muted"></i> Isi Warna');
-                    }
-                    currentTargetNamaWarnaTrn.closest('td').css('background-color', '#d4edda');
-                    setTimeout(function() {
-                        currentTargetNamaWarnaTrn.closest('td').css('background-color', '');
-                    }, 1500);
-                }
+                window.location.reload();
             } else {
                 alert('Gagal menyimpan: ' + res.message);
             }

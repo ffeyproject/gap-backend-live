@@ -332,14 +332,7 @@ $('#form-nama-warna-trn').on('submit', function(e) {
             btn.text(originalText).prop('disabled', false);
             if (res.success) {
                 $('#modal-nama-warna-trn').modal('hide');
-                if (currentTargetNamaWarnaTrn) {
-                    currentTargetNamaWarnaTrn.data('val', res.nama_warna);
-                    if (res.nama_warna && res.nama_warna.trim() !== '') {
-                        currentTargetNamaWarnaTrn.text(res.nama_warna);
-                    } else {
-                        currentTargetNamaWarnaTrn.html('<i class="glyphicon glyphicon-pencil text-muted"></i> Isi Warna');
-                    }
-                }
+                window.location.reload();
             } else {
                 alert(res.message || 'Gagal menyimpan data.');
             }

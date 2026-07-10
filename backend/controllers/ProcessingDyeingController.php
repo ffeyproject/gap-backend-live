@@ -3127,23 +3127,27 @@ class ProcessingDyeingController extends Controller
                 $woNo = '';
                 $warna = '-';
 
+                $namaWarna = '-';
                 if ($isDyeing) {
                     $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
                     $pcs = count($kartuProses->trnKartuProsesDyeingItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m'));
                     $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
                     $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                    $namaWarna = $kartuProses->nama_warna ?: '-';
                 } elseif ($isPrinting) {
                     $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
                     $pcs = count($kartuProses->trnKartuProsesPrintingItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPrintingItems, 'panjang_m'));
                     $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
                     $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                    $namaWarna = '-';
                 } elseif ($isPfp) {
                     $motif = $kartuProses->greige ? $kartuProses->greige->nama_kain : '';
                     $pcs = count($kartuProses->trnKartuProsesPfpItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPfpItems, 'panjang_m'));
                     $woNo = 'F-PFP-' . $kartuProses->no;
+                    $namaWarna = $kartuProses->nama_warna ?: '-';
                 }
 
                 $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : (isset($values['shift_operator']) ? $values['shift_operator'] : '-');
@@ -3163,6 +3167,7 @@ class ProcessingDyeingController extends Controller
                     'pcs' => $pcs,
                     'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
                     'warna' => $warna,
+                    'nama_warna' => $namaWarna,
                     'proses' => $process ? $process->nama_proses : '',
                     'temp' => isset($values['temp']) ? $values['temp'] : '',
                     'speed' => isset($values['speed']) ? $values['speed'] : '',
@@ -3202,6 +3207,26 @@ class ProcessingDyeingController extends Controller
                 ->all();
 
             foreach ($tambahanInputs as $ti) {
+                $warna = '-';
+                $namaWarna = '-';
+                if (!empty($ti->nk_no)) {
+                    $kpd = \common\models\ar\TrnKartuProsesDyeing::findOne(['nomor_kartu' => $ti->nk_no]);
+                    if ($kpd) {
+                        $warna = ($kpd->woColor && $kpd->woColor->moColor) ? $kpd->woColor->moColor->color : '-';
+                        $namaWarna = $kpd->nama_warna ?: '-';
+                    } else {
+                        $kpp = \common\models\ar\TrnKartuProsesPfp::findOne(['nomor_kartu' => $ti->nk_no]);
+                        if ($kpp) {
+                            $namaWarna = $kpp->nama_warna ?: '-';
+                        } else {
+                            $kpr = \common\models\ar\TrnKartuProsesPrinting::findOne(['nomor_kartu' => $ti->nk_no]);
+                            if ($kpr) {
+                                $warna = ($kpr->woColor && $kpr->woColor->moColor) ? $kpr->woColor->moColor->color : '-';
+                            }
+                        }
+                    }
+                }
+
                 $kartuData[] = [
                     'tipe' => $ti->tipe,
                     'shift_group' => $ti->shift,
@@ -3211,7 +3236,8 @@ class ProcessingDyeingController extends Controller
                     'nk' => $ti->nk_no,
                     'pcs' => '-',
                     'no_mc' => $mesin->nama_mesin,
-                    'warna' => '-',
+                    'warna' => $warna,
+                    'nama_warna' => $namaWarna,
                     'proses' => $ti->nama_proses,
                     'temp' => $ti->temp,
                     'speed' => '-',
@@ -3401,23 +3427,27 @@ class ProcessingDyeingController extends Controller
                 $woNo = '';
                 $warna = '-';
 
+                $namaWarna = '-';
                 if ($isDyeing) {
                     $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
                     $pcs = count($kartuProses->trnKartuProsesDyeingItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesDyeingItems, 'panjang_m'));
                     $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
                     $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                    $namaWarna = $kartuProses->nama_warna ?: '-';
                 } elseif ($isPrinting) {
                     $motif = $kartuProses->wo ? ($kartuProses->wo->greige ? $kartuProses->wo->greige->nama_kain : '') : '';
                     $pcs = count($kartuProses->trnKartuProsesPrintingItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPrintingItems, 'panjang_m'));
                     $woNo = $kartuProses->wo ? $kartuProses->wo->no : '';
                     $warna = ($kartuProses->woColor && $kartuProses->woColor->moColor) ? $kartuProses->woColor->moColor->color : '';
+                    $namaWarna = '-';
                 } elseif ($isPfp) {
                     $motif = $kartuProses->greige ? $kartuProses->greige->nama_kain : '';
                     $pcs = count($kartuProses->trnKartuProsesPfpItems);
                     $panjangGreige = array_sum(array_column($kartuProses->trnKartuProsesPfpItems, 'panjang_m'));
                     $woNo = 'F-PFP-' . $kartuProses->no;
+                    $namaWarna = $kartuProses->nama_warna ?: '-';
                 }
 
                 $shiftGroup = isset($values['shift_group']) ? $values['shift_group'] : (isset($values['shift_operator']) ? $values['shift_operator'] : '-');
@@ -3436,6 +3466,7 @@ class ProcessingDyeingController extends Controller
                     'pcs' => $pcs,
                     'no_mc' => isset($values['no_mesin']) ? $values['no_mesin'] : '',
                     'warna' => $warna,
+                    'nama_warna' => $namaWarna,
                     'proses' => $process ? $process->nama_proses : '',
                     'temp' => isset($values['temp']) ? $values['temp'] : '',
                     'speed' => isset($values['speed']) ? $values['speed'] : '',
@@ -3455,6 +3486,26 @@ class ProcessingDyeingController extends Controller
                 ->all();
 
             foreach ($tambahanInputs as $ti) {
+                $warna = '-';
+                $namaWarna = '-';
+                if (!empty($ti->nk_no)) {
+                    $kpd = \common\models\ar\TrnKartuProsesDyeing::findOne(['nomor_kartu' => $ti->nk_no]);
+                    if ($kpd) {
+                        $warna = ($kpd->woColor && $kpd->woColor->moColor) ? $kpd->woColor->moColor->color : '-';
+                        $namaWarna = $kpd->nama_warna ?: '-';
+                    } else {
+                        $kpp = \common\models\ar\TrnKartuProsesPfp::findOne(['nomor_kartu' => $ti->nk_no]);
+                        if ($kpp) {
+                            $namaWarna = $kpp->nama_warna ?: '-';
+                        } else {
+                            $kpr = \common\models\ar\TrnKartuProsesPrinting::findOne(['nomor_kartu' => $ti->nk_no]);
+                            if ($kpr) {
+                                $warna = ($kpr->woColor && $kpr->woColor->moColor) ? $kpr->woColor->moColor->color : '-';
+                            }
+                        }
+                    }
+                }
+
                 $kartuData[] = [
                     'tipe' => $ti->tipe,
                     'shift_group' => $ti->shift,
@@ -3464,7 +3515,8 @@ class ProcessingDyeingController extends Controller
                     'nk' => $ti->nk_no,
                     'pcs' => '-',
                     'no_mc' => $mesin->nama_mesin,
-                    'warna' => '-',
+                    'warna' => $warna,
+                    'nama_warna' => $namaWarna,
                     'proses' => $ti->nama_proses,
                     'temp' => $ti->temp,
                     'speed' => '-',
@@ -3573,6 +3625,7 @@ class ProcessingDyeingController extends Controller
         echo '   <Column ss:Width="50"/>' . "\n";  // PCS
         echo '   <Column ss:Width="80"/>' . "\n";  // No MC
         echo '   <Column ss:Width="100"/>' . "\n"; // Warna
+        echo '   <Column ss:Width="100"/>' . "\n"; // Nama Warna
         echo '   <Column ss:Width="100"/>' . "\n"; // Proses
         echo '   <Column ss:Width="60"/>' . "\n";  // Temp
         echo '   <Column ss:Width="75"/>' . "\n";  // Pjg Jadi
@@ -3582,12 +3635,12 @@ class ProcessingDyeingController extends Controller
         echo '   <Column ss:Width="150"/>' . "\n"; // Keterangan
 
         echo '   <Row ss:Height="25">' . "\n";
-        echo '    <Cell ss:StyleID="Title" ss:MergeAcross="13"><Data ss:Type="String">Data Proses - ' . htmlspecialchars($mesin ? $mesin->nama_mesin : '-') . ' (' . date('d-m-Y', strtotime($tanggal)) . ')</Data></Cell>' . "\n";
+        echo '    <Cell ss:StyleID="Title" ss:MergeAcross="14"><Data ss:Type="String">Data Proses - ' . htmlspecialchars($mesin ? $mesin->nama_mesin : '-') . ' (' . date('d-m-Y', strtotime($tanggal)) . ')</Data></Cell>' . "\n";
         echo '   </Row>' . "\n";
         echo '   <Row ss:Height="15"/>' . "\n";
         
         echo '   <Row ss:Height="20">' . "\n";
-        $headers = ['Shift', 'No. WO', 'Motif', 'NK', 'PCS', 'No MC', 'Warna', 'Proses', 'Temp°C', 'Pjg Jadi', 'Pjg Greige', 'Lebar', 'Berat', 'Keterangan'];
+        $headers = ['Shift', 'No. WO', 'Motif', 'NK', 'PCS', 'No MC', 'Warna', 'Nama Warna', 'Proses', 'Temp°C', 'Pjg Jadi', 'Pjg Greige', 'Lebar', 'Berat', 'Keterangan'];
         foreach ($headers as $h) {
             echo '    <Cell ss:StyleID="Header"><Data ss:Type="String">' . htmlspecialchars($h) . '</Data></Cell>' . "\n";
         }
@@ -3606,6 +3659,7 @@ class ProcessingDyeingController extends Controller
             echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['pcs']) . '</Data></Cell>' . "\n";
             echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['no_mc']) . '</Data></Cell>' . "\n";
             echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['warna']) . '</Data></Cell>' . "\n";
+            echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['nama_warna']) . '</Data></Cell>' . "\n";
             echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['proses']) . '</Data></Cell>' . "\n";
             echo '    <Cell><Data ss:Type="String">' . htmlspecialchars($row['temp']) . '</Data></Cell>' . "\n";
             echo '    <Cell><Data ss:Type="Number">' . (float)$row['panjang_jadi'] . '</Data></Cell>' . "\n";
@@ -3953,12 +4007,21 @@ class ProcessingDyeingController extends Controller
             }
             
             if ($model) {
-                $model->nama_warna = $namaWarna;
-                if ($model->save(false)) {
-                    return ['success' => true, 'nama_warna' => \yii\helpers\Html::encode($namaWarna)];
+                if ($tipe !== 'PFP') {
+                    if (!empty($model->wo_id) && !empty($model->wo_color_id)) {
+                        \common\models\ar\TrnKartuProsesDyeing::updateAll(
+                            ['nama_warna' => $namaWarna],
+                            ['wo_id' => $model->wo_id, 'wo_color_id' => $model->wo_color_id]
+                        );
+                    } else {
+                        $model->nama_warna = $namaWarna;
+                        $model->save(false);
+                    }
                 } else {
-                    return ['success' => false, 'message' => 'Gagal menyimpan data.'];
+                    $model->nama_warna = $namaWarna;
+                    $model->save(false);
                 }
+                return ['success' => true, 'nama_warna' => \yii\helpers\Html::encode($namaWarna)];
             }
 
             return ['success' => false, 'message' => 'Data tidak ditemukan.'];
