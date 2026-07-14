@@ -89,19 +89,43 @@ use yii\helpers\Url;
                                     ]
                                 ])->label(false);*/
 
-                                echo $formHeader->field($modelHeader, 'kartu_proses_id')->widget(DepDrop::classname(), [
-                                    'type' => DepDrop::TYPE_SELECT2,
-                                    'options' => ['placeholder' => 'Select ...'],
-                                    'select2Options' => [
-                                        'pluginOptions' => ['allowClear' => true],
-                                        'pluginEvents' => [
-                                            'select2:unselect' => 'function(e){if(kartuProsesIdOnUnSelect !== null){kartuProsesIdOnUnSelect(e)}}',
-                                            'select2:select' => 'function(e){if(kartuProsesIdOnSelect !== null){kartuProsesIdOnSelect(e)}}'
-                                        ],
-                                    ],
+                                $nomorKartu = '';
+                                if (!empty($modelHeader->kartu_proses_id)) {
+                                    if ($modelHeader->jenis_order === 'dyeing') {
+                                        $kp = \common\models\ar\TrnKartuProsesDyeing::findOne($modelHeader->kartu_proses_id);
+                                        $nomorKartu = $kp ? $kp->no : '';
+                                    } else if ($modelHeader->jenis_order === 'printing') {
+                                        $kp = \common\models\ar\TrnKartuProsesPrinting::findOne($modelHeader->kartu_proses_id);
+                                        $nomorKartu = $kp ? $kp->no : '';
+                                    }
+                                }
+
+                                echo $formHeader->field($modelHeader, 'kartu_proses_id')->widget(Select2::class, [
+                                    'initValueText' => $nomorKartu,
+                                    'options' => ['placeholder' => 'Pilih ...'],
                                     'pluginOptions' => [
-                                        'depends' => ['inspectingheaderform-jenis_order'],
-                                        'url' => Url::to(['/dep-drop/lookup-create-inspecting']),
+                                        'allowClear' => true,
+                                        'minimumInputLength' => 3,
+                                        'language' => [
+                                            'errorLoading' => new \yii\web\JsExpression("function () { return 'Waiting for results...'; }"),
+                                        ],
+                                        'ajax' => [
+                                            'url' => Url::to(['/ajax/lookup-inspecting-kartu-proses']),
+                                            'dataType' => 'json',
+                                            'data' => new \yii\web\JsExpression('function(params) { 
+                                                return {
+                                                    q: params.term, 
+                                                    jenis_order: $("#inspectingheaderform-jenis_order").val()
+                                                }; 
+                                            }')
+                                        ],
+                                        'escapeMarkup' => new \yii\web\JsExpression('function (markup) { return markup; }'),
+                                        'templateResult' => new \yii\web\JsExpression('function(item) { return item.text; }'),
+                                        'templateSelection' => new \yii\web\JsExpression('function(item) { return item.text; }'),
+                                    ],
+                                    'pluginEvents' => [
+                                        'select2:unselect' => 'function(e){if(kartuProsesIdOnUnSelect !== null){kartuProsesIdOnUnSelect(e)} resetData();}',
+                                        'select2:select' => 'function(e){if(kartuProsesIdOnSelect !== null){kartuProsesIdOnSelect(e)}}'
                                     ]
                                 ])->label(false);
                                 ?>
@@ -176,15 +200,16 @@ use yii\helpers\Url;
                             <th>Jenis Order</th>
                             <td>
                                 <?= $formHeader->field($modelHeader, 'jenis_order')->widget(Select2::classname(), [
-                                    'data' => ['dyeing'=>'Dyeing', 'printing'=>'Printing'],
-                                    'options' => ['placeholder' => 'Pilih ...'],
-                                    'pluginOptions' => [
-                                        'allowClear' => true
-                                    ],
-                                    'pluginEvents' => [
-                                        'select2:unselect' => 'function(e){resetData();}',
-                                    ],
-                                ])->label(false)?>
+                                     'data' => ['dyeing'=>'Dyeing', 'printing'=>'Printing'],
+                                     'options' => ['placeholder' => 'Pilih ...'],
+                                     'pluginOptions' => [
+                                         'allowClear' => true
+                                     ],
+                                     'pluginEvents' => [
+                                         'select2:select' => 'function(e){ $("#inspectingheaderform-kartu_proses_id").val(null).trigger("change"); resetData(); }',
+                                         'select2:unselect' => 'function(e){ $("#inspectingheaderform-kartu_proses_id").val(null).trigger("change"); resetData(); }',
+                                     ],
+                                 ])->label(false)?>
                             </td>
                         </tr>
 

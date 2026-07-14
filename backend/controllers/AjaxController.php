@@ -904,6 +904,55 @@ class AjaxController extends Controller
     }
 
     /**
+     * @param null $q
+     * @param null $jenis_order
+     * @return array
+     */
+    public function actionLookupInspectingKartuProses($q = null, $jenis_order = null){
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['results' => []];
+
+        if (!empty($jenis_order)) {
+            switch ($jenis_order){
+                case 'dyeing':
+                    $query = TrnKartuProsesDyeing::find()
+                        ->select(new Expression('id, no "text"'))
+                        ->andWhere(['status'=>[
+                            TrnKartuProsesDyeing::STATUS_APPROVED, 
+                            TrnKartuProsesDyeing::STATUS_INSPECTED, 
+                            TrnKartuProsesDyeing::STATUS_MAKE_UP_PACKING, 
+                            TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI, 
+                            TrnKartuProsesDyeing::STATUS_PERIKSA_PENGIRIMAN
+                        ]]);
+                    if (!empty($q)) {
+                        $query->andWhere(['ilike', 'no', $q]);
+                    }
+                    $out['results'] = $query->limit(20)->asArray()->all();
+                    break;
+                case 'printing':
+                    $query = TrnKartuProsesPrinting::find()
+                        ->select(new Expression('id, no "text"'))
+                        ->andWhere(['status'=>TrnKartuProsesDyeing::STATUS_APPROVED]);
+                    if (!empty($q)) {
+                        $query->andWhere(['ilike', 'no', $q]);
+                    }
+                    $out['results'] = $query->limit(20)->asArray()->all();
+                    break;
+                case 'memo_repair':
+                    $query = \common\models\ar\TrnMemoRepair::find()
+                        ->select(new Expression('id, no "text"'))
+                        ->andWhere(['status'=>\common\models\ar\TrnMemoRepair::STATUS_REPAIRED]);
+                    if (!empty($q)) {
+                        $query->andWhere(['ilike', 'no', $q]);
+                    }
+                    $out['results'] = $query->limit(20)->asArray()->all();
+                    break;
+            }
+        }
+        return $out;
+    }
+
+    /**
      * @return array
      * @throws NotFoundHttpException
      */
