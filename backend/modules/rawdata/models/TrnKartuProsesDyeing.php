@@ -85,7 +85,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
             [['date'], 'safe'],
             [['no', 'dikerjakan_oleh', 'nomor_kartu', 'lusi', 'pakan', 'memo_pg_no', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok'], 'string', 'max' => 255],
             ['status', 'default', 'value'=>KpDyeing::STATUS_DRAFT],
-            ['status', 'in', 'range'=>[KpDyeing::STATUS_DRAFT, KpDyeing::STATUS_POSTED, KpDyeing::STATUS_DELIVERED, KpDyeing::STATUS_APPROVED, KpDyeing::STATUS_INSPECTED, KpDyeing::STATUS_GANTI_GREIGE, KpDyeing::STATUS_GANTI_GREIGE_LINKED, KpDyeing::STATUS_BATAL]],
+            ['status', 'in', 'range'=>[KpDyeing::STATUS_DRAFT, KpDyeing::STATUS_POSTED, KpDyeing::STATUS_DELIVERED, KpDyeing::STATUS_APPROVED, KpDyeing::STATUS_INSPECTED, KpDyeing::STATUS_GANTI_GREIGE, KpDyeing::STATUS_GANTI_GREIGE_LINKED, KpDyeing::STATUS_BATAL, KpDyeing::STATUS_ROLLING_PACKING, KpDyeing::STATUS_MAKE_UP_PACKING, KpDyeing::STATUS_FOLDED_PACKING, KpDyeing::STATUS_TERIMA_GUDANG_JADI, KpDyeing::STATUS_PERIKSA_PENGIRIMAN, KpDyeing::STATUS_CLOSE, KpDyeing::STATUS_SELVEDGE_PACKING]],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::className(), 'targetAttribute' => ['sc_id' => 'id']],
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::className(), 'targetAttribute' => ['sc_greige_id' => 'id']],
