@@ -46,6 +46,76 @@ class TrnHambatanMesinController extends Controller
     }
 
     /**
+     * Lists and filters obstacle and action recaps.
+     * @return mixed
+     */
+    public function actionRekapHambatanTindakan()
+    {
+        $searchModel = new \yii\base\DynamicModel([
+            'tanggal_mulai', 'tanggal_selesai', 'model_mesin', 'mst_mesin_proses_id'
+        ]);
+        $searchModel->addRule(['tanggal_mulai', 'tanggal_selesai', 'model_mesin'], 'safe')
+            ->addRule(['mst_mesin_proses_id'], 'integer');
+
+        $searchModel->load(Yii::$app->request->queryParams);
+
+        $query = TrnHambatanMesinItem::find()
+            ->joinWith(['trnHambatanMesin', 'mstMesinProses'])
+            ->orderBy(['trn_hambatan_mesin.tanggal' => SORT_DESC, 'trn_hambatan_mesin_item.id' => SORT_DESC]);
+
+        if ($searchModel->validate()) {
+            if ($searchModel->tanggal_mulai) {
+                $query->andWhere(['>=', 'trn_hambatan_mesin.tanggal', $searchModel->tanggal_mulai]);
+            }
+            if ($searchModel->tanggal_selesai) {
+                $query->andWhere(['<=', 'trn_hambatan_mesin.tanggal', $searchModel->tanggal_selesai]);
+            }
+            if ($searchModel->model_mesin) {
+                $query->andWhere(['mst_mesin_proses.model_mesin' => $searchModel->model_mesin]);
+            }
+            if ($searchModel->mst_mesin_proses_id) {
+                $query->andWhere(['trn_hambatan_mesin_item.mst_mesin_proses_id' => $searchModel->mst_mesin_proses_id]);
+            }
+        }
+
+        $isPdf = Yii::$app->request->get('print') === 'pdf';
+
+        $dataProvider = new \yii\data\ActiveDataProvider([
+            'query' => $query,
+            'pagination' => $isPdf ? false : [
+                'pageSize' => 50,
+            ],
+        ]);
+
+        if ($isPdf) {
+            $content = $this->renderPartial('rekap_hambatan_tindakan_pdf', [
+                'searchModel' => $searchModel,
+                'dataProvider' => $dataProvider,
+            ]);
+            
+            $pdf = new \kartik\mpdf\Pdf([
+                'mode' => \kartik\mpdf\Pdf::MODE_BLANK,
+                'format' => \kartik\mpdf\Pdf::FORMAT_A4,
+                'orientation' => \kartik\mpdf\Pdf::ORIENT_LANDSCAPE,
+                'destination' => \kartik\mpdf\Pdf::DEST_BROWSER,
+                'content' => $content,
+                'cssFile' => '@vendor/kartik-v/yii2-grid/src/assets/css/kv-grid.css',
+                'options' => ['title' => 'Rekap Hambatan dan Tindakan'],
+                'methods' => [
+                    'SetHeader' => ['Rekap Hambatan dan Tindakan||Dicetak tanggal: ' . date('d-m-Y H:i:s')],
+                    'SetFooter' => ['Halaman {PAGENO} dari {nbpg}'],
+                ]
+            ]);
+            return $pdf->render();
+        }
+
+        return $this->render('rekap_hambatan_tindakan', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
      * Displays a single TrnHambatanMesin model.
      * @param integer $id
      * @return mixed
@@ -106,7 +176,7 @@ class TrnHambatanMesinController extends Controller
 
                         foreach ($itemsData as $itemData) {
                             // Skip completely empty rows
-                            if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id'])) {
+                            if (empty($itemData['start_time']) && empty($itemData['stop_time']) && empty($itemData['jenis_hambatan_ids']) && empty($itemData['keterangan']) && empty($itemData['mst_mesin_proses_id']) && empty($itemData['tindakan'])) {
                                 continue;
                             }
 
@@ -118,6 +188,7 @@ class TrnHambatanMesinController extends Controller
                             $item->no_kartu = $itemData['no_kartu'] ?? null;
                             $item->no_wo = $itemData['no_wo'] ?? null;
                             $item->keterangan = $itemData['keterangan'] ?? null;
+                            $item->tindakan = $itemData['tindakan'] ?? null;
                             
                             if (!$item->save()) {
                                 throw new \Exception('Gagal menyimpan item hambatan: ' . implode(', ', $item->getFirstErrors()));
@@ -232,6 +303,7 @@ class TrnHambatanMesinController extends Controller
                 'start_time' => $item->start_time,
                 'stop_time' => $item->stop_time,
                 'keterangan' => $item->keterangan,
+                'tindakan' => $item->tindakan,
                 'no_wo' => $item->no_wo,
                 'no_kartu' => $item->no_kartu,
                 'mst_mesin_proses_id' => $item->mst_mesin_proses_id,
@@ -461,6 +533,45 @@ class TrnHambatanMesinController extends Controller
             $out['results'] = [['id' => $id, 'text' => $id]];
         }
         return $out;
+    }
+
+    /**
+     * Updates the tindakan field of a specific TrnHambatanMesinItem.
+     * @param integer $id
+     * @return mixed
+     */
+    public function actionUpdateTindakan($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $model = TrnHambatanMesinItem::findOne($id);
+        if (!$model) {
+            return [
+                'success' => false,
+                'message' => 'Data tidak ditemukan.'
+            ];
+        }
+
+        if (Yii::$app->request->isPost) {
+            $tindakan = Yii::$app->request->post('tindakan');
+            $model->tindakan = $tindakan;
+            if ($model->save(false)) {
+                return [
+                    'success' => true,
+                    'message' => 'Tindakan berhasil disimpan.'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Gagal menyimpan tindakan: ' . implode(', ', $model->getFirstErrors())
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'message' => 'Hanya menerima request POST.'
+        ];
     }
 
     /**

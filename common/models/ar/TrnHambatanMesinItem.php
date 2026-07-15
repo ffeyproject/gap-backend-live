@@ -15,6 +15,7 @@ use Yii;
  * @property string|null $keterangan
  * @property int $mst_mesin_proses_id
  * @property string|null $no_wo
+ * @property string|null $tindakan
  *
  * @property TrnHambatanMesin $trnHambatanMesin
  * @property MstJenisHambatan[] $mstJenisHambatans
@@ -43,7 +44,7 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
         return [
             [['trn_hambatan_mesin_id', 'mst_mesin_proses_id', 'start_time', 'stop_time'], 'required'],
             [['trn_hambatan_mesin_id', 'mst_mesin_proses_id'], 'integer'],
-            [['keterangan'], 'string'],
+            [['keterangan', 'tindakan'], 'string'],
             [['start_time', 'stop_time'], 'string', 'max' => 50],
             [['no_kartu', 'no_wo'], 'string', 'max' => 100],
             [['jenis_hambatan_ids'], 'safe'],
@@ -67,6 +68,7 @@ class TrnHambatanMesinItem extends \yii\db\ActiveRecord
             'no_wo' => 'WO (jika ada)',
             'mst_mesin_proses_id' => 'Mesin',
             'keterangan' => 'Keterangan',
+            'tindakan' => 'Tindakan',
         ];
     }
 

@@ -599,8 +599,19 @@ $moduleId = $controller->module->id;
             ],
 
             [
-                'label' => 'Hambatan Per Mesin', 'icon' => 'bars', 'url' => ['/trn-hambatan-mesin/index'],
-                'active' => $moduleId=='app-backend' && $controllerId == 'trn-hambatan-mesin'
+                'label' => 'Hambatan Per Mesin',
+                'icon' => 'bars',
+                'url' => '#',
+                'items' => [
+                    [
+                        'label' => 'Input Hambatan', 'icon' => 'circle-o', 'url' => ['/trn-hambatan-mesin/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-hambatan-mesin' && $actionId !== 'rekap-hambatan-tindakan'
+                    ],
+                    [
+                        'label' => 'Rekap Hambatan dan Tindakan', 'icon' => 'circle-o', 'url' => ['/trn-hambatan-mesin/rekap-hambatan-tindakan'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-hambatan-mesin' && $actionId == 'rekap-hambatan-tindakan'
+                    ],
+                ]
             ],
 
             [

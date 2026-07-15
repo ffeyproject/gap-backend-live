@@ -133,6 +133,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                             return implode(', ', $names);
                         },
                     ],
+                    'tindakan',
                     [
                         'label' => 'Aksi',
                         'format' => 'raw',
@@ -193,6 +194,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                         <th style="width: 200px;">WO (jika ada)</th>
                         <th style="width: 200px;">NK (jika ada)</th>
                         <th style="width: 250px;">Jenis Hambatan (Bisa Pilih Banyak)</th>
+                        <th style="width: 250px;">Tindakan</th>
                         <th style="width: 50px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
@@ -264,6 +266,12 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                                     <?php endforeach; ?>
                                 </select>
                             </td>
+                            <td>
+                                <?= Html::textInput("Items[{$index}][tindakan]", $item->tindakan, [
+                                    'class' => 'form-control tindakan-input',
+                                    'placeholder' => 'Ketik Tindakan...'
+                                ]) ?>
+                            </td>
                             <td style="text-align: center; vertical-align: middle;">
                                 <button type="button" class="btn btn-sm btn-danger remove-row-btn">
                                     <i class="glyphicon glyphicon-trash"></i>
@@ -298,6 +306,7 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                         <th style="width: 200px;">Order PFP (jika ada)</th>
                         <th style="width: 200px;">NK PFP (jika ada)</th>
                         <th style="width: 250px;">Jenis Hambatan (Bisa Pilih Banyak)</th>
+                        <th style="width: 250px;">Tindakan</th>
                         <th style="width: 50px; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
@@ -370,6 +379,12 @@ $machinesMap = ArrayHelper::map($machinesList, 'id', 'nama_mesin');
                                         <option value="<?= $id ?>" <?= $selected ?>><?= Html::encode($nama) ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </td>
+                            <td>
+                                <?= Html::textInput("Items[{$idx}][tindakan]", $item->tindakan, [
+                                    'class' => 'form-control tindakan-input',
+                                    'placeholder' => 'Ketik Tindakan...'
+                                ]) ?>
                             </td>
                             <td style="text-align: center; vertical-align: middle;">
                                 <button type="button" class="btn btn-sm btn-danger remove-row-btn-pfp">
@@ -626,6 +641,7 @@ $('#add-row-btn').on('click', function() {
     newRow.append('<td><select name="Items[' + rowIndex + '][no_wo]" class="form-control wo-select2"></select></td>');
     newRow.append('<td><select name="Items[' + rowIndex + '][no_kartu]" class="form-control nk-select2"></select></td>');
     newRow.append('<td><select name="Items[' + rowIndex + '][jenis_hambatan_ids][]" class="form-control jenis-hambatan-select2" multiple="multiple"></select></td>');
+    newRow.append('<td><input type="text" name="Items[' + rowIndex + '][tindakan]" class="form-control tindakan-input" placeholder="Ketik Tindakan..."></td>');
     newRow.append('<td style="text-align: center; vertical-align: middle;"><button type="button" class="btn btn-sm btn-danger remove-row-btn"><i class="glyphicon glyphicon-trash"></i></button></td>');
     
     $('#hambatan-tbody').append(newRow);
@@ -661,6 +677,7 @@ $('#add-row-btn-pfp').on('click', function() {
     newRow.append('<td><select name="Items[' + pfpRowIndex + '][no_wo]" class="form-control order-pfp-select2"></select></td>');
     newRow.append('<td><select name="Items[' + pfpRowIndex + '][no_kartu]" class="form-control nk-select2"></select></td>');
     newRow.append('<td><select name="Items[' + pfpRowIndex + '][jenis_hambatan_ids][]" class="form-control jenis-hambatan-select2" multiple="multiple"></select></td>');
+    newRow.append('<td><input type="text" name="Items[' + pfpRowIndex + '][tindakan]" class="form-control tindakan-input" placeholder="Ketik Tindakan..."></td>');
     newRow.append('<td style="text-align: center; vertical-align: middle;"><button type="button" class="btn btn-sm btn-danger remove-row-btn-pfp"><i class="glyphicon glyphicon-trash"></i></button></td>');
     
     $('#hambatan-tbody-pfp').append(newRow);
@@ -731,6 +748,7 @@ $(document).on('click', '.btn-edit-set', function() {
                 newRow.find('.start-time-input').val(item.start_time);
                 newRow.find('.stop-time-input').val(item.stop_time);
                 newRow.find('.keterangan-input').val(item.keterangan);
+                newRow.find('.tindakan-input').val(item.tindakan);
                 
                 // For model mesin, when we trigger change, it will load machines. We pass preset-value so it selects the correct machine when done loading.
                 if (item.mst_mesin_proses_id) {
