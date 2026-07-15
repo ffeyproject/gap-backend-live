@@ -96,16 +96,16 @@ if (!empty($searchModel->tanggal_mulai) || !empty($searchModel->tanggal_selesai)
                 ?>
                     <tr>
                         <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= $no++ ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;">
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;">
                             <?= Html::encode(formatTanggalIndoPdf($item->trnHambatanMesin ? $item->trnHambatanMesin->tanggal : null)) ?>
                         </td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= Html::encode($machineName) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= Html::encode($modelName) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= Html::encode($machineName) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= Html::encode($hambatanStr) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px;"><?= nl2br(Html::encode($item->keterangan)) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: center;"><?= Html::encode($durationStr) ?></td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px;"><?= nl2br(Html::encode($item->tindakan)) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($machineName) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($modelName) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($machineName) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($hambatanStr) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= nl2br(Html::encode($item->keterangan)) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($durationStr) ?></td>
+                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= nl2br(Html::encode($item->tindakan)) ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
