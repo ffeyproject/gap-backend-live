@@ -241,10 +241,6 @@ function formatTanggalIndo($tanggal) {
                 'format' => 'raw',
             ],
             [
-                'label' => 'Mesin',
-                'value' => 'mstMesinProses.nama_mesin',
-            ],
-            [
                 'label' => 'Model Mesin',
                 'value' => function ($data) {
                     return $data->mstMesinProses ? ($data->mstMesinProses->model_mesin ?: '-') : '-';

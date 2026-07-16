@@ -49,7 +49,6 @@ if (!empty($searchModel->tanggal_mulai) || !empty($searchModel->tanggal_selesai)
             <tr style="background-color: #f2f2f2;">
                 <th style="border: 1px solid #000000; padding: 6px 4px; width: 30px; text-align: center; font-weight: bold;">#</th>
                 <th style="border: 1px solid #000000; padding: 6px 4px; width: 90px; text-align: center; font-weight: bold;">Tanggal</th>
-                <th style="border: 1px solid #000000; padding: 6px 4px; width: 80px; text-align: center; font-weight: bold;">Mesin</th>
                 <th style="border: 1px solid #000000; padding: 6px 4px; width: 80px; text-align: center; font-weight: bold;">Model Mesin</th>
                 <th style="border: 1px solid #000000; padding: 6px 4px; width: 80px; text-align: center; font-weight: bold;">Nama Mesin</th>
                 <th style="border: 1px solid #000000; padding: 6px 4px; width: 120px; text-align: center; font-weight: bold;">Jenis Hambatan</th>
@@ -99,7 +98,6 @@ if (!empty($searchModel->tanggal_mulai) || !empty($searchModel->tanggal_selesai)
                         <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;">
                             <?= Html::encode(formatTanggalIndoPdf($item->trnHambatanMesin ? $item->trnHambatanMesin->tanggal : null)) ?>
                         </td>
-                        <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($machineName) ?></td>
                         <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($modelName) ?></td>
                         <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($machineName) ?></td>
                         <td style="border: 1px solid #000000; padding: 5px 4px; text-align: left;"><?= Html::encode($hambatanStr) ?></td>
