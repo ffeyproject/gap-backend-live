@@ -99,7 +99,7 @@ use yii\helpers\Url;
                         <tr>
                             <th>No. Kartu</th>
                             <td>
-                                echo $formHeader->field($modelHeader, 'kartu_proses_id')->widget(Select2::class, [
+                                <?= $formHeader->field($modelHeader, 'kartu_proses_id')->widget(Select2::class, [
                                     'initValueText' => $nomorKartu,
                                     'options' => ['placeholder' => 'Pilih ...'],
                                     'pluginOptions' => [
@@ -126,7 +126,7 @@ use yii\helpers\Url;
                                         'select2:unselect' => 'function(e){if(kartuProsesIdOnUnSelect !== null){kartuProsesIdOnUnSelect(e)} resetData();}',
                                         'select2:select' => 'function(e){if(kartuProsesIdOnSelect !== null){kartuProsesIdOnSelect(e)}}'
                                     ]
-                                ])->label(false);
+                                ])->label(false) ?>
                             </td>
                         </tr>
                         <tr>

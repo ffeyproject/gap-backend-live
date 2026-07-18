@@ -387,17 +387,21 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                                 $qty = $item['qty_sum'];
                                  $unit = MstGreigeGroup::unitOptions()[$model->unit] ?? '';
 
+                                 $result = null;
                                 if ($qty != 0 && $qty != null && $lebarKain != 0) {
                                     if ($unit == 'Yard') {
-                                        
                                         $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty);
                                     } elseif ($unit == 'Meter') {
-                                         $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
+                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 0.9144);
                                     } elseif ($unit == 'Kilogram') {
-                                       $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
+                                        $result = ($totalPoint * 36 * 100) / ($lebarKain * $qty * 764.55486);
                                     }
 
-                                    echo number_format($result, 2);
+                                    if ($result !== null) {
+                                        echo number_format($result, 2);
+                                    } else {
+                                        echo '';
+                                    }
                                 } else {
                                     echo '';
                                 }
