@@ -92,6 +92,34 @@ class AjaxController extends Controller
         throw new ForbiddenHttpException('Method tidak diizinkan');
     }
 
+    public function actionWmsLocations($q = null, $jenis_gudang = null) {
+        if(Yii::$app->request->isAjax){
+            Yii::$app->response->format = Response::FORMAT_JSON;
+            $out = ['results' => []];
+
+            $query = new Query();
+            $query->select(new Expression('locs_code AS id, locs_code AS text'))
+                ->from('wms_locs_sub')
+                ->where(['locs_active' => 'Y']);
+
+            if (!empty($jenis_gudang)) {
+                $query->andWhere(['locs_loc_id' => $jenis_gudang]);
+            }
+
+            if (!is_null($q) && $q !== '') {
+                $query->andWhere(['ilike', 'locs_code', $q]);
+            }
+
+            $query->limit(50);
+            $command = $query->createCommand();
+            $out['results'] = $command->queryAll();
+
+            return $out;
+        }
+
+        throw new ForbiddenHttpException('Method tidak diizinkan');
+    }
+
     public function actionGreigeGroupSearch($q = null){
         if(Yii::$app->request->isAjax){
             Yii::$app->response->format = Response::FORMAT_JSON;

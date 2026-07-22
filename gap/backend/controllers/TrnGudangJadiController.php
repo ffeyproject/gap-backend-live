@@ -239,6 +239,41 @@ class TrnGudangJadiController extends Controller
         throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
     }
 
+    public function actionSaveLocation()
+    {
+        if (Yii::$app->request->isAjax) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $id = Yii::$app->request->post('id');
+            $locs_code = Yii::$app->request->post('locs_code');
+
+            if (empty($id) || empty($locs_code)) {
+                throw new HttpException(400, 'Parameter tidak lengkap.');
+            }
+
+            $model = $this->findModel($id);
+
+            // Validate that the location is active in wms_locs_sub
+            $locExists = (new \yii\db\Query())
+                ->from('wms_locs_sub')
+                ->where(['locs_code' => $locs_code, 'locs_active' => 'Y'])
+                ->exists();
+
+            if (!$locExists) {
+                throw new HttpException(422, 'Lokasi tidak valid atau tidak aktif.');
+            }
+
+            $model->locs_code = $locs_code;
+            if ($model->save(false, ['locs_code'])) {
+                return ['success' => true, 'message' => 'Lokasi berhasil disimpan.'];
+            } else {
+                throw new HttpException(500, 'Gagal menyimpan lokasi.');
+            }
+        }
+
+        throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
+    }
+
     /**
      * Displays a single TrnGudangJadi model.
      * @param integer $id

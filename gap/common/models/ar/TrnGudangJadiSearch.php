@@ -28,7 +28,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
         return [
             [['id', 'jenis_gudang', 'wo_id', 'source', 'unit', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'greige_id'], 'integer'],
             ['qty', 'number'],
-            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade'], 'safe'],
+            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade', 'locs_code'], 'safe'],
         ];
     }
 
@@ -131,6 +131,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_gudang_jadi.source_ref', $this->source_ref])
+            ->andFilterWhere(['ilike', 'trn_gudang_jadi.locs_code', $this->locs_code])
             ->andFilterWhere(['ilike', 'trn_gudang_jadi.no', $this->no])
             ->andFilterWhere(['ilike', 'trn_gudang_jadi.note', $this->note])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
