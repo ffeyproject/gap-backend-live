@@ -452,3 +452,120 @@ function updateRowNumbers() {
       .text(index + 1); // Memperbarui nomor baris
   });
 }
+
+$(document).on('click', '.btn-set-lokasi', function (e) {
+    e.preventDefault();
+    var button = $(this);
+    var id = button.data('id');
+    var jenisGudang = button.data('jenis-gudang');
+    var qty = button.data('qty');
+
+    $.confirm({
+        title: 'Set Lokasi Item (Qty: ' + qty + ')',
+        content: '' +
+            '<form action="" class="formSetLokasi">' +
+            '<div class="form-group">' +
+            '<label>Pilih Lokasi</label>' +
+            '<select id="selectLocation" class="form-control" style="width: 100%">' +
+            '<option value=""></option>' +
+            '</select>' +
+            '</div>' +
+            '</form>',
+        buttons: {
+            submit: {
+                text: 'Simpan',
+                btnClass: 'btn-blue',
+                action: function () {
+                    var selectLocation = this.$content.find('#selectLocation').val();
+                    if (!selectLocation) {
+                        $.alert('Harap pilih lokasi !!');
+                        return false;
+                    }
+
+                    var self = this;
+                    $.ajax({
+                        method: 'POST',
+                        beforeSend: function (jqXHR, settings) {
+                            $.blockUI({
+                                message: '<h1>Processing</h1>',
+                                css: { border: '3px solid #a00' }
+                            });
+                        },
+                        data: {
+                            id: id,
+                            locs_code: selectLocation
+                        },
+                        url: saveLocationUrl,
+                        error: function (jqXHR, textStatus, errorThrown) {
+                            $.unblockUI();
+                            var errorObj;
+                            try {
+                                errorObj = jQuery.parseJSON(jqXHR.responseText);
+                                if (typeof errorObj != 'object') {
+                                    errorObj = { name: "Error", message: jqXHR.responseText };
+                                }
+                            } catch (e) {
+                                errorObj = { name: "Error", message: jqXHR.responseText };
+                            }
+                            $.alert({
+                                title: errorObj.name || 'Error',
+                                content: errorObj.message || textStatus
+                            });
+                        },
+                        success: function (response) {
+                            $.unblockUI();
+                            $.alert({
+                                title: "Berhasil",
+                                content: "Lokasi berhasil disimpan.",
+                                buttons: {
+                                    ok: function () {
+                                        if ($.support.pjax && $('#GdJadiGrid').length) {
+                                            $.pjax.reload({ container: '#GdJadiGrid-pjax' });
+                                        } else {
+                                            window.location.reload();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            },
+            batal: function () {
+                // close
+            }
+        },
+        onContentReady: function () {
+            var jc = this;
+            this.$content.find('form').on('submit', function (e) {
+                e.preventDefault();
+                jc.buttons.submit.trigger('click');
+            });
+
+            var selectElement = this.$content.find('#selectLocation');
+            selectElement.select2({
+                dropdownParent: jc.$el,
+                ajax: {
+                    url: wmsLocationsUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term,
+                            jenis_gudang: jenisGudang
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                },
+                placeholder: 'Pilih Lokasi...',
+                allowClear: true,
+                minimumInputLength: 0
+            });
+        }
+    });
+});

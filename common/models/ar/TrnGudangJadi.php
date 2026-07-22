@@ -31,6 +31,7 @@ use yii\behaviors\TimestampBehavior;
  * @property int $grade mengacu kepada TrnStockGreige::gradeOptions()
  * @property bool $hasil_pemotongan
  * @property bool $dipotong
+ * @property string|null $locs_code
  *
  * @property TrnWo $wo
  * @property string $gradeName
@@ -104,7 +105,7 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
             ['jenis_gudang', 'in', 'range' => [self::JENIS_GUDANG_LOKAL, self::JENIS_GUDANG_EXPORT, self::JENIS_GUDANG_GRADE_B]],
 
             [['note'], 'string'],
-            [['source_ref', 'no', 'color', 'no_memo_repair', 'no_memo_ganti_greige'], 'string', 'max' => 255],
+            [['source_ref', 'no', 'color', 'no_memo_repair', 'no_memo_ganti_greige', 'locs_code'], 'string', 'max' => 255],
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
 
             [['hasil_pemotongan', 'dipotong'], 'boolean'],

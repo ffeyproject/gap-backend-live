@@ -197,7 +197,25 @@ if(!empty($searchModel->greige_id)){
                 },
 
             ],
-            'qty:decimal',
+            [
+                'attribute' => 'qty',
+                'format' => 'raw',
+                'value' => function($model){
+                    /* @var $model TrnGudangJadi */
+                    $qtyFormatted = Yii::$app->formatter->asDecimal($model->qty);
+                    if (empty($model->locs_code)) {
+                        return Html::a($qtyFormatted, '#', [
+                            'class' => 'btn-set-lokasi text-danger',
+                            'data-id' => $model->id,
+                            'data-jenis-gudang' => $model->jenis_gudang,
+                            'data-qty' => $qtyFormatted,
+                            'title' => 'Set Lokasi',
+                            'style' => 'text-decoration: underline; font-weight: bold; cursor: pointer;'
+                        ]);
+                    }
+                    return $qtyFormatted;
+                }
+            ],
             //'no_urut',
             //'no',
             [
@@ -376,6 +394,8 @@ if(!empty($searchModel->greige_id)){
 
 <?php
 $this->registerJsVar('selectedItems', []);
+$this->registerJsVar('wmsLocationsUrl', Url::to(['ajax/wms-locations']));
+$this->registerJsVar('saveLocationUrl', Url::to(['trn-gudang-jadi/save-location']));
 
 $this->registerJs($this->renderFile(__DIR__.'/js/index.js'), View::POS_END);
 // Define a global JavaScript variable with the base URL
