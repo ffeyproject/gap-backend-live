@@ -21,6 +21,8 @@ if($model->status === $model::STATUS_DRAFT){
     $canCreateItem = true;
 }
 
+$canDeleteItem = ($model->status === $model::STATUS_DELIVERED);
+
 $dataProviderTubeKiri = new ActiveDataProvider([
     'query' => $model->getTrnKartuProsesPfpItemsTubeKiri(),
     'pagination' => false,
@@ -37,13 +39,25 @@ $dataProviderTubeKanan = new ActiveDataProvider([
     <div class="box-header with-border">
         <h3 class="box-title">ITEMS</h3>
         <div class="box-tools pull-right">
-            <?=$canCreateItem ? Html::a('<i class="glyphicon glyphicon-plus"></i>', ['/trn-kartu-proses-pfp-item/create', 'processId' => $model->id], [
-                'class' => 'btn btn-xs btn-success',
-                'title' => 'Add Items',
-                'data-toggle'=>"modal",
-                'data-target'=>"#kartuProsesPfpModal",
-                'data-title' => 'Add Items'
-            ]) : ''?>
+            <?php
+            if ($canCreateItem) {
+                echo Html::a('<i class="glyphicon glyphicon-plus"></i>', ['/trn-kartu-proses-pfp-item/create', 'processId' => $model->id], [
+                    'class' => 'btn btn-xs btn-success',
+                    'title' => 'Add Items',
+                    'data-toggle'=>"modal",
+                    'data-target'=>"#kartuProsesPfpModal",
+                    'data-title' => 'Add Items'
+                ]);
+            } elseif ($canDeleteItem) {
+                echo Html::a('<i class="glyphicon glyphicon-plus"></i> Tambah Roll Baru', ['/trn-kartu-proses-pfp-item/add-create', 'processId' => $model->id], [
+                    'class' => 'btn btn-xs btn-success',
+                    'title' => 'Tambah Roll Baru',
+                    'data-toggle'=>"modal",
+                    'data-target'=>"#kartuProsesPfpModal",
+                    'data-title' => 'Tambah Roll Baru'
+                ]);
+            }
+            ?>
         </div>
     </div>
     <div class="box-body">
@@ -147,8 +161,24 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         [
                             'class' => 'kartik\grid\ActionColumn',
                             'controller' => 'trn-kartu-proses-pfp-item',
-                            'template' => '{delete} {print}',
+                            'template' => $canCreateItem ? '{delete}' : ($canDeleteItem ? '{delete-item}' : ''),
                             'buttons' => [
+                                'delete-item' => function ($url, $model, $key) use ($canDeleteItem) {
+                                    if ($canDeleteItem) {
+                                        return Html::a(
+                                            '<span class="glyphicon glyphicon-trash"></span>',
+                                            ['/trn-kartu-proses-pfp-item/delete-item', 'id' => $model->id],
+                                            [
+                                                'data-toggle' => 'modal',
+                                                'data-target' => '#kartuProsesPfpModal',
+                                                'data-title' => 'Hapus Roll ID: ' . $model->id,
+                                                'class' => 'btn btn-xs btn-danger',
+                                                'title' => 'Hapus Item (Pengurangan Qty Pcs)',
+                                            ]
+                                        );
+                                    }
+                                    return '';
+                                },
                                 'delete' => function($url, $model, $key) use($canCreateItem) {
                                     /* @var $model TrnKartuProsesPfpItem*/
                                     if($canCreateItem){
@@ -268,8 +298,24 @@ $dataProviderTubeKanan = new ActiveDataProvider([
                         [
                             'class' => 'kartik\grid\ActionColumn',
                             'controller' => 'trn-kartu-proses-pfp-item',
-                            'template' => '{delete} {print}',
+                            'template' => $canCreateItem ? '{delete}' : ($canDeleteItem ? '{delete-item}' : ''),
                             'buttons' => [
+                                'delete-item' => function ($url, $model, $key) use ($canDeleteItem) {
+                                    if ($canDeleteItem) {
+                                        return Html::a(
+                                            '<span class="glyphicon glyphicon-trash"></span>',
+                                            ['/trn-kartu-proses-pfp-item/delete-item', 'id' => $model->id],
+                                            [
+                                                'data-toggle' => 'modal',
+                                                'data-target' => '#kartuProsesPfpModal',
+                                                'data-title' => 'Hapus Roll ID: ' . $model->id,
+                                                'class' => 'btn btn-xs btn-danger',
+                                                'title' => 'Hapus Item (Pengurangan Qty Pcs)',
+                                            ]
+                                        );
+                                    }
+                                    return '';
+                                },
                                 'delete' => function($url, $model, $key) use($canCreateItem) {
                                     /* @var $model TrnKartuProsesPfpItem*/
                                     if($canCreateItem){

@@ -102,6 +102,8 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
             echo '';
     }
     ?>
+
+    <?php echo $this->render('child/history', ['model' => $model]);?>
 </div>
 
 <?php

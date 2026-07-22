@@ -519,5 +519,13 @@ class TrnKartuProsesPfp extends \yii\db\ActiveRecord
             return '-';
         }
     }
-    
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPfpItemLogs()
+    {
+        return $this->hasMany(TrnKartuProsesPfpItemLog::class, ['kartu_process_id' => 'id'])
+            ->orderBy(['created_at' => SORT_DESC]);
+    }
 }
