@@ -292,7 +292,7 @@ $joinPieces = [
                             echo '<span class="label label-success">Received</span>';
                         }else{
                             if($item['is_head'] == 1){
-                                echo '<input type="checkbox" name="cbItms-'.$item->id.'" value="1" checked>';
+                                echo '<input type="checkbox" name="cbItms-'.$item->id.'" value="1">';
                             }
                         }
                         ?>
