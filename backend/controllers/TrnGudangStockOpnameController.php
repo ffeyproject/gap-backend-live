@@ -1013,7 +1013,16 @@ class TrnGudangStockOpnameController extends Controller
         if (Yii::$app->request->isAjax) {
             $query = \common\models\ar\HistoryMigrasiWjl::find()
                 ->joinWith(['greige']) 
-                ->orderBy(['created_at' => SORT_DESC]);
+                ->orderBy(['history_migrasi_wjl.created_at' => SORT_DESC]);
+
+            $searchMotif = Yii::$app->request->get('search_motif');
+            if (!empty($searchMotif)) {
+                $query->andWhere([
+                    'or',
+                    ['ilike', 'mst_greige.nama_kain', $searchMotif],
+                    ['ilike', 'mst_greige.alias', $searchMotif]
+                ]);
+            }
 
             $dataProvider = new \yii\data\ActiveDataProvider([
                 'query' => $query,
