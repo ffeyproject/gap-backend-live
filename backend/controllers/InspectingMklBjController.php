@@ -130,7 +130,7 @@ class InspectingMklBjController extends Controller
                                         $defectItem = new DefectInspectingItem([
                                             'inspecting_mklbj_item_id' => $modelItem->id,
                                             'mst_kode_defect_id' => $mstDefect->id,
-                                            'meterage' => 0,
+                                            'meterage' => $modelItem->qty,
                                             'point' => 0,
                                         ]);
                                         if (!$defectItem->save(false)) {
@@ -375,14 +375,19 @@ class InspectingMklBjController extends Controller
                                 $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
                                 if ($mstDefect) {
                                     if (isset($existingDefects[$mstDefect->id])) {
-                                        // Sudah ada, biarkan saja (pertahankan meterage dan point)
+                                        // Sudah ada, update meterage agar sesuai qty yang baru
+                                        $defectItem = $existingDefects[$mstDefect->id];
+                                        $defectItem->meterage = $targetItem->qty;
+                                        if (!$defectItem->save(false)) {
+                                            throw new HttpException(500, 'Gagal simpan defect item.');
+                                        }
                                         $processedDefectIds[] = $mstDefect->id;
                                     } else {
-                                        // Defect baru, buat dengan nilai 0
+                                        // Defect baru, buat dengan meterage sesuai qty item
                                         $defectItem = new DefectInspectingItem([
                                             'inspecting_mklbj_item_id' => $targetItem->id,
                                             'mst_kode_defect_id' => $mstDefect->id,
-                                            'meterage' => 0,
+                                            'meterage' => $targetItem->qty,
                                             'point' => 0,
                                         ]);
                                         if (!$defectItem->save(false)) {
@@ -575,14 +580,19 @@ class InspectingMklBjController extends Controller
                                 $mstDefect = MstKodeDefect::findOne(['no_urut' => trim($defectNoUrut)]);
                                 if ($mstDefect) {
                                     if (isset($existingDefects[$mstDefect->id])) {
-                                        // Sudah ada, biarkan saja (pertahankan meterage dan point)
+                                        // Sudah ada, update meterage agar sesuai qty yang baru
+                                        $defectItem = $existingDefects[$mstDefect->id];
+                                        $defectItem->meterage = $query_one->qty;
+                                        if (!$defectItem->save(false)) {
+                                            throw new HttpException(500, 'Gagal simpan defect item.');
+                                        }
                                         $processedDefectIds[] = $mstDefect->id;
                                     } else {
-                                        // Defect baru, buat dengan nilai 0
+                                        // Defect baru, buat dengan meterage sesuai qty item
                                         $defectItem = new DefectInspectingItem([
                                             'inspecting_mklbj_item_id' => $query_one->id,
                                             'mst_kode_defect_id' => $mstDefect->id,
-                                            'meterage' => 0,
+                                            'meterage' => $query_one->qty,
                                             'point' => 0,
                                         ]);
                                         if (!$defectItem->save(false)) {
