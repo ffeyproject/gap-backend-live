@@ -100,6 +100,9 @@ class InspectingMklBjController extends Controller
                             $model->detachBehavior($name);
                         }
                     }
+                    if (empty($model->created_by)) {
+                        $model->created_by = (int)Yii::$app->user->id;
+                    }
                     $model->updated_by = (int)Yii::$app->user->id;
 
                     $transaction = Yii::$app->db->beginTransaction();
@@ -292,6 +295,9 @@ class InspectingMklBjController extends Controller
                         if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
                             $model->detachBehavior($name);
                         }
+                    }
+                    if (empty($model->created_by)) {
+                        $model->created_by = (int)Yii::$app->user->id;
                     }
                     $model->updated_by = (int)Yii::$app->user->id;
 
