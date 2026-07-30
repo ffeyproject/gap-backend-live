@@ -219,9 +219,15 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             'jenisInspeksi',
                             'satuanName',
                             'created_at:datetime',
-                            'created_by',
+                            [
+                                'label' => 'Inspector',
+                                'value' => $model->createdBy ? $model->createdBy->full_name : '-',
+                            ],
                             'updated_at:datetime',
-                            'updated_by',
+                            [
+                                'label' => 'Updated By',
+                                'value' => $model->updatedBy ? $model->updatedBy->full_name : '-',
+                            ],
                             'statusName',
                         ],
                     ]) ?>

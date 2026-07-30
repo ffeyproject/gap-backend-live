@@ -95,6 +95,13 @@ class InspectingMklBjController extends Controller
 
             if ($model->load(Yii::$app->request->post())) {
                 if ($model->validate()) {
+                    foreach ($model->getBehaviors() as $name => $behavior) {
+                        if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
+                            $model->detachBehavior($name);
+                        }
+                    }
+                    $model->updated_by = (int)Yii::$app->user->id;
+
                     $transaction = Yii::$app->db->beginTransaction();
                     try {
                         if (!($flag = $model->save(false))) {
@@ -281,6 +288,13 @@ class InspectingMklBjController extends Controller
 
             if ($model->load(Yii::$app->request->post())) {
                 if ($model->validate()) {
+                    foreach ($model->getBehaviors() as $name => $behavior) {
+                        if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
+                            $model->detachBehavior($name);
+                        }
+                    }
+                    $model->updated_by = (int)Yii::$app->user->id;
+
                     $transaction = Yii::$app->db->beginTransaction();
                     try {
                         if (!($flag = $model->save(false))) {

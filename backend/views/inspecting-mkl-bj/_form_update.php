@@ -148,6 +148,14 @@ use yii\helpers\ArrayHelper;
                         ],
                         'data' => MstK3l::optionList(),
                     ])->label('K3l Code') ?>
+
+                    <?= $formHeader->field($model, 'created_by')->widget(Select2::className(), [
+                        'options' => ['placeholder' => 'Pilih Inspector...'],
+                        'pluginOptions' => [
+                            'allowClear' => true,
+                        ],
+                        'data' => \common\models\User::getInspectorList(),
+                    ])->label('Inspector') ?>
                 </div>
 
                 <div class="col-md-6">

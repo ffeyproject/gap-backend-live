@@ -98,8 +98,8 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     public function behaviors()
     {
         return [
-            TimestampBehavior::class,
-            BlameableBehavior::class
+            'timestamp' => TimestampBehavior::class,
+            'blameable' => BlameableBehavior::class
         ];
     }
 
@@ -109,12 +109,13 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['wo_id', 'wo_color_id', 'tgl_inspeksi', 'tgl_kirim', 'no_lot', 'jenis', 'satuan', 'k3l_code', 'jenis_inspek'], 'required'],
+            [['wo_id', 'wo_color_id', 'tgl_inspeksi', 'tgl_kirim', 'no_lot', 'jenis', 'satuan', 'k3l_code', 'jenis_inspek', 'created_by'], 'required'],
             [['wo_color_id', 'jenis', 'satuan', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
             [['wo_id', 'wo_color_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status', 'delivered_at', 'delivered_by'], 'integer'],
             [['tgl_inspeksi', 'tgl_kirim', 'delivery_reject_note', 'defect'], 'safe'],
             [['no_lot', 'defect'], 'string', 'max' => 255],
             [['k3l_code'], 'exist', 'skipOnError' => true, 'targetClass' => MstK3l::className(), 'targetAttribute' => ['k3l_code' => 'k3l_code']],
+            [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
 
             [['no_memo', 'note'], 'string', 'max' => 255],
 
@@ -151,7 +152,7 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             'no_memo' => 'No Memo',
             'satuan' => 'Satuan',
             'created_at' => 'Created At',
-            'created_by' => 'Created By',
+            'created_by' => 'Inspector',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
             'status' => 'Status',
@@ -168,6 +169,22 @@ class InspectingMklBj extends \yii\db\ActiveRecord
             'greigeName' => 'Motif',
             'defect'=> 'Defect'
         ];
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCreatedBy()
+    {
+        return $this->hasOne(User::className(), ['id' => 'created_by']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUpdatedBy()
+    {
+        return $this->hasOne(User::className(), ['id' => 'updated_by']);
     }
 
     /**
