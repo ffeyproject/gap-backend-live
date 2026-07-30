@@ -24,6 +24,7 @@ use yii\web\IdentityInterface;
  * @property string $password write-only password
  * @property string $full_name
  * @property string $signature
+ * @property boolean $is_inspector
  *
  * @property Role[] $roles
  * @property string $signatureUrl
@@ -69,7 +70,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['auth_key'], 'string', 'max' => 32],
             [['email'], 'unique'],
             [['username'], 'unique'],
-            [['status_notif_email'], 'boolean'],
+            [['status_notif_email', 'is_inspector'], 'boolean'],
 
             [['password', 'password_repeat'], 'string', 'min' => 6],
             [['password_repeat'], 'compare', 'compareAttribute' => 'password'],

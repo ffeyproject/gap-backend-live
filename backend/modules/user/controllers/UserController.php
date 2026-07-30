@@ -30,6 +30,7 @@ class UserController extends Controller
                     'delete' => ['POST'],
                     'change-status' => ['POST'],
                     'change-status-aktif' => ['POST'],
+                    'change-is-inspector' => ['POST'],
                 ],
             ],
         ];
@@ -156,6 +157,26 @@ class UserController extends Controller
             Yii::$app->session->setFlash('success', 'Status email notifikasi berhasil diperbarui.');
         } else {
             Yii::$app->session->setFlash('error', 'Gagal memperbarui status email notifikasi.');
+        }
+
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    public function actionChangeIsInspector($id)
+    {
+        $model = $this->findModel($id);
+
+        $isInspector = Yii::$app->request->post('is_inspector');
+        if ($isInspector !== null) {
+            $model->is_inspector = (bool) $isInspector;
+        } else {
+            $model->is_inspector = !$model->is_inspector;
+        }
+
+        if ($model->save(false, ['is_inspector'])) {
+            Yii::$app->session->setFlash('success', 'Status inspector berhasil diperbarui.');
+        } else {
+            Yii::$app->session->setFlash('error', 'Gagal memperbarui status inspector.');
         }
 
         return $this->redirect(['view', 'id' => $model->id]);

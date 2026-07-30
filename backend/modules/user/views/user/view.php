@@ -105,6 +105,25 @@ $animateIcon = ' <i class="glyphicon glyphicon-refresh glyphicon-refresh-animate
                         ],
 
                         [
+                            'label' => 'Is Inspector',
+                            'format' => 'raw',
+                            'value' => function($model) {
+                                $isInspector = (bool) $model->is_inspector;
+                                return Html::beginForm(['change-is-inspector', 'id' => $model->id], 'post', ['style' => 'display:inline-block; margin:0;'])
+                                    . Html::hiddenInput('is_inspector', 0)
+                                    . '<label style="cursor:pointer; font-weight:normal; margin:0;">'
+                                    . Html::checkbox('is_inspector', $isInspector, [
+                                        'value' => 1,
+                                        'onchange' => '$(this).closest("form").submit();',
+                                        'style' => 'margin-right: 5px; vertical-align: middle;'
+                                    ])
+                                    . ($isInspector ? '<span class="label label-success"><i class="glyphicon glyphicon-check"></i> Inspector</span>' : '<span class="label label-default"><i class="glyphicon glyphicon-unchecked"></i> Bukan Inspector</span>')
+                                    . '</label>'
+                                    . Html::endForm();
+                            },
+                        ],
+
+                        [
                             'label' => 'Change Status',
                             'format' => 'raw',
                             'value' => function($model) {

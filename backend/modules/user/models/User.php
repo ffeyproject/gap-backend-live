@@ -74,6 +74,7 @@ public $password_repeat;
             'verification_token' => 'Verification Token',
             'signature' => 'Signature',
             'phone_number' => 'Phone Number',
+            'is_inspector' => 'Is Inspector',
         ];
     }
 
