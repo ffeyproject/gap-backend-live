@@ -93,6 +93,16 @@ use yii\helpers\Url;
                             </td>
                         </tr>
                         <tr>
+                            <th>Inspector</th>
+                            <td id="inspector_id">
+                                <?= $formHeader->field($modelHeader, 'created_by')->widget(Select2::class, [
+                                    'options' => ['placeholder' => 'Pilih Inspector...'],
+                                    'pluginOptions' => ['allowClear' => true],
+                                    'data' => \common\models\User::getInspectorList(),
+                                ])->label(false) ?>
+                            </td>
+                        </tr>
+                        <tr>
                             <th>No. WO</th>
                             <td id="NoWo"><?= $model->wo->no ?></td>
                         </tr>

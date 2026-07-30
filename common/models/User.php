@@ -101,6 +101,23 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * @return array
+     */
+    public static function getInspectorList()
+    {
+        $users = static::find()
+            ->where(['status' => static::STATUS_ACTIVE, 'is_inspector' => true])
+            ->orderBy(['full_name' => SORT_ASC, 'username' => SORT_ASC])
+            ->all();
+
+        $list = [];
+        foreach ($users as $user) {
+            $list[$user->id] = !empty($user->full_name) ? $user->full_name . ' (' . $user->username . ')' : $user->username;
+        }
+        return $list;
+    }
+
+    /**
      * Finds user by username
      *
      * @param string $username

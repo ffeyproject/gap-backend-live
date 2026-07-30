@@ -190,6 +190,14 @@ class TrnInspectingController extends Controller
                 $modelInspecting->unit = $modelHeader->status;
                 $modelInspecting->jenis_inspek = $modelHeader->jenis_inspek;
 
+                foreach ($modelInspecting->getBehaviors() as $name => $behavior) {
+                    if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
+                        $modelInspecting->detachBehavior($name);
+                    }
+                }
+                $modelInspecting->created_by = (int)$modelHeader->created_by;
+                $modelInspecting->updated_by = (int)Yii::$app->user->id;
+
                 //throw new ForbiddenHttpException(Json::encode(Yii::$app->request->post()));
 
                 $transaction = Yii::$app->db->beginTransaction();
@@ -350,6 +358,7 @@ class TrnInspectingController extends Controller
             'no_lot' => $model->no_lot,
             'defect' => $model->defect,
             'status' => $model->unit,
+            'created_by' => $model->created_by,
         ]);
 
         $nomorKartu = '';
@@ -483,6 +492,14 @@ class TrnInspectingController extends Controller
                 $modelInspecting->tanggal_inspeksi = $modelHeader->tgl_inspeksi;
                 $modelInspecting->date = $modelHeader->tgl_kirim;
                 $modelInspecting->unit = $modelHeader->status;
+
+                foreach ($modelInspecting->getBehaviors() as $name => $behavior) {
+                    if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
+                        $modelInspecting->detachBehavior($name);
+                    }
+                }
+                $modelInspecting->created_by = (int)$modelHeader->created_by;
+                $modelInspecting->updated_by = (int)Yii::$app->user->id;
 
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
@@ -631,6 +648,7 @@ class TrnInspectingController extends Controller
             'defect'        => $model->defect,
             'status'        => $model->unit,
             'jenis_inspek'  => $model->jenis_inspek,
+            'created_by'    => $model->created_by,
         ]);
 
         $nomorKartu = '';
@@ -759,6 +777,14 @@ class TrnInspectingController extends Controller
                 $modelInspecting->unit            = $modelHeader->status;
                 $modelInspecting->k3l_code        = $modelHeader->k3l_code;
                 $modelInspecting->jenis_inspek    = $modelHeader->jenis_inspek;
+
+                foreach ($modelInspecting->getBehaviors() as $name => $behavior) {
+                    if ($behavior instanceof \yii\behaviors\BlameableBehavior) {
+                        $modelInspecting->detachBehavior($name);
+                    }
+                }
+                $modelInspecting->created_by = (int)$modelHeader->created_by;
+                $modelInspecting->updated_by = (int)Yii::$app->user->id;
 
                 $transaction = Yii::$app->db->beginTransaction();
 

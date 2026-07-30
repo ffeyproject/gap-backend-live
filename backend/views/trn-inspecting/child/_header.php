@@ -133,7 +133,7 @@ use yii\widgets\DetailView;
                         ],
                         'created_at:datetime',
                         [
-                            'label'=>'Created By',
+                            'label'=>'Inspector',
                             'value'=>$model->createdBy->full_name,
                             'format'=>'raw'
                         ],

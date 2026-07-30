@@ -98,8 +98,8 @@ class TrnInspecting extends \yii\db\ActiveRecord
     public function behaviors()
     {
         return [
-            TimestampBehavior::class,
-            BlameableBehavior::class
+            'timestamp' => TimestampBehavior::class,
+            'blameable' => BlameableBehavior::class
         ];
     }
 
@@ -181,7 +181,7 @@ class TrnInspecting extends \yii\db\ActiveRecord
             'unit' => 'Unit',
             'jenis_inspek' => 'Jenis Inspeksi',
             'created_at' => 'Created At',
-            'created_by' => 'Created By',
+            'created_by' => 'Inspector',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
             'approved_at' => 'Approved At',
