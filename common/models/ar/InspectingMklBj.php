@@ -110,15 +110,6 @@ class InspectingMklBj extends \yii\db\ActiveRecord
     {
         return [
             [['wo_id', 'wo_color_id', 'tgl_inspeksi', 'tgl_kirim', 'no_lot', 'jenis', 'satuan', 'k3l_code', 'jenis_inspek'], 'required'],
-            [
-                ['created_by'], 'required',
-                'when' => function($model) {
-                    return $model->jenis == self::JENIS_FRESH;
-                },
-                'whenClient' => "function (attribute, value) {
-                    return $('#inspectingmklbj-jenis').val() == '" . self::JENIS_FRESH . "';
-                }"
-            ],
             [['wo_color_id', 'jenis', 'satuan', 'created_at', 'created_by', 'updated_at', 'updated_by', 'delivered_at', 'delivered_by'], 'default', 'value' => null],
             [['wo_id', 'wo_color_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status', 'delivered_at', 'delivered_by'], 'integer'],
             [['tgl_inspeksi', 'tgl_kirim', 'delivery_reject_note', 'defect'], 'safe'],
