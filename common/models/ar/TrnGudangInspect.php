@@ -52,7 +52,7 @@ class TrnGudangInspect extends ActiveRecord
      */
     public function getPfpJenisGudangName()
     {
-        return $this->pfp_jenis_gudang !== null ? self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang] : '';
+        return ($this->pfp_jenis_gudang !== null && isset(self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang])) ? self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang] : '';
     }
 
     const ASAL_GREIGE_WJL = 1;

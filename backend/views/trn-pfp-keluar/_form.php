@@ -200,7 +200,7 @@ if(!$model->isNewRecord){
                     'attribute'=>'grade',
                     'value'=>function($data){
                         /* @var $data TrnStockGreige*/
-                        return $data::gradeOptions()[$data->grade];
+                        return isset($data::gradeOptions()[$data->grade]) ? $data::gradeOptions()[$data->grade] : '-';
                     },
                     'filterType' => GridView::FILTER_SELECT2,
                     'filterWidgetOptions' => [
@@ -224,7 +224,7 @@ if(!$model->isNewRecord){
                     'attribute'=>'status',
                     'value'=>function($data){
                         /* @var $data TrnStockGreige*/
-                        return $data::statusOptions()[$data->status];
+                        return isset($data::statusOptions()[$data->status]) ? $data::statusOptions()[$data->status] : '-';
                     },
                     'filterType' => GridView::FILTER_SELECT2,
                     'filterWidgetOptions' => [
@@ -239,7 +239,7 @@ if(!$model->isNewRecord){
                     'attribute'=>'asal_greige',
                     'value'=>function($data){
                         /* @var $data TrnStockGreige*/
-                        return $data::asalGreigeOptions()[$data->asal_greige];
+                        return ($data->asal_greige !== null && isset($data::asalGreigeOptions()[$data->asal_greige])) ? $data::asalGreigeOptions()[$data->asal_greige] : '-';
                     },
                     'filterType' => GridView::FILTER_SELECT2,
                     'filterWidgetOptions' => [
@@ -254,7 +254,7 @@ if(!$model->isNewRecord){
                     'attribute'=>'pfp_jenis_gudang',
                     'value'=>function($data){
                         /* @var $data TrnStockGreige*/
-                        return $data::pfpJenisGudangOptions()[$data->pfp_jenis_gudang];
+                        return ($data->pfp_jenis_gudang !== null && isset($data::pfpJenisGudangOptions()[$data->pfp_jenis_gudang])) ? $data::pfpJenisGudangOptions()[$data->pfp_jenis_gudang] : '-';
                     },
                     'filterType' => GridView::FILTER_SELECT2,
                     'filterWidgetOptions' => [
