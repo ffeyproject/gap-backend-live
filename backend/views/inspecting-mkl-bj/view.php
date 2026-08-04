@@ -146,13 +146,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                     ]).' ';
                 break;
             default:
-                if ($hasPostedItemsNotReceived) {
+                if ($hasDraftItems || $hasPostedItemsNotReceived) {
                     echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';
                 }
                 break;
         }
 
-        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_POSTED || $model->status == $model::STATUS_POSTED_PARTIAL) {
+        if ($model->status == $model::STATUS_DRAFT || $model->status == $model::STATUS_POSTED || $model->status == $model::STATUS_POSTED_PARTIAL || $model->status == $model::STATUS_DELIVERED) {
             if ($hasDraftItems) {
                 $isAnyPrinted = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->andWhere(['not', ['qr_print_at' => null]])->exists();
                 if($isAnyPrinted || \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => true])->exists()){

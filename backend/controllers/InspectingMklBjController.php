@@ -72,8 +72,32 @@ class InspectingMklBjController extends Controller
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+
+        if ($model->status != InspectingMklBj::STATUS_DRAFT) {
+            $hasUnposted = InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+            $hasUnreceivedHead = InspectingMklBjItems::find()
+                ->alias('it')
+                ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+                ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1])
+                ->andWhere(['gj.id' => null])
+                ->exists();
+
+            if ($hasUnposted || $hasUnreceivedHead) {
+                if ($model->status != InspectingMklBj::STATUS_POSTED_PARTIAL) {
+                    $model->status = InspectingMklBj::STATUS_POSTED_PARTIAL;
+                    $model->save(false, ['status']);
+                }
+            } else {
+                if ($model->status != InspectingMklBj::STATUS_DELIVERED) {
+                    $model->status = InspectingMklBj::STATUS_DELIVERED;
+                    $model->save(false, ['status']);
+                }
+            }
+        }
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
@@ -226,6 +250,8 @@ class InspectingMklBjController extends Controller
         $model = $this->findModel($id);
         $modelItem = new InspectingMklBjItems();
 
+        $hasDraftItems = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+
         $hasPostedItemsNotReceived = \common\models\ar\InspectingMklBjItems::find()
             ->alias('it')
             ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
@@ -233,7 +259,7 @@ class InspectingMklBjController extends Controller
             ->andWhere(['gj.id' => null])
             ->exists();
 
-        if ($model->status != $model::STATUS_DRAFT && !$hasPostedItemsNotReceived) {
+        if ($model->status != $model::STATUS_DRAFT && !$hasPostedItemsNotReceived && !$hasDraftItems) {
             Yii::$app->session->setFlash('error', 'Status tidak valid untuk diupdate.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -503,6 +529,21 @@ class InspectingMklBjController extends Controller
                                     : $qtyCount);
 
                             $row->save(false);
+                        }
+
+                        if ($model->status == $model::STATUS_DELIVERED || $model->status == $model::STATUS_POSTED) {
+                            $hasUnposted = InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+                            $hasUnreceivedHead = InspectingMklBjItems::find()
+                                ->alias('it')
+                                ->leftJoin('trn_gudang_jadi gj', 'gj.id_from = it.id AND gj.trans_from = \'MKL\'')
+                                ->where(['it.inspecting_id' => $model->id, 'it.is_head' => 1])
+                                ->andWhere(['gj.id' => null])
+                                ->exists();
+
+                            if ($hasUnposted || $hasUnreceivedHead) {
+                                $model->status = $model::STATUS_POSTED_PARTIAL;
+                                $model->save(false, ['status']);
+                            }
                         }
 
                         $transaction->commit();
