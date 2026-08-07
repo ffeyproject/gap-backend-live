@@ -228,6 +228,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <?php
                                         $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
+                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
                                         
                                         if($item['qty'] > 0){
                                             // akumulasi hanya berlaku jika qty > 0
@@ -256,7 +257,6 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             }
 
                                         }
-                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
@@ -437,6 +437,7 @@ $indexLimit = round(count($inspectingItems) / 2);
                                     ?>
                                         <?php
                                         $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
+                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
 
                                         if($item['qty'] > 0){
                                             // akumulasi hanya berlaku jika qty > 0
@@ -465,7 +466,6 @@ $indexLimit = round(count($inspectingItems) / 2);
                                             }
 
                                         }
-                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
                                     ?>
                                         <tr>
                                             <td class="bordered" style="text-align: center;">
