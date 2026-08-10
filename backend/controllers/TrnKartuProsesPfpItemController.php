@@ -458,12 +458,15 @@ class TrnKartuProsesPfpItemController extends Controller
         $model->greige_id       = $kartuProses->greige_id;
         $model->order_pfp_id    = $kartuProses->order_pfp_id;
 
-        // Ambil data stock valid
+        // Ambil data stock valid yang sesuai dengan greige kartu proses
         $searchModel = new \common\models\search\TrnStockGreigeSearch();
         $stocks = $searchModel->search(Yii::$app->request->queryParams);
-        $stocks->query->andWhere(['status' => TrnStockGreige::STATUS_VALID]);
+        $stocks->query->andWhere([
+            's.status' => TrnStockGreige::STATUS_VALID,
+            's.greige_id' => $kartuProses->greige_id,
+        ]);
 
-        $greigeName = isset($model->greige->nama_kain) ? $model->greige->nama_kain : '-';
+        $greigeName = isset($kartuProses->greige->nama_kain) ? $kartuProses->greige->nama_kain : (isset($model->greige->nama_kain) ? $model->greige->nama_kain : '-');
         $searchHint = "Mencari roll greige untuk kain {$greigeName} dengan status VALID.";
 
         if ($model->load(Yii::$app->request->post())) {
