@@ -253,14 +253,14 @@ echo AjaxModal::widget([
                     ],
                 ],
             ],*/
-            'is_pemotongan:boolean',
-            'is_hasil_mix:boolean',
+            //'is_pemotongan:boolean',
+            //'is_hasil_mix:boolean',
             //'pengirim',
             //'mengetahui',
             //'note:ntext',
-            //'created_at',
+            'created_at:datetime',
             //'created_by',
-            //'updated_at',
+            'updated_at:datetime',
             //'updated_by',
         ],
     ]); ?>
@@ -331,4 +331,4 @@ var greigeId = undefined;
 var greigeGrade = undefined;
 JS;
 //$this->registerJsVar('actionUrl', $actionUrl);
-$this->registerJs($js.$this->render('js/index.js'), View::POS_END);
+$this->registerJs($js.$this->render('js/index.js'), View::POS_END);
