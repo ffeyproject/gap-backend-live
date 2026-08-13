@@ -223,6 +223,7 @@ echo AjaxModal::widget([
             //'created_by',
             'updated_at:datetime',
             [
+                'attribute' => 'updated_at',
                 'label' => 'Tanggal Out',
                 'value' => function($model) {
                     /* @var $model TrnStockGreige */
