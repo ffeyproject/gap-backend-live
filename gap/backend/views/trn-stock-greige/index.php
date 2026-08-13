@@ -222,6 +222,16 @@ echo AjaxModal::widget([
             'created_at:datetime',
             //'created_by',
             'updated_at:datetime',
+            [
+                'label' => 'Tanggal Out',
+                'value' => function($model) {
+                    /* @var $model TrnStockGreige */
+                    if ($model->status != $model::STATUS_VALID && !empty($model->updated_at)) {
+                        return Yii::$app->formatter->asDatetime($model->updated_at);
+                    }
+                    return '';
+                },
+            ],
             //'updated_by',
         ],
     ]); ?>
