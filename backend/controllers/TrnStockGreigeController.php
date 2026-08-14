@@ -577,10 +577,52 @@ class TrnStockGreigeController extends Controller
                 ['in', 'id', $ids]
             )->execute();
 
+            // Juga update status_tsd pada TrnStockGreigeOpname yang terhubung
+            Yii::$app->db->createCommand()->update(
+                TrnStockGreigeOpname::tableName(),
+                ['status_tsd'=>$ketWeaving],
+                ['in', 'stock_greige_id', $ids]
+            )->execute();
+
             return ['ids'=>$ids, 'status_tsd'=>$ketWeaving];
         }
 
         throw new ForbiddenHttpException('Hanya ajajx call yang diizinkan.');
+    }
+
+    public function actionSyncStatusOpname()
+    {
+        if (!Yii::$app->request->isAjax || !Yii::$app->request->isPost) {
+            throw new ForbiddenHttpException('Method tidak diizinkan.');
+        }
+
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $ids = Yii::$app->request->post('ids', []);
+
+        if (!empty($ids) && is_array($ids)) {
+            $idsClean = implode(',', array_map('intval', $ids));
+            $updated = Yii::$app->db->createCommand("
+                UPDATE trn_stock_greige_opname o
+                SET status_tsd = s.status_tsd
+                FROM trn_stock_greige s
+                WHERE o.stock_greige_id = s.id
+                AND o.stock_greige_id IN ($idsClean)
+                AND o.status_tsd <> s.status_tsd
+            ")->execute();
+        } else {
+            $updated = Yii::$app->db->createCommand("
+                UPDATE trn_stock_greige_opname o
+                SET status_tsd = s.status_tsd
+                FROM trn_stock_greige s
+                WHERE o.stock_greige_id = s.id
+                AND o.status_tsd <> s.status_tsd
+            ")->execute();
+        }
+
+        return [
+            'status' => true,
+            'message' => "Berhasil menyelaraskan $updated data status Keterangan Weaving di Stock Opname."
+        ];
     }
 
     /**

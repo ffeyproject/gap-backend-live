@@ -82,6 +82,12 @@ echo AjaxModal::widget([
                     'onclick' => 'duplicateStock(event);',
                     'title' => 'Duplikat Stock ke Stock Opname'
                 ]).
+                Html::a('<i class="glyphicon glyphicon-refresh"></i> Sync Status ke Opname', ['sync-status-opname'], [
+                    'class' => 'btn btn-info',
+                    'style' => 'margin-right:5px;',
+                    'onclick' => 'syncStatusOpname(event);',
+                    'title' => 'Samakan Status Keterangan Weaving Stock Opname dengan Stock Fresh'
+                ]).
                 Html::a('<i class="glyphicon glyphicon-duplicate"></i> Duplikat Stock Opname Stock Retur', ['duplicate-retur'], [
                     'class' => 'btn btn-danger',
                     'style' => 'margin-right:5px;',
@@ -253,7 +259,24 @@ echo AjaxModal::widget([
                     ],
                 ],
             ],*/
-            //'is_pemotongan:boolean',
+            [
+                'attribute' => 'is_pemotongan',
+                'format' => 'boolean',
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => [true => 'Ya', false => 'Tidak'],
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => ['allowClear' => true],
+                ],
+            ],
+            [
+                'label' => 'Tanggal Dipotong',
+                'value' => function($model) {
+                    /* @var $model \common\models\ar\TrnStockGreige */
+                    return $model->tanggalDipotong;
+                },
+                'format' => 'date',
+            ],
             //'is_hasil_mix:boolean',
             //'pengirim',
             //'mengetahui',

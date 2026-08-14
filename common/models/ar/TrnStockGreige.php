@@ -355,4 +355,35 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         return $this->getOpname()->exists();
     }
 
+    public function getPotongGreige()
+    {
+        return $this->hasOne(TrnPotongGreige::class, ['stock_greige_id' => 'id']);
+    }
+
+    public function getPotongGreigeItem()
+    {
+        return $this->hasOne(TrnPotongGreigeItem::class, ['stock_greige_id' => 'id']);
+    }
+
+    public function getTanggalDipotong()
+    {
+        if ($this->is_pemotongan) {
+            $item = $this->potongGreigeItem;
+            if ($item && $item->potongGreige && !empty($item->potongGreige->date)) {
+                return $item->potongGreige->date;
+            }
+            return !empty($this->created_at) ? date('Y-m-d', $this->created_at) : null;
+        }
+
+        if ($this->status == self::STATUS_DIPOTONG) {
+            $potong = $this->potongGreige;
+            if ($potong && !empty($potong->date)) {
+                return $potong->date;
+            }
+            return !empty($this->updated_at) ? date('Y-m-d', $this->updated_at) : null;
+        }
+
+        return null;
+    }
+
 }

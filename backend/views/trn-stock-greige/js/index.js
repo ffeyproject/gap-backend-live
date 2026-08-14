@@ -519,3 +519,60 @@ $(document).on("submit", "#form-change-no-document", function (e) {
     },
   });
 });
+
+function syncStatusOpname(event) {
+  event.preventDefault();
+  let button = $(event.currentTarget);
+  let href = button.attr("href");
+
+  let keys = $("#StockGreigeGrid").yiiGridView("getSelectedRows");
+  let promptMsg = keys.length > 0
+    ? "Apakah Anda yakin ingin menyamakan Status Ket. Weaving untuk " + keys.length + " stock terpilih ke Stock Opname?"
+    : "Apakah Anda yakin ingin menyamakan SELURUH Status Ket. Weaving pada Stock Opname agar sama dengan Stock Fresh?";
+
+  $.confirm({
+    columnClass: "medium",
+    title: "Sync Status ke Stock Opname!",
+    content: promptMsg,
+    buttons: {
+      ya: {
+        btnClass: "btn-blue",
+        action: function () {
+          $.ajax({
+            method: "POST",
+            beforeSend: function () {
+              $.blockUI({
+                message: "<h1>Syncing...</h1>",
+                css: { border: "3px solid #a00" },
+              });
+            },
+            data: { ids: keys },
+            url: href,
+            error: function (jqXHR) {
+              $.unblockUI();
+              let msg = jqXHR.responseJSON ? jqXHR.responseJSON.message : jqXHR.responseText;
+              $.alert({ title: "Error", content: msg });
+            },
+            success: function (data) {
+              $.unblockUI();
+              if (data.status) {
+                $.alert({
+                  title: "Berhasil!",
+                  content: data.message,
+                  buttons: {
+                    ok: function () {
+                      $.pjax.reload({ container: "#StockGreigeGrid-pjax" });
+                    },
+                  },
+                });
+              } else {
+                $.alert({ title: "Gagal!", content: data.message });
+              }
+            },
+          });
+        },
+      },
+      batal: function () {},
+    },
+  });
+}
