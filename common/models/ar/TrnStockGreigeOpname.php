@@ -90,7 +90,7 @@ class TrnStockGreigeOpname extends \yii\db\ActiveRecord
         ];
     }
 
-     const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;const STATUS_TSD_PUTIH = 7;const STATUS_GETAR_MESIN = 8;
+     const STATUS_TSD_SM = 1;const STATUS_TSD_ST = 2;const STATUS_TSD_SA = 3;const STATUS_TSD_NORMAL = 4;const STATUS_TSD_LAIN_LAIN = 5;const STATUS_TSD_TSD = 6;const STATUS_TSD_PUTIH = 7;const STATUS_GETAR_MESIN = 8;const STATUS_GETAR_MESIN_TIPIS = 9;const STATUS_BELANG_PAKAN = 10;
     /**
      * @return array
      */
@@ -103,7 +103,9 @@ class TrnStockGreigeOpname extends \yii\db\ActiveRecord
             self::STATUS_TSD_LAIN_LAIN => 'Lain-lain',
             self::STATUS_TSD_TSD=>'TSD',
             self::STATUS_TSD_PUTIH => 'Putih',
-            self::STATUS_GETAR_MESIN => 'Getaran Mesin'
+            self::STATUS_GETAR_MESIN => 'Getaran Mesin',
+            self::STATUS_GETAR_MESIN_TIPIS => 'Getaran Mesin Tipis',
+            self::STATUS_BELANG_PAKAN => 'Belang Pakan'
         ];
     }
 
