@@ -124,7 +124,7 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
 
     <p>
         <?php
-        $hasDraftItems = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_posted' => false])->exists();
+        $hasDraftItems = \common\models\ar\InspectingMklBjItems::find()->where(['inspecting_id' => $model->id, 'is_head' => 1, 'is_posted' => false])->exists();
 
         $hasPostedItemsNotReceived = \common\models\ar\InspectingMklBjItems::find()
             ->alias('it')
@@ -144,6 +144,11 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             'method' => 'post',
                         ],
                     ]).' ';
+                break;
+            case $model::STATUS_POSTED_PARTIAL:
+            case $model::STATUS_POSTED:
+            case $model::STATUS_DELIVERED:
+                echo Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']).' ';
                 break;
             default:
                 if ($hasDraftItems || $hasPostedItemsNotReceived) {
@@ -301,19 +306,26 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             ->orderBy($hasNoUrut ? 'no_urut ASC' : 'id ASC')
                             ->all();
                             
-                        $receivedItemIds = \common\models\ar\TrnGudangJadi::find()
-                            ->select('id_from')
+                        $gudangJadiRecords = \common\models\ar\TrnGudangJadi::find()
                             ->where(['id_from' => \yii\helpers\ArrayHelper::getColumn($items, 'id'), 'trans_from' => 'MKL'])
-                            ->column();
+                            ->all();
+
+                        $gudangJadiMap = [];
+                        foreach ($gudangJadiRecords as $gjRec) {
+                            $gudangJadiMap[$gjRec->id_from] = $gjRec;
+                        }
+                        $receivedItemIds = array_keys($gudangJadiMap);
 
                         $joinPieceToHeadId = [];
                         $joinPieceHasReceived = [];
+                        $joinPieceGudangJadiMap = [];
                         foreach ($items as $ii) {
                             if ($ii->is_head == 1 && !empty($ii->join_piece)) {
                                 $joinPieceToHeadId[$ii->join_piece] = $ii->id;
                             }
-                            if (!empty($ii->join_piece) && in_array($ii->id, $receivedItemIds)) {
+                            if (!empty($ii->join_piece) && isset($gudangJadiMap[$ii->id])) {
                                 $joinPieceHasReceived[$ii->join_piece] = true;
+                                $joinPieceGudangJadiMap[$ii->join_piece] = $gudangJadiMap[$ii->id];
                             }
                         }
                     ?>
@@ -527,11 +539,25 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                         <td style="width: 100px;"><?=$item['is_head'] == 1 ? $item['qr_code'] : ''?></td>
                         <td><?= $item['id'] ?></td>
                         <td style="width: 100px;"><?=$item['qr_print_at'] ? $item['qr_print_at'] : '-'?></td>
-                        <td><?=$item['posted_at'] ? $item['posted_at'] : '-'?></td>
                         <td>
                             <?php
-                                $isReceived = in_array($item->id, $receivedItemIds) || $item->qty <= 0;
-                                if (!$isReceived && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
+                                $tglPosting = '-';
+                                if ($item['is_posted']) {
+                                    if (!empty($item['posted_at'])) {
+                                        $tglPosting = $item['posted_at'];
+                                    } else if (isset($gudangJadiMap[$item['id']])) {
+                                        $tglPosting = $gudangJadiMap[$item['id']]->date;
+                                    } else if (!empty($item['join_piece']) && isset($joinPieceGudangJadiMap[$item['join_piece']])) {
+                                        $tglPosting = $joinPieceGudangJadiMap[$item['join_piece']]->date;
+                                    }
+                                }
+                                echo $tglPosting;
+                            ?>
+                        </td>
+                        <td>
+                            <?php
+                                $isReceived = $item->is_posted && (in_array($item->id, $receivedItemIds) || $item->qty <= 0);
+                                if (!$isReceived && $item->is_posted && !empty($item->join_piece) && isset($joinPieceHasReceived[$item->join_piece])) {
                                     $isReceived = true;
                                 }
 
