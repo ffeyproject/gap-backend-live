@@ -5,13 +5,14 @@ namespace backend\controllers;
 use Yii;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use backend\models\TrnGudangJadiOpnamePcsSearch;
+use backend\models\StokOpnameGudangJadiRekapSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\web\Response;
 
 /**
- * StokOpnameGudangJadiController implements CRUD & view actions for TrnGudangJadiOpnamePcs model.
+ * StokOpnameGudangJadiController implements CRUD & Rekap actions for TrnGudangJadiOpnamePcs.
  */
 class StokOpnameGudangJadiController extends Controller
 {
@@ -32,7 +33,7 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
-     * Lists all TrnGudangJadiOpnamePcs models.
+     * Lists all TrnGudangJadiOpnamePcs models (Data Pcs).
      * @return mixed
      */
     public function actionIndex()
@@ -46,6 +47,31 @@ class StokOpnameGudangJadiController extends Controller
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'totalPcs' => $totalPcs,
+        ]);
+    }
+
+    /**
+     * Rekap Stok Opname Gudang Jadi (by Motif, Color, Opname Code, Location, Grade & Status).
+     * @return mixed
+     */
+    public function actionRekap()
+    {
+        $searchModel = new StokOpnameGudangJadiRekapSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // Summary cards
+        $totalPcsAll = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->count();
+        $totalQtyAll = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->sum('qty');
+        $totalVerified = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->count();
+        $totalDraft = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_DRAFT])->count();
+
+        return $this->render('rekap', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+            'totalPcsAll' => $totalPcsAll ?: 0,
+            'totalQtyAll' => $totalQtyAll ?: 0,
+            'totalVerified' => $totalVerified ?: 0,
+            'totalDraft' => $totalDraft ?: 0,
         ]);
     }
 

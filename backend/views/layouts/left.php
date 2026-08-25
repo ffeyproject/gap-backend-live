@@ -854,7 +854,11 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Stok Opname', 'icon' => 'circle', 'url' => ['/stok-opname-gudang-jadi/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'stok-opname-gudang-jadi'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'stok-opname-gudang-jadi' && $actionId == 'index'
+                    ],
+                    [
+                        'label' => 'Rekap Stok Opname', 'icon' => 'circle', 'url' => ['/stok-opname-gudang-jadi/rekap'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'stok-opname-gudang-jadi' && $actionId == 'rekap'
                     ],
                     [
                         'label' => 'Potong Stock', 'icon' => 'circle', 'url' => ['/trn-potong-stock/index'],

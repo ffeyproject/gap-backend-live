@@ -31,6 +31,44 @@ $this->params['breadcrumbs'][] = $this->title;
                     'qr_code',
                     'qr_code_desc:ntext',
                     [
+                        'attribute' => 'id_trn_gudang_jadi',
+                        'label' => 'ID Gudang Jadi',
+                        'format' => 'raw',
+                        'value' => function($model) {
+                            if ($model->id_trn_gudang_jadi) {
+                                return Html::a('ID #' . $model->id_trn_gudang_jadi, ['/trn-gudang-jadi/view', 'id' => $model->id_trn_gudang_jadi], [
+                                    'target' => '_blank',
+                                    'class' => 'label label-info',
+                                ]);
+                            }
+                            return '-';
+                        }
+                    ],
+                    [
+                        'label' => 'Nomor WO',
+                        'value' => $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->no : '-',
+                    ],
+                    [
+                        'label' => 'Nomor SC',
+                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc ? $model->gudangJadi->wo->mo->scGreige->sc->no : '-',
+                    ],
+                    [
+                        'label' => 'Marketing',
+                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->marketing ? $model->gudangJadi->wo->mo->scGreige->sc->marketing->full_name : '-',
+                    ],
+                    [
+                        'label' => 'Buyer',
+                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->cust ? $model->gudangJadi->wo->mo->scGreige->sc->cust->name : '-',
+                    ],
+                    [
+                        'label' => 'Motif / Kain',
+                        'value' => $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->greigeNamaKain : (!empty($model->qr_code_desc) ? $model->qr_code_desc : '-'),
+                    ],
+                    [
+                        'label' => 'Color / Warna',
+                        'value' => $model->gudangJadi && !empty($model->gudangJadi->color) ? $model->gudangJadi->color : '-',
+                    ],
+                    [
                         'attribute' => 'qty',
                         'value' => Yii::$app->formatter->asDecimal($model->qty),
                     ],
@@ -45,7 +83,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         'attribute' => 'status',
                         'value' => $model->statusName,
                     ],
-                    'id_trn_gudang_jadi',
                     'remark:ntext',
                     'created_at:datetime',
                     'created_by',

@@ -4,14 +4,13 @@ use common\models\ar\TrnGudangJadiOpnamePcs;
 use common\models\ar\TrnStockGreige;
 use yii\helpers\Html;
 use kartik\grid\GridView;
-use yii\helpers\Url;
 
 /* @var $this yii\web\View */
 /* @var $searchModel backend\models\TrnGudangJadiOpnamePcsSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 /* @var $totalPcs int */
 
-$this->title = 'Stok Opname Gudang Jadi (trn_gudang_jadi_opname_pcs)';
+$this->title = 'Stok Opname Gudang Jadi';
 $this->params['breadcrumbs'][] = ['label' => 'Gudang Jadi', 'url' => ['/trn-gudang-jadi/index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
@@ -51,7 +50,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
             [
                 'attribute' => 'id',
-                'label' => 'ID',
+                'label' => 'ID Opname',
                 'format' => 'raw',
                 'value' => function($model) {
                     return Html::a('<strong>#' . $model->id . '</strong>', ['view', 'id' => $model->id], [
@@ -60,9 +59,68 @@ $this->params['breadcrumbs'][] = $this->title;
                     ]);
                 }
             ],
+            [
+                'attribute' => 'id_trn_gudang_jadi',
+                'label' => 'ID Gudang Jadi',
+                'format' => 'raw',
+                'value' => function($model) {
+                    if ($model->id_trn_gudang_jadi) {
+                        return Html::a('<span class="label label-info">#' . $model->id_trn_gudang_jadi . '</span>', ['/trn-gudang-jadi/view', 'id' => $model->id_trn_gudang_jadi], [
+                            'title' => 'Lihat Stok Gudang Jadi',
+                            'target' => '_blank',
+                            'data-pjax' => '0',
+                        ]);
+                    }
+                    return '<span class="label label-default">Kosong</span>';
+                }
+            ],
             'opname_code',
             'qr_code',
-            'qr_code_desc:ntext',
+            [
+                'attribute' => 'woNo',
+                'label' => 'No. WO',
+                'value' => function($model) {
+                    return $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->no : '-';
+                }
+            ],
+            [
+                'attribute' => 'scNo',
+                'label' => 'No. SC',
+                'value' => function($model) {
+                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc ? $model->gudangJadi->wo->mo->scGreige->sc->no : '-';
+                }
+            ],
+            [
+                'attribute' => 'marketingName',
+                'label' => 'Marketing',
+                'value' => function($model) {
+                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->marketing ? $model->gudangJadi->wo->mo->scGreige->sc->marketing->full_name : '-';
+                }
+            ],
+            [
+                'attribute' => 'customerName',
+                'label' => 'Buyer',
+                'value' => function($model) {
+                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->cust ? $model->gudangJadi->wo->mo->scGreige->sc->cust->name : '-';
+                }
+            ],
+            [
+                'attribute' => 'motif',
+                'label' => 'Motif / Kain',
+                'value' => function($model) {
+                    if ($model->gudangJadi && $model->gudangJadi->wo) {
+                        return $model->gudangJadi->wo->greigeNamaKain;
+                    }
+                    return !empty($model->qr_code_desc) ? $model->qr_code_desc : '-';
+                }
+            ],
+            [
+                'attribute' => 'color',
+                'label' => 'Color / Warna',
+                'value' => function($model) {
+                    return $model->gudangJadi && !empty($model->gudangJadi->color) ? $model->gudangJadi->color : '-';
+                }
+            ],
             [
                 'attribute' => 'qty',
                 'value' => function($model) {
@@ -84,7 +142,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
-            'join_piece',
             'locs_code',
             [
                 'attribute' => 'status',
@@ -104,9 +161,22 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
-            'id_trn_gudang_jadi',
-            'remark:ntext',
-            'created_at:datetime',
+            [
+                'attribute' => 'dateRange',
+                'label' => 'Tgl. Opname',
+                'value' => 'created_at',
+                'format' => 'datetime',
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'convertFormat' => true,
+                    'pluginOptions' => [
+                        'locale' => [
+                            'format' => 'Y-m-d',
+                            'separator' => ' to ',
+                        ]
+                    ]
+                ]
+            ],
 
             [
                 'class' => 'kartik\grid\ActionColumn',
