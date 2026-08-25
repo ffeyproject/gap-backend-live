@@ -853,6 +853,10 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId !== 'rekap'
                     ],
                     [
+                        'label' => 'Stok Opname', 'icon' => 'circle', 'url' => ['/stok-opname-gudang-jadi/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'stok-opname-gudang-jadi'
+                    ],
+                    [
                         'label' => 'Potong Stock', 'icon' => 'circle', 'url' => ['/trn-potong-stock/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-stock'
                     ],
