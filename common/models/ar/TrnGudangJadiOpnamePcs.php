@@ -138,4 +138,21 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     {
         return isset(self::statusOptions()[$this->status]) ? self::statusOptions()[$this->status] : '-';
     }
+
+    /**
+     * Helper method for Unit Label
+     * @return string
+     */
+    public function getUnitName()
+    {
+        if (is_numeric($this->unit) && isset(MstGreigeGroup::unitOptions()[(int)$this->unit])) {
+            return MstGreigeGroup::unitOptions()[(int)$this->unit];
+        }
+        $uUpper = strtoupper(trim((string)$this->unit));
+        if (in_array($uUpper, ['1', 'YARD', 'YARDS', 'YD'])) return 'Yard';
+        if (in_array($uUpper, ['2', 'METER', 'METERS', 'MTR', 'M'])) return 'Meter';
+        if (in_array($uUpper, ['3', 'PCS', 'PIECE', 'PIECES'])) return 'Pcs';
+        if (in_array($uUpper, ['4', 'KILOGRAM', 'KG', 'KILOGRAMS'])) return 'Kilogram';
+        return !empty($this->unit) ? $this->unit : '-';
+    }
 }

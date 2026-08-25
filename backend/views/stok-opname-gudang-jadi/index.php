@@ -1,5 +1,6 @@
 <?php
 
+use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use common\models\ar\TrnStockGreige;
 use yii\helpers\Html;
@@ -127,7 +128,21 @@ $this->params['breadcrumbs'][] = $this->title;
                     return Yii::$app->formatter->asDecimal($model->qty);
                 }
             ],
-            'unit',
+            [
+                'attribute' => 'unit',
+                'label' => 'Satuan',
+                'value' => function($model) {
+                    return $model->unitName;
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => MstGreigeGroup::unitOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
             [
                 'attribute' => 'grade',
                 'value' => function($model) {

@@ -72,7 +72,11 @@ $this->params['breadcrumbs'][] = $this->title;
                         'attribute' => 'qty',
                         'value' => Yii::$app->formatter->asDecimal($model->qty),
                     ],
-                    'unit',
+                    [
+                        'attribute' => 'unit',
+                        'label' => 'Satuan',
+                        'value' => $model->unitName,
+                    ],
                     [
                         'attribute' => 'grade',
                         'value' => $model->gradeName,

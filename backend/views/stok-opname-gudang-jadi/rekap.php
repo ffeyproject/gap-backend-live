@@ -1,5 +1,6 @@
 <?php
 
+use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use common\models\ar\TrnStockGreige;
 use yii\helpers\Html;
@@ -173,7 +174,26 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'unit',
                 'label' => 'Satuan',
-                'value' => 'unit',
+                'value' => function($data) {
+                    $u = $data['unit'];
+                    if (is_numeric($u) && isset(MstGreigeGroup::unitOptions()[(int)$u])) {
+                        return MstGreigeGroup::unitOptions()[(int)$u];
+                    }
+                    $uUpper = strtoupper(trim((string)$u));
+                    if (in_array($uUpper, ['1', 'YARD', 'YARDS', 'YD'])) return 'Yard';
+                    if (in_array($uUpper, ['2', 'METER', 'METERS', 'MTR', 'M'])) return 'Meter';
+                    if (in_array($uUpper, ['3', 'PCS', 'PIECE', 'PIECES'])) return 'Pcs';
+                    if (in_array($uUpper, ['4', 'KILOGRAM', 'KG', 'KILOGRAMS'])) return 'Kilogram';
+                    return !empty($u) ? $u : '-';
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => MstGreigeGroup::unitOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
             ],
             [
                 'attribute' => 'total_pcs',

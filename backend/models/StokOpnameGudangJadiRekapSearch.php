@@ -42,15 +42,17 @@ class StokOpnameGudangJadiRekapSearch extends Model
      */
     public function search($params)
     {
+        $unitCaseSql = "CASE WHEN t.unit = '1' OR UPPER(t.unit) LIKE '%YARD%' THEN 'Yard' WHEN t.unit = '2' OR UPPER(t.unit) LIKE '%METER%' THEN 'Meter' WHEN t.unit = '3' OR UPPER(t.unit) LIKE '%PCS%' THEN 'Pcs' WHEN t.unit = '4' OR UPPER(t.unit) LIKE '%KG%' OR UPPER(t.unit) LIKE '%KILOGRAM%' THEN 'Kilogram' ELSE t.unit END";
+
         $query = (new Query())
             ->select([
                 'opname_code' => 't.opname_code',
                 'locs_code' => 't.locs_code',
-                'motif' => 'COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, \'-\')',
-                'color' => 'COALESCE(gj.color, \'-\')',
+                'motif' => "COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, '-')",
+                'color' => "COALESCE(gj.color, '-')",
                 'grade' => 't.grade',
                 'status' => 't.status',
-                'unit' => 't.unit',
+                'unit' => $unitCaseSql,
                 'total_pcs' => 'COUNT(t.id)',
                 'total_qty' => 'SUM(t.qty)',
             ])
@@ -64,11 +66,11 @@ class StokOpnameGudangJadiRekapSearch extends Model
             ->groupBy([
                 't.opname_code',
                 't.locs_code',
-                'COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, \'-\')',
-                'COALESCE(gj.color, \'-\')',
+                "COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, '-')",
+                "COALESCE(gj.color, '-')",
                 't.grade',
                 't.status',
-                't.unit',
+                $unitCaseSql,
             ]);
 
         $dataProvider = new ActiveDataProvider([
@@ -84,6 +86,7 @@ class StokOpnameGudangJadiRekapSearch extends Model
                     'color',
                     'grade',
                     'status',
+                    'unit',
                     'total_pcs',
                     'total_qty',
                 ],
@@ -116,9 +119,9 @@ class StokOpnameGudangJadiRekapSearch extends Model
 
         $query->andFilterWhere(['ilike', 't.opname_code', $this->opname_code])
             ->andFilterWhere(['ilike', 't.locs_code', $this->locs_code])
-            ->andFilterWhere(['ilike', 't.unit', $this->unit])
-            ->andFilterWhere(['ilike', 'COALESCE(gj.color, \'-\')', $this->color])
-            ->andFilterWhere(['ilike', 'COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, \'-\')', $this->motif]);
+            ->andFilterWhere(['ilike', $unitCaseSql, $this->unit])
+            ->andFilterWhere(['ilike', "COALESCE(gj.color, '-')", $this->color])
+            ->andFilterWhere(['ilike', "COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, '-')", $this->motif]);
 
         return $dataProvider;
     }
