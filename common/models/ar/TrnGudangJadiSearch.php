@@ -62,7 +62,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             //     NULL
             // ))")
         // ]);
-        $query->joinWith(['wo.mo.scGreige.sc.cust', 'wo.mo.scGreige.sc.marketing', 'inspecting', 'inspectingMklbj']);
+        $query->joinWith(['wo.mo.scGreige.sc.cust', 'wo.mo.scGreige.sc.marketing', 'inspecting', 'inspectingMklbj', 'opnamePcs']);
             // ->leftJoin('inspecting_item', 'trn_gudang_jadi.id_from = inspecting_item.id')
             // ->leftJoin('inspecting_mkl_bj_items', 'trn_gudang_jadi.id_from = inspecting_mkl_bj_items.id');
         // var_dump($query);

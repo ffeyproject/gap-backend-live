@@ -622,6 +622,10 @@ $moduleId = $controller->module->id;
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
                     ],
                     [
+                        'label' => 'Stock Keluar', 'icon' => 'circle', 'url' => ['/trn-gudang-jadi/stock-keluar'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId == 'stock-keluar'
+                    ],
+                    [
                         'label' => 'Potong Stock', 'icon' => 'circle', 'url' => ['/trn-potong-stock/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'trn-potong-stock' && $actionId == 'index'
                     ],

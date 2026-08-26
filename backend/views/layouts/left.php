@@ -850,7 +850,11 @@ $moduleId = $controller->module->id;
                 'items' => [
                     [
                         'label' => 'Stock', 'icon' => 'circle', 'url' => ['/trn-gudang-jadi/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId !== 'rekap'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
+                    ],
+                    [
+                        'label' => 'Stock Keluar', 'icon' => 'circle', 'url' => ['/trn-gudang-jadi/stock-keluar'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-gudang-jadi' && $actionId == 'stock-keluar'
                     ],
                     [
                         'label' => 'Stok Opname', 'icon' => 'circle', 'url' => ['/stok-opname-gudang-jadi/index'],

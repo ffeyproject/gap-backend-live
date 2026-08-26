@@ -15,7 +15,8 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="stok-opname-gudang-jadi-view">
 
     <p>
-        <?= Html::a('<i class="glyphicon glyphicon-arrow-left"></i> Kembali', ['index'], ['class' => 'btn btn-default']) ?>
+        <?= Html::a('<i class="glyphicon glyphicon-arrow-left"></i> Kembali ke Data Pcs', ['index'], ['class' => 'btn btn-default']) ?>
+        <?= Html::a('<i class="fa fa-pie-chart"></i> Kembali ke Rekap Stok Opname', ['rekap'], ['class' => 'btn btn-info']) ?>
     </p>
 
     <div class="box box-primary">

@@ -170,6 +170,15 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
     }
 
     /**
+     * Relasi ke TrnGudangJadiOpnamePcs
+     * @return \yii\db\ActiveQuery
+     */
+    public function getOpnamePcs()
+    {
+        return $this->hasOne(TrnGudangJadiOpnamePcs::className(), ['id_trn_gudang_jadi' => 'id']);
+    }
+
+    /**
      * @return string
      */
     public function getGradeName()

@@ -53,6 +53,9 @@ class TrnPrintStockController extends Controller
                 'trn_mo.article trn_mo_article',
                 'trn_mo.design trn_mo_design',
                 'trn_sc_greige.lebar_kain sc_greige_lebar_kain',
+                'trn_gudang_jadi.id',
+                'trn_gudang_jadi.note',
+                'trn_gudang_jadi.hasil_pemotongan',
                 'trn_gudang_jadi.unit',
                 'trn_gudang_jadi.grade',
                 'trn_gudang_jadi.source',
@@ -60,15 +63,14 @@ class TrnPrintStockController extends Controller
                 'trn_gudang_jadi.status',
                 'trn_gudang_jadi.color',
                 'trn_gudang_jadi.jenis_gudang',
-                'trn_gudang_jadi.qty',
-                'trn_gudang_jadi.status'
+                'trn_gudang_jadi.qty'
             ])
             ->leftJoin('trn_wo', 'trn_gudang_jadi.wo_id = trn_wo.id')
             ->leftJoin('trn_mo', 'trn_wo.mo_id = trn_mo.id')
             ->leftJoin('trn_sc_greige', 'trn_wo.sc_greige_id = trn_sc_greige.id')
             ->leftJoin('mst_greige', 'trn_wo.greige_id = mst_greige.id')
             ->leftJoin('mst_greige_group', 'trn_sc_greige.greige_group_id = mst_greige_group.id')
-            ->where(['=', 'trn_gudang_jadi.status', 1])
+            ->where(['=', 'trn_gudang_jadi.status', TrnGudangJadi::STATUS_STOCK])
             ->from('trn_gudang_jadi');
     
             if (!empty($searchModel['sub_location'])) {
@@ -113,16 +115,24 @@ class TrnPrintStockController extends Controller
                 $qty = $result['qty'];
                 $color = $result['color'];
                 $grade = $result['grade'];
+                $itemObj = [
+                    'id' => $result['id'],
+                    'qty' => $qty,
+                    'grade' => $grade,
+                    'unit' => $unit,
+                    'note' => $result['note'],
+                    'hasil_pemotongan' => $result['hasil_pemotongan'],
+                ];
 
                 if (isset($no_wo_map[$no_wo])) {
                     // Cek apakah warna sudah ada di dalam array warna untuk WO ini
                     if (isset($final_result[$no_wo_map[$no_wo]]['colors'][$color])) {
-                        $final_result[$no_wo_map[$no_wo]]['colors'][$color]['qty'][] = ['qty' => $qty, 'grade' => $grade, 'unit' => $unit];
+                        $final_result[$no_wo_map[$no_wo]]['colors'][$color]['qty'][] = $itemObj;
                         $final_result[$no_wo_map[$no_wo]]['colors'][$color]['total_qty'] += $qty;
                     } else {
                         // Jika warna belum ada, tambahkan entri baru untuk warna ini
                         $final_result[$no_wo_map[$no_wo]]['colors'][$color] = [
-                            'qty' => [['qty' => $qty, 'grade' => $grade,'unit' => $unit]],  
+                            'qty' => [$itemObj],  
                             'total_qty' => $qty,
                         ];
                     }
@@ -135,7 +145,7 @@ class TrnPrintStockController extends Controller
                         'design' => $is_design_or_atikel,
                         'colors' => [
                             $color => [
-                                'qty' => [['qty' => $qty, 'grade' => $grade, 'unit' => $unit]],
+                                'qty' => [$itemObj],
                                 'total_qty' => $qty,    
                             ]
                         ]
@@ -144,9 +154,26 @@ class TrnPrintStockController extends Controller
                 }
             }
             $results = $final_result;
-            // print("<pre>".print_r($results,true)."</pre>");
-            // die;
         }
+
+        $outNotes = [];
+        $subLocParam = Yii::$app->request->get('sub_location');
+        if (empty($subLocParam) && !empty($searchModel['sub_location'])) {
+            $subLocParam = $searchModel['sub_location'];
+        }
+        if (!empty($subLocParam)) {
+            $outGudangJadi = (new Query())
+                ->select(['note', 'status'])
+                ->from('trn_gudang_jadi')
+                ->where(['locs_code' => $subLocParam])
+                ->andWhere(['!=', 'note', ''])
+                ->andWhere(['is not', 'note', null])
+                ->all();
+            foreach ($outGudangJadi as $oG) {
+                $outNotes[] = $oG['note'];
+            }
+        }
+        $outNotes = array_values(array_unique($outNotes));
 
         $dataProvider = new ArrayDataProvider([
             'allModels' => $results,
@@ -156,13 +183,11 @@ class TrnPrintStockController extends Controller
             // You can also configure sorting, filtering, and other options here
         ]);
 
-        // var_dump(count($dataProvider->models));
-        // die;
-
         return $this->render('index', [
             'dataProvider' => $dataProvider,
-            'title' => !empty($searchModel['sub_location']) ? $searchModel['sub_location'] : '-',
-            'timestamp' => $timestamp
+            'title' => !empty($subLocParam) ? $subLocParam : '-',
+            'timestamp' => $timestamp,
+            'outNotes' => $outNotes,
         ]);
     }
 

@@ -38,6 +38,13 @@ if(!empty($searchModel->greige_id)){
         'resizableColumns' => false,
         'responsiveWrap' => false,
         'pjax' => true,
+        'rowOptions' => function($model) {
+            /* @var $model TrnGudangJadi */
+            if ($model->opnamePcs !== null) {
+                return ['class' => 'info', 'title' => 'Sudah Masuk Stok Opname (Kode: ' . $model->opnamePcs->opname_code . ')'];
+            }
+            return [];
+        },
         'panel' => [
             'type' => 'default',
             'before'=>
@@ -45,7 +52,7 @@ if(!empty($searchModel->greige_id)){
                     Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> Add All Items', 'javascript:void(0)', [
                         'class' => 'btn btn-success',
                         'onclick' => 'choseAllItems(); return false;'
-                    ]),
+                    ]) . ' <span class="label label-info" style="margin-left: 10px; padding: 6px 10px; font-size: 11px;"><i class="fa fa-info-circle"></i> Baris Biru = Sudah Masuk Stok Opname</span>',
             'after'=>false,
         ],
         'columns' => [
@@ -392,11 +399,105 @@ if(!empty($searchModel->greige_id)){
     <?=$this->render('_selected-items')?>
 </div>
 
+<!-- Modal Input Keterangan Stok Keluar -->
+<div class="modal fade" id="modalStockKeluar" tabindex="-1" role="dialog" aria-labelledby="modalStockKeluarLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalStockKeluarLabel"><i class="glyphicon glyphicon-export"></i> Set Stok Keluar (Out)</h4>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="stock-keluar-id" value="" />
+                <div class="form-group">
+                    <label for="stock-keluar-note">Keterangan / Alasan Keluar <span class="text-danger">*</span></label>
+                    <textarea id="stock-keluar-note" class="form-group form-control" rows="4" placeholder="Masukkan alasan/keterangan stok keluar (misal: Diambil untuk packing, Pindah gudang, dll)..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="submitStockKeluar()">Submit & Set Out</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 $this->registerJsVar('selectedItems', []);
 $this->registerJsVar('wmsLocationsUrl', Url::to(['ajax/wms-locations']));
 $this->registerJsVar('saveLocationUrl', Url::to(['trn-gudang-jadi/save-location']));
+$this->registerJsVar('setStockKeluarUrl', Url::to(['trn-gudang-jadi/set-stock-keluar']));
 
 $this->registerJs($this->renderFile(__DIR__.'/js/index.js'), View::POS_END);
 // Define a global JavaScript variable with the base URL
 $this->registerJs('var baseUrl = ' . json_encode(Yii::$app->urlManager->createUrl(['/'])), View::POS_HEAD);
+
+$jsStockKeluar = <<<JS
+function openModalStockKeluar(e, id) {
+    if(e) e.preventDefault();
+    $('#stock-keluar-id').val(id);
+    $('#stock-keluar-note').val('');
+    $('#modalStockKeluar').modal('show');
+}
+
+function openModalStockKeluarBatch(e) {
+    if(e) e.preventDefault();
+    let ids = [];
+    let data = itemTable.rows().data();
+    for (let i = 0; i < data.length; i++) {
+        ids.push(data[i].id);
+    }
+
+    if (ids.length === 0) {
+        alert('Tidak ada item yang dipilih di dalam tabel Items!');
+        return;
+    }
+
+    $('#stock-keluar-id').val(ids.join(','));
+    $('#stock-keluar-note').val('');
+    $('#modalStockKeluar').modal('show');
+}
+
+function submitStockKeluar() {
+    var rawIds = $('#stock-keluar-id').val();
+    var note = $('#stock-keluar-note').val().trim();
+
+    if(!rawIds) {
+        alert('ID Stok tidak valid!');
+        return;
+    }
+    if(!note) {
+        alert('Keterangan stok keluar wajib diisi!');
+        $('#stock-keluar-note').focus();
+        return;
+    }
+
+    var idsArray = rawIds.split(',');
+
+    $.ajax({
+        url: setStockKeluarUrl,
+        type: 'POST',
+        data: {
+            ids: idsArray,
+            note: note
+        },
+        dataType: 'json',
+        success: function(res) {
+            if(res.success) {
+                $('#modalStockKeluar').modal('hide');
+                alert(res.message);
+                itemTable.clear().draw();
+                if(typeof updateRowNumbers === 'function') updateRowNumbers();
+                $.pjax.reload({container: '#GdJadiGrid-pjax'});
+            } else {
+                alert(res.message);
+            }
+        },
+        error: function(err) {
+            alert('Terjadi kesalahan sistem, silakan coba lagi.');
+        }
+    });
+}
+JS;
+$this->registerJs($jsStockKeluar, View::POS_END);
+?>

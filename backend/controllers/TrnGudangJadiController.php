@@ -55,6 +55,94 @@ class TrnGudangJadiController extends Controller
     }
 
     /**
+     * Lists all TrnGudangJadi models with status OUT/Keluar.
+     * @return mixed
+     */
+    public function actionStockKeluar()
+    {
+        $searchModel = new TrnGudangJadiSearch();
+        $queryParams = Yii::$app->request->queryParams;
+        
+        // Filter default untuk stok keluar (status selain STATUS_STOCK / status IN (STATUS_OUT, STATUS_SIAP_KIRIM, dll))
+        if (!isset($queryParams['TrnGudangJadiSearch']['status'])) {
+            $queryParams['TrnGudangJadiSearch']['status'] = TrnGudangJadi::STATUS_OUT;
+        }
+
+        $dataProvider = $searchModel->search($queryParams);
+        $dataProvider->sort->defaultOrder = ['updated_at' => SORT_DESC, 'id' => SORT_DESC];
+
+        return $this->render('stock-keluar', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Set status stok menjadi OUT dengan note keterangan baru (bisa single id atau batch array ids).
+     * @return mixed
+     */
+    public function actionSetStockKeluar()
+    {
+        if (Yii::$app->request->isAjax) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $ids = Yii::$app->request->post('ids');
+            $id = Yii::$app->request->post('id');
+            $note = trim(Yii::$app->request->post('note'));
+
+            if (empty($ids) && !empty($id)) {
+                $ids = [$id];
+            }
+
+            if (empty($ids) || !is_array($ids)) {
+                return ['success' => false, 'message' => 'Tidak ada item stok yang dipilih.'];
+            }
+
+            if (empty($note)) {
+                return ['success' => false, 'message' => 'Keterangan stok keluar wajib diisi!'];
+            }
+
+            $successCount = 0;
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach ($ids as $stockId) {
+                    $model = TrnGudangJadi::findOne($stockId);
+                    if ($model !== null && ($model->status === TrnGudangJadi::STATUS_STOCK || $model->status === TrnGudangJadi::STATUS_SIAP_KIRIM)) {
+                        $qtyYard = (float)$model->qty;
+                        $formattedNote = 'BARANG KELUAR ' . $qtyYard . ' YARD: ' . $note . ' (TGL ' . date('d/m/Y') . ')';
+
+                        if (!empty($model->note)) {
+                            $model->note = $model->note . ' | ' . $formattedNote;
+                        } else {
+                            $model->note = $formattedNote;
+                        }
+                        $model->status = TrnGudangJadi::STATUS_OUT;
+                        $model->updated_at = time();
+                        $model->updated_by = Yii::$app->user->id;
+
+                        if ($model->save(false, ['status', 'note', 'updated_at', 'updated_by'])) {
+                            $successCount++;
+                        }
+                    }
+                }
+
+                if ($successCount > 0) {
+                    $transaction->commit();
+                    return ['success' => true, 'message' => $successCount . ' item stok berhasil diubah menjadi Stok Keluar (OUT).'];
+                } else {
+                    $transaction->rollBack();
+                    return ['success' => false, 'message' => 'Tidak ada item stok aktif yang diproses.'];
+                }
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                return ['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()];
+            }
+        }
+
+        throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
+    }
+
+    /**
      * Lists all TrnGudangJadi models.
      * @return mixed
      */

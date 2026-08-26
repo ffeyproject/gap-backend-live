@@ -80,6 +80,11 @@ $this->params['breadcrumbs'][] = $this->title;
             'type' => 'success',
             'heading' => '<h3 class="panel-title"><i class="fa fa-pie-chart"></i> Ringkasan Rekap Stok Opname per Motif & Warna</h3>',
             'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i> Refresh', ['rekap'], ['class' => 'btn btn-default']) . ' ' .
+                        Html::a('<i class="fa fa-map-marker"></i> Cari Berdasarkan Lokasi', '#', [
+                            'class' => 'btn btn-warning',
+                            'id' => 'btn-open-search-lokasi',
+                            'title' => 'Cari dan tampilkan list stok pcs berdasarkan lokasi'
+                        ]) . ' ' .
                         Html::a('<i class="fa fa-list"></i> Lihat Detail Pcs', ['index'], ['class' => 'btn btn-info']),
             'after' => false,
         ],
@@ -117,7 +122,26 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label' => 'Kode Lokasi',
                 'value' => function($data) {
                     return !empty($data['locs_code']) ? $data['locs_code'] : 'TRANSIT';
-                }
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => \yii\helpers\ArrayHelper::map(
+                        (new \yii\db\Query())
+                            ->select(['locs_code' => "COALESCE(locs_code, '')"])
+                            ->from('trn_gudang_jadi_opname_pcs')
+                            ->distinct()
+                            ->orderBy(['locs_code' => SORT_ASC])
+                            ->all(),
+                        'locs_code',
+                        function($element) {
+                            return !empty($element['locs_code']) ? $element['locs_code'] : 'TRANSIT';
+                        }
+                    ),
+                    'options' => ['placeholder' => 'Cari Lokasi...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
             ],
             [
                 'attribute' => 'motif',
@@ -211,7 +235,177 @@ $this->params['breadcrumbs'][] = $this->title;
                 'pageSummary' => true,
                 'pageSummaryFunc' => GridView::F_SUM,
             ],
+            [
+                'class' => 'kartik\grid\ActionColumn',
+                'header' => 'Aksi',
+                'template' => '{view-pcs} {print-lokasi} {view-index}',
+                'buttons' => [
+                    'view-pcs' => function ($url, $data, $key) {
+                        return Html::a('<i class="fa fa-eye"></i> List Pcs', '#', [
+                            'class' => 'btn btn-xs btn-primary btn-view-pcs-list',
+                            'title' => 'Lihat Rincian List Pcs Lokasi Ini',
+                            'data-opname-code' => $data['opname_code'],
+                            'data-locs-code' => $data['locs_code'],
+                            'data-motif' => $data['motif'],
+                            'data-color' => $data['color'],
+                            'data-grade' => $data['grade'],
+                            'data-status' => $data['status'],
+                            'data-pjax' => '0',
+                        ]);
+                    },
+                    'print-lokasi' => function ($url, $data, $key) {
+                        return Html::a('<i class="fa fa-print"></i> Print Lokasi', [
+                            'print-lokasi',
+                            'locs_code' => $data['locs_code'],
+                            'opname_code' => $data['opname_code'],
+                        ], [
+                            'class' => 'btn btn-xs btn-warning',
+                            'title' => 'Cetak Lembar Palet per Lokasi ini',
+                            'target' => '_blank',
+                            'data-pjax' => '0',
+                        ]);
+                    },
+                    'view-index' => function ($url, $data, $key) {
+                        return Html::a('<i class="fa fa-list"></i> Data Filtered', [
+                            'index',
+                            'TrnGudangJadiOpnamePcsSearch[opname_code]' => $data['opname_code'],
+                            'TrnGudangJadiOpnamePcsSearch[locs_code]' => $data['locs_code'],
+                            'TrnGudangJadiOpnamePcsSearch[motif]' => $data['motif'] !== '-' ? $data['motif'] : '',
+                            'TrnGudangJadiOpnamePcsSearch[color]' => $data['color'] !== '-' ? $data['color'] : '',
+                            'TrnGudangJadiOpnamePcsSearch[grade]' => $data['grade'],
+                            'TrnGudangJadiOpnamePcsSearch[status]' => $data['status'],
+                        ], [
+                            'class' => 'btn btn-xs btn-default',
+                            'title' => 'Buka di Halaman Data Pcs dengan Filter Ini',
+                            'target' => '_blank',
+                            'data-pjax' => '0',
+                        ]);
+                    },
+                ]
+            ],
         ],
     ]); ?>
 
+<?php
+$pcsListUrl = \yii\helpers\Url::to(['list-pcs-ajax']);
+$js = <<<JS
+$('.btn-view-pcs-list').on('click', function(e) {
+    e.preventDefault();
+    var btn = $(this);
+    var modal = $('#modalPcsList');
+    var modalBody = modal.find('.modal-body');
+    
+    modalBody.html('<div class="text-center" style="padding: 30px;"><i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top:10px;">Memuat list pcs lokasi...</p></div>');
+    modal.modal('show');
+    
+    $.ajax({
+        url: '$pcsListUrl',
+        type: 'GET',
+        data: {
+            opname_code: btn.data('opname-code'),
+            locs_code: btn.data('locs-code'),
+            motif: btn.data('motif'),
+            color: btn.data('color'),
+            grade: btn.data('grade'),
+            status: btn.data('status')
+        },
+        success: function(res) {
+            modalBody.html(res);
+        },
+        error: function() {
+            modalBody.html('<div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i> Gagal mengambil data list pcs.</div>');
+        }
+    });
+});
+JS;
+
+$jsSearchLokasi = <<<JS
+$('#btn-open-search-lokasi').on('click', function(e) {
+    e.preventDefault();
+    $('#modalSearchLokasi').modal('show');
+});
+
+$('#form-search-lokasi').on('submit', function(e) {
+    e.preventDefault();
+    var locCode = $('#input-search-loc-code').val();
+    if (!locCode) {
+        alert('Silakan pilih atau ketik kode lokasi terlebih dahulu!');
+        return;
+    }
+    
+    var modalSearch = $('#modalSearchLokasi');
+    modalSearch.modal('hide');
+    
+    var modalPcs = $('#modalPcsList');
+    var modalBody = modalPcs.find('.modal-body');
+    modalBody.html('<div class="text-center" style="padding: 30px;"><i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top:10px;">Memuat list pcs lokasi: ' + locCode + '...</p></div>');
+    modalPcs.modal('show');
+    
+    $.ajax({
+        url: '$pcsListUrl',
+        type: 'GET',
+        data: {
+            locs_code: locCode
+        },
+        success: function(res) {
+            modalBody.html(res);
+        },
+        error: function() {
+            modalBody.html('<div class="alert alert-danger"><i class="fa fa-exclamation-triangle"></i> Gagal mengambil data list pcs lokasi ' + locCode + '.</div>');
+        }
+    });
+});
+JS;
+$this->registerJs($js);
+$this->registerJs($jsSearchLokasi);
+
+\yii\bootstrap\Modal::begin([
+    'id' => 'modalPcsList',
+    'header' => '<h4 class="modal-title"><i class="fa fa-cubes"></i> List Pcs Stok Opname per Lokasi</h4>',
+    'size' => \yii\bootstrap\Modal::SIZE_LARGE,
+]);
+echo '<div class="modal-body"></div>';
+\yii\bootstrap\Modal::end();
+
+// Modal Pencarian Lokasi
+\yii\bootstrap\Modal::begin([
+    'id' => 'modalSearchLokasi',
+    'header' => '<h4 class="modal-title"><i class="fa fa-map-marker"></i> Cari Stok Pcs Berdasarkan Lokasi</h4>',
+    'size' => \yii\bootstrap\Modal::SIZE_DEFAULT,
+]);
+?>
+<form id="form-search-lokasi">
+    <div class="modal-body">
+        <div class="form-group">
+            <label for="input-search-loc-code">Pilih / Ketik Kode Lokasi:</label>
+            <?= \kartik\widgets\Select2::widget([
+                'name' => 'search_loc_code',
+                'id' => 'input-search-loc-code',
+                'data' => \yii\helpers\ArrayHelper::map(
+                    (new \yii\db\Query())
+                        ->select(['locs_code' => "COALESCE(locs_code, '')"])
+                        ->from('trn_gudang_jadi_opname_pcs')
+                        ->distinct()
+                        ->orderBy(['locs_code' => SORT_ASC])
+                        ->all(),
+                    'locs_code',
+                    function($element) {
+                        return !empty($element['locs_code']) ? $element['locs_code'] : 'TRANSIT';
+                    }
+                ),
+                'options' => ['placeholder' => 'Ketik atau pilih kode lokasi...'],
+                'pluginOptions' => [
+                    'allowClear' => true,
+                ],
+            ]) ?>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-warning"><i class="fa fa-search"></i> Tampilkan List Pcs</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> Batal</button>
+    </div>
+</form>
+<?php \yii\bootstrap\Modal::end(); ?>
+
 </div>
+

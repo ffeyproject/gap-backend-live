@@ -314,14 +314,27 @@ class TrnPotongStockController extends Controller
                 return $this->redirect(['view', 'id' => $model->id]);
             }
 
-            $itemsTotal = 0;
+            // Kumpulkan daftar potong qty untuk format catatan ringkas
+            $potongQtys = [];
+            foreach ($model->trnPotongStockItems as $item) {
+                $potongQtys[] = (float)$item->qty;
+            }
+            $itemsTotal = array_sum($potongQtys);
+            $sisa = $stockGudangJadi->qty - $itemsTotal;
+            if ($sisa > 0) {
+                $potongQtys[] = (float)$sisa;
+            }
+            $potongText = implode(' dan ', $potongQtys);
+            $formattedNote = 'Pemotongan ID: ' . $model->id . ' qty: ' . (float)$stockGudangJadi->qty . ' dipotong ' . $potongText;
+
             foreach ($model->trnPotongStockItems as $trnPotongStockItem) {
                 $modelNewStock = new TrnGudangJadi();
                 $modelNewStock->load([$modelNewStock->formName()=>$stockGudangJadi->attributes]);
                 $modelNewStock->qty = $trnPotongStockItem->qty;
+                $modelNewStock->locs_code = $stockGudangJadi->locs_code;
                 $modelNewStock->dipotong = false;
                 $modelNewStock->hasil_pemotongan = true;
-                $modelNewStock->note = 'Pemotongan ID: '.$model->id.', ItemID: '.$trnPotongStockItem->id;
+                $modelNewStock->note = $formattedNote;
                 $modelNewStock->status = $modelNewStock::STATUS_STOCK;
 
                 if(!($flag = $modelNewStock->save(false))){
@@ -329,18 +342,16 @@ class TrnPotongStockController extends Controller
                     Yii::$app->session->setFlash('error', 'gagal menyimpan roll baru ke stock gudang, coba lagi.');
                     return $this->redirect(['view', 'id' => $model->id]);
                 }
-
-                $itemsTotal += $trnPotongStockItem->qty;
             }
 
             // jika masih ada sisa
             // tambahan 1 roll lagi yang merupakan sisa pemotongan, data stock yang dipotong tidak dirubah sama sekali kecuali status nya, sisa pemotongan nya dimasukan ke data baru.
-            $sisa = $stockGudangJadi->qty - $itemsTotal;
             if($sisa > 0){
                 $modelNewStock = new TrnGudangJadi();
                 $modelNewStock->load([$modelNewStock->formName()=>$stockGudangJadi->attributes]);
                 $modelNewStock->qty = $sisa;
-                $modelNewStock->note = 'Roll Tambahan Sisa Pemotongan ID: '.$model->id;
+                $modelNewStock->locs_code = $stockGudangJadi->locs_code;
+                $modelNewStock->note = $formattedNote;
                 $modelNewStock->status = $modelNewStock::STATUS_STOCK;
                 $modelNewStock->dipotong = false;
                 $modelNewStock->hasil_pemotongan = true;

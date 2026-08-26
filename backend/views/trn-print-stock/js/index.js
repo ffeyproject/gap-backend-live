@@ -1,20 +1,29 @@
 function printDivPL(div) {
-    var fontSize = document.getElementById("SizeText").value;
+    var fontSize = document.getElementById("SizeText") ? document.getElementById("SizeText").value : 11;
+    var divElement = document.getElementById(div);
+    var divContents = divElement.innerHTML;
 
-    var divContents = document.getElementById(div).innerHTML;
+    var a = window.open('', '_blank');
+    a.document.write('<!DOCTYPE html><html><head><title>Print Lembar Palet</title>');
+    
+    // Copy all style tags from current document to print window
+    var styles = document.getElementsByTagName('style');
+    for (var i = 0; i < styles.length; i++) {
+        a.document.write(styles[i].outerHTML);
+    }
 
-    //var a = window.open('', '', 'height=500, width=500');
-    var a = window.open('', '');
-    a.document.write('<html>');
-    a.document.write('<head>');
     a.document.write('<style type="text/css">');
-    a.document.write('body{font-size:' + fontSize + 'px; letter-spacing: 2px;} table {font-size:' + fontSize + 'px; border-spacing: 0; letter-spacing: 2px;} th, td {padding: 0.5em 1em;}');
-    //a.document.write('@media print {html, body {width: 5.5in; /* was 8.5in */ height: 8.5in; /* was 5.5in */ display: block; font-family: "Calibri"; /*font-size: auto; NOT A VALID PROPERTY */} @page {size: 5.5in 8.5in /* . Random dot? */;}}');
+    a.document.write('@page { size: auto; margin: 0mm; }');
+    a.document.write('body { margin: 5mm !important; font-family: "Courier New", Courier, monospace, Arial, sans-serif !important; }');
+    a.document.write('.palet-wrapper { font-size: ' + fontSize + 'px !important; }');
     a.document.write('</style>');
-    a.document.write('</head>');
-    a.document.write('<body>');
+    a.document.write('</head><body>');
     a.document.write(divContents);
     a.document.write('</body></html>');
     a.document.close();
-    a.print();
+    
+    setTimeout(function() {
+        a.print();
+        a.close();
+    }, 250);
 }

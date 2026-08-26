@@ -66,6 +66,11 @@ use yii\web\JsExpression;
                 'class' => 'btn btn-primary',
                 'onclick' => 'mutasikanKeProcessing(event);',
                 'title' => 'Mutasi Ke Processing'
+            ])
+            .' '.Html::a('Set Sebagai Stock Keluar', ['set-stock-keluar-batch'], [
+                'class' => 'btn btn-danger',
+                'onclick' => 'openModalStockKeluarBatch(event);',
+                'title' => 'Set Sebagai Stock Keluar'
             ])?>
         </p>
 

@@ -114,6 +114,163 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
+     * Render list of pcs items for a given opname_code, locs_code, motif, color, grade & status via AJAX modal
+     * @return string
+     */
+    public function actionListPcsAjax()
+    {
+        $opname_code = Yii::$app->request->get('opname_code');
+        $locs_code = Yii::$app->request->get('locs_code');
+        $motif = Yii::$app->request->get('motif');
+        $color = Yii::$app->request->get('color');
+        $grade = Yii::$app->request->get('grade');
+        $status = Yii::$app->request->get('status');
+
+        $query = TrnGudangJadiOpnamePcs::find()
+            ->alias('t')
+            ->leftJoin(['gj' => 'trn_gudang_jadi'], 't.id_trn_gudang_jadi = gj.id')
+            ->leftJoin(['wo' => 'trn_wo'], 'gj.wo_id = wo.id')
+            ->leftJoin(['g_mst' => 'mst_greige'], 'wo.greige_id = g_mst.id')
+            ->leftJoin(['mo' => 'trn_mo'], 'wo.mo_id = mo.id')
+            ->leftJoin(['sc_g' => 'trn_sc_greige'], 'mo.sc_greige_id = sc_g.id')
+            ->leftJoin(['g_group' => 'mst_greige_group'], 'sc_g.greige_group_id = g_group.id');
+
+        if ($opname_code !== null && $opname_code !== '') {
+            $query->andWhere(['t.opname_code' => $opname_code]);
+        }
+
+        if ($locs_code !== null && $locs_code !== '') {
+            $query->andWhere(['t.locs_code' => $locs_code]);
+        }
+
+        if ($grade !== null && $grade !== '') {
+            $query->andWhere(['t.grade' => (int)$grade]);
+        }
+
+        if ($status !== null && $status !== '') {
+            $query->andWhere(['t.status' => (int)$status]);
+        }
+
+        if (!empty($color) && $color !== '-') {
+            $query->andWhere(['gj.color' => $color]);
+        } elseif ($color === '-') {
+            $query->andWhere(['or', ['gj.color' => null], ['gj.color' => '']]);
+        }
+
+        if (!empty($motif) && $motif !== '-') {
+            $query->andWhere(['or',
+                ['g_group.nama_kain' => $motif],
+                ['g_mst.nama_kain' => $motif],
+                ['t.qr_code_desc' => $motif]
+            ]);
+        }
+
+        $models = $query->orderBy(['t.id' => SORT_ASC])->all();
+
+        return $this->renderAjax('_list_pcs_modal', [
+            'models' => $models,
+            'groupInfo' => [
+                'opname_code' => $opname_code,
+                'locs_code' => $locs_code,
+                'motif' => $motif,
+                'color' => $color,
+                'grade' => $grade,
+                'status' => $status,
+            ]
+        ]);
+    }
+
+    /**
+     * Print Lembar Palet per Lokasi (Format 10 Kolom Piece Length, Grade & Total)
+     * @param string $locs_code
+     * @param string|null $opname_code
+     * @return string
+     */
+    public function actionPrintLokasi($locs_code, $opname_code = null)
+    {
+        $query = TrnGudangJadiOpnamePcs::find()
+            ->alias('t')
+            ->leftJoin(['gj' => 'trn_gudang_jadi'], 't.id_trn_gudang_jadi = gj.id')
+            ->leftJoin(['wo' => 'trn_wo'], 'gj.wo_id = wo.id')
+            ->leftJoin(['g_mst' => 'mst_greige'], 'wo.greige_id = g_mst.id')
+            ->leftJoin(['mo' => 'trn_mo'], 'wo.mo_id = mo.id')
+            ->leftJoin(['sc_g' => 'trn_sc_greige'], 'mo.sc_greige_id = sc_g.id')
+            ->leftJoin(['g_group' => 'mst_greige_group'], 'sc_g.greige_group_id = g_group.id');
+
+        if ($locs_code !== null && $locs_code !== '') {
+            $query->andWhere(['t.locs_code' => $locs_code]);
+        }
+
+        if ($opname_code !== null && $opname_code !== '') {
+            $query->andWhere(['t.opname_code' => $opname_code]);
+        }
+
+        $models = $query->orderBy(['t.id' => SORT_ASC])->all();
+
+        // Grouping data by (motif, color, grade)
+        $groupsMap = [];
+        $notes = [];
+        $totalSummary = [
+            'total_pcs' => count($models),
+            'total_qty' => 0,
+            'grades' => []
+        ];
+
+        foreach ($models as $m) {
+            $motif = ($m->gudangJadi && $m->gudangJadi->wo) ? $m->gudangJadi->wo->greigeNamaKain : (!empty($m->qr_code_desc) ? $m->qr_code_desc : '-');
+            $color = ($m->gudangJadi && !empty($m->gudangJadi->color)) ? $m->gudangJadi->color : '-';
+            $gradeName = $m->gradeName;
+            $qty = (float)$m->qty;
+
+            // Kumpulkan catatan jika ada note / remark / hasil pemotongan
+            if (!empty($m->remark)) {
+                $notes[] = $m->remark;
+            }
+            if ($m->gudangJadi && !empty($m->gudangJadi->note)) {
+                $notes[] = $m->gudangJadi->note;
+            }
+
+            $groupKey = $motif . '||' . $color . '||' . $gradeName;
+
+            if (!isset($groupsMap[$groupKey])) {
+                $groupsMap[$groupKey] = [
+                    'motif' => $motif,
+                    'color' => $color,
+                    'grade_name' => $gradeName,
+                    'pieces' => [],
+                    'total_pcs' => 0,
+                    'total_qty' => 0,
+                ];
+            }
+
+            $groupsMap[$groupKey]['pieces'][] = [
+                'id' => $m->id,
+                'qty' => $qty,
+                'qr_code' => $m->qr_code,
+            ];
+            $groupsMap[$groupKey]['total_pcs']++;
+            $groupsMap[$groupKey]['total_qty'] += $qty;
+
+            $totalSummary['total_qty'] += $qty;
+            if (!isset($totalSummary['grades'][$gradeName])) {
+                $totalSummary['grades'][$gradeName] = ['pcs' => 0, 'qty' => 0];
+            }
+            $totalSummary['grades'][$gradeName]['pcs']++;
+            $totalSummary['grades'][$gradeName]['qty'] += $qty;
+        }
+
+        $notes = array_values(array_unique($notes));
+
+        return $this->render('print-lokasi', [
+            'locs_code' => $locs_code,
+            'opname_code' => $opname_code,
+            'groups' => array_values($groupsMap),
+            'totalSummary' => $totalSummary,
+            'notes' => $notes,
+        ]);
+    }
+
+    /**
      * Finds the TrnGudangJadiOpnamePcs model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param integer $id

@@ -75,143 +75,343 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="box">
         <div class="box-header with-border">
-            <h3 class="box-title">STOCK LIST</h3>
+            <h3 class="box-title">PRATINJAU STOCK LIST (LEMBAR PALET)</h3>
             <div class="box-tools pull-right">
-                <?=Html::button('<i class="fa fa-print" aria-hidden="true"></i>', ['class'=>'btn btn-default btn-xs', 'onclick'=>'printDivPL("stockList")'])?>
+                <?=Html::button('<i class="fa fa-print" aria-hidden="true"></i> Cetak Lembar Palet', ['class'=>'btn btn-primary btn-sm', 'onclick'=>'printDivPL("stockList")'])?>
             </div>
         </div>
         <div class="box-body" id="stockList">
-            <table width="100%">
-                <tr>
-                    <td width="50%" style="text-align: left;"><strong><?= $title ?></strong></td>
-                    <td width="50%" style="text-align: right;"><strong><?= $timestamp ?></strong></td>
-                </tr>
-            </table>
+            <style type="text/css">
+                @media print {
+                    .hidden-print, .main-footer { display: none !important; }
+                    body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; margin: 0; padding: 0; }
+                    @page { size: auto; margin: 0mm; }
+                    .table-palet { page-break-inside: auto; }
+                    .table-palet tr { page-break-inside: avoid; page-break-after: auto; }
+                }
+                .palet-wrapper {
+                    font-family: Arial, Helvetica, sans-serif;
+                    font-size: 11px;
+                    color: #000;
+                    max-width: 950px;
+                    margin: 0 auto;
+                }
+                .palet-header-table {
+                    width: 100%;
+                    margin-bottom: 10px;
+                }
+                .palet-header-table td {
+                    vertical-align: top;
+                }
+                .palet-title-box {
+                    background-color: #777;
+                    color: #fff;
+                    font-weight: bold;
+                    font-size: 16px;
+                    text-align: center;
+                    padding: 6px;
+                    letter-spacing: 1px;
+                }
+                .table-palet {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 10px;
+                }
+                .table-palet th, .table-palet td {
+                    border: 1px solid #444;
+                    padding: 4px 5px;
+                    font-size: 10px;
+                }
+                .table-palet th {
+                    text-align: center;
+                    background-color: #f2f2f2;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+                .piece-cell {
+                    width: 32px;
+                    text-align: center;
+                }
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                .summary-box {
+                    width: 320px;
+                    border-collapse: collapse;
+                    margin-top: 10px;
+                }
+                .summary-box td {
+                    padding: 2px 5px;
+                    font-size: 11px;
+                    border: none;
+                }
+            </style>
 
-            <p></p>
-            <p>&nbsp;</p>
+            <div class="palet-wrapper">
+                <!-- Header Table -->
+                <table class="palet-header-table">
+                    <tr>
+                        <td width="35%">
+                            <strong>PALET NO :</strong> <?= Html::encode($title) ?><br>
+                            <strong>CHECKER 1 :</strong> _____________ <br>
+                            <strong>CHECKER 2 :</strong> _____________
+                        </td>
+                        <td width="40%" class="text-center">
+                            <div class="palet-title-box">
+                                PALET: <?= Html::encode($title) ?>
+                            </div>
+                        </td>
+                        <td width="25%" class="text-right">
+                            <span>Page 1 of 1</span><br>
+                            <strong><?= date('d F Y') ?></strong>
+                        </td>
+                    </tr>
+                </table>
 
-            <table width="100%" border="1">
-                <thead>
-                    <tr>
-                        <th rowspan="2" style="text-align: center;">NO WO</th>
-                        <th rowspan="2" style="text-align: center;">DESIGN</th>
-                        <th rowspan="2" style="text-align: center;">COLOR</th>
-                        <th colspan="3" style="text-align: center;">JUMLAH</th>
-                        <th rowspan="2" colspan="10" style="text-align: center;">PIECE LENGTH (YARD / METER / KG)</th>
-                    </tr>
-                    <tr>
-                        <th width="5%" style="text-align: center;">PCS</th>
-                        <th width="5%" style="text-align: center;">TOTAL</th>
-                        <th width="5%" style="text-align: center;">SATUAN</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($dataProvider->models) > 0) {
-                        $countTotalPcs = 0;
-                        $totalQtyByGrade = [];
-                        foreach ($dataProvider->models as $dP): ?>
-                            <?php
+                <!-- Main Items Table -->
+                <table class="table-palet">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" style="width: 22%;">NO DO / MOTIF</th>
+                            <th rowspan="2" style="width: 12%;">COLOR</th>
+                            <th colspan="10">PIECE LENGTH</th>
+                            <th rowspan="2" style="width: 8%;">GRADE</th>
+                            <th colspan="2">TOTAL</th>
+                        </tr>
+                        <tr>
+                            <th class="piece-cell">1</th>
+                            <th class="piece-cell">2</th>
+                            <th class="piece-cell">3</th>
+                            <th class="piece-cell">4</th>
+                            <th class="piece-cell">5</th>
+                            <th class="piece-cell">6</th>
+                            <th class="piece-cell">7</th>
+                            <th class="piece-cell">8</th>
+                            <th class="piece-cell">9</th>
+                            <th class="piece-cell">10</th>
+                            <th style="width: 6%;">PCS</th>
+                            <th style="width: 8%;">YARD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (count($dataProvider->models) > 0): 
+                            $countTotalPcs = 0;
+                            $grandTotalYard = 0;
+                            $totalQtyByGrade = [];
+                            $stockNotes = !empty($outNotes) ? $outNotes : [];
+                            
+                            foreach ($dataProvider->models as $dP):
                                 $no_wo = array_key_exists('no_wo', $dP) ? $dP['no_wo'] : '';
                                 $design = array_key_exists('design', $dP) ? $dP['design'] : '';
-                                $unit = MstGreigeGroup::unitOptions()[$dP['unit']];
-                                $firstColorRow = true; // Flag to indicate the first color row
-                                $colorRowspan = 0;
+                                $motifLabel = $no_wo . ($design ? ' / ' . $design : '');
                                 
-                                // Calculate total rowspan for NO WO and DESIGN
-                                foreach ($dP['colors'] as $color => $colorData) {
-                                    $colorRowspan += ceil(count($colorData['qty']) / 10) + 1; // +1 for the color row itself
-                                }
-                            ?>
-                            <?php foreach ($dP['colors'] as $color => $colorData): ?>
-                                <?php
+                                foreach ($dP['colors'] as $color => $colorData):
                                     $qtyData = $colorData['qty'];
-                                    $total_qty = $colorData['total_qty'];
-                                    $count = count($qtyData);
-                                    $countTotalPcs += $count;
-                                    $itemsPerRow = 10;
-                                    $totalRows = ceil($count / $itemsPerRow);
-                                ?>
-                                <?php if ($firstColorRow): ?>
-                                    <tr>
-                                        <td rowspan="<?= $colorRowspan ?>" style="text-align: center;"><?= $no_wo ?></td>
-                                        <td rowspan="<?= $colorRowspan ?>" style="text-align: left;"><?= $design ?></td>
-                                        <?php $firstColorRow = false; ?>
-                                <?php endif; ?>
-                                    <td rowspan="<?= ($totalRows + 1) ?>" style="text-align: center;"><?= $color ?></td>
-                                    <td rowspan="<?= ($totalRows + 1) ?>" style="text-align: center;"><?= $count ?> Pcs</td>
-                                    <td rowspan="<?= ($totalRows + 1) ?>" style="text-align: center;"><?= number_format($total_qty) ?></td>
-                                    <td rowspan="<?= ($totalRows + 1) ?>" style="text-align: center;"><?= $unit ?></td>
-                                </tr>
-                                <?php
-                                    for ($row = 0; $row < $totalRows; $row++) {
-                                        echo '<tr>';
-                                        for ($col = 0; $col < $itemsPerRow; $col++) {
-                                            $index = $row * $itemsPerRow + $col;
-                                            if ($index < $count) {
-                                                $qty = $qtyData[$index]['qty'];
-                                                $grade = $qtyData[$index]['grade'];
-                                                $unitQty = $qtyData[$index]['unit'];
-                                                if (isset($totalQtyByGrade[$grade])) {
-                                                    $totalQtyByGrade[$grade]['qty'] += 1;
-                                                    $totalQtyToYard = $qty;
-                                                    if ($unitQty == MstGreigeGroup::UNIT_METER){
-                                                        $totalQtyToYard = Converter::meterToYard($qty);
-                                                    }
-                                                    $totalQtyByGrade[$grade]['total_qty'] += $totalQtyToYard;
-                                                    
-                                                } else {
-
-                                                    $totalQtyByGrade[$grade] = ['qty' => 1, 'total_qty' => $qty];
-                                                }
-                                                echo '<td style="text-align: center; width: 50px;">' . $qty .'</td>';
-                                            } else {
-                                                echo '<td style="width: 50px;"></td>';
-                                            }
+                                    foreach ($qtyData as $item) {
+                                        if (!empty($item['note'])) {
+                                            $stockNotes[] = $item['note'];
                                         }
-                                        echo '</tr>';
+                                        if (!empty($item['hasil_pemotongan'])) {
+                                            $stockNotes[] = 'Stok ini merupakan Hasil Pemotongan (Gudang Jadi ID #' . ($item['id'] ?? '') . ')';
+                                        }
                                     }
-                                ?>
+                                    
+                                    // Group qtyData by Grade inside this color
+                                    $gradeGroups = [];
+                                    foreach ($qtyData as $item) {
+                                        $gName = TrnStockGreige::gradeOptions()[$item['grade']] ?? 'NG';
+                                        if (!isset($gradeGroups[$gName])) {
+                                            $gradeGroups[$gName] = [
+                                                'grade_val' => $item['grade'],
+                                                'items' => []
+                                            ];
+                                        }
+                                        $gradeGroups[$gName]['items'][] = $item;
+                                    }
+
+                                    foreach ($gradeGroups as $gName => $gData):
+                                        $items = $gData['items'];
+                                        $itemsCount = count($items);
+                                        $chunks = array_chunk($items, 10);
+                                        $totalRows = count($chunks) ?: 1;
+                                        $sumQtyYard = 0;
+                                        
+                                        foreach ($items as $it) {
+                                            $qYard = $it['qty'];
+                                            if ($it['unit'] == MstGreigeGroup::UNIT_METER) {
+                                                $qYard = Converter::meterToYard($it['qty']);
+                                            }
+                                            $sumQtyYard += $qYard;
+                                            
+                                            $countTotalPcs++;
+                                            $grandTotalYard += $qYard;
+
+                                            $gVal = $it['grade'];
+                                            if (!isset($totalQtyByGrade[$gVal])) {
+                                                $totalQtyByGrade[$gVal] = ['pcs' => 0, 'total_qty' => 0];
+                                            }
+                                            $totalQtyByGrade[$gVal]['pcs']++;
+                                            $totalQtyByGrade[$gVal]['total_qty'] += $qYard;
+                                        }
+                                        ?>
+                                        
+                                        <?php foreach ($chunks as $rowIdx => $chunk): ?>
+                                            <tr>
+                                                <?php if ($rowIdx === 0): ?>
+                                                    <td rowspan="<?= $totalRows ?>">
+                                                        <strong><?= Html::encode($motifLabel) ?></strong>
+                                                    </td>
+                                                    <td rowspan="<?= $totalRows ?>">
+                                                        <?= Html::encode($color) ?>
+                                                    </td>
+                                                <?php endif; ?>
+
+                                                <?php for ($i = 0; $i < 10; $i++): ?>
+                                                    <td class="piece-cell">
+                                                        <?= isset($chunk[$i]) ? (float)$chunk[$i]['qty'] : '' ?>
+                                                    </td>
+                                                <?php endfor; ?>
+
+                                                <?php if ($rowIdx === 0): ?>
+                                                    <td rowspan="<?= $totalRows ?>" class="text-center">
+                                                        <?= Html::encode($gName) ?>
+                                                    </td>
+                                                    <td rowspan="<?= $totalRows ?>" class="text-center">
+                                                        <strong><?= $itemsCount ?></strong>
+                                                    </td>
+                                                    <td rowspan="<?= $totalRows ?>" class="text-right">
+                                                        <strong><?= number_format($sumQtyYard, 0) ?></strong>
+                                                    </td>
+                                                <?php endif; ?>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                <?php endforeach; ?>
                             <?php endforeach; ?>
-                        <?php endforeach; ?>
-                        </tbody>
-                </table>
-                <table width="100%" border="1">
-                    <tbody>
-                        <tr><td colspan="<?= (6 + $itemsPerRow) ?>" style="text-align: left;"><b>TOTAL : <?= number_format($countTotalPcs) ?></b></td></tr>
-                            <?php
-                            ksort($totalQtyByGrade);
-                            foreach ($totalQtyByGrade as $grade => $qty): ?>
-                                <tr><td colspan="<?= (6 + $itemsPerRow) ?>" style="text-align: left;"><b>Grade <?=TrnStockGreige::gradeOptions()[$grade] ?> : <?= number_format($qty['qty']) ?> : <?= number_format($qty['total_qty']) ?> Yard</b></td></tr>
-                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="15" class="text-center">Belum ada data stok di lokasi ini!</td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
-                    <?php } else {
-                        echo '<tr><td style="text-align: center;" colspan="15">Belum ada data!</td></tr>';
-                    } ?>
-    
 
+                <!-- Summary Box -->
+                <?php if (count($dataProvider->models) > 0): ?>
+                    <table class="summary-box" style="margin-top: 10px; width: 320px;">
+                        <tr>
+                            <td width="100"><strong>TOTAL :</strong></td>
+                            <td width="50" class="text-right"><strong><?= number_format($countTotalPcs) ?></strong></td>
+                            <td width="20" class="text-center">:</td>
+                            <td class="text-right"><strong><?= number_format($grandTotalYard, 0) ?></strong></td>
+                            <td><strong>YARD</strong></td>
+                        </tr>
+                        <?php
+                            ksort($totalQtyByGrade);
+                            foreach ($totalQtyByGrade as $gradeVal => $stat):
+                        ?>
+                            <tr>
+                                <td>GRADE <?= Html::encode(TrnStockGreige::gradeOptions()[$gradeVal]) ?> :</td>
+                                <td class="text-right"><?= number_format($stat['pcs']) ?></td>
+                                <td class="text-center">:</td>
+                                <td class="text-right"><?= number_format($stat['total_qty'], 0) ?></td>
+                                <td>YARD</td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </table>
+                <?php endif; ?>
 
-
-            <p>&nbsp;</p><br><br>
-
-            <table width="100%">
-                <tr>
-                    <td style="text-align: center;" width="30%">
-                        <p><strong>Checker</strong></p><br><br><br><br><br>
-                        <?= "______________________" ?>
-                    </td>
-                    <td style="text-align: center;" width="40%">
-                        <p><strong>Maker</strong></p><br><br><br><br><br>
-                        <?= "______________________" ?>
-                    </td>
-                    <td style="text-align: center;" width="30%">
-                        <p><strong>Assign</strong></p><br><br><br><br><br>
-                        <?= "______________________" ?>
-                    </td>
-                </tr>
-            </table>
-
+                <!-- Note / Keterangan Mutasi Stok (Papan Isian / History Mutasi Stok) -->
+                <?php
+                    $allNotes = !empty($outNotes) ? $outNotes : [];
+                    if (!empty($stockNotes)) {
+                        $allNotes = array_merge($allNotes, $stockNotes);
+                    }
+                ?>
+                <table style="width: 100%; border: 1px dashed #666; padding: 6px; font-size: 10px; margin-top: 15px;">
+                    <tr>
+                        <td colspan="2" style="font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 4px; margin-bottom: 4px;">
+                            Catatan / Keterangan Mutasi Stok Palet Ini:
+                        </td>
+                    </tr>
+                    <?php if (!empty($allNotes)): ?>
+                        <?php 
+                            $cleanNotes = [];
+                            foreach (array_unique($allNotes) as $rawNote) {
+                                // Split jika satu item stok menyimpan multiple note yang dipisahkan pipe '|'
+                                $parts = explode('|', $rawNote);
+                                foreach ($parts as $noteText) {
+                                    $noteText = trim($noteText);
+                                    if (empty($noteText)) continue;
+                                    
+                                    if (strpos($noteText, 'Hasil Pemotongan') !== false || strpos($noteText, 'Dari inspecting') !== false || strpos($noteText, 'Barang Keluar:') !== false) {
+                                        continue;
+                                    }
+                                    if (strpos($noteText, 'Pemotongan ID:') !== false && strpos($noteText, 'dipotong') === false) {
+                                        if (preg_match('/Pemotongan ID:\s*(\d+)/i', $noteText, $matches)) {
+                                            $potongId = (int)$matches[1];
+                                            $potongModel = \common\models\ar\TrnPotongStock::findOne($potongId);
+                                            if ($potongModel && $potongModel->stock) {
+                                                $initialQty = (float)$potongModel->stock->qty;
+                                                $pItems = [];
+                                                foreach ($potongModel->trnPotongStockItems as $pItem) {
+                                                    $pItems[] = (float)$pItem->qty;
+                                                }
+                                                $sumP = array_sum($pItems);
+                                                $remP = $initialQty - $sumP;
+                                                if ($remP > 0) {
+                                                    $pItems[] = (float)$remP;
+                                                }
+                                                $cleanNotes[] = 'Pemotongan ID: ' . $potongId . ' qty: ' . $initialQty . ' dipotong ' . implode(' dan ', $pItems);
+                                            } else {
+                                                $cleanNotes[] = $noteText;
+                                            }
+                                        } else {
+                                            $cleanNotes[] = $noteText;
+                                        }
+                                    } else {
+                                        $cleanNotes[] = $noteText;
+                                    }
+                                }
+                            }
+                            $cleanNotes = array_unique($cleanNotes);
+                        ?>
+                        <?php if (!empty($cleanNotes)): ?>
+                            <?php foreach ($cleanNotes as $noteText): ?>
+                                <tr>
+                                    <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                                    <td style="padding-bottom: 3px;"><?= Html::encode($noteText) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                                <td style="padding-bottom: 3px;">BARANG KELUAR DI AMBIL _____ PCS _____ YARD TUJUAN U/ PACKING ( ____ ) TGL ____</td>
+                            </tr>
+                            <tr>
+                                <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                                <td style="padding-bottom: 3px;">PALET PINDAH KE RAK _____ TGL ____</td>
+                            </tr>
+                            <tr>
+                                <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                                <td style="padding-bottom: 3px;">POTONG STOCK: _____ PCS SEBESAR _____ YARD ( POTONG ID: _____ ) TGL ____</td>
+                            </tr>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                            <td style="padding-bottom: 3px;">BARANG KELUAR DI AMBIL _____ PCS _____ YARD TUJUAN U/ PACKING ( ____ ) TGL ____</td>
+                        </tr>
+                        <tr>
+                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                            <td style="padding-bottom: 3px;">PALET PINDAH KE RAK _____ TGL ____</td>
+                        </tr>
+                        <tr>
+                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
+                            <td style="padding-bottom: 3px;">POTONG STOCK: _____ PCS SEBESAR _____ YARD ( POTONG ID: _____ ) TGL ____</td>
+                        </tr>
+                    <?php endif; ?>
+                </table>
+            </div>
         </div>
     </div>
     
