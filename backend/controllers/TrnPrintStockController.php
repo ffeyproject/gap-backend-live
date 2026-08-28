@@ -172,6 +172,29 @@ class TrnPrintStockController extends Controller
             foreach ($outGudangJadi as $oG) {
                 $outNotes[] = $oG['note'];
             }
+
+            // Ambil data pengiriman buyer (Surat Jalan / trn_kirim_buyer_header) yang berasal dari lokasi palet ini
+            $kirimBuyerItems = (new Query())
+                ->select([
+                    'header.no as no_sj',
+                    'header.date as tgl_sj',
+                    'header.nama_buyer',
+                    'gudang.qty',
+                    'gudang.unit'
+                ])
+                ->from('trn_kirim_buyer_item item')
+                ->innerJoin('trn_kirim_buyer kb', 'item.kirim_buyer_id = kb.id')
+                ->innerJoin('trn_kirim_buyer_header header', 'kb.header_id = header.id')
+                ->innerJoin('trn_gudang_jadi gudang', 'item.stock_id = gudang.id')
+                ->where(['gudang.locs_code' => $subLocParam])
+                ->all();
+
+            foreach ($kirimBuyerItems as $kbItem) {
+                $qtyYard = (float)$kbItem['qty'];
+                $buyerName = !empty($kbItem['nama_buyer']) ? ' BUYER: ' . $kbItem['nama_buyer'] : '';
+                $tglFormatted = !empty($kbItem['tgl_sj']) ? date('d/m/Y', strtotime($kbItem['tgl_sj'])) : date('d/m/Y');
+                $outNotes[] = 'PENGIRIMAN BUYER ' . $qtyYard . ' YARD: NO SJ ' . $kbItem['no_sj'] . $buyerName . ' (TGL ' . $tglFormatted . ')';
+            }
         }
         $outNotes = array_values(array_unique($outNotes));
 

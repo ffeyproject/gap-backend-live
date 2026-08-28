@@ -320,97 +320,69 @@ $this->params['breadcrumbs'][] = $this->title;
                     </table>
                 <?php endif; ?>
 
-                <!-- Note / Keterangan Mutasi Stok (Papan Isian / History Mutasi Stok) -->
+                <!-- Note / Keterangan Mutasi Stok (Hanya Muncul Jika Ada Data History) -->
                 <?php
                     $allNotes = !empty($outNotes) ? $outNotes : [];
                     if (!empty($stockNotes)) {
                         $allNotes = array_merge($allNotes, $stockNotes);
                     }
-                ?>
-                <table style="width: 100%; border: 1px dashed #666; padding: 6px; font-size: 10px; margin-top: 15px;">
-                    <tr>
-                        <td colspan="2" style="font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 4px; margin-bottom: 4px;">
-                            Catatan / Keterangan Mutasi Stok Palet Ini:
-                        </td>
-                    </tr>
-                    <?php if (!empty($allNotes)): ?>
-                        <?php 
-                            $cleanNotes = [];
-                            foreach (array_unique($allNotes) as $rawNote) {
-                                // Split jika satu item stok menyimpan multiple note yang dipisahkan pipe '|'
-                                $parts = explode('|', $rawNote);
-                                foreach ($parts as $noteText) {
-                                    $noteText = trim($noteText);
-                                    if (empty($noteText)) continue;
-                                    
-                                    if (strpos($noteText, 'Hasil Pemotongan') !== false || strpos($noteText, 'Dari inspecting') !== false || strpos($noteText, 'Barang Keluar:') !== false) {
-                                        continue;
-                                    }
-                                    if (strpos($noteText, 'Pemotongan ID:') !== false && strpos($noteText, 'dipotong') === false) {
-                                        if (preg_match('/Pemotongan ID:\s*(\d+)/i', $noteText, $matches)) {
-                                            $potongId = (int)$matches[1];
-                                            $potongModel = \common\models\ar\TrnPotongStock::findOne($potongId);
-                                            if ($potongModel && $potongModel->stock) {
-                                                $initialQty = (float)$potongModel->stock->qty;
-                                                $pItems = [];
-                                                foreach ($potongModel->trnPotongStockItems as $pItem) {
-                                                    $pItems[] = (float)$pItem->qty;
-                                                }
-                                                $sumP = array_sum($pItems);
-                                                $remP = $initialQty - $sumP;
-                                                if ($remP > 0) {
-                                                    $pItems[] = (float)$remP;
-                                                }
-                                                $cleanNotes[] = 'Pemotongan ID: ' . $potongId . ' qty: ' . $initialQty . ' dipotong ' . implode(' dan ', $pItems);
-                                            } else {
-                                                $cleanNotes[] = $noteText;
+
+                    $cleanNotes = [];
+                    if (!empty($allNotes)) {
+                        foreach (array_unique($allNotes) as $rawNote) {
+                            $parts = explode('|', $rawNote);
+                            foreach ($parts as $noteText) {
+                                $noteText = trim($noteText);
+                                if (empty($noteText)) continue;
+                                
+                                if (strpos($noteText, 'Hasil Pemotongan') !== false || strpos($noteText, 'Dari inspecting') !== false || strpos($noteText, 'Barang Keluar:') !== false) {
+                                    continue;
+                                }
+                                if (strpos($noteText, 'Pemotongan ID:') !== false && strpos($noteText, 'dipotong') === false) {
+                                    if (preg_match('/Pemotongan ID:\s*(\d+)/i', $noteText, $matches)) {
+                                        $potongId = (int)$matches[1];
+                                        $potongModel = \common\models\ar\TrnPotongStock::findOne($potongId);
+                                        if ($potongModel && $potongModel->stock) {
+                                            $initialQty = (float)$potongModel->stock->qty;
+                                            $pItems = [];
+                                            foreach ($potongModel->trnPotongStockItems as $pItem) {
+                                                $pItems[] = (float)$pItem->qty;
                                             }
+                                            $sumP = array_sum($pItems);
+                                            $remP = $initialQty - $sumP;
+                                            if ($remP > 0) {
+                                                $pItems[] = (float)$remP;
+                                            }
+                                            $cleanNotes[] = 'Pemotongan ID: ' . $potongId . ' qty: ' . $initialQty . ' dipotong ' . implode(' dan ', $pItems);
                                         } else {
                                             $cleanNotes[] = $noteText;
                                         }
                                     } else {
                                         $cleanNotes[] = $noteText;
                                     }
+                                } else {
+                                    $cleanNotes[] = $noteText;
                                 }
                             }
-                            $cleanNotes = array_unique($cleanNotes);
-                        ?>
-                        <?php if (!empty($cleanNotes)): ?>
-                            <?php foreach ($cleanNotes as $noteText): ?>
-                                <tr>
-                                    <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                                    <td style="padding-bottom: 3px;"><?= Html::encode($noteText) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                        }
+                        $cleanNotes = array_values(array_unique($cleanNotes));
+                    }
+                ?>
+                <?php if (!empty($cleanNotes)): ?>
+                    <table style="width: 100%; border: 1px dashed #666; padding: 6px; font-size: 10px; margin-top: 15px;">
+                        <tr>
+                            <td colspan="2" style="font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 4px; margin-bottom: 4px;">
+                                Catatan / Keterangan Mutasi Stok Palet Ini:
+                            </td>
+                        </tr>
+                        <?php foreach ($cleanNotes as $noteText): ?>
                             <tr>
                                 <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                                <td style="padding-bottom: 3px;">BARANG KELUAR DI AMBIL _____ PCS _____ YARD TUJUAN U/ PACKING ( ____ ) TGL ____</td>
+                                <td style="padding-bottom: 3px;"><?= Html::encode($noteText) ?></td>
                             </tr>
-                            <tr>
-                                <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                                <td style="padding-bottom: 3px;">PALET PINDAH KE RAK _____ TGL ____</td>
-                            </tr>
-                            <tr>
-                                <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                                <td style="padding-bottom: 3px;">POTONG STOCK: _____ PCS SEBESAR _____ YARD ( POTONG ID: _____ ) TGL ____</td>
-                            </tr>
-                        <?php endif; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                            <td style="padding-bottom: 3px;">BARANG KELUAR DI AMBIL _____ PCS _____ YARD TUJUAN U/ PACKING ( ____ ) TGL ____</td>
-                        </tr>
-                        <tr>
-                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                            <td style="padding-bottom: 3px;">PALET PINDAH KE RAK _____ TGL ____</td>
-                        </tr>
-                        <tr>
-                            <td width="15" style="vertical-align: top; font-weight: bold;">=</td>
-                            <td style="padding-bottom: 3px;">POTONG STOCK: _____ PCS SEBESAR _____ YARD ( POTONG ID: _____ ) TGL ____</td>
-                        </tr>
-                    <?php endif; ?>
-                </table>
+                        <?php endforeach; ?>
+                    </table>
+                <?php endif; ?>
             </div>
         </div>
     </div>
