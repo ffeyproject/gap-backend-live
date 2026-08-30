@@ -454,21 +454,28 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public static function generateNomorKartu()
     {
         $year2d = date('y');
-        $lastRecord = self::find()
+        $records = self::find()
             ->where(['like', 'nomor_kartu', '/' . $year2d])
-            ->orderBy(['id' => SORT_DESC])
-            ->one();
+            ->all();
 
-        $nextUrut = ($year2d === '26') ? 1000 : 1;
-        if ($lastRecord) {
-            $pos = strrpos($lastRecord->nomor_kartu, '/');
-            if ($pos !== false) {
-                $prefix = substr($lastRecord->nomor_kartu, 0, $pos);
-                if (is_numeric($prefix)) {
-                    $nextUrut = max($nextUrut, (int)$prefix + 1);
+        $maxUrut = ($year2d === '26') ? 999 : 0;
+        foreach ($records as $rec) {
+            if (!empty($rec->nomor_kartu)) {
+                $pos = strrpos($rec->nomor_kartu, '/');
+                if ($pos !== false) {
+                    $prefix = substr($rec->nomor_kartu, 0, $pos);
+                    // Pastikan hanya mengambil angka murni (tanpa akhiran huruf seperti 1499B)
+                    if (is_numeric($prefix)) {
+                        $val = (int)$prefix;
+                        if ($val > $maxUrut) {
+                            $maxUrut = $val;
+                        }
+                    }
                 }
             }
         }
+
+        $nextUrut = $maxUrut + 1;
         return $nextUrut . '/' . $year2d;
     }
 
