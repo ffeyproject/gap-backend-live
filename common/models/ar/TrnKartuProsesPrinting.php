@@ -454,28 +454,23 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public static function generateNomorKartu()
     {
         $year2d = date('y');
-        $records = self::find()
+        $lastRecord = self::find()
             ->where(['like', 'nomor_kartu', '/' . $year2d])
-            ->all();
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
 
-        $maxUrut = ($year2d === '26') ? 999 : 0;
-        foreach ($records as $rec) {
-            if (!empty($rec->nomor_kartu)) {
-                $pos = strrpos($rec->nomor_kartu, '/');
-                if ($pos !== false) {
-                    $prefix = substr($rec->nomor_kartu, 0, $pos);
-                    // Pastikan hanya mengambil angka murni (tanpa akhiran huruf seperti 1499B)
-                    if (is_numeric($prefix)) {
-                        $val = (int)$prefix;
-                        if ($val > $maxUrut) {
-                            $maxUrut = $val;
-                        }
-                    }
+        $nextUrut = ($year2d === '26') ? 1000 : 1;
+        if ($lastRecord && !empty($lastRecord->nomor_kartu)) {
+            $pos = strrpos($lastRecord->nomor_kartu, '/');
+            if ($pos !== false) {
+                $prefix = substr($lastRecord->nomor_kartu, 0, $pos);
+                // Extract angka saja di depan (misal: "1499" dari "1499" atau "1499B")
+                if (preg_match('/^(\d+)/', $prefix, $matches)) {
+                    $num = (int)$matches[1];
+                    $nextUrut = max($nextUrut, $num + 1);
                 }
             }
         }
-
-        $nextUrut = $maxUrut + 1;
         return $nextUrut . '/' . $year2d;
     }
 
