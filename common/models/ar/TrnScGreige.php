@@ -84,7 +84,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
         ];
     }
 
-    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;const LEBAR_KAIN_68 = 5;const LEBAR_KAIN_72 = 6;const LEBAR_KAIN_69 = 7;const LEBAR_KAIN_70 = 8;const LEBAR_KAIN_71 = 9;const LEBAR_KAIN_74 = 10;const LEBAR_KAIN_76 = 11;const LEBAR_KAIN_78 = 12;const LEBAR_KAIN_80 = 13;const LEBAR_KAIN_82 = 14;const LEBAR_KAIN_84 = 15;const LEBAR_KAIN_86 = 16;const LEBAR_KAIN_88 = 17;const LEBAR_KAIN_90 = 18;const LEBAR_KAIN_60 = 19;const LEBAR_KAIN_47 = 20;const LEBAR_KAIN_49 = 21;
+    const LEBAR_KAIN_44 = 1;const LEBAR_KAIN_58 = 2;const LEBAR_KAIN_64 = 3;const LEBAR_KAIN_66 = 4;const LEBAR_KAIN_68 = 5;const LEBAR_KAIN_72 = 6;const LEBAR_KAIN_69 = 7;const LEBAR_KAIN_70 = 8;const LEBAR_KAIN_71 = 9;const LEBAR_KAIN_74 = 10;const LEBAR_KAIN_76 = 11;const LEBAR_KAIN_78 = 12;const LEBAR_KAIN_80 = 13;const LEBAR_KAIN_82 = 14;const LEBAR_KAIN_84 = 15;const LEBAR_KAIN_86 = 16;const LEBAR_KAIN_88 = 17;const LEBAR_KAIN_90 = 18;const LEBAR_KAIN_60 = 19;const LEBAR_KAIN_47 = 20;const LEBAR_KAIN_49 = 21;const LEBAR_KAIN_65 = 22;
     /**
      * @return array
      */
@@ -96,6 +96,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_58 => '58',
             self::LEBAR_KAIN_60 => '60',
             self::LEBAR_KAIN_64 => '64',
+            self::LEBAR_KAIN_64 => '65',
             self::LEBAR_KAIN_66 => '66',
             self::LEBAR_KAIN_68 => '68',
             self::LEBAR_KAIN_69 => '69',
