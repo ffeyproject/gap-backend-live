@@ -24,12 +24,12 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php
                 $form = ActiveForm::begin(['method' => 'get', 'action' => ['trn-print-stock/index']]);
                 $sub_location = Yii::$app->request->get('sub_location');
-                $limit = Yii::$app->request->get('limit', 50);
+                $sumber_data = Yii::$app->request->get('sumber_data', $sumberData ?? 'auto');
             ?>
                 <div class="form-row">
-                <div class="form-group col-md-9">
+                    <div class="form-group col-md-8">
                         <?php
-                            echo '<label>Pilih Sub Location</label>';
+                            echo '<label>Pilih Sub Location (Palet)</label>';
                             echo Select2::widget([
                                 'name' => 'sub_location',
                                 'value' => $sub_location,
@@ -37,29 +37,31 @@ $this->params['breadcrumbs'][] = $this->title;
                                     'allowClear' => true,
                                 ],
                                 'data' => MstSubLocation::optionList(),
-                                'options' => ['multiple' => false, 'placeholder' => 'Select Sub Location ...']
+                                'options' => ['multiple' => false, 'placeholder' => 'Pilih Sub Location / Palet ...']
                             ]); 
                         ?>
                     </div>
-                    <div class="form-group col-md-3">
+                    <div class="form-group col-md-4">
                         <?php
-                            echo '<label>Limit Data Untuk Ditampilkan</label>';
+                            echo '<label>Sumber Data</label>';
                             echo Select2::widget([
-                                'name' => 'limit',
-                                'value' => $limit,
+                                'name' => 'sumber_data',
+                                'value' => $sumber_data,
                                 'pluginOptions' => [
-                                    'allowClear' => true,
+                                    'allowClear' => false,
                                 ],
-                                'data' => [50 => 50, 100 => 100, 200 => 200, 500 => 500, 1000 => 1000, count($dataProvider->allModels) => count($dataProvider->allModels)],
-                                'options' => ['multiple' => false, 'placeholder' => 'Select limit ...']
+                                'data' => [
+                                    'auto' => 'Otomatis (Stok Opname / Stok Sistem)',
+                                    'opname' => 'Hasil Stok Opname (Fisik / Opname Pcs)',
+                                    'system' => 'Stok Gudang Jadi (Sistem)',
+                                ],
+                                'options' => ['multiple' => false]
                             ]); 
                         ?>
                     </div>
                     <div class="form-group col-md-12">
                         <?php
-                            echo '<div class="form-group">';
-                            echo Html::submitButton('Search', ['class' => 'btn btn-primary btn-block']);
-                            echo '</div>';
+                            echo Html::submitButton('<i class="fa fa-search"></i> Tampilkan Lembar Palet', ['class' => 'btn btn-primary btn-block']);
                         ?>
                     </div>
                 </div>
@@ -75,7 +77,16 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="box">
         <div class="box-header with-border">
-            <h3 class="box-title">PRATINJAU STOCK LIST (LEMBAR PALET)</h3>
+            <h3 class="box-title">
+                <i class="fa fa-file-text-o"></i> PRATINJAU STOCK LIST (LEMBAR PALET)
+                <?php if (!empty($title) && $title !== '-'): ?>
+                    <?php if (($sumberDataUsed ?? '') === 'opname'): ?>
+                        <span class="label label-success" style="font-size: 11px; margin-left: 10px;"><i class="fa fa-barcode"></i> Sumber: Hasil Stok Opname</span>
+                    <?php else: ?>
+                        <span class="label label-primary" style="font-size: 11px; margin-left: 10px;"><i class="fa fa-database"></i> Sumber: Stok Gudang Jadi Sistem</span>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </h3>
             <div class="box-tools pull-right">
                 <?=Html::button('<i class="fa fa-print" aria-hidden="true"></i> Cetak Lembar Palet', ['class'=>'btn btn-primary btn-sm', 'onclick'=>'printDivPL("stockList")'])?>
             </div>
