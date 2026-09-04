@@ -30,8 +30,10 @@ use yii\behaviors\TimestampBehavior;
  */
 class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
 {
-    const STATUS_DRAFT = 1;
+    const STATUS_STOCK = 1;
+    const STATUS_DRAFT = 1; // Alias for backward compatibility
     const STATUS_VERIFIED = 2;
+    const STATUS_OUT = 3;
 
     /**
      * @return array
@@ -39,8 +41,9 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     public static function statusOptions()
     {
         return [
-            self::STATUS_DRAFT => 'Draft / Submitted',
+            self::STATUS_STOCK => 'Stock',
             self::STATUS_VERIFIED => 'Verified',
+            self::STATUS_OUT => 'Out / Keluar',
         ];
     }
 
@@ -77,8 +80,8 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             [['opname_code', 'qr_code'], 'string', 'max' => 100],
             [['unit'], 'string', 'max' => 20],
             [['join_piece', 'locs_code'], 'string', 'max' => 50],
-            [['status'], 'default', 'value' => self::STATUS_DRAFT],
-            [['status'], 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_VERIFIED]],
+            [['status'], 'default', 'value' => self::STATUS_STOCK],
+            [['status'], 'in', 'range' => [self::STATUS_STOCK, self::STATUS_VERIFIED, self::STATUS_OUT]],
             [['locs_code'], 'default', 'value' => 'TRANSIT'],
             [['unit'], 'default', 'value' => 'YARDS'],
             [['grade'], 'default', 'value' => 1],

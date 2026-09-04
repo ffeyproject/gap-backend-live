@@ -175,4 +175,44 @@ class SyncController extends Controller
         }
         echo "=== SINKRONISASI INSPECTING MKL BJ STUCK SELESAI ===\n\n";
     }
+
+    /**
+     * Menjalankan sinkronisasi status OUT pada Stok Opname Gudang Jadi.
+     * Dipanggil dengan perintah: php yii sync/opname-out
+     */
+    public function actionOpnameOut()
+    {
+        echo "=== MEMULAI SINKRONISASI STATUS OUT STOK OPNAME GUDANG JADI ===\n";
+
+        // 1. Ambil id_trn_gudang_jadi dari data opname yang statusnya masih Stock / belum OUT
+        $activeOpnameGudangJadiIds = (new \yii\db\Query())
+            ->select('id_trn_gudang_jadi')
+            ->from('trn_gudang_jadi_opname_pcs')
+            ->where(['!=', 'status', \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->andWhere(['is not', 'id_trn_gudang_jadi', null]);
+
+        // 2. Cari di master trn_gudang_jadi mana saja yang status fisiknya sudah BUKAN STATUS_STOCK
+        $outGudangJadiIds = (new \yii\db\Query())
+            ->select('id')
+            ->from('trn_gudang_jadi')
+            ->where(['in', 'id', $activeOpnameGudangJadiIds])
+            ->andWhere(['!=', 'status', \common\models\ar\TrnGudangJadi::STATUS_STOCK]);
+
+        // 3. Update status data opname tersebut menjadi STATUS_OUT
+        $updatedOut = \common\models\ar\TrnGudangJadiOpnamePcs::updateAll(
+            [
+                'status' => \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT,
+                'updated_at' => time(),
+                'updated_by' => 1, // Default Sistem/Cron ID
+            ],
+            [
+                'and',
+                ['in', 'id_trn_gudang_jadi', $outGudangJadiIds],
+                ['!=', 'status', \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT],
+            ]
+        );
+
+        echo "-> Selesai: {$updatedOut} item opname berhasil diubah statusnya menjadi OUT.\n";
+        echo "=== SINKRONISASI STOK OPNAME SELESAI ===\n\n";
+    }
 }

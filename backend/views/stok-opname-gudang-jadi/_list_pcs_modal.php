@@ -83,9 +83,11 @@ foreach ($models as $m) {
                             <td><?= Html::encode($model->unitName) ?></td>
                             <td>
                                 <?php if ((int)$model->status === TrnGudangJadiOpnamePcs::STATUS_VERIFIED): ?>
-                                    <span class="label label-success"><?= Html::encode($model->statusName) ?></span>
+                                    <span class="label label-success"><i class="fa fa-check"></i> <?= Html::encode($model->statusName) ?></span>
+                                <?php elseif ((int)$model->status === TrnGudangJadiOpnamePcs::STATUS_OUT): ?>
+                                    <span class="label label-danger"><i class="fa fa-times-circle"></i> <?= Html::encode($model->statusName) ?></span>
                                 <?php else: ?>
-                                    <span class="label label-warning"><?= Html::encode($model->statusName) ?></span>
+                                    <span class="label label-warning"><i class="fa fa-cubes"></i> <?= Html::encode($model->statusName) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-center">

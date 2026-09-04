@@ -41,13 +41,79 @@ class StokOpnameGudangJadiController extends Controller
         $searchModel = new TrnGudangJadiOpnamePcsSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $totalPcs = $dataProvider->getTotalCount();
+        $queryCount = clone $dataProvider->query;
+        $totalPcs = $queryCount->count();
+
+        $queryQty = clone $dataProvider->query;
+        $totalQty = $queryQty->sum('t.qty') ?: 0;
+
+        $queryVerified = clone $dataProvider->query;
+        $totalVerified = $queryVerified->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->count();
+        $queryQtyVerified = clone $dataProvider->query;
+        $totalQtyVerified = $queryQtyVerified->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->sum('t.qty') ?: 0;
+
+        $queryStock = clone $dataProvider->query;
+        $totalStock = $queryStock->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])->count();
+        $queryQtyStock = clone $dataProvider->query;
+        $totalQtyStock = $queryQtyStock->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])->sum('t.qty') ?: 0;
+
+        $queryOut = clone $dataProvider->query;
+        $totalOut = $queryOut->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_OUT])->count();
+        $queryQtyOut = clone $dataProvider->query;
+        $totalQtyOut = $queryQtyOut->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_OUT])->sum('t.qty') ?: 0;
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'totalPcs' => $totalPcs,
+            'totalQty' => $totalQty,
+            'totalVerified' => $totalVerified,
+            'totalQtyVerified' => $totalQtyVerified,
+            'totalStock' => $totalStock,
+            'totalQtyStock' => $totalQtyStock,
+            'totalOut' => $totalOut,
+            'totalQtyOut' => $totalQtyOut,
         ]);
+    }
+
+    /**
+     * Sinkronisasi status OUT: Hanya memeriksa data opname yang statusnya masih Stock (belum OUT),
+     * lalu mengecek status fisik master Gudang Jadi-nya. Jika di Gudang Jadi sudah bukan Stock (misal Out/Surat Jalan/Mutasi),
+     * maka status opname diubah menjadi OUT. Data opname yang sudah OUT diabaikan dan tidak dibaca lagi.
+     * @return mixed
+     */
+    public function actionSyncStatusOut()
+    {
+        // 1. Ambil id_trn_gudang_jadi dari data opname yang statusnya masih Stock / belum OUT
+        $activeOpnameGudangJadiIds = (new \yii\db\Query())
+            ->select('id_trn_gudang_jadi')
+            ->from('trn_gudang_jadi_opname_pcs')
+            ->where(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->andWhere(['is not', 'id_trn_gudang_jadi', null]);
+
+        // 2. Cari di master trn_gudang_jadi mana saja yang status fisiknya sudah BUKAN STATUS_STOCK
+        $outGudangJadiIds = (new \yii\db\Query())
+            ->select('id')
+            ->from('trn_gudang_jadi')
+            ->where(['in', 'id', $activeOpnameGudangJadiIds])
+            ->andWhere(['!=', 'status', \common\models\ar\TrnGudangJadi::STATUS_STOCK]);
+
+        // 3. Update status data opname tersebut menjadi STATUS_OUT
+        $updatedOut = TrnGudangJadiOpnamePcs::updateAll(
+            [
+                'status' => TrnGudangJadiOpnamePcs::STATUS_OUT,
+                'updated_at' => time(),
+                'updated_by' => Yii::$app->user->id,
+            ],
+            [
+                'and',
+                ['in', 'id_trn_gudang_jadi', $outGudangJadiIds],
+                ['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT],
+            ]
+        );
+
+        Yii::$app->session->setFlash('success', "Sinkronisasi selesai: {$updatedOut} item opname berstatus Stock berhasil diubah menjadi OUT.");
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }
 
     /**
@@ -61,9 +127,13 @@ class StokOpnameGudangJadiController extends Controller
 
         // Summary cards
         $totalPcsAll = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->count();
-        $totalQtyAll = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->sum('qty');
+        $totalQtyAll = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->sum('qty') ?: 0;
         $totalVerified = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->count();
-        $totalDraft = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_DRAFT])->count();
+        $totalQtyVerified = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->sum('qty') ?: 0;
+        $totalStock = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])->count();
+        $totalQtyStock = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])->sum('qty') ?: 0;
+        $totalOut = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_OUT])->count();
+        $totalQtyOut = (new \yii\db\Query())->from('trn_gudang_jadi_opname_pcs')->where(['status' => TrnGudangJadiOpnamePcs::STATUS_OUT])->sum('qty') ?: 0;
 
         return $this->render('rekap', [
             'searchModel' => $searchModel,
@@ -71,7 +141,11 @@ class StokOpnameGudangJadiController extends Controller
             'totalPcsAll' => $totalPcsAll ?: 0,
             'totalQtyAll' => $totalQtyAll ?: 0,
             'totalVerified' => $totalVerified ?: 0,
-            'totalDraft' => $totalDraft ?: 0,
+            'totalQtyVerified' => $totalQtyVerified ?: 0,
+            'totalStock' => $totalStock ?: 0,
+            'totalQtyStock' => $totalQtyStock ?: 0,
+            'totalOut' => $totalOut ?: 0,
+            'totalQtyOut' => $totalQtyOut ?: 0,
         ]);
     }
 

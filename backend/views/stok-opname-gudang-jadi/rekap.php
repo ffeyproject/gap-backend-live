@@ -12,7 +12,11 @@ use kartik\grid\GridView;
 /* @var $totalPcsAll int */
 /* @var $totalQtyAll float */
 /* @var $totalVerified int */
-/* @var $totalDraft int */
+/* @var $totalQtyVerified float */
+/* @var $totalStock int */
+/* @var $totalQtyStock float */
+/* @var $totalOut int */
+/* @var $totalQtyOut float */
 
 $this->title = 'Rekap Stok Opname Gudang Jadi';
 $this->params['breadcrumbs'][] = ['label' => 'Gudang Jadi', 'url' => ['/trn-gudang-jadi/index']];
@@ -28,37 +32,37 @@ $this->params['breadcrumbs'][] = $this->title;
                 <span class="info-box-icon"><i class="fa fa-cubes"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Total Roll / Pcs</span>
-                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalPcsAll) ?> Roll</span>
+                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalPcsAll) ?> Roll (<?= Yii::$app->formatter->asDecimal($totalQtyAll, 2) ?>)</span>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3 col-sm-6 col-xs-12">
             <div class="info-box bg-green">
-                <span class="info-box-icon"><i class="fa fa-dashboard"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Total Kuantitas</span>
-                    <span class="info-box-number"><?= Yii::$app->formatter->asDecimal($totalQtyAll) ?></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 col-sm-6 col-xs-12">
-            <div class="info-box bg-teal">
                 <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Pcs Terverifikasi</span>
-                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalVerified) ?> Roll</span>
+                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalVerified) ?> Roll (<?= Yii::$app->formatter->asDecimal($totalQtyVerified ?? 0, 2) ?>)</span>
                 </div>
             </div>
         </div>
 
         <div class="col-md-3 col-sm-6 col-xs-12">
             <div class="info-box bg-yellow">
-                <span class="info-box-icon"><i class="fa fa-pencil"></i></span>
+                <span class="info-box-icon"><i class="fa fa-cubes"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Pcs Draft</span>
-                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalDraft) ?> Roll</span>
+                    <span class="info-box-text">Pcs Stock</span>
+                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalStock ?? 0) ?> Roll (<?= Yii::$app->formatter->asDecimal($totalQtyStock ?? 0, 2) ?>)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="info-box bg-red">
+                <span class="info-box-icon"><i class="fa fa-times-circle"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Pcs Out / Keluar</span>
+                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalOut ?? 0) ?> Roll (<?= Yii::$app->formatter->asDecimal($totalQtyOut ?? 0, 2) ?>)</span>
                 </div>
             </div>
         </div>
@@ -80,28 +84,23 @@ $this->params['breadcrumbs'][] = $this->title;
             'type' => 'success',
             'heading' => '<h3 class="panel-title"><i class="fa fa-pie-chart"></i> Ringkasan Rekap Stok Opname per Motif & Warna</h3>',
             'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i> Refresh', ['rekap'], ['class' => 'btn btn-default']) . ' ' .
-                        Html::a('<i class="fa fa-map-marker"></i> Cari Berdasarkan Lokasi', '#', [
+                        Html::a('<i class="fa fa-refresh"></i> Sync Status Out', ['sync-status-out'], [
                             'class' => 'btn btn-warning',
-                            'id' => 'btn-open-search-lokasi',
-                            'title' => 'Cari dan tampilkan list stok pcs berdasarkan lokasi'
+                            'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan status stok opname dengan status fisik Gudang Jadi saat ini?',
+                            'title' => 'Ubah status opname menjadi OUT jika stok di Gudang Jadi sudah bukan Stock',
                         ]) . ' ' .
-                        Html::a('<i class="fa fa-list"></i> Lihat Detail Pcs', ['index'], ['class' => 'btn btn-info']),
+                        Html::a('<i class="fa fa-map-marker"></i> Cari Berdasarkan Lokasi', '#', [
+                            'class' => 'btn btn-primary',
+                            'id' => 'btnFilterLocs',
+                            'data-toggle' => 'modal',
+                            'data-target' => '#locsFilterModal'
+                        ]),
             'after' => false,
         ],
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
 
             [
-                'attribute' => 'opname_code',
-                'label' => 'Kode Opname',
-                'format' => 'raw',
-                'value' => function($data) {
-                    return Html::encode($data['opname_code']);
-                },
-                'pageSummary' => 'TOTAL Halaman Ini',
-            ],
-            [
-                'attribute' => 'dateRange',
                 'label' => 'Rentang Tgl. Opname',
                 'value' => function($data) {
                     return '-';
@@ -182,9 +181,11 @@ $this->params['breadcrumbs'][] = $this->title;
                     $statusVal = (int)$data['status'];
                     $statusName = isset(TrnGudangJadiOpnamePcs::statusOptions()[$statusVal]) ? TrnGudangJadiOpnamePcs::statusOptions()[$statusVal] : '-';
                     if ($statusVal === TrnGudangJadiOpnamePcs::STATUS_VERIFIED) {
-                        return '<span class="label label-success">' . Html::encode($statusName) . '</span>';
+                        return '<span class="label label-success"><i class="fa fa-check"></i> ' . Html::encode($statusName) . '</span>';
+                    } elseif ($statusVal === TrnGudangJadiOpnamePcs::STATUS_OUT) {
+                        return '<span class="label label-danger"><i class="fa fa-times-circle"></i> ' . Html::encode($statusName) . '</span>';
                     }
-                    return '<span class="label label-warning">' . Html::encode($statusName) . '</span>';
+                    return '<span class="label label-warning"><i class="fa fa-cubes"></i> ' . Html::encode($statusName) . '</span>';
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [

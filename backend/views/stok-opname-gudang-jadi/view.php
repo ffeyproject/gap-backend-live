@@ -86,7 +86,15 @@ $this->params['breadcrumbs'][] = $this->title;
                     'locs_code',
                     [
                         'attribute' => 'status',
-                        'value' => $model->statusName,
+                        'format' => 'raw',
+                        'value' => function($model) {
+                            if ($model->status === TrnGudangJadiOpnamePcs::STATUS_VERIFIED) {
+                                return '<span class="label label-success"><i class="fa fa-check"></i> ' . Html::encode($model->statusName) . '</span>';
+                            } elseif ($model->status === TrnGudangJadiOpnamePcs::STATUS_OUT) {
+                                return '<span class="label label-danger"><i class="fa fa-times-circle"></i> ' . Html::encode($model->statusName) . '</span>';
+                            }
+                            return '<span class="label label-warning"><i class="fa fa-cubes"></i> ' . Html::encode($model->statusName) . '</span>';
+                        }
                     ],
                     'remark:ntext',
                     'created_at:datetime',
