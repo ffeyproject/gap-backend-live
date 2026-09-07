@@ -73,6 +73,15 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
 
             'id',
+            [
+                'attribute' => 'gudang_jadi_id',
+                'label' => 'ID Stock GD Jadi',
+                'format' => 'raw',
+                'value' => function($data){
+                    /* @var $data MutasiExFinishAltItem*/
+                    return Html::a($data->gudang_jadi_id, ['/trn-gudang-jadi/view', 'id' => $data->gudang_jadi_id], ['target' => '_blank', 'data-pjax' => '0', 'title' => 'Lihat Detail Stock Gudang Jadi']);
+                }
+            ],
             /*[
                 'label' => 'Tanggal',
                 'value' => 'mutasi.created_at',
@@ -108,7 +117,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 'value' => 'mutasi.no_referensi',
             ],
             //'mutasi_id',
-            //'gudang_jadi_id',
             [
                 'label' => 'Motif',
                 'attribute' => 'greigeNamaKain',

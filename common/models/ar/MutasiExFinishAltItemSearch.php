@@ -66,6 +66,11 @@ class MutasiExFinishAltItemSearch extends MutasiExFinishAltItem
             'desc' => ['mst_greige.nama_kain' => SORT_DESC],
         ];
 
+        $dataProvider->sort->defaultOrder = [
+            'dateRange' => SORT_DESC,
+            'id' => SORT_DESC,
+        ];
+
         $this->load($params);
 
         if (!$this->validate()) {
