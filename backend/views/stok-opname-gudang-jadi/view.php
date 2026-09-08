@@ -17,6 +17,13 @@ $this->params['breadcrumbs'][] = $this->title;
     <p>
         <?= Html::a('<i class="glyphicon glyphicon-arrow-left"></i> Kembali ke Data Pcs', ['index'], ['class' => 'btn btn-default']) ?>
         <?= Html::a('<i class="fa fa-pie-chart"></i> Kembali ke Rekap Stok Opname', ['rekap'], ['class' => 'btn btn-info']) ?>
+        <?php if (!$model->id_trn_gudang_jadi): ?>
+            <?= Html::a('<i class="fa fa-plus-circle"></i> Tambah / Sinkronkan ke Stock Gudang Jadi', ['create-stock', 'id' => $model->id], [
+                'class' => 'btn btn-success',
+                'data-confirm' => 'Buat dan sinkronkan data ini ke Stock Gudang Jadi?',
+                'title' => 'Buat Stock Gudang Jadi dari data Opname ini',
+            ]) ?>
+        <?php endif; ?>
     </p>
 
     <div class="box box-primary">
@@ -42,32 +49,37 @@ $this->params['breadcrumbs'][] = $this->title;
                                     'class' => 'label label-info',
                                 ]);
                             }
-                            return '-';
+                            return '<span class="label label-default">Kosong</span> ' . 
+                                Html::a('<i class="fa fa-plus"></i> Buat Stock', ['create-stock', 'id' => $model->id], [
+                                    'class' => 'btn btn-xs btn-success',
+                                    'data-confirm' => 'Buat dan sinkronkan stock gudang jadi untuk item ini?',
+                                    'title' => 'Buat Stock Gudang Jadi',
+                                ]);
                         }
                     ],
                     [
                         'label' => 'Nomor WO',
-                        'value' => $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->no : '-',
+                        'value' => $model->woNo,
                     ],
                     [
                         'label' => 'Nomor SC',
-                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc ? $model->gudangJadi->wo->mo->scGreige->sc->no : '-',
+                        'value' => $model->scNo,
                     ],
                     [
                         'label' => 'Marketing',
-                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->marketing ? $model->gudangJadi->wo->mo->scGreige->sc->marketing->full_name : '-',
+                        'value' => $model->marketingName,
                     ],
                     [
                         'label' => 'Buyer',
-                        'value' => $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->cust ? $model->gudangJadi->wo->mo->scGreige->sc->cust->name : '-',
+                        'value' => $model->customerName,
                     ],
                     [
                         'label' => 'Motif / Kain',
-                        'value' => $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->greigeNamaKain : (!empty($model->qr_code_desc) ? $model->qr_code_desc : '-'),
+                        'value' => $model->motif,
                     ],
                     [
                         'label' => 'Color / Warna',
-                        'value' => $model->gudangJadi && !empty($model->gudangJadi->color) ? $model->gudangJadi->color : '-',
+                        'value' => $model->color,
                     ],
                     [
                         'attribute' => 'qty',

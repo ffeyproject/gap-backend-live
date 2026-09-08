@@ -98,6 +98,11 @@ $this->params['breadcrumbs'][] = $this->title;
                             'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan status stok opname dengan status fisik Gudang Jadi saat ini?',
                             'title' => 'Ubah status opname menjadi OUT jika stok di Gudang Jadi sudah bukan Stock',
                         ]) . ' ' .
+                        Html::a('<i class="fa fa-plus-circle"></i> Sync & Tambah Stock Gudang Jadi', ['sync-stock-gudang-jadi'], [
+                            'class' => 'btn btn-success',
+                            'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan data opname dan menambahkan stock ke Gudang Jadi yang belum memiliki ID Gudang Jadi?',
+                            'title' => 'Buat & sinkronkan stock Gudang Jadi dari data opname yang ID Gudang Jadi-nya masih kosong',
+                        ]) . ' ' .
                         Html::a('<i class="fa fa-pie-chart"></i> Rekap Stok Opname', ['rekap'], ['class' => 'btn btn-info']),
             'after' => false,
         ],
@@ -128,7 +133,13 @@ $this->params['breadcrumbs'][] = $this->title;
                             'data-pjax' => '0',
                         ]);
                     }
-                    return '<span class="label label-default">Kosong</span>';
+                    return '<span class="label label-default">Kosong</span> ' .
+                        Html::a('<i class="fa fa-plus"></i> Buat Stock', ['create-stock', 'id' => $model->id], [
+                            'class' => 'btn btn-xs btn-success',
+                            'data-confirm' => 'Buat dan sinkronkan stock gudang jadi untuk item opname #' . $model->id . ' ini?',
+                            'title' => 'Buat & Hubungkan ke Stock Gudang Jadi',
+                            'data-pjax' => '0',
+                        ]);
                 }
             ],
             'opname_code',
@@ -137,45 +148,42 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'woNo',
                 'label' => 'No. WO',
                 'value' => function($model) {
-                    return $model->gudangJadi && $model->gudangJadi->wo ? $model->gudangJadi->wo->no : '-';
+                    return $model->woNo;
                 }
             ],
             [
                 'attribute' => 'scNo',
                 'label' => 'No. SC',
                 'value' => function($model) {
-                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc ? $model->gudangJadi->wo->mo->scGreige->sc->no : '-';
+                    return $model->scNo;
                 }
             ],
             [
                 'attribute' => 'marketingName',
                 'label' => 'Marketing',
                 'value' => function($model) {
-                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->marketing ? $model->gudangJadi->wo->mo->scGreige->sc->marketing->full_name : '-';
+                    return $model->marketingName;
                 }
             ],
             [
                 'attribute' => 'customerName',
                 'label' => 'Buyer',
                 'value' => function($model) {
-                    return $model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc && $model->gudangJadi->wo->mo->scGreige->sc->cust ? $model->gudangJadi->wo->mo->scGreige->sc->cust->name : '-';
+                    return $model->customerName;
                 }
             ],
             [
                 'attribute' => 'motif',
                 'label' => 'Motif / Kain',
                 'value' => function($model) {
-                    if ($model->gudangJadi && $model->gudangJadi->wo) {
-                        return $model->gudangJadi->wo->greigeNamaKain;
-                    }
-                    return !empty($model->qr_code_desc) ? $model->qr_code_desc : '-';
+                    return $model->motif;
                 }
             ],
             [
                 'attribute' => 'color',
                 'label' => 'Color / Warna',
                 'value' => function($model) {
-                    return $model->gudangJadi && !empty($model->gudangJadi->color) ? $model->gudangJadi->color : '-';
+                    return $model->color;
                 }
             ],
             [
@@ -255,13 +263,24 @@ $this->params['breadcrumbs'][] = $this->title;
 
             [
                 'class' => 'kartik\grid\ActionColumn',
-                'template' => '{view}',
+                'template' => '{view} {create-stock}',
                 'buttons' => [
                     'view' => function($url, $model, $key) {
                         return Html::a('<span class="glyphicon glyphicon-eye-open"></span>', ['view', 'id' => $model->id], [
                             'title' => 'Detail Stok Opname Pcs',
                             'class' => 'btn btn-xs btn-default',
                         ]);
+                    },
+                    'create-stock' => function($url, $model, $key) {
+                        if (!$model->id_trn_gudang_jadi) {
+                            return Html::a('<span class="glyphicon glyphicon-plus"></span>', ['create-stock', 'id' => $model->id], [
+                                'title' => 'Buat & Hubungkan ke Stock Gudang Jadi',
+                                'class' => 'btn btn-xs btn-success',
+                                'data-confirm' => 'Buat stock gudang jadi untuk item opname #' . $model->id . ' ini?',
+                                'data-pjax' => '0',
+                            ]);
+                        }
+                        return '';
                     }
                 ]
             ]

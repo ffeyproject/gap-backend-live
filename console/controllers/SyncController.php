@@ -215,4 +215,43 @@ class SyncController extends Controller
         echo "-> Selesai: {$updatedOut} item opname berhasil diubah statusnya menjadi OUT.\n";
         echo "=== SINKRONISASI STOK OPNAME SELESAI ===\n\n";
     }
+
+    /**
+     * Menjalankan sinkronisasi dan pembuatan Stock Gudang Jadi dari data opname yang ID Gudang Jadi-nya kosong.
+     * Dipanggil dengan perintah: php yii sync/opname-stock
+     */
+    public function actionOpnameStock()
+    {
+        echo "=== MEMULAI SINKRONISASI STOCK GUDANG JADI OPNAME ===\n";
+
+        $opnameList = \common\models\ar\TrnGudangJadiOpnamePcs::find()
+            ->where(['id_trn_gudang_jadi' => null])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        echo "Ditemukan " . count($opnameList) . " data opname tanpa ID Gudang Jadi.\n";
+
+        $linkedCount = 0;
+        $createdCount = 0;
+        $failedCount = 0;
+
+        foreach ($opnameList as $opname) {
+            $res = $opname->syncGudangJadiStock(1);
+            if ($res['success']) {
+                if ($res['action'] === 'linked') {
+                    $linkedCount++;
+                    echo "-> [LINKED] Opname #{$opname->id} ({$opname->qr_code}) -> GJ #{$res['gj_id']}\n";
+                } else {
+                    $createdCount++;
+                    echo "-> [CREATED] Opname #{$opname->id} ({$opname->qr_code}) -> GJ #{$res['gj_id']}\n";
+                }
+            } else {
+                $failedCount++;
+                echo "-> [FAILED] Opname #{$opname->id} ({$opname->qr_code}): {$res['message']}\n";
+            }
+        }
+
+        echo "-> Selesai: {$createdCount} dibuat, {$linkedCount} dihubungkan, {$failedCount} gagal.\n";
+        echo "=== SINKRONISASI STOCK GUDANG JADI OPNAME SELESAI ===\n\n";
+    }
 }

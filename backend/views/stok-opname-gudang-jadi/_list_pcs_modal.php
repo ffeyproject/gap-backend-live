@@ -59,10 +59,10 @@ foreach ($models as $m) {
                 <?php else: ?>
                     <?php foreach ($models as $idx => $model): ?>
                         <?php 
-                            $woNo = ($model->gudangJadi && $model->gudangJadi->wo) ? $model->gudangJadi->wo->no : '-';
-                            $scNo = ($model->gudangJadi && $model->gudangJadi->wo && $model->gudangJadi->wo->mo && $model->gudangJadi->wo->mo->scGreige && $model->gudangJadi->wo->mo->scGreige->sc) ? $model->gudangJadi->wo->mo->scGreige->sc->no : '-';
-                            $motifNama = ($model->gudangJadi && $model->gudangJadi->wo) ? $model->gudangJadi->wo->greigeNamaKain : (!empty($model->qr_code_desc) ? $model->qr_code_desc : '-');
-                            $colorWarna = ($model->gudangJadi && !empty($model->gudangJadi->color)) ? $model->gudangJadi->color : '-';
+                            $woNo = $model->woNo;
+                            $scNo = $model->scNo;
+                            $motifNama = $model->motif;
+                            $colorWarna = $model->color;
                         ?>
                         <tr>
                             <td class="text-center"><?= $idx + 1 ?></td>

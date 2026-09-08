@@ -111,12 +111,34 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
             ->andFilterWhere(['ilike', 't.join_piece', $this->join_piece])
             ->andFilterWhere(['ilike', 't.locs_code', $this->locs_code])
             ->andFilterWhere(['ilike', 't.remark', $this->remark])
-            ->andFilterWhere(['ilike', 'wo.no', $this->woNo])
             ->andFilterWhere(['ilike', 'sc.no', $this->scNo])
             ->andFilterWhere(['ilike', 'mkt.full_name', $this->marketingName])
-            ->andFilterWhere(['ilike', 'cust.name', $this->customerName])
-            ->andFilterWhere(['ilike', 'COALESCE(gj.color, \'\')', $this->color])
-            ->andFilterWhere(['ilike', 'COALESCE(g_group.nama_kain, g_mst.nama_kain, t.qr_code_desc, \'\')', $this->motif]);
+            ->andFilterWhere(['ilike', 'cust.name', $this->customerName]);
+
+        if (!empty($this->woNo)) {
+            $query->andWhere([
+                'or',
+                ['ilike', 'wo.no', $this->woNo],
+                ['ilike', 't.qr_code_desc', $this->woNo],
+                ['ilike', 't.qr_code', $this->woNo],
+            ]);
+        }
+
+        if (!empty($this->color)) {
+            $query->andWhere([
+                'or',
+                ['ilike', 'COALESCE(gj.color, \'\')', $this->color],
+                ['ilike', 't.qr_code_desc', $this->color],
+            ]);
+        }
+
+        if (!empty($this->motif)) {
+            $query->andWhere([
+                'or',
+                ['ilike', 'COALESCE(g_group.nama_kain, g_mst.nama_kain, \'\')', $this->motif],
+                ['ilike', 't.qr_code_desc', $this->motif],
+            ]);
+        }
 
         return $dataProvider;
     }

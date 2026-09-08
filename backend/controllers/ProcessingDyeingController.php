@@ -1547,6 +1547,10 @@ class ProcessingDyeingController extends Controller
 
     protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
     {
+        if (empty($kartuProsesId)) {
+            return;
+        }
+
         Yii::$app->db->createCommand()->insert('action_log_kartu_dyeing', [
             'user_id'       => Yii::$app->user->id,
             'username'      => Yii::$app->user->identity->username ?? null,

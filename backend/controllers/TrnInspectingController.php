@@ -1723,18 +1723,14 @@ class TrnInspectingController extends Controller
         }
 
         // ---------------------------------------------------
-        // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // LOG & UBAH STATUS MAKE UP PACKING (DYEING)
         // ---------------------------------------------------
-        $this->logKartuDyeing(
-            'make_up_packing',
-            $model->kartu_process_dyeing_id,
-            'Set status Make Up Packing Selesai Qr di Print'
-        );
-
-        // -----------------------------------------------
-        // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
-        // -----------------------------------------------
         if (!empty($model->kartu_process_dyeing_id)) {
+            $this->logKartuDyeing(
+                'make_up_packing',
+                $model->kartu_process_dyeing_id,
+                'Set status Make Up Packing Selesai Qr di Print'
+            );
 
             $kp = TrnKartuProsesDyeing::findOne($model->kartu_process_dyeing_id);
 
@@ -1882,18 +1878,14 @@ class TrnInspectingController extends Controller
         }
 
         // ---------------------------------------------------
-        // LOG SET STATUS MAKE UP PACKING via QR ALL
+        // LOG & UBAH STATUS MAKE UP PACKING (DYEING)
         // ---------------------------------------------------
-        $this->logKartuDyeing(
-            'make_up_packing',
-            $model->kartu_process_dyeing_id,
-            'Set status Make Up Packing Selesai Qr di Print'
-        );
-
-        // -----------------------------------------------
-        // UBAH STATUS KARTU PROSES DYEING BERDASARKAN ID
-        // -----------------------------------------------
         if (!empty($model->kartu_process_dyeing_id)) {
+            $this->logKartuDyeing(
+                'make_up_packing',
+                $model->kartu_process_dyeing_id,
+                'Set status Make Up Packing Selesai Qr di Print'
+            );
 
             $kp = TrnKartuProsesDyeing::findOne($model->kartu_process_dyeing_id);
 
@@ -2169,6 +2161,10 @@ class TrnInspectingController extends Controller
 
     protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
     {
+        if (empty($kartuProsesId)) {
+            return;
+        }
+
         // Hitung berapa kali aksi ini sudah pernah dicatat
         $count = ActionLogKartuDyeing::find()
             ->where([

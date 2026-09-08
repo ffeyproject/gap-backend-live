@@ -117,6 +117,74 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
+     * Sinkronisasi dan Tambah Stock Gudang Jadi secara massal untuk semua data Stok Opname yang ID Gudang Jadi-nya masih kosong.
+     * @return mixed
+     */
+    public function actionSyncStockGudangJadi()
+    {
+        $opnameList = TrnGudangJadiOpnamePcs::find()
+            ->where(['id_trn_gudang_jadi' => null])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        if (empty($opnameList)) {
+            Yii::$app->session->setFlash('info', 'Semua data Stok Opname sudah memiliki relasi ke Stock Gudang Jadi.');
+            return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+        }
+
+        $linkedCount = 0;
+        $createdCount = 0;
+        $failedCount = 0;
+        $failedMessages = [];
+        $userId = Yii::$app->user->id;
+
+        foreach ($opnameList as $opname) {
+            $res = $opname->syncGudangJadiStock($userId);
+            if ($res['success']) {
+                if ($res['action'] === 'linked') {
+                    $linkedCount++;
+                } else {
+                    $createdCount++;
+                }
+            } else {
+                $failedCount++;
+                if (count($failedMessages) < 5) {
+                    $failedMessages[] = "#{$opname->id} ({$opname->qr_code}): {$res['message']}";
+                }
+            }
+        }
+
+        $msg = "Sinkronisasi Stock Gudang Jadi selesai: {$createdCount} stock baru dibuat di Gudang Jadi, {$linkedCount} dihubungkan ke stock yang sudah ada.";
+        if ($failedCount > 0) {
+            $msg .= " ({$failedCount} data gagal diproses: " . implode(', ', $failedMessages) . ")";
+            Yii::$app->session->setFlash('warning', $msg);
+        } else {
+            Yii::$app->session->setFlash('success', $msg);
+        }
+
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+    }
+
+    /**
+     * Buat dan sinkronkan Stock Gudang Jadi untuk single item Stok Opname.
+     * @param int $id
+     * @return mixed
+     */
+    public function actionCreateStock($id)
+    {
+        $model = $this->findModel($id);
+        $res = $model->syncGudangJadiStock(Yii::$app->user->id);
+
+        if ($res['success']) {
+            Yii::$app->session->setFlash('success', $res['message']);
+        } else {
+            Yii::$app->session->setFlash('error', $res['message']);
+        }
+
+        return $this->redirect(Yii::$app->request->referrer ?: ['view', 'id' => $model->id]);
+    }
+
+    /**
      * Rekap Stok Opname Gudang Jadi (by Motif, Color, Opname Code, Location, Grade & Status).
      * @return mixed
      */
@@ -291,8 +359,8 @@ class StokOpnameGudangJadiController extends Controller
         ];
 
         foreach ($models as $m) {
-            $motif = ($m->gudangJadi && $m->gudangJadi->wo) ? $m->gudangJadi->wo->greigeNamaKain : (!empty($m->qr_code_desc) ? $m->qr_code_desc : '-');
-            $color = ($m->gudangJadi && !empty($m->gudangJadi->color)) ? $m->gudangJadi->color : '-';
+            $motif = $m->motif;
+            $color = $m->color;
             $gradeName = $m->gradeName;
             $qty = (float)$m->qty;
 
