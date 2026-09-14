@@ -231,6 +231,26 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
+     * Deletes an existing TrnGudangJadiOpnamePcs model.
+     * If deletion is successful, the browser will be redirected to the previous page or 'index'.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     * @throws \Throwable
+     * @throws \yii\db\StaleObjectException
+     */
+    public function actionDelete($id)
+    {
+        $model = $this->findModel($id);
+        $qrCode = $model->qr_code;
+        $model->delete();
+
+        Yii::$app->session->setFlash('success', "Data Stok Opname Pcs #{$id} ({$qrCode}) berhasil dihapus.");
+
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+    }
+
+    /**
      * Update location (locs_code) via AJAX
      * @return array
      */

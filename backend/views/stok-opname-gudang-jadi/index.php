@@ -263,7 +263,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
             [
                 'class' => 'kartik\grid\ActionColumn',
-                'template' => '{view} {create-stock}',
+                'template' => '{view} {create-stock} {delete}',
                 'buttons' => [
                     'view' => function($url, $model, $key) {
                         return Html::a('<span class="glyphicon glyphicon-eye-open"></span>', ['view', 'id' => $model->id], [
@@ -281,7 +281,15 @@ $this->params['breadcrumbs'][] = $this->title;
                             ]);
                         }
                         return '';
-                    }
+                    },
+                    'delete' => function($url, $model, $key) {
+                        return Html::a('<span class="glyphicon glyphicon-trash"></span>', ['delete', 'id' => $model->id], [
+                            'title' => 'Hapus Stok Opname Pcs',
+                            'class' => 'btn btn-xs btn-danger',
+                            'data-confirm' => 'Apakah Anda yakin ingin menghapus data stok opname #' . $model->id . ' (' . $model->qr_code . ') ini?',
+                            'data-method' => 'post',
+                        ]);
+                    },
                 ]
             ]
         ],

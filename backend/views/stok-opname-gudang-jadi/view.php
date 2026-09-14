@@ -24,6 +24,11 @@ $this->params['breadcrumbs'][] = $this->title;
                 'title' => 'Buat Stock Gudang Jadi dari data Opname ini',
             ]) ?>
         <?php endif; ?>
+        <?= Html::a('<i class="glyphicon glyphicon-trash"></i> Hapus', ['delete', 'id' => $model->id], [
+            'class' => 'btn btn-danger',
+            'data-confirm' => 'Apakah Anda yakin ingin menghapus data stok opname #' . $model->id . ' (' . $model->qr_code . ') ini?',
+            'data-method' => 'post',
+        ]) ?>
     </p>
 
     <div class="box box-primary">

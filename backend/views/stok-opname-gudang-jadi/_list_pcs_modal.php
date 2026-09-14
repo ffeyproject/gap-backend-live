@@ -97,6 +97,13 @@ foreach ($models as $m) {
                                     'target' => '_blank',
                                     'data-pjax' => '0',
                                 ]) ?>
+                                <?= Html::a('<i class="glyphicon glyphicon-trash"></i>', ['delete', 'id' => $model->id], [
+                                    'class' => 'btn btn-xs btn-danger',
+                                    'title' => 'Hapus Pcs',
+                                    'data-confirm' => 'Apakah Anda yakin ingin menghapus data stok opname #' . $model->id . ' (' . $model->qr_code . ') ini?',
+                                    'data-method' => 'post',
+                                    'data-pjax' => '0',
+                                ]) ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
