@@ -52,9 +52,12 @@ class TrnPrintStockController extends Controller
         $sumberDataUsed = 'system';
 
         if (!empty($subLocParam)) {
-            $opnameCount = TrnGudangJadiOpnamePcs::find()->where(['locs_code' => $subLocParam])->count();
+            $opnameCount = TrnGudangJadiOpnamePcs::find()
+                ->where(['locs_code' => $subLocParam])
+                ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
+                ->count();
 
-            // Jika mode opname dipilih atau (mode auto dan lokasi ini memiliki data opname)
+            // Jika mode opname dipilih atau (mode auto dan lokasi ini memiliki data opname aktif)
             if ($sumberDataParam === 'opname' || ($sumberDataParam === 'auto' && $opnameCount > 0)) {
                 $sumberDataUsed = 'opname';
                 $opnameRows = TrnGudangJadiOpnamePcs::find()
@@ -66,6 +69,7 @@ class TrnPrintStockController extends Controller
                     ->leftJoin(['sc_g' => 'trn_sc_greige'], 'mo.sc_greige_id = sc_g.id')
                     ->leftJoin(['g_group' => 'mst_greige_group'], 'sc_g.greige_group_id = g_group.id')
                     ->where(['t.locs_code' => $subLocParam])
+                    ->andWhere(['!=', 't.status', TrnGudangJadiOpnamePcs::STATUS_OUT])
                     ->orderBy(['t.id' => SORT_ASC])
                     ->all();
 
@@ -229,6 +233,7 @@ class TrnPrintStockController extends Controller
                 ->select(['note', 'status'])
                 ->from('trn_gudang_jadi')
                 ->where(['locs_code' => $subLocParam])
+                ->andWhere(['status' => TrnGudangJadi::STATUS_STOCK])
                 ->andWhere(['!=', 'note', ''])
                 ->andWhere(['is not', 'note', null])
                 ->all();
@@ -241,6 +246,7 @@ class TrnPrintStockController extends Controller
                 ->select(['remark'])
                 ->from('trn_gudang_jadi_opname_pcs')
                 ->where(['locs_code' => $subLocParam])
+                ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
                 ->andWhere(['!=', 'remark', ''])
                 ->andWhere(['is not', 'remark', null])
                 ->all();
