@@ -98,6 +98,11 @@ $this->params['breadcrumbs'][] = $this->title;
                             'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan status stok opname dengan status fisik Gudang Jadi saat ini?',
                             'title' => 'Ubah status opname menjadi OUT jika stok di Gudang Jadi sudah bukan Stock',
                         ]) . ' ' .
+                        Html::a('<i class="fa fa-cubes"></i> Sync Status Stock ke Gudang Jadi', ['sync-status-stock-gudang-jadi'], [
+                            'class' => 'btn btn-primary',
+                            'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan status Gudang Jadi menjadi Stock untuk semua data opname yang berstatus Stock/Verified?',
+                            'title' => 'Ubah status Gudang Jadi menjadi Stock jika pada Stok Opname berstatus Stock/Verified',
+                        ]) . ' ' .
                         Html::a('<i class="fa fa-plus-circle"></i> Sync & Tambah Stock Gudang Jadi', ['sync-stock-gudang-jadi'], [
                             'class' => 'btn btn-success',
                             'data-confirm' => 'Apakah Anda yakin ingin menyinkronkan data opname dan menambahkan stock ke Gudang Jadi yang belum memiliki ID Gudang Jadi?',

@@ -217,6 +217,37 @@ class SyncController extends Controller
     }
 
     /**
+     * Menjalankan sinkronisasi status Stock dari Stok Opname ke Gudang Jadi.
+     * Dipanggil dengan perintah: php yii sync/opname-stock-gudang-jadi
+     */
+    public function actionOpnameStockGudangJadi()
+    {
+        echo "=== MEMULAI SINKRONISASI STATUS STOCK KE GUDANG JADI ===\n";
+
+        $activeOpnameGudangJadiIds = (new \yii\db\Query())
+            ->select('id_trn_gudang_jadi')
+            ->from('trn_gudang_jadi_opname_pcs')
+            ->where(['!=', 'status', \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->andWhere(['is not', 'id_trn_gudang_jadi', null]);
+
+        $updatedStock = \common\models\ar\TrnGudangJadi::updateAll(
+            [
+                'status' => \common\models\ar\TrnGudangJadi::STATUS_STOCK,
+                'updated_at' => time(),
+                'updated_by' => 1,
+            ],
+            [
+                'and',
+                ['in', 'id', $activeOpnameGudangJadiIds],
+                ['!=', 'status', \common\models\ar\TrnGudangJadi::STATUS_STOCK],
+            ]
+        );
+
+        echo "-> Selesai: {$updatedStock} item di master Gudang Jadi berhasil diubah statusnya menjadi Stock.\n";
+        echo "=== SINKRONISASI SELESAI ===\n\n";
+    }
+
+    /**
      * Menjalankan sinkronisasi dan pembuatan Stock Gudang Jadi dari data opname yang ID Gudang Jadi-nya kosong.
      * Dipanggil dengan perintah: php yii sync/opname-stock
      */

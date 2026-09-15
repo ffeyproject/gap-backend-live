@@ -69,6 +69,27 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        if (!empty($this->id_trn_gudang_jadi)) {
+            // Jika status opname adalah STOCK atau VERIFIED (belum OUT), sinkronkan status trn_gudang_jadi menjadi STATUS_STOCK
+            if ($this->status !== self::STATUS_OUT) {
+                $gj = TrnGudangJadi::findOne($this->id_trn_gudang_jadi);
+                if ($gj && $gj->status !== TrnGudangJadi::STATUS_STOCK) {
+                    $gj->status = TrnGudangJadi::STATUS_STOCK;
+                    $gj->updated_at = time();
+                    $gj->updated_by = (Yii::$app instanceof \yii\web\Application && !Yii::$app->user->isGuest) ? Yii::$app->user->id : ($this->updated_by ?: 1);
+                    $gj->save(false, ['status', 'updated_at', 'updated_by']);
+                }
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function rules()
     {
         return [

@@ -117,6 +117,39 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
+     * Sinkronisasi status Stock ke Gudang Jadi:
+     * Mengubah status master Gudang Jadi (trn_gudang_jadi) yang berelasi menjadi STATUS_STOCK
+     * untuk seluruh data Stok Opname yang berstatus Stock atau Verified (belum OUT).
+     * @return mixed
+     */
+    public function actionSyncStatusStockGudangJadi()
+    {
+        // 1. Ambil id_trn_gudang_jadi dari data opname yang statusnya Stock atau Verified (bukan OUT)
+        $activeOpnameGudangJadiIds = (new \yii\db\Query())
+            ->select('id_trn_gudang_jadi')
+            ->from('trn_gudang_jadi_opname_pcs')
+            ->where(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->andWhere(['is not', 'id_trn_gudang_jadi', null]);
+
+        // 2. Update status master trn_gudang_jadi yang berelasi dan saat ini belum berstatus STATUS_STOCK menjadi STATUS_STOCK
+        $updatedStock = \common\models\ar\TrnGudangJadi::updateAll(
+            [
+                'status' => \common\models\ar\TrnGudangJadi::STATUS_STOCK,
+                'updated_at' => time(),
+                'updated_by' => Yii::$app->user->id,
+            ],
+            [
+                'and',
+                ['in', 'id', $activeOpnameGudangJadiIds],
+                ['!=', 'status', \common\models\ar\TrnGudangJadi::STATUS_STOCK],
+            ]
+        );
+
+        Yii::$app->session->setFlash('success', "Sinkronisasi selesai: {$updatedStock} item di Gudang Jadi berhasil diubah statusnya menjadi Stock.");
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+    }
+
+    /**
      * Sinkronisasi dan Tambah Stock Gudang Jadi secara massal untuk semua data Stok Opname yang ID Gudang Jadi-nya masih kosong.
      * @return mixed
      */
