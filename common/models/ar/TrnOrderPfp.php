@@ -24,6 +24,8 @@ use yii\db\Expression;
  * @property int|null $updated_at
  * @property int|null $updated_by
  * @property int $handling_id
+ * @property int|null $posted_at
+ * @property int|null $posted_by
  *
  * @property int $approved_by
  * @property int|null $approved_at
@@ -39,6 +41,7 @@ use yii\db\Expression;
  * @property User $createdBy
  * @property User $updatedBy
  * @property User $approvedBy
+ * @property User $postedBy
  */
 class TrnOrderPfp extends \yii\db\ActiveRecord
 {
@@ -92,7 +95,7 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
         return [
             [['greige_id', 'handling_id', 'qty', 'date', 'approved_by'], 'required'],
             [['greige_group_id', 'greige_id', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
-            [['greige_group_id', 'greige_id', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'handling_id', 'approved_by', 'approved_at', 'proses_sampai','batal_at','batal_by','jenis_gudang'], 'integer'],
+            [['greige_group_id', 'greige_id', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'handling_id', 'approved_by', 'approved_at', 'posted_at', 'posted_by', 'proses_sampai','batal_at','batal_by','jenis_gudang'], 'integer'],
             [['qty'], 'number'],
             [['note', 'approval_note'], 'string'],
 
@@ -110,6 +113,7 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
             [['handling_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstHandling::className(), 'targetAttribute' => ['handling_id' => 'id']],
             [['approved_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['approved_by' => 'id']],
+            [['posted_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['posted_by' => 'id']],
 
             ['jenis_gudang', 'default', 'value'=>TrnStockGreige::JG_FRESH],
         ];
@@ -134,6 +138,8 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
             'created_by' => 'Dibuat Oleh',
             'updated_at' => 'Diubah Pada',
             'updated_by' => 'Diubah Oleh',
+            'posted_at' => 'Diposting Pada',
+            'posted_by' => 'Diposting Oleh',
             'handling_id' => 'Handling ID',
             'approved_by' => 'Disetujui Oleh',
             'approved_at' => 'Disetujui Pada',
@@ -222,6 +228,14 @@ class TrnOrderPfp extends \yii\db\ActiveRecord
     public function getRejectBy()
     {
         return $this->hasOne(User::className(), ['id' => 'batal_by']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPostedBy()
+    {
+        return $this->hasOne(User::className(), ['id' => 'posted_by']);
     }
 
     

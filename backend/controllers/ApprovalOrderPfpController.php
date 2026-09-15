@@ -83,11 +83,13 @@ class ApprovalOrderPfpController extends Controller
                 $note = [$rejectNote];
             }
 
+            $model->posted_at = null;
+            $model->posted_by = null;
             $model->approved_at = null;
             $model->status = $model::STATUS_DRAFT;
             $model->approval_note = Json::encode($note);
 
-            if($model->save(false, ['posted_at', 'approved_at', 'status', 'approval_note']) !== false){
+            if($model->save(false, ['posted_at', 'posted_by', 'approved_at', 'status', 'approval_note']) !== false){
                 return true;
             }else{
                 throw new HttpException(500, 'Gagal menolak Order PFP.');

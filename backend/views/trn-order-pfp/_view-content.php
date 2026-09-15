@@ -72,14 +72,18 @@ use common\models\ar\TrnStockGreige;
                         'updated_at:datetime',
                         [
                             'label'=>'Diubah Oleh',
-                            'value'=>$model->updatedBy->full_name
+                            'value'=>$model->updatedBy ? $model->updatedBy->full_name : '-'
+                        ],
+                        'posted_at:datetime',
+                        [
+                            'label'=>'Diposting Oleh',
+                            'value'=>$model->postedBy ? $model->postedBy->full_name : ($model->posted_by ? $model->posted_by : null)
                         ],
                         'approved_at:datetime',
                         [
                             'attribute'=>'approved_by',
-                            'value'=>$model->approvedBy->full_name
+                            'value'=>$model->approvedBy ? $model->approvedBy->full_name : ($model->approved_by ? $model->approved_by : null)
                         ],
-                        'approved_at:datetime',
                         'approval_note',
                         'batal_at:datetime',
                         [

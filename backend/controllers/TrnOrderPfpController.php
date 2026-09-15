@@ -137,6 +137,8 @@ class TrnOrderPfpController extends Controller
         }
 
         $model->status = $model::STATUS_POSTED;
+        $model->posted_at = time();
+        $model->posted_by = Yii::$app->user->id;
 
         //validasi stock dan booked greige, sementara di bypass dulu karena order bisa dibuat walaupun stock lebih sedikit dibanding jumlah yang dimasukan.
         /*$greige = $model->greige;
@@ -174,7 +176,7 @@ class TrnOrderPfpController extends Controller
             }
         }
 
-        $model->save(false, ['status']);
+        $model->save(false, ['status', 'posted_at', 'posted_by']);
 
         Yii::$app->session->setFlash('success', 'Order PFP berhasil diposting.');
         return $this->redirect(['view', 'id' => $model->id]);
