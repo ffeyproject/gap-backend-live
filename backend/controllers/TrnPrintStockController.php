@@ -229,37 +229,79 @@ class TrnPrintStockController extends Controller
 
         $outNotes = [];
         if (!empty($subLocParam)) {
+            // 1. Ambil riwayat pemotongan stock langsung dari tabel trn_potong_stock
+            $potongStockRows = (new Query())
+                ->select([
+                    'ps.id',
+                    'ps.no',
+                    'ps.date',
+                    'ps.diperintahkan_oleh',
+                    'ps.note',
+                    'gj.qty as original_qty',
+                    'gj.unit as original_unit',
+                    'wo.no as no_wo'
+                ])
+                ->from('trn_potong_stock ps')
+                ->innerJoin('trn_gudang_jadi gj', 'ps.stock_id = gj.id')
+                ->leftJoin('trn_wo wo', 'gj.wo_id = wo.id')
+                ->where(['gj.locs_code' => $subLocParam])
+                ->andWhere(['ps.status' => \common\models\ar\TrnPotongStock::STATUS_POSTED])
+                ->all();
+
+            foreach ($potongStockRows as $psRow) {
+                $pItems = (new Query())
+                    ->select(['qty'])
+                    ->from('trn_potong_stock_item')
+                    ->where(['potong_stock_id' => $psRow['id']])
+                    ->column();
+
+                $potongQtys = array_map('floatval', $pItems);
+                $sumP = array_sum($potongQtys);
+                $origQty = (float)$psRow['original_qty'];
+                $sisa = $origQty - $sumP;
+                if ($sisa > 0) {
+                    $potongQtys[] = (float)$sisa;
+                }
+                $tglFormatted = !empty($psRow['date']) ? date('d/m/Y', strtotime($psRow['date'])) : '';
+                $noDoc = !empty($psRow['no']) ? ' No: ' . $psRow['no'] : ' ID: ' . $psRow['id'];
+                $outNotes[] = 'PEMOTONGAN STOCK (' . $noDoc . ($tglFormatted ? ', Tgl ' . $tglFormatted : '') . '): Qty Asal ' . $origQty . ' dipotong menjadi ' . implode(' + ', $potongQtys) . (!empty($psRow['note']) ? ' [' . $psRow['note'] . ']' : '');
+            }
+
+            // 2. Ambil catatan dari trn_gudang_jadi (baik status STOCK maupun OUT/DIPOTONG yang memiliki catatan)
             $outGudangJadi = (new Query())
-                ->select(['note', 'status'])
+                ->select(['note', 'status', 'hasil_pemotongan', 'dipotong', 'qty'])
                 ->from('trn_gudang_jadi')
                 ->where(['locs_code' => $subLocParam])
-                ->andWhere(['status' => TrnGudangJadi::STATUS_STOCK])
                 ->andWhere(['!=', 'note', ''])
                 ->andWhere(['is not', 'note', null])
                 ->all();
             foreach ($outGudangJadi as $oG) {
-                $outNotes[] = $oG['note'];
+                if (!empty($oG['note'])) {
+                    $outNotes[] = $oG['note'];
+                }
             }
 
-            // Ambil catatan dari Stok Opname jika ada
+            // 3. Ambil catatan dari Stok Opname Pcs (aktif maupun out)
             $outOpnamePcs = (new Query())
-                ->select(['remark'])
+                ->select(['remark', 'status', 'qty'])
                 ->from('trn_gudang_jadi_opname_pcs')
                 ->where(['locs_code' => $subLocParam])
-                ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
                 ->andWhere(['!=', 'remark', ''])
                 ->andWhere(['is not', 'remark', null])
                 ->all();
             foreach ($outOpnamePcs as $oP) {
-                $outNotes[] = $oP['remark'];
+                if (!empty($oP['remark'])) {
+                    $outNotes[] = $oP['remark'];
+                }
             }
 
-            // Ambil data pengiriman buyer (Surat Jalan / trn_kirim_buyer_header) yang berasal dari lokasi palet ini
+            // 4. Ambil data pengiriman buyer (Surat Jalan / trn_kirim_buyer_header) yang berasal dari lokasi palet ini
             $kirimBuyerItems = (new Query())
                 ->select([
                     'header.no as no_sj',
                     'header.date as tgl_sj',
                     'header.nama_buyer',
+                    'header.status as status_sj',
                     'gudang.qty',
                     'gudang.unit'
                 ])
@@ -273,8 +315,30 @@ class TrnPrintStockController extends Controller
             foreach ($kirimBuyerItems as $kbItem) {
                 $qtyYard = (float)$kbItem['qty'];
                 $buyerName = !empty($kbItem['nama_buyer']) ? ' BUYER: ' . $kbItem['nama_buyer'] : '';
-                $tglFormatted = !empty($kbItem['tgl_sj']) ? date('d/m/Y', strtotime($kbItem['tgl_sj'])) : date('d/m/Y');
-                $outNotes[] = 'PENGIRIMAN BUYER ' . $qtyYard . ' YARD: NO SJ ' . $kbItem['no_sj'] . $buyerName . ' (TGL ' . $tglFormatted . ')';
+                $tglFormatted = !empty($kbItem['tgl_sj']) ? date('d/m/Y', strtotime($kbItem['tgl_sj'])) : '';
+                $noSj = !empty($kbItem['no_sj']) ? $kbItem['no_sj'] : 'DRAFT';
+                $outNotes[] = 'STOCK KELUAR (PENGIRIMAN BUYER): ' . $qtyYard . ' YD | NO SJ: ' . $noSj . $buyerName . ($tglFormatted ? ' (TGL ' . $tglFormatted . ')' : '');
+            }
+
+            // 5. Ambil data pengiriman makloon (trn_kirim_makloon) jika ada
+            $kirimMakloonItems = (new Query())
+                ->select([
+                    'km.no as no_doc',
+                    'km.date as tgl_doc',
+                    'gudang.qty',
+                    'gudang.unit'
+                ])
+                ->from('trn_kirim_makloon_item item')
+                ->innerJoin('trn_kirim_makloon km', 'item.kirim_makloon_id = km.id')
+                ->innerJoin('trn_gudang_jadi gudang', 'item.stock_id = gudang.id')
+                ->where(['gudang.locs_code' => $subLocParam])
+                ->all();
+
+            foreach ($kirimMakloonItems as $kmItem) {
+                $qtyYard = (float)$kmItem['qty'];
+                $tglFormatted = !empty($kmItem['tgl_doc']) ? date('d/m/Y', strtotime($kmItem['tgl_doc'])) : '';
+                $noDoc = !empty($kmItem['no_doc']) ? $kmItem['no_doc'] : '-';
+                $outNotes[] = 'STOCK KELUAR (KIRIM MAKLOON): ' . $qtyYard . ' YD | NO: ' . $noDoc . ($tglFormatted ? ' (TGL ' . $tglFormatted . ')' : '');
             }
         }
         $outNotes = array_values(array_unique($outNotes));

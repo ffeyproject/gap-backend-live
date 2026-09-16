@@ -346,9 +346,11 @@ $this->params['breadcrumbs'][] = $this->title;
                                 $noteText = trim($noteText);
                                 if (empty($noteText)) continue;
                                 
-                                if (strpos($noteText, 'Hasil Pemotongan') !== false || strpos($noteText, 'Dari inspecting') !== false || strpos($noteText, 'Barang Keluar:') !== false) {
+                                // Abaikan teks teknis inspecting bawaan yang tidak relevan dengan mutasi
+                                if (strpos($noteText, 'Dari inspecting') !== false) {
                                     continue;
                                 }
+
                                 if (strpos($noteText, 'Pemotongan ID:') !== false && strpos($noteText, 'dipotong') === false) {
                                     if (preg_match('/Pemotongan ID:\s*(\d+)/i', $noteText, $matches)) {
                                         $potongId = (int)$matches[1];
@@ -383,7 +385,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     <table style="width: 100%; border: 1px dashed #666; padding: 6px; font-size: 10px; margin-top: 15px;">
                         <tr>
                             <td colspan="2" style="font-weight: bold; border-bottom: 1px dashed #ccc; padding-bottom: 4px; margin-bottom: 4px;">
-                                Catatan / Keterangan Mutasi Stok Palet Ini:
+                                Catatan / Riwayat Mutasi Stok Palet Ini (Pemotongan & Stok Keluar):
                             </td>
                         </tr>
                         <?php foreach ($cleanNotes as $noteText): ?>

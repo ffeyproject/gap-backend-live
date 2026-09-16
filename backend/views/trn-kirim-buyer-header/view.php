@@ -139,7 +139,7 @@ $formatter = Yii::$app->formatter;
                         'label'=>'Nomor WO',
                         'value'=>function($data){
                             /* @var $data TrnGudangJadi*/
-                            return $data->wo->no;
+                            return $data->wo ? $data->wo->no : '-';
                         }
                     ],
                     'qty:decimal',
@@ -147,7 +147,7 @@ $formatter = Yii::$app->formatter;
                         'attribute' => 'unit',
                         'value' => function($data){
                             /* @var $data TrnGudangJadi*/
-                            return MstGreigeGroup::unitOptions()[$data->unit];
+                            return isset(MstGreigeGroup::unitOptions()[$data->unit]) ? MstGreigeGroup::unitOptions()[$data->unit] : '-';
                         },
                         'filterType' => GridView::FILTER_SELECT2,
                         'filterWidgetOptions' => [
@@ -170,7 +170,7 @@ $formatter = Yii::$app->formatter;
                 ?>
                 <div class="box">
                     <div class="box-header with-border">
-                        <h3 class="box-title">WO: <?=$kirimBuyerModel->wo->no?></h3>
+                        <h3 class="box-title">WO: <?= ($kirimBuyerModel->wo ? $kirimBuyerModel->wo->no : '-') ?></h3>
                         <div class="box-tools pull-right">
                             <span class="label label-primary"><?=count($modelsKirimBuyerItem)?></span>
                         </div>
@@ -184,11 +184,11 @@ $formatter = Yii::$app->formatter;
                                     'attributes' => [
                                         [
                                             'label'=>'NOMOR SC',
-                                            'value'=>$kirimBuyerModel->sc->no
+                                            'value'=> $kirimBuyerModel->sc ? $kirimBuyerModel->sc->no : ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo && $kirimBuyerModel->wo->mo->sc ? $kirimBuyerModel->wo->mo->sc->no : '-')
                                         ],
                                         [
                                             'label'=>'GREIGE',
-                                            'value'=>$kirimBuyerModel->wo->greige->nama_kain
+                                            'value'=> ($kirimBuyerModel->wo && $kirimBuyerModel->wo->greige) ? $kirimBuyerModel->wo->greige->nama_kain : '-'
                                         ],
                                         [
                                             'label'=>'ALIAS',
@@ -218,15 +218,15 @@ $formatter = Yii::$app->formatter;
                                     'attributes' => [
                                         [
                                             'label'=>'NOMOR MO',
-                                            'value'=>$kirimBuyerModel->mo->no
+                                            'value'=> $kirimBuyerModel->mo ? $kirimBuyerModel->mo->no : ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo ? $kirimBuyerModel->wo->mo->no : '-')
                                         ],
                                         [
                                             'label'=>'NOMOR WO',
-                                            'value'=>$kirimBuyerModel->wo->no
+                                            'value'=> $kirimBuyerModel->wo ? $kirimBuyerModel->wo->no : '-'
                                         ],
                                         [
                                             'label'=>'UNIT',
-                                            'value'=> MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit]
+                                            'value'=> isset(MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit]) ? MstGreigeGroup::unitOptions()[$kirimBuyerModel->unit] : '-'
                                         ],
                                     ],
                                 ]) ?>
