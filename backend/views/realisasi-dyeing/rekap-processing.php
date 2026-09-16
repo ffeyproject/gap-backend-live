@@ -12,10 +12,11 @@ use yii\helpers\Json;
 /* @var $searchModel common\models\ar\TrnKartuProsesDyeingSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
-$this->title = 'Realisasi Dyeing Formated';
+$this->title = 'Dyeing untuk Processing';
+$this->params['breadcrumbs'][] = ['label' => 'Rekap', 'url' => ['/rekap/index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="realisasi-dyieng-formated">
+<div class="realisasi-dyeing-processing">
 
     <div class="box box-primary">
         <div class="box-header with-border">
@@ -23,7 +24,7 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
         <div class="box-body">
             <?php $form = ActiveForm::begin([
-                'action' => ['rekap-formated'],
+                'action' => ['rekap-processing'],
                 'method' => 'get',
             ]); ?>
             <div class="row">
@@ -38,8 +39,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
                 <div class="col-md-5" style="padding-top: 25px;">
                     <?= Html::submitButton('<i class="glyphicon glyphicon-search"></i> Tampilkan Data', ['class' => 'btn btn-primary']) ?>
-                    <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-formated'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data (500+ Baris) ke Excel']) ?>
-                    <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['rekap-formated'], ['class' => 'btn btn-default']) ?>
+                    <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data (500+ Baris) ke Excel']) ?>
+                    <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['rekap-processing'], ['class' => 'btn btn-default']) ?>
                 </div>
             </div>
             <?php ActiveForm::end(); ?>
@@ -57,8 +58,8 @@ $this->params['breadcrumbs'][] = $this->title;
         'filterModel' => $searchModel,
         'panel' => [
             'type' => 'default',
-            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-formated', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear], ['class' => 'btn btn-default']) . ' ' .
-                Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-formated'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data ke Excel']),
+            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-processing', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear], ['class' => 'btn btn-default']) . ' ' .
+                Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data ke Excel']),
             //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
             //'footer'=>false
         ],
@@ -144,6 +145,24 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'woDateRange',
                 'label' => 'TANGGAL WO',
                 'value' => 'wo.date',
+                'format' => ['date', 'php:d/m/y'],
+                'group' => true,
+                'subGroupOf' => 1,
+                'filterType' => GridView::FILTER_DATE_RANGE,
+                'filterWidgetOptions' => [
+                    'convertFormat'=>true,
+                    'pluginOptions'=>[
+                        'locale'=>[
+                            'format'=>'Y-m-d',
+                            'separator'=>' to ',
+                        ]
+                    ]
+                ],
+            ],
+            [
+                'attribute' => 'woTglKirimRange',
+                'label' => 'TANGGAL KIRIM',
+                'value' => 'wo.tgl_kirim',
                 'format' => ['date', 'php:d/m/y'],
                 'group' => true,
                 'subGroupOf' => 1,
@@ -376,7 +395,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="box-header with-border">
             <h3 class="box-title"><strong><i class="glyphicon glyphicon-list-alt"></i> WO Disetujui (Belum Ada Kartu Proses)</strong></h3>
             <div class="box-tools pull-right">
-                <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel (WO Disetujui)', array_merge(['export-no-nk-formated'], Yii::$app->request->queryParams), ['class' => 'btn btn-sm btn-warning', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Seluruh Data WO Disetujui ke Excel']) ?>
+                <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel (WO Disetujui)', array_merge(['export-no-nk-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-sm btn-warning', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Seluruh Data WO Disetujui ke Excel']) ?>
             </div>
         </div>
         <div class="box-body">
@@ -458,6 +477,13 @@ $this->params['breadcrumbs'][] = $this->title;
                         'attribute' => 'dateRangeWo',
                         'label' => 'TANGGAL WO',
                         'value' => 'wo.date',
+                        'format' => ['date', 'php:d/m/y'],
+                        'group' => true,
+                        'subGroupOf' => 1,
+                    ],
+                    [
+                        'label' => 'TANGGAL KIRIM',
+                        'value' => 'wo.tgl_kirim',
                         'format' => ['date', 'php:d/m/y'],
                         'group' => true,
                         'subGroupOf' => 1,

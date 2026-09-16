@@ -103,7 +103,7 @@ class ProcessingDyeingController extends Controller
                         ->one();
 
                     if ($log) {
-                        $card->approved_at = $log->created_at;
+                        $card->approved_at = strtotime($log->created_at);
                         $card->approved_by = $log->user_id; // optional
                         if ($card->save(false)) { // skip validation to bypass other constraints
                             $updatedCount++;

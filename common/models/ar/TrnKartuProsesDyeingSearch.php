@@ -18,6 +18,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     private $to_date;
     public $motif;
     public $woDateRange;
+    public $woTglKirimRange;
     public $openDateRange;
     public $marketingName;
     public $dateRangeMasukPacking;
@@ -28,6 +29,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $dateReangeTopingMatching;
     public $shift;
     public $woMonth;
+    public $woYear;
     public $processDates = [];
     public $terakhir_proses;
     public $dynamicFilters = [];
@@ -40,7 +42,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'nama_warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift', 'processDates'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth', 'terakhir_proses'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','woTglKirimRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth', 'woYear', 'terakhir_proses'], 'safe'],
             [['toping_matching','ready_colour'], 'boolean'],
         ];
     }
@@ -244,10 +246,27 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             }
         }
 
+        if(!empty($this->woTglKirimRange)){
+            $this->from_date = substr($this->woTglKirimRange, 0, 10);
+            $this->to_date = substr($this->woTglKirimRange, 14);
+
+            if($this->from_date == $this->to_date){
+                $query->andFilterWhere(['trn_wo.tgl_kirim' => $this->from_date]);
+            }else{
+                 $query->andFilterWhere(['between', 'trn_wo.tgl_kirim', $this->from_date, $this->to_date]);
+            }
+        }
+
         if (!empty($this->woMonth)) {
-            $currentYear = date('Y');
+            $currentYear = !empty($this->woYear) ? $this->woYear : date('Y');
             $query->andWhere(new Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month"), [
                 ':wo_month' => "{$currentYear}-{$this->woMonth}"
+            ]);
+        }
+
+        if (!empty($this->woYear)) {
+            $query->andWhere(new Expression("EXTRACT(YEAR FROM trn_wo.date) = :wo_year"), [
+                ':wo_year' => $this->woYear
             ]);
         }
 

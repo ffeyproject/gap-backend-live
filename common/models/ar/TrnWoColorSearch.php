@@ -5,6 +5,7 @@ namespace common\models\ar;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use common\models\ar\TrnWoColor;
+use yii\db\Expression;
 
 /**
  * TrnWoColorSearch represents the model behind the search form of `common\models\ar\TrnWoColor`.
@@ -40,6 +41,7 @@ class TrnWoColorSearch extends TrnWoColor
     private $to_date_ready_colour;
 
     public $woNo;
+    public $woYear;
     /**
      * {@inheritdoc}
      */
@@ -51,7 +53,7 @@ class TrnWoColorSearch extends TrnWoColor
             [['note','dateRangeReadyColour'], 'safe'],
             [
                 [
-                    'scNo', 'moNo', 'woNo', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
+                    'scNo', 'moNo', 'woNo', 'woYear', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
                     'scGreigeNamaKain', 'proccess', 'papperTubeName', 'customerName', 'tipeKontrak'
                 ],
                 'safe'
@@ -200,6 +202,12 @@ class TrnWoColorSearch extends TrnWoColor
             }else{
                 $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date_wo, $this->to_date_wo]);
             }
+        }
+
+        if (!empty($this->woYear)) {
+            $query->andWhere(new Expression("EXTRACT(YEAR FROM trn_wo.date) = :wo_year"), [
+                ':wo_year' => $this->woYear
+            ]);
         }
 
        if (!empty($this->dateRangeReadyColour)) {

@@ -54,7 +54,7 @@ class SyncVerpackingController extends Controller
                         ->one();
 
                     if ($log) {
-                        $card->approved_at = $log->created_at;
+                        $card->approved_at = strtotime($log->created_at);
                         $card->approved_by = $log->user_id; // opsional
                         if ($card->save(false)) { // skip validasi untuk melewati constraint lain
                             $updatedCount++;

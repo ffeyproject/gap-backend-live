@@ -1114,6 +1114,10 @@ $moduleId = $controller->module->id;
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-formated'
                             ],
                             [
+                                'label' => 'Dyeing untuk Processing', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-processing'],
+                                'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-processing'
+                            ],
+                            [
                                 'label' => 'DYEING FORMATED', 'icon' => 'circle-o', 'url' => ['/realisasi-dyeing/rekap-formated-no-nk'],
                                 'active' => $moduleId == 'app-backend' && $controllerId == 'realisasi-dyeing' && $actionId=='rekap-formated-no-nk'
                             ],

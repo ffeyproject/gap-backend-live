@@ -700,4 +700,23 @@ class TrnWo extends \yii\db\ActiveRecord
         }
         return $totalPanjang === null ? 0 : $totalPanjang;
     }
+
+    /**
+     * @return array
+     */
+    public static function yearOptions()
+    {
+        $years = (new \yii\db\Query())
+            ->select(new Expression("DISTINCT EXTRACT(YEAR FROM date)::integer as year"))
+            ->from(self::tableName())
+            ->where('date IS NOT NULL')
+            ->orderBy(['year' => SORT_DESC])
+            ->column();
+
+        if (empty($years)) {
+            $curYear = (int)date('Y');
+            $years = range($curYear, $curYear - 5);
+        }
+        return array_combine($years, $years);
+    }
 }
