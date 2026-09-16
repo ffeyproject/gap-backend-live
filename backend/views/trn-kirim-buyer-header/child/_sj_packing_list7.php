@@ -64,10 +64,10 @@ use yii\helpers\Html;
                     foreach ($kirimBuyerModel->trnKirimBuyerItems as $pssk) {
                         $no_bal = $pssk['no_bal'];
                         $qty = $pssk['qty'];
-                        $no_wo = $kirimBuyerModel->wo->no;
-                        $color = $pssk->stock->color ?? '';
-                        $grade = $pssk->stock->grade ?? '';
-                        $design = $kirimBuyerModel->nama_kain_alias;
+                        $no_wo = $kirimBuyerModel->wo ? $kirimBuyerModel->wo->no : '-';
+                        $color = $pssk->stock ? $pssk->stock->color : '';
+                        $grade = $pssk->stock ? $pssk->stock->grade : '';
+                        $design = $kirimBuyerModel->nama_kain_alias ?: '-';
                         $unit = $kirimBuyerModel->unit;
 
 

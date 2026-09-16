@@ -84,9 +84,20 @@ use yii\helpers\Html;
                 /* @var $kirimBuyerModel TrnKirimBuyer*/
                 $modelsKirimBuyerItem = $kirimBuyerModel->trnKirimBuyerItems;
                 ?>
+                <?php
+                $jenisKainVal = null;
+                if ($kirimBuyerModel->scGreige && $kirimBuyerModel->scGreige->greigeGroup) {
+                    $jenisKainVal = $kirimBuyerModel->scGreige->greigeGroup->jenis_kain;
+                } elseif ($kirimBuyerModel->wo && $kirimBuyerModel->wo->scGreige && $kirimBuyerModel->wo->scGreige->greigeGroup) {
+                    $jenisKainVal = $kirimBuyerModel->wo->scGreige->greigeGroup->jenis_kain;
+                } elseif ($kirimBuyerModel->wo && $kirimBuyerModel->wo->greige && $kirimBuyerModel->wo->greige->group) {
+                    $jenisKainVal = $kirimBuyerModel->wo->greige->group->jenis_kain;
+                }
+                $jenisKainLabel = ($jenisKainVal !== null && isset(MstGreigeGroup::jenisKainOptions()[$jenisKainVal])) ? MstGreigeGroup::jenisKainOptions()[$jenisKainVal] : '';
+                ?>
                 <tr>
                     <td style="text-align: center;"><?=$i?></td>
-                    <td><?=MstGreigeGroup::jenisKainOptions()[$kirimBuyerModel->scGreige->greigeGroup->jenis_kain]?> <?=$kirimBuyerModel->nama_kain_alias?></td>
+                    <td><?= Html::encode(trim($jenisKainLabel . ' ' . ($kirimBuyerModel->nama_kain_alias ?: ''))) ?></td>
                     <td>
                         <?php
                         $ct = count($modelsKirimBuyerItem);

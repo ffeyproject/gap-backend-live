@@ -92,18 +92,42 @@ use yii\helpers\Html;
                 <?php
                 /* @var $kirimBuyerModel TrnKirimBuyer*/
                 $modelsKirimBuyerItem = $kirimBuyerModel->trnKirimBuyerItems;
-                $artikel = $kirimBuyerModel->wo->mo->article;
-                $jenisProcess = $kirimBuyerModel->wo->mo->process;
-                $kodeDesign = $kirimBuyerModel->wo->mo->design;
+                $artikel = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->article : ($kirimBuyerModel->nama_kain_alias ?: '-');
+                $jenisProcess = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->process : null;
+                $kodeDesign = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->design : '';
 
+                // Process label
+                $processVal = null;
+                if ($kirimBuyerModel->wo && $kirimBuyerModel->wo->scGreige) {
+                    $processVal = $kirimBuyerModel->wo->scGreige->process;
+                } elseif ($kirimBuyerModel->scGreige) {
+                    $processVal = $kirimBuyerModel->scGreige->process;
+                }
+                $processLabel = ($processVal !== null && isset(TrnScGreige::processOptions()[$processVal])) ? TrnScGreige::processOptions()[$processVal] : '';
+
+                // Lebar Kain
+                $lebarKainVal = null;
+                if ($kirimBuyerModel->scGreige && $kirimBuyerModel->scGreige->greigeGroup) {
+                    $lebarKainVal = $kirimBuyerModel->scGreige->greigeGroup->lebar_kain;
+                } elseif ($kirimBuyerModel->wo && $kirimBuyerModel->wo->scGreige && $kirimBuyerModel->wo->scGreige->greigeGroup) {
+                    $lebarKainVal = $kirimBuyerModel->wo->scGreige->greigeGroup->lebar_kain;
+                } elseif ($kirimBuyerModel->wo && $kirimBuyerModel->wo->greige && $kirimBuyerModel->wo->greige->group) {
+                    $lebarKainVal = $kirimBuyerModel->wo->greige->group->lebar_kain;
+                }
+                $lebarKainLabel = ($lebarKainVal !== null && isset(MstGreigeGroup::lebarKainOptions()[$lebarKainVal])) ? MstGreigeGroup::lebarKainOptions()[$lebarKainVal] : '';
+
+                $deskripsiProses = trim($processLabel . ' ' . $lebarKainLabel);
+                if (empty($deskripsiProses)) {
+                    $deskripsiProses = $kirimBuyerModel->nama_kain_alias ?: '-';
+                }
                 ?>
                 <tr>
                     <td style="text-align: center;"><strong><?=$i?></strong></td>
-                    <td><strong><?=TrnScGreige::processOptions()[$kirimBuyerModel->wo->scGreige->process] ?> <?=MstGreigeGroup::lebarKainOptions()[$kirimBuyerModel->scGreige->greigeGroup->lebar_kain]?></strong></td>
+                    <td><strong><?= Html::encode($deskripsiProses) ?></strong></td>
                     <?php if ($jenisProcess == TrnScGreige::PROCESS_PRINTING || $jenisProcess == TrnScGreige::PROCESS_DIGITAL_PRINTING) { ?>
-                         <td><strong><?=$artikel?> / <?= $kodeDesign ?></strong></td>
+                         <td><strong><?= Html::encode($artikel . ($kodeDesign ? ' / ' . $kodeDesign : '')) ?></strong></td>
                     <?php }else{ ?>
-                         <td><strong><?=$artikel?></strong></td>
+                         <td><strong><?= Html::encode($artikel) ?></strong></td>
                     <?php } ?>
                     <td>
                         <strong>

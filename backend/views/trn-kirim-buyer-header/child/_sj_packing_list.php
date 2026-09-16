@@ -66,16 +66,16 @@ use yii\helpers\Html;
                     foreach ($kirimBuyerModel->trnKirimBuyerItems as $pssk) {
                         $no_bal = $pssk['no_bal'];
                         $qty = $pssk['qty'];
-                        $no_wo = $kirimBuyerModel->wo->no;
-                        $color = $pssk->stock->color ?? '';
-                        $grade = $pssk->stock->grade ?? '';
-                        $design = $kirimBuyerModel->nama_kain_alias;
-                        $artikel = $kirimBuyerModel->wo->mo->article;
+                        $no_wo = $kirimBuyerModel->wo ? $kirimBuyerModel->wo->no : '-';
+                        $color = $pssk->stock ? $pssk->stock->color : '';
+                        $grade = $pssk->stock ? $pssk->stock->grade : '';
+                        $design = $kirimBuyerModel->nama_kain_alias ?: '-';
+                        $artikel = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->article : ($kirimBuyerModel->nama_kain_alias ?: '-');
                         $unit = $kirimBuyerModel->unit;
-                        $jenisProcess = $kirimBuyerModel->wo->mo->process;
-                        $kodeDesign = $kirimBuyerModel->wo->mo->design;
-                        $noLot  = $pssk->stock->noLot;
-                        $note = $kirimBuyerModel->note;
+                        $jenisProcess = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->process : null;
+                        $kodeDesign = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->design : '';
+                        $noLot  = ($pssk->stock && method_exists($pssk->stock, 'getNoLot')) ? $pssk->stock->noLot : '-';
+                        $note = $kirimBuyerModel->note ?: '-';
 
 
                         ####################################### start of new code ver 1 ####################################################
