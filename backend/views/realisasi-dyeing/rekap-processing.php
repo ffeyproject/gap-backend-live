@@ -78,7 +78,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Nomor WO',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'blank']);
+                    return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'_blank']);
                 },
                 'group' => true,
                 'format'=>'raw'
@@ -182,7 +182,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'NK',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->nomor_kartu ? Html::a($data->nomor_kartu, ['/trn-kartu-proses-dyeing/view', 'id'=>$data->id], ['title'=>'Lihat Kartu', 'target'=>'blank']) : null;
+                    return $data->nomor_kartu ? Html::a($data->nomor_kartu, ['/processing-dyeing/view', 'id'=>$data->id], ['title'=>'Lihat Kartu', 'target'=>'_blank']) : null;
                     },
                 'format'=>'html'
             ],
@@ -382,7 +382,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     if($id === null){
                         return $total;
                     }
-                    return Html::a($total, ['/penerimaan-inspecting/view', 'id'=>$id], ['title'=>'Lihat Inspecting Detail', 'target'=>'blank']);
+                    return Html::a($total, ['/penerimaan-inspecting/view', 'id'=>$id], ['title'=>'Lihat Inspecting Detail', 'target'=>'_blank']);
 
                 },
                 'format'=>'html'
@@ -412,7 +412,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         'label' => 'Nomor WO',
                         'value' => function($data){
                             /* @var $data \common\models\ar\TrnWoColor*/
-                            return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'blank']);
+                            return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'_blank']);
                         },
                         'group' => true,
                         'format' => 'raw'
