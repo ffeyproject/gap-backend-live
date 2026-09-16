@@ -97,15 +97,21 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute'=>'status',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    //return $data->status;
-                    return $data::statusOptions()[$data->status];
+                    return isset($data::statusOptions()[$data->status]) ? $data::statusOptions()[$data->status] : $data->status;
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
-                    'data' => [
-                        TrnKartuProsesDyeing::STATUS_APPROVED => TrnKartuProsesDyeing::statusOptions()[TrnKartuProsesDyeing::STATUS_APPROVED],
-                        TrnKartuProsesDyeing::STATUS_INSPECTED => TrnKartuProsesDyeing::statusOptions()[TrnKartuProsesDyeing::STATUS_INSPECTED],
-                    ],
+                    'data' => array_diff_key(
+                        TrnKartuProsesDyeing::statusOptions(),
+                        array_flip([
+                            TrnKartuProsesDyeing::STATUS_DRAFT,
+                            TrnKartuProsesDyeing::STATUS_POSTED,
+                            TrnKartuProsesDyeing::STATUS_DELIVERED,
+                            TrnKartuProsesDyeing::STATUS_GANTI_GREIGE,
+                            TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED,
+                            TrnKartuProsesDyeing::STATUS_BATAL,
+                        ])
+                    ),
                     'options' => ['placeholder' => '...'],
                     'pluginOptions' => [
                         'allowClear' => true

@@ -85,10 +85,14 @@ class TrnKartuProsesDyeingController extends Controller
         $params = Yii::$app->request->queryParams;
         $dataProvider = $searchModel->search($params);
 
-        $dataProvider->query->andWhere(['or', 
-            ['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_APPROVED], 
-            ['trn_kartu_proses_dyeing.status' => TrnKartuProsesDyeing::STATUS_INSPECTED],
-        ]);
+        $dataProvider->query->andWhere(['not in', 'trn_kartu_proses_dyeing.status', [
+            TrnKartuProsesDyeing::STATUS_DRAFT,
+            TrnKartuProsesDyeing::STATUS_POSTED,
+            TrnKartuProsesDyeing::STATUS_DELIVERED,
+            TrnKartuProsesDyeing::STATUS_GANTI_GREIGE,
+            TrnKartuProsesDyeing::STATUS_GANTI_GREIGE_LINKED,
+            TrnKartuProsesDyeing::STATUS_BATAL,
+        ]]);
 
 
         $dataProvider->sort->defaultOrder = [
