@@ -333,53 +333,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
                 <!-- Note / Keterangan Mutasi Stok (Hanya Muncul Jika Ada Data History) -->
                 <?php
-                    $allNotes = !empty($outNotes) ? $outNotes : [];
-                    if (!empty($stockNotes)) {
-                        $allNotes = array_merge($allNotes, $stockNotes);
-                    }
-
-                    $cleanNotes = [];
-                    if (!empty($allNotes)) {
-                        foreach (array_unique($allNotes) as $rawNote) {
-                            $parts = explode('|', $rawNote);
-                            foreach ($parts as $noteText) {
-                                $noteText = trim($noteText);
-                                if (empty($noteText)) continue;
-                                
-                                // Abaikan teks teknis inspecting bawaan yang tidak relevan dengan mutasi
-                                if (strpos($noteText, 'Dari inspecting') !== false) {
-                                    continue;
-                                }
-
-                                if (strpos($noteText, 'Pemotongan ID:') !== false && strpos($noteText, 'dipotong') === false) {
-                                    if (preg_match('/Pemotongan ID:\s*(\d+)/i', $noteText, $matches)) {
-                                        $potongId = (int)$matches[1];
-                                        $potongModel = \common\models\ar\TrnPotongStock::findOne($potongId);
-                                        if ($potongModel && $potongModel->stock) {
-                                            $initialQty = (float)$potongModel->stock->qty;
-                                            $pItems = [];
-                                            foreach ($potongModel->trnPotongStockItems as $pItem) {
-                                                $pItems[] = (float)$pItem->qty;
-                                            }
-                                            $sumP = array_sum($pItems);
-                                            $remP = $initialQty - $sumP;
-                                            if ($remP > 0) {
-                                                $pItems[] = (float)$remP;
-                                            }
-                                            $cleanNotes[] = 'Pemotongan ID: ' . $potongId . ' qty: ' . $initialQty . ' dipotong ' . implode(' dan ', $pItems);
-                                        } else {
-                                            $cleanNotes[] = $noteText;
-                                        }
-                                    } else {
-                                        $cleanNotes[] = $noteText;
-                                    }
-                                } else {
-                                    $cleanNotes[] = $noteText;
-                                }
-                            }
-                        }
-                        $cleanNotes = array_values(array_unique($cleanNotes));
-                    }
+                    $cleanNotes = !empty($outNotes) ? $outNotes : [];
                 ?>
                 <?php if (!empty($cleanNotes)): ?>
                     <table style="width: 100%; border: 1px dashed #666; padding: 6px; font-size: 10px; margin-top: 15px;">
