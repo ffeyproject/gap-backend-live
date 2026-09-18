@@ -20,7 +20,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="box box-primary">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-filter"></i> <strong>Filter Tahun WO</strong></h3>
+            <h3 class="box-title"><i class="fa fa-filter"></i> <strong>Filter Tahun & Bulan WO</strong></h3>
         </div>
         <div class="box-body">
             <?php $form = ActiveForm::begin([
@@ -37,7 +37,16 @@ $this->params['breadcrumbs'][] = $this->title;
                         ],
                     ])->label('Pilih Tahun WO') ?>
                 </div>
-                <div class="col-md-5" style="padding-top: 25px;">
+                <div class="col-md-3">
+                    <?= $form->field($searchModel, 'woMonth')->widget(Select2::class, [
+                        'data' => TrnWo::monthOptions(),
+                        'options' => ['placeholder' => '-- Semua Bulan (Opsional) --'],
+                        'pluginOptions' => [
+                            'allowClear' => true,
+                        ],
+                    ])->label('Pilih Bulan WO (Opsional)') ?>
+                </div>
+                <div class="col-md-6" style="padding-top: 25px;">
                     <?= Html::submitButton('<i class="glyphicon glyphicon-search"></i> Tampilkan Data', ['class' => 'btn btn-primary']) ?>
                     <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data (500+ Baris) ke Excel']) ?>
                     <?= Html::a('<i class="glyphicon glyphicon-refresh"></i> Reset', ['rekap-processing'], ['class' => 'btn btn-default']) ?>
@@ -58,8 +67,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'filterModel' => $searchModel,
         'panel' => [
             'type' => 'default',
-            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-processing', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear], ['class' => 'btn btn-default']) . ' ' .
-                Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data ke Excel']),
+            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-processing', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear, 'TrnKartuProsesDyeingSearch[woMonth]' => $searchModel->woMonth], ['class' => 'btn btn-default']),
             //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
             //'footer'=>false
         ],
@@ -78,7 +86,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Nomor WO',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'_blank']);
+                    return $data->wo ? Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'_blank']) : '-';
                 },
                 'group' => true,
                 'format'=>'raw'
@@ -88,7 +96,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Buyer',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->sc->customerName;
+                    return $data->sc ? $data->sc->customerName : '-';
                 },
                 'group' => true,
                 'subGroupOf' => 1
@@ -98,7 +106,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Motif',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->greigeNamaKain;
+                    return $data->wo ? $data->wo->greigeNamaKain : '-';
                 },
                 'group' => true,
                 'subGroupOf' => 2
@@ -107,7 +115,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Handling',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->handling->name;
+                    return ($data->wo && $data->wo->handling) ? $data->wo->handling->name : '-';
                 },
                 'group' => true,
                 'subGroupOf' => 3
@@ -116,7 +124,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'BATCH TOTAL',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->wo->colorQty;
+                    return $data->wo ? $data->wo->colorQty : 0;
                 },
                 'group' => true,
                 'subGroupOf' => 1
@@ -125,7 +133,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'JML PANJANG',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y';
+                    return $data->wo ? (Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y') : '-';
                 },
                 'group' => true,
                 'subGroupOf' => 1,
@@ -135,7 +143,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Warna',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->woColor->moColor->color;
+                    return ($data->woColor && $data->woColor->moColor) ? $data->woColor->moColor->color : '-';
                 },
                 'group' => true,
                 'subGroupOf' => 1,
@@ -182,14 +190,20 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'NK',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->nomor_kartu ? Html::a($data->nomor_kartu, ['/processing-dyeing/view', 'id'=>$data->id], ['title'=>'Lihat Kartu', 'target'=>'_blank']) : null;
-                    },
+                    if (!empty($data->id) && !empty($data->nomor_kartu)) {
+                        return Html::a($data->nomor_kartu, ['/processing-dyeing/view', 'id'=>$data->id], ['title'=>'Lihat Kartu', 'target'=>'_blank']);
+                    }
+                    return '<span class="label label-warning">Belum Ada NK</span>';
+                },
                 'format'=>'html'
             ],
             [
                 'label'=>'Panjang Greige',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) {
+                        return null;
+                    }
                     return $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
                 },
                 'format'=>'decimal'
@@ -198,6 +212,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'PSP',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>1])
@@ -217,6 +232,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Relaxing',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>3])
@@ -236,6 +252,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'DYEING',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>8])
@@ -255,6 +272,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'DY 1',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>15])
@@ -274,6 +292,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'DY 2',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>18])
@@ -293,6 +312,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'DY 3',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>19])
@@ -312,6 +332,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'TOPING LEVEL',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return '';
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>21])
@@ -330,8 +351,16 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'dateRangeMasukPacking',
                 'label' => 'PACKING',
-                'value' => 'approved_at',
-                'format' => ['date', 'php:d/m/y'],
+                'value' => function($data){
+                    /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id) || empty($data->approved_at)) return '';
+                    if (is_numeric($data->approved_at) && (int)$data->approved_at > 100000000) {
+                        return date('d/m/y', (int)$data->approved_at);
+                    } elseif (!is_numeric($data->approved_at) && strtotime($data->approved_at)) {
+                        return date('d/m/y', strtotime($data->approved_at));
+                    }
+                    return '';
+                },
                 'filterType' => GridView::FILTER_DATE_RANGE,
                 'filterWidgetOptions' => [
                     'convertFormat'=>true,
@@ -347,6 +376,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Panjang Jadi',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return null;
                     $r = 0;
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
@@ -369,6 +399,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label' => 'Total Qty Gudang',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
+                    if (empty($data->id)) return null;
                     $inspecting = $data->trnInspectingsDelivered;
                     $total = 0;
                     $id = null;
@@ -389,117 +420,6 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
         ],
     ]); ?>
-
-    <?php if (isset($dataProviderNoNk)): ?>
-    <div class="box box-warning" style="margin-top: 30px;">
-        <div class="box-header with-border">
-            <h3 class="box-title"><strong><i class="glyphicon glyphicon-list-alt"></i> WO Disetujui (Belum Ada Kartu Proses)</strong></h3>
-            <div class="box-tools pull-right">
-                <?= Html::a('<i class="fa fa-file-excel-o"></i> Export Excel (WO Disetujui)', array_merge(['export-no-nk-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-sm btn-warning', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Seluruh Data WO Disetujui ke Excel']) ?>
-            </div>
-        </div>
-        <div class="box-body">
-            <?= GridView::widget([
-                'dataProvider' => $dataProviderNoNk,
-                'filterModel' => $searchModelNoNk ?? null,
-                'panel' => false,
-                'toolbar' => false,
-                'showPageSummary' => true,
-                'columns' => [
-                    ['class' => 'kartik\grid\SerialColumn'],
-                    [
-                        'attribute' => 'woNo',
-                        'label' => 'Nomor WO',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return Html::a($data->wo->no, ['/trn-wo/view', 'id'=>$data->wo_id], ['title'=>'Lihat WO', 'target'=>'_blank']);
-                        },
-                        'group' => true,
-                        'format' => 'raw'
-                    ],
-                    [   
-                        'attribute' => 'customerName',
-                        'label' => 'Buyer',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return $data->sc->customerName;
-                        },
-                        'group' => true,
-                        'subGroupOf' => 1
-                    ],
-                    [   
-                        'label' => 'Motif',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return $data->wo->greigeNamaKain;
-                        },
-                        'group' => true,
-                        'subGroupOf' => 2
-                    ],
-                    [
-                        'label' => 'Handling',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return $data->wo->handling ? $data->wo->handling->name : '-';
-                        },
-                        'group' => true,
-                        'subGroupOf' => 3
-                    ],
-                    [
-                        'label' => 'BATCH TOTAL',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return $data->wo->colorQty;
-                        },
-                        'group' => true,
-                        'subGroupOf' => 1
-                    ],
-                    [
-                        'label' => 'JML PANJANG',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y';
-                        },
-                        'group' => true,
-                        'subGroupOf' => 1,
-                    ],
-                    [   
-                        'label' => 'Warna',
-                        'value' => function($data){
-                            /* @var $data \common\models\ar\TrnWoColor*/
-                            return $data->moColor ? $data->moColor->color : '-';
-                        },
-                        'group' => true,
-                        'subGroupOf' => 1,
-                        'enableSorting' => true,
-                    ],
-                    [
-                        'attribute' => 'dateRangeWo',
-                        'label' => 'TANGGAL WO',
-                        'value' => 'wo.date',
-                        'format' => ['date', 'php:d/m/y'],
-                        'group' => true,
-                        'subGroupOf' => 1,
-                    ],
-                    [
-                        'label' => 'TANGGAL KIRIM',
-                        'value' => 'wo.tgl_kirim',
-                        'format' => ['date', 'php:d/m/y'],
-                        'group' => true,
-                        'subGroupOf' => 1,
-                    ],
-                    [   
-                        'label' => 'NK',
-                        'value' => function($data){
-                            return '<span class="label label-warning">Belum Ada NK</span>';
-                        },
-                        'format' => 'html'
-                    ],
-                ],
-            ]); ?>
-        </div>
-    </div>
-    <?php endif; ?>
 
     <?php endif; ?>
 </div>

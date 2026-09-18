@@ -3,7 +3,10 @@
 namespace backend\controllers;
 
 use Yii;
+use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiOpnamePcs;
+use common\models\ar\WmsMoveLocationMstr;
+use common\models\ar\WmsMoveLocationDtl;
 use backend\models\TrnGudangJadiOpnamePcsSearch;
 use backend\models\StokOpnameGudangJadiRekapSearch;
 use yii\web\Controller;
@@ -27,6 +30,7 @@ class StokOpnameGudangJadiController extends Controller
                 'actions' => [
                     'delete' => ['POST'],
                     'save-location' => ['POST'],
+                    'move-location' => ['POST'],
                 ],
             ],
         ];
@@ -306,6 +310,93 @@ class StokOpnameGudangJadiController extends Controller
         }
 
         return ['success' => false, 'message' => 'Gagal memperbarui lokasi.'];
+    }
+
+    /**
+     * Move location for selected TrnGudangJadiOpnamePcs items and record to WMS Move Location
+     * @return array
+     */
+    public function actionMoveLocation()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ids = Yii::$app->request->post('ids');
+        $targetLocsCode = trim((string)Yii::$app->request->post('target_locs_code'));
+
+        if (empty($ids) || !is_array($ids) || empty($targetLocsCode)) {
+            return ['success' => false, 'message' => 'Pilih data yang akan dipindahkan dan tentukan lokasi tujuan.'];
+        }
+
+        $models = TrnGudangJadiOpnamePcs::find()->where(['id' => $ids])->all();
+        if (empty($models)) {
+            return ['success' => false, 'message' => 'Data tidak ditemukan.'];
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $moveCode = WmsMoveLocationMstr::generateMoveCode();
+            $fromLocations = [];
+            foreach ($models as $model) {
+                if (!empty($model->locs_code)) {
+                    $fromLocations[] = $model->locs_code;
+                }
+            }
+            $fromLocations = array_values(array_unique($fromLocations));
+            $fromLocStr = !empty($fromLocations) ? implode(', ', $fromLocations) : '-';
+
+            // Insert Master
+            $moveMstr = new WmsMoveLocationMstr();
+            $moveMstr->move_code = $moveCode;
+            $moveMstr->move_date = date('Y-m-d');
+            $moveMstr->move_create_at = date('Y-m-d H:i:s');
+            $moveMstr->move_create_by = Yii::$app->user->id;
+            $moveMstr->move_count = count($models);
+            $moveMstr->move_locs_code_from = $fromLocStr;
+            $moveMstr->move_locs_code_to = $targetLocsCode;
+
+            if (!$moveMstr->save(false)) {
+                throw new \Exception('Gagal menyimpan master perpindahan lokasi.');
+            }
+
+            foreach ($models as $m) {
+                // Insert Detail
+                $moveDtl = new WmsMoveLocationDtl();
+                $moveDtl->moved_move_code = $moveCode;
+                $moveDtl->moved_id_stok = $m->id_trn_gudang_jadi ?: $m->id;
+                if (!$moveDtl->save(false)) {
+                    throw new \Exception('Gagal menyimpan detail perpindahan lokasi.');
+                }
+
+                // Update locs_code in opname pcs
+                $m->locs_code = $targetLocsCode;
+                $m->save(false, ['locs_code', 'updated_at', 'updated_by']);
+
+                // If linked to trn_gudang_jadi, update trn_gudang_jadi.locs_code too
+                if (!empty($m->id_trn_gudang_jadi)) {
+                    TrnGudangJadi::updateAll(
+                        [
+                            'locs_code' => $targetLocsCode,
+                            'updated_at' => time(),
+                            'updated_by' => Yii::$app->user->id,
+                        ],
+                        ['id' => $m->id_trn_gudang_jadi]
+                    );
+                }
+            }
+
+            $transaction->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Berhasil memindahkan ' . count($models) . " item ke lokasi {$targetLocsCode} (No. Move: {$moveCode})."
+            ];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memindahkan lokasi: ' . $e->getMessage()
+            ];
+        }
     }
 
     /**

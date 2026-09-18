@@ -120,56 +120,118 @@ class RealisasiDyeingController extends Controller
 
     /**
      * Rekap Dyeing untuk Processing (format sama dengan rekap-formated ditambah field Tanggal Kirim dari WO)
+     * Menyatukan data yang sudah ada nomor kartu dan belum ada nomor kartu dalam 1 tabel.
      * @return mixed
      */
     public function actionRekapProcessing()
     {
         $searchModel = new TrnKartuProsesDyeingSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProviderKp = $searchModel->search(Yii::$app->request->queryParams);
 
-        $dataProvider->query->andWhere(['>=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
-        $dataProvider->query->andWhere(['<=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_DELIVERED]);
-        $dataProvider->query->andWhere(['=', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_FRESH_ORDER]);
+        $dataProviderKp->query->andWhere(['>=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_POSTED]);
+        $dataProviderKp->query->andWhere(['<=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_DELIVERED]);
+        $dataProviderKp->query->andWhere(['=', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_FRESH_ORDER]);
 
-        $dataProvider->sort->defaultOrder = [
-            'woNo' => SORT_ASC,
-            'motif' => SORT_ASC,
-            'warna' => SORT_ASC,
-        ];
+        $models = [];
+        if (!empty($searchModel->woYear)) {
+            $dataProviderKp->pagination = false;
+            $modelsKp = $dataProviderKp->getModels();
 
-        $dataProvider->query->orderBy(['LENGTH(trn_wo.no)' => SORT_ASC, 'trn_wo.no' => SORT_ASC])
-            ->addOrderBy(['mst_greige.nama_kain' => SORT_ASC])
-            ->addOrderBy(['moColor.color' => SORT_ASC]);
+            // WO Disetujui yang belum buka Kartu Proses
+            $searchModelNoNk = new TrnWoColorSearch();
+            $searchModelNoNk->woYear = $searchModel->woYear;
+            $searchModelNoNk->woMonth = $searchModel->woMonth;
+            $paramsNoNk = ['TrnWoColorSearch' => [
+                'woYear' => $searchModel->woYear,
+                'woMonth' => $searchModel->woMonth,
+                'woNo' => $searchModel->woNo,
+                'customerName' => $searchModel->customerName,
+                'greigeName' => $searchModel->motif,
+                'dateRangeWo' => $searchModel->woDateRange,
+            ]];
+            $dataProviderNoNk = $searchModelNoNk->search($paramsNoNk);
+            $dataProviderNoNk->query->andWhere(['=', 'trn_wo.status', TrnWo::STATUS_APPROVED]);
+            $dataProviderNoNk->query->andWhere(['=', 'trn_sc_greige.process', TrnScGreige::PROCESS_DYEING]);
+            $dataProviderNoNk->query->andWhere(['=', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_FRESH_ORDER]);
+            $dataProviderNoNk->query->andWhere(['not exists', (new \yii\db\Query())
+                ->select('id')
+                ->from('trn_kartu_proses_dyeing')
+                ->where('trn_kartu_proses_dyeing.wo_id = trn_wo.id')
+            ]);
+            $dataProviderNoNk->query->join('CROSS JOIN', 'generate_series(1, GREATEST(1, CAST(COALESCE(trn_wo_color.qty, 1) AS integer))) AS batch_num');
+            $dataProviderNoNk->query->joinWith(['moColor']);
 
-        // WO Disetujui yang belum buka Kartu Proses
-        $searchModelNoNk = new TrnWoColorSearch();
-        $searchModelNoNk->woYear = $searchModel->woYear;
-        $dataProviderNoNk = $searchModelNoNk->search(Yii::$app->request->queryParams);
-        $dataProviderNoNk->query->andWhere(['=', 'trn_wo.status', TrnWo::STATUS_APPROVED]);
-        $dataProviderNoNk->query->andWhere(['=', 'trn_sc_greige.process', TrnScGreige::PROCESS_DYEING]);
-        $dataProviderNoNk->query->andWhere(['=', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_FRESH_ORDER]);
-        $dataProviderNoNk->query->andWhere(['not exists', (new \yii\db\Query())
-            ->select('id')
-            ->from('trn_kartu_proses_dyeing')
-            ->where('trn_kartu_proses_dyeing.wo_id = trn_wo.id')
-        ]);
-        $dataProviderNoNk->query->join('CROSS JOIN', 'generate_series(1, GREATEST(1, CAST(COALESCE(trn_wo_color.qty, 1) AS integer))) AS batch_num');
-        $dataProviderNoNk->query->indexBy(function($row) {
-            static $idx = 0;
-            return $idx++;
-        });
-        $dataProviderNoNk->query->orderBy(['LENGTH(trn_wo.no)' => SORT_ASC, 'trn_wo.no' => SORT_ASC]);
+            if (!empty($searchModel->warna)) {
+                $dataProviderNoNk->query->andFilterWhere(['ilike', 'trn_mo_color.color', $searchModel->warna]);
+            }
+            if (!empty($searchModel->woTglKirimRange)) {
+                $from = substr($searchModel->woTglKirimRange, 0, 10);
+                $to = substr($searchModel->woTglKirimRange, 14);
+                if ($from == $to) {
+                    $dataProviderNoNk->query->andFilterWhere(['trn_wo.tgl_kirim' => $from]);
+                } else {
+                    $dataProviderNoNk->query->andFilterWhere(['between', 'trn_wo.tgl_kirim', $from, $to]);
+                }
+            }
+            if (!empty($searchModel->nomor_kartu) || !empty($searchModel->dateRangeMasukPacking)) {
+                $dataProviderNoNk->query->andWhere('0=1');
+            }
 
-        if (empty($searchModel->woYear)) {
-            $dataProvider->query->andWhere('0=1');
-            $dataProviderNoNk->query->andWhere('0=1');
+            $dataProviderNoNk->pagination = false;
+            $modelsNoNk = $dataProviderNoNk->getModels();
+
+            foreach ($modelsKp as $m) {
+                $models[] = $m;
+            }
+
+            foreach ($modelsNoNk as $mColor) {
+                $dummy = new TrnKartuProsesDyeing();
+                $dummy->id = null;
+                $dummy->wo_id = $mColor->wo_id;
+                $dummy->wo_color_id = $mColor->id;
+                $dummy->nomor_kartu = null;
+                $dummy->populateRelation('wo', $mColor->wo);
+                $dummy->populateRelation('sc', $mColor->sc);
+                $dummy->populateRelation('woColor', $mColor);
+                $models[] = $dummy;
+            }
+
+            // Sort all models consistently
+            usort($models, function($a, $b) {
+                $woNoA = $a->wo ? $a->wo->no : '';
+                $woNoB = $b->wo ? $b->wo->no : '';
+                $lenA = strlen($woNoA);
+                $lenB = strlen($woNoB);
+                if ($lenA !== $lenB) return $lenA <=> $lenB;
+                $cmpWo = strcmp($woNoA, $woNoB);
+                if ($cmpWo !== 0) return $cmpWo;
+
+                $motifA = $a->wo ? $a->wo->greigeNamaKain : '';
+                $motifB = $b->wo ? $b->wo->greigeNamaKain : '';
+                $cmpMotif = strcmp($motifA, $motifB);
+                if ($cmpMotif !== 0) return $cmpMotif;
+
+                $colorA = ($a->woColor && $a->woColor->moColor) ? $a->woColor->moColor->color : '';
+                $colorB = ($b->woColor && $b->woColor->moColor) ? $b->woColor->moColor->color : '';
+                $cmpColor = strcmp($colorA, $colorB);
+                if ($cmpColor !== 0) return $cmpColor;
+
+                $nkA = $a->nomor_kartu ?: '';
+                $nkB = $b->nomor_kartu ?: '';
+                return strcmp($nkA, $nkB);
+            });
         }
+
+        $dataProvider = new \yii\data\ArrayDataProvider([
+            'allModels' => $models,
+            'pagination' => [
+                'pageSize' => 50,
+            ],
+        ]);
 
         return $this->render('rekap-processing', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
-            'searchModelNoNk' => $searchModelNoNk,
-            'dataProviderNoNk' => $dataProviderNoNk,
         ]);
     }
 
@@ -597,7 +659,8 @@ class RealisasiDyeingController extends Controller
         }
 
         $title = $isProcessing ? 'Dyeing_Processing' : 'Realisasi_Dyeing_Formated';
-        $filename = $title . '_' . ($searchModel->woYear ?: date('Y')) . '_' . date('Ymd_His') . '.xls';
+        $monthSuffix = !empty($searchModel->woMonth) ? ('_' . $searchModel->woMonth) : '';
+        $filename = $title . '_' . ($searchModel->woYear ?: date('Y')) . $monthSuffix . '_' . date('Ymd_His') . '.xls';
 
         // Set response headers for streaming Excel
         header('Content-Type: application/vnd.ms-excel; charset=utf-8');
@@ -830,6 +893,69 @@ class RealisasiDyeingController extends Controller
                 'totalQtyGudang' => $totalQtyGudang,
             ];
         }
+
+        // For Processing: include WO Disetujui Belum Ada NK in the same table
+        if ($isProcessing && !empty($modelsNoNk)) {
+            foreach ($modelsNoNk as $modelColor) {
+                $woId = $modelColor->wo_id;
+                if (!isset($woCache[$woId])) {
+                    $wo = $modelColor->wo;
+                    $sc = $modelColor->sc;
+                    $woCache[$woId] = [
+                        'woNo' => $wo ? $wo->no : '',
+                        'buyer' => $sc ? $sc->customerName : '',
+                        'motif' => $wo ? $wo->greigeNamaKain : '',
+                        'handling' => ($wo && $wo->handling) ? $wo->handling->name : '-',
+                        'batchTotal' => $wo ? $wo->colorQty : 0,
+                        'jmlPanjang' => $wo ? (Yii::$app->formatter->asDecimal($wo->colorQtyFinish) . 'M / ' . Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) . 'Y') : '',
+                        'tglWo' => ($wo && $wo->date) ? date('d/m/y', strtotime($wo->date)) : '',
+                        'tglKirim' => ($wo && $wo->tgl_kirim) ? date('d/m/y', strtotime($wo->tgl_kirim)) : '',
+                    ];
+                }
+                $moColor = $modelColor->moColor;
+                $warna = $moColor ? $moColor->color : '-';
+
+                $rowsTable1[] = [
+                    'wo_id' => $woId,
+                    'woInfo' => $woCache[$woId],
+                    'warna' => $warna,
+                    'nk' => 'Belum Ada NK',
+                    'panjangGreige' => 0,
+                    'psp' => '',
+                    'relaxing' => '',
+                    'dyeing' => '',
+                    'dy1' => '',
+                    'dy2' => '',
+                    'dy3' => '',
+                    'topingLevel' => '',
+                    'packing' => '',
+                    'panjangJadi' => 0,
+                    'totalQtyGudang' => 0,
+                ];
+            }
+
+            // Sort unified table by WO No, motif, warna, nk
+            usort($rowsTable1, function($a, $b) {
+                $woNoA = $a['woInfo']['woNo'];
+                $woNoB = $b['woInfo']['woNo'];
+                $lenA = strlen($woNoA);
+                $lenB = strlen($woNoB);
+                if ($lenA !== $lenB) return $lenA <=> $lenB;
+                $cmpWo = strcmp($woNoA, $woNoB);
+                if ($cmpWo !== 0) return $cmpWo;
+
+                $motifA = $a['woInfo']['motif'];
+                $motifB = $b['woInfo']['motif'];
+                $cmpMotif = strcmp($motifA, $motifB);
+                if ($cmpMotif !== 0) return $cmpMotif;
+
+                $cmpColor = strcmp($a['warna'], $b['warna']);
+                if ($cmpColor !== 0) return $cmpColor;
+
+                return strcmp($a['nk'], $b['nk']);
+            });
+        }
+
         $mergesTable1 = $this->computeRowMerges($rowsTable1);
 
         $no = 1;
@@ -879,8 +1005,8 @@ class RealisasiDyeingController extends Controller
         echo '  </Table>' . "\n";
         echo ' </Worksheet>' . "\n";
 
-        // Worksheet 2 (WO Disetujui Belum Ada NK) if any
-        if (!empty($modelsNoNk)) {
+        // Worksheet 2 (WO Disetujui Belum Ada NK) for Formated only
+        if (!$isProcessing && !empty($modelsNoNk)) {
             $rowsTable2 = [];
             foreach ($modelsNoNk as $modelColor) {
                 $woId = $modelColor->wo_id;

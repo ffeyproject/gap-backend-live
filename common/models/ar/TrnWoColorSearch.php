@@ -42,6 +42,7 @@ class TrnWoColorSearch extends TrnWoColor
 
     public $woNo;
     public $woYear;
+    public $woMonth;
     /**
      * {@inheritdoc}
      */
@@ -53,7 +54,7 @@ class TrnWoColorSearch extends TrnWoColor
             [['note','dateRangeReadyColour'], 'safe'],
             [
                 [
-                    'scNo', 'moNo', 'woNo', 'woYear', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
+                    'scNo', 'moNo', 'woNo', 'woYear', 'woMonth', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
                     'scGreigeNamaKain', 'proccess', 'papperTubeName', 'customerName', 'tipeKontrak'
                 ],
                 'safe'
@@ -202,6 +203,13 @@ class TrnWoColorSearch extends TrnWoColor
             }else{
                 $query->andFilterWhere(['between', 'trn_wo.date', $this->from_date_wo, $this->to_date_wo]);
             }
+        }
+
+        if (!empty($this->woMonth)) {
+            $currentYear = !empty($this->woYear) ? $this->woYear : date('Y');
+            $query->andWhere(new Expression("TO_CHAR(trn_wo.date, 'YYYY-MM') = :wo_month"), [
+                ':wo_month' => "{$currentYear}-{$this->woMonth}"
+            ]);
         }
 
         if (!empty($this->woYear)) {
