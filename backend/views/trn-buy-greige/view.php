@@ -61,6 +61,7 @@ $unit = $model->greigeGroup->unitName;
                                 'attribute'=>'jenisBeliName',
                                 'label'=>'Jenis Beli'
                             ],
+                            'is_hasil_setting:boolean',
                             [
                                 'attribute'=>'statusName',
                                 'label'=>'Status'

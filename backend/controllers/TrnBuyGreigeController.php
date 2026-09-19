@@ -85,7 +85,7 @@ class TrnBuyGreigeController extends Controller
      */
     public function actionCreate()
     {
-        $model = new TrnBuyGreige(['date'=>date('Y-m-d'), 'note'=>'-']);
+        $model = new TrnBuyGreige(['date'=>date('Y-m-d'), 'note'=>'-', 'is_hasil_setting' => 0]);
 
         /* @var $modelsItem TrnBuyGreigeItem[]*/
         $modelsItem = [new TrnBuyGreigeItem()];
@@ -290,6 +290,7 @@ class TrnBuyGreigeController extends Controller
                     'jenis_gudang' => TrnStockGreige::JG_FRESH,
                     'grade' => TrnStockGreige::GRADE_NG,
                     'panjang_m' => $item->qty,
+                    'is_hasil_setting' => $model->is_hasil_setting ? true : false,
                     'created_at' => $ts,
                     'created_by' => $uid,
                     'updated_at' => $ts,

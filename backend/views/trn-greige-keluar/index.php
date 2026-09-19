@@ -73,7 +73,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute'=>'jenis',
                 'value'=>function($data){
                     /* @var $data TrnGreigeKeluar*/
-                    return $data::jenisOptions()[$data->jenis];
+                    return isset($data::jenisOptions()[$data->jenis]) ? $data::jenisOptions()[$data->jenis] : '-';
                 },
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [

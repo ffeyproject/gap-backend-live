@@ -37,6 +37,7 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $pfp_jenis_gudang Pembagian jenis gudang untuk kain PFP, 1=Fudang 1, 2=Gudang 2
  * @property boolean $is_pemotongan
  * @property boolean $is_hasil_mix
+ * @property boolean $is_hasil_setting
  *
  * @property string $jenisGudangName
  * @property string $pfpJenisGudangName
@@ -182,8 +183,8 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             [['note'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
 
-            [['is_hasil_mix', 'is_pemotongan'], 'boolean'],
-            [['is_hasil_mix', 'is_pemotongan'], 'default', 'value'=>false],
+            [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'boolean'],
+            [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'default', 'value'=>false],
 
             ['grade', 'default', 'value'=>self::GRADE_A],
             ['grade', 'in', 'range' => [self::GRADE_A, self::GRADE_B, self::GRADE_C, self::GRADE_D, self::GRADE_E, self::GRADE_NG, self::GRADE_A_PLUS, self::GRADE_A_ASTERISK, self::GRADE_PUTIH]],
@@ -246,6 +247,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             'pfpJenisGudangName' => 'Jenis Gudang PFP',
             'is_pemotongan' => 'Hasil Pemotongan',
             'is_hasil_mix' => 'Mix Quality',
+            'is_hasil_setting' => 'Hasil Setting',
             'greigeNamaKain' => 'Motif',
             'gradeName' => 'Grade',
             'kondisiGreige' => 'Kondisi Greige',

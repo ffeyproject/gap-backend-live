@@ -277,6 +277,16 @@ echo AjaxModal::widget([
                 },
                 'format' => 'date',
             ],
+            [
+                'attribute' => 'is_hasil_setting',
+                'format' => 'boolean',
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => [true => 'Ya', false => 'Tidak'],
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => ['allowClear' => true],
+                ],
+            ],
             //'is_hasil_mix:boolean',
             //'pengirim',
             //'mengetahui',

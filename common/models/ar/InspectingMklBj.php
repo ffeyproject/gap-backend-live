@@ -272,7 +272,31 @@ class InspectingMklBj extends \yii\db\ActiveRecord
      */
     public function getColorName()
     {
-        return $this->moColor->color;
+        if ($this->moColor && !empty($this->moColor->color)) {
+            return $this->moColor->color;
+        }
+        if ($this->woColor && $this->woColor->moColor && !empty($this->woColor->moColor->color)) {
+            return $this->woColor->moColor->color;
+        }
+        return '-';
+    }
+
+    /**
+     * Getter for unit property (alias of satuan) to maintain uniformity with TrnInspecting
+     * @return int
+     */
+    public function getUnit()
+    {
+        return $this->satuan;
+    }
+
+    /**
+     * Getter for kombinasi property (alias of colorName) to maintain uniformity with TrnInspecting
+     * @return string
+     */
+    public function getKombinasi()
+    {
+        return $this->getColorName();
     }
 
     /**

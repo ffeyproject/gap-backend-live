@@ -52,38 +52,51 @@ if (!$model->isNewRecord) {
 
                     <?= $form->field($model, 'jenis')->widget(Select2::classname(), [
                         'data' => TrnGreigeKeluar::jenisOptions(),
-                        'options' => ['placeholder' => 'Pilih ...'],
+                        'options' => ['placeholder' => 'Pilih ...', 'id' => 'trngreigekeluar-jenis'],
                         'pluginOptions' => [
                             'allowClear' => true,
                         ],
                     ]) ?>
 
-                    <?php
-                    $wo = $model->wo_id === null ? '' : $model->wo->no;
-                    echo $form->field($model, 'wo_id')->widget(Select2::class, [
-                        'initValueText' => $wo, // set the initial display text
-                        'options' => ['placeholder' => 'Cari WO...', 'id' => 'select-wo'],
-                        'pluginOptions' => [
-                            'allowClear' => true,
-                            'minimumInputLength' => 3,
-                            'language' => [
-                                'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+                    <div id="field-wo-container" style="<?= $model->jenis == TrnGreigeKeluar::JENIS_INTERNAL ? '' : 'display: none;' ?>">
+                        <?php
+                        $wo = ($model->wo_id !== null && $model->wo) ? $model->wo->no : '';
+                        echo $form->field($model, 'wo_id')->widget(Select2::class, [
+                            'initValueText' => $wo, // set the initial display text
+                            'options' => ['placeholder' => 'Cari WO...', 'id' => 'select-wo'],
+                            'pluginOptions' => [
+                                'allowClear' => true,
+                                'minimumInputLength' => 3,
+                                'language' => [
+                                    'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+                                ],
+                                'ajax' => [
+                                    'url' => Url::to(['ajax/lookup-wo-all']),
+                                    'dataType' => 'json',
+                                    'data' => new JsExpression('function(params) { return {q:params.term}; }')
+                                ],
+                                'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+                                'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
+                                'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
                             ],
-                            'ajax' => [
-                                'url' => Url::to(['ajax/lookup-wo-makloon']),
-                                'dataType' => 'json',
-                                'data' => new JsExpression('function(params) { return {q:params.term}; }')
-                            ],
-                            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
-                            'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
-                            'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
-                        ],
-                    ])->label('Nomor Working Order');
-                    ?>
+                        ])->label('Nomor Referensi (Nomor WO)');
+                        ?>
+                    </div>
+
+                    <div id="field-no-referensi-container" style="<?= $model->jenis == TrnGreigeKeluar::JENIS_INTERNAL ? 'display: none;' : '' ?>">
+                        <?php
+                        $refLabel = 'Nomor Referensi';
+                        if ($model->jenis == TrnGreigeKeluar::JENIS_MAKLOON) {
+                            $refLabel = 'Nomor Surat Jalan';
+                        }
+                        echo $form->field($model, 'no_referensi')->textInput([
+                            'maxlength' => true,
+                            'id' => 'trngreigekeluar-no_referensi',
+                        ])->label($refLabel);
+                        ?>
+                    </div>
 
                     <?= $form->field($model, 'destinasi')->textInput(['maxlength' => true]) ?>
-
-                    <?= $form->field($model, 'no_referensi')->textInput(['maxlength' => true]) ?>
 
                     <?= $form->field($model, 'approved_by')->widget(Select2::classname(), [
                         'options' => ['placeholder' => 'Pilih ...'],

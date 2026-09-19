@@ -99,6 +99,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
+            'is_hasil_setting:boolean',
             'note:ntext',
         ],
     ]); ?>

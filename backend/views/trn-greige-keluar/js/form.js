@@ -43,6 +43,41 @@ $('#ItemsTable tbody').on( 'click', 'button.removeItemData', function () {
     row.remove().draw(false);
 });
 
+const JENIS_MAKLOON = 3;
+const JENIS_INTERNAL = 5;
+
+function handleJenisChange(jenisVal) {
+    let jenis = parseInt(jenisVal);
+    if (jenis === JENIS_INTERNAL) {
+        $('#field-wo-container').show();
+        $('#field-no-referensi-container').hide();
+    } else {
+        $('#field-wo-container').hide();
+        $('#select-wo').val(null).trigger('change');
+        $('#field-no-referensi-container').show();
+        if (jenis === JENIS_MAKLOON) {
+            $('#field-no-referensi-container label.control-label').text('Nomor Surat Jalan');
+            $('#trngreigekeluar-no_referensi').attr('placeholder', 'Masukkan Nomor Surat Jalan...');
+        } else {
+            $('#field-no-referensi-container label.control-label').text('Nomor Referensi');
+            $('#trngreigekeluar-no_referensi').attr('placeholder', 'Masukkan Nomor Referensi...');
+        }
+    }
+}
+
+$('#trngreigekeluar-jenis').on('change', function () {
+    handleJenisChange($(this).val());
+});
+
+$('#select-wo').on('select2:select', function(e) {
+    let data = e.params.data;
+    $('#trngreigekeluar-no_referensi').val(data.text);
+});
+
+$('#select-wo').on('select2:unselect', function(e) {
+    $('#trngreigekeluar-no_referensi').val('');
+});
+
 $('#GreigeKeluarForm').on('beforeSubmit', function () {
     var $yiiform = $(this);
 

@@ -79,6 +79,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
+            'is_hasil_setting:boolean',
             [
                 'attribute'=>'status',
                 'value'=>function($data){

@@ -1,5 +1,6 @@
 <?php
 
+use common\models\ar\TrnGreigeKeluar;
 use kartik\dialog\Dialog;
 use yii\helpers\Html;
 use yii\widgets\DetailView;
@@ -55,10 +56,13 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                             'date:date',
                             [
                                 'label'=>'Jenis',
-                                'value'=>$model::jenisOptions()[$model->jenis]
+                                'value'=>isset($model::jenisOptions()[$model->jenis]) ? $model::jenisOptions()[$model->jenis] : '-'
+                            ],
+                            [
+                                'label' => $model->jenis == TrnGreigeKeluar::JENIS_MAKLOON ? 'Nomor Surat Jalan' : ($model->jenis == TrnGreigeKeluar::JENIS_INTERNAL ? 'Nomor Referensi (WO)' : 'Nomor Referensi'),
+                                'value' => ($model->jenis == TrnGreigeKeluar::JENIS_INTERNAL && $model->wo) ? $model->wo->no : $model->no_referensi,
                             ],
                             'destinasi',
-                            'no_referensi',
                             'note:ntext',
                         ],
                     ]) ?>

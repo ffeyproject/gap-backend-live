@@ -13,6 +13,7 @@ use common\models\ar\MstGreige;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\MstHandling;
 use common\models\ar\MstVendor;
+use common\models\ar\TrnGreigeKeluar;
 use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnKartuProsesDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
@@ -1541,6 +1542,30 @@ class AjaxController extends Controller
                 'qty' => $item->panjang_m
             ];
         }
+        return ['results' => $results];
+    }
+
+    public function actionLookupNoRefGreigeKeluar($q = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $query = TrnGreigeKeluar::find()
+            ->select(['no_referensi'])
+            ->where(['not', ['no_referensi' => null]])
+            ->andWhere(['!=', 'no_referensi', ''])
+            ->distinct();
+
+        if (!empty($q)) {
+            $query->andWhere(['ilike', 'no_referensi', $q]);
+        }
+
+        $results = [];
+        foreach ($query->orderBy(['no_referensi' => SORT_ASC])->limit(50)->asArray()->all() as $row) {
+            $results[] = [
+                'id' => $row['no_referensi'],
+                'text' => $row['no_referensi'],
+            ];
+        }
+
         return ['results' => $results];
     }
 }

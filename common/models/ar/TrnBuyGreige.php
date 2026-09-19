@@ -25,6 +25,7 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $approval_id
  * @property int|null $approval_time
  * @property string|null $reject_note
+ * @property bool $is_hasil_setting
  *
  * @property MstGreige $greige
  * @property MstGreigeGroup $greigeGroup
@@ -69,6 +70,14 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
         ];
     }
 
+    public function init()
+    {
+        parent::init();
+        if ($this->isNewRecord && $this->is_hasil_setting === null) {
+            $this->is_hasil_setting = 0;
+        }
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -78,6 +87,8 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
             [['greige_id', 'no_document', 'vendor', 'date'], 'required'],
             [['greige_group_id', 'greige_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'default', 'value' => null],
             [['greige_group_id', 'greige_id', 'jenis_beli', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'integer'],
+            [['is_hasil_setting'], 'boolean'],
+            ['is_hasil_setting', 'default', 'value' => false],
             [['note', 'reject_note'], 'string'],
             [['date'], 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
@@ -103,6 +114,7 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
             'vendor' => 'Vendor',
             'note' => 'Note',
             'jenis_beli' => 'Jenis Beli',
+            'is_hasil_setting' => 'Hasil Setting',
             'status' => 'Status',
             'date' => 'Date',
             'created_at' => 'Created At',

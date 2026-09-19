@@ -53,6 +53,7 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                             ],
                             'no_document',
                             'is_pemotongan:boolean',
+                            'is_hasil_setting:boolean',
                         ],
                     ]) ?>
                 </div>

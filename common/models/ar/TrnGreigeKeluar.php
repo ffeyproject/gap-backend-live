@@ -41,12 +41,18 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
         return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Approved', self::STATUS_REJECTED => 'Rejected'];
     }
 
-    const JENIS_SAMPLE = 1;const JENIS_JUAL = 2;const JENIS_MAKLOON = 3;const JENIS_LAIN_LAIN = 4;
+    const JENIS_SAMPLE = 1;const JENIS_JUAL = 2;const JENIS_MAKLOON = 3;const JENIS_LAIN_LAIN = 4;const JENIS_INTERNAL = 5;
     /**
      * @return array
      */
     public static function jenisOptions(){
-        return [self::JENIS_SAMPLE => 'Sample', self::JENIS_JUAL => 'Jual', self::JENIS_MAKLOON => 'Makloon', self::JENIS_LAIN_LAIN => 'Lain-lain'];
+        return [
+            self::JENIS_SAMPLE => 'Sample',
+            self::JENIS_JUAL => 'Jual',
+            self::JENIS_MAKLOON => 'Makloon',
+            self::JENIS_LAIN_LAIN => 'Lain-lain',
+            self::JENIS_INTERNAL => 'Internal',
+        ];
     }
 
     /**
@@ -83,7 +89,19 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
             ['status', 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_APPROVED, self::STATUS_REJECTED]],
 
             ['jenis', 'default', 'value'=>self::JENIS_SAMPLE],
-            ['jenis', 'in', 'range' => [self::JENIS_SAMPLE, self::JENIS_JUAL, self::JENIS_MAKLOON, self::JENIS_LAIN_LAIN]],
+            ['jenis', 'in', 'range' => [self::JENIS_SAMPLE, self::JENIS_JUAL, self::JENIS_MAKLOON, self::JENIS_LAIN_LAIN, self::JENIS_INTERNAL]],
+
+            [['wo_id'], 'required', 'when' => function($model) {
+                return $model->jenis == self::JENIS_INTERNAL;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('#trngreigekeluar-jenis').val() == '".self::JENIS_INTERNAL."';
+            }"],
+
+            [['no_referensi'], 'required', 'when' => function($model) {
+                return $model->jenis == self::JENIS_MAKLOON;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('#trngreigekeluar-jenis').val() == '".self::JENIS_MAKLOON."';
+            }"],
 
             [['note'], 'string'],
             [['no', 'destinasi', 'no_referensi'], 'string', 'max' => 255],
@@ -158,6 +176,26 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
         return $this->hasMany(TrnStockGreige::className(), ['id' => 'stock_greige_id'])->viaTable('trn_greige_keluar_item', ['greige_keluar_id' => 'id']);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function beforeSave($insert)
+    {
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
+
+        if ($this->jenis == self::JENIS_INTERNAL) {
+            if ($this->wo_id !== null && $this->wo !== null) {
+                $this->no_referensi = $this->wo->no;
+            }
+        } else {
+            $this->wo_id = null;
+        }
+
+        return true;
+    }
+
     public function setNomor(){
         $this->setNoUrut();
 
@@ -168,7 +206,8 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
         /*21/01/S00001 (sample)
         21/01/J00001 (jual)
         21/01/M00001 (makloon)
-        21/01/LL00001 (lain-lain)*/
+        21/01/LL00001 (lain-lain)
+        21/01/IN00001 (internal)*/
 
         switch ($this->jenis){
             case $this::JENIS_SAMPLE:
@@ -182,6 +221,9 @@ class TrnGreigeKeluar extends \yii\db\ActiveRecord
                 break;
             case $this::JENIS_LAIN_LAIN:
                 $jenisLabel = 'LL';
+                break;
+            case $this::JENIS_INTERNAL:
+                $jenisLabel = 'IN';
                 break;
             default:
                 $jenisLabel = '';

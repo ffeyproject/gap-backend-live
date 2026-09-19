@@ -387,9 +387,16 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             return $parsed['color'];
         }
         if (!empty($parsed['item_id'])) {
-            $insItem = InspectingItem::findOne($parsed['item_id']);
-            if ($insItem && $insItem->inspecting && !empty($insItem->inspecting->kombinasi)) {
-                return $insItem->inspecting->kombinasi;
+            if ($parsed['ins_type'] === 'MKL') {
+                $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
+                if ($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->colorName)) {
+                    return $mklItem->inspecting->colorName;
+                }
+            } else {
+                $insItem = InspectingItem::findOne($parsed['item_id']);
+                if ($insItem && $insItem->inspecting && !empty($insItem->inspecting->kombinasi)) {
+                    return $insItem->inspecting->kombinasi;
+                }
             }
         }
         return '-';
@@ -502,8 +509,8 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             ];
         }
 
-        $color = !empty($parsed['color']) ? $parsed['color'] : ($insItem && $insItem->inspecting ? $insItem->inspecting->kombinasi : ($mklItem && $mklItem->inspecting ? $mklItem->inspecting->kombinasi : '-'));
-        $sourceRef = ($insItem && $insItem->inspecting) ? $insItem->inspecting->no : (($mklItem && $mklItem->inspecting) ? $mklItem->inspecting->no : ('Opname ' . $this->opname_code));
+        $color = !empty($parsed['color']) ? $parsed['color'] : ($insItem && $insItem->inspecting ? $insItem->inspecting->kombinasi : ($mklItem && $mklItem->inspecting ? $mklItem->inspecting->colorName : '-'));
+        $sourceRef = ($insItem && $insItem->inspecting && !empty($insItem->inspecting->no)) ? $insItem->inspecting->no : (($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->no)) ? $mklItem->inspecting->no : ('Opname ' . $this->opname_code));
         $source = ($parsed['ins_type'] === 'MKL') ? TrnGudangJadi::SOURCE_MAKLOON_FINISH : TrnGudangJadi::SOURCE_PACKING;
         $grade = (int)$this->grade ?: TrnStockGreige::GRADE_A;
         $jenisGudang = ($grade == TrnStockGreige::GRADE_B) ? TrnGudangJadi::JENIS_GUDANG_GRADE_B : TrnGudangJadi::JENIS_GUDANG_LOKAL;
@@ -518,7 +525,7 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
         } elseif ($insItem && $insItem->inspecting) {
             $unitVal = (int)$insItem->inspecting->unit;
         } elseif ($mklItem && $mklItem->inspecting) {
-            $unitVal = (int)$mklItem->inspecting->unit;
+            $unitVal = (int)($mklItem->inspecting->satuan ?: $mklItem->inspecting->unit);
         }
 
         $qrDesc = !empty($this->qr_code_desc) ? substr($this->qr_code_desc, 0, 255) : substr($this->qr_code, 0, 255);

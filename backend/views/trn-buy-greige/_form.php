@@ -53,13 +53,47 @@ use yii\web\View;
                         </div>
 
                         <div class="col-md-4">
-                            <?= $form->field($model, 'no_document')->textInput(['maxlength' => true]) ?>
+                            <?php
+                            $noDoc = empty($model->no_document) ? '' : $model->no_document;
+                            echo $form->field($model, 'no_document')->widget(Select2::class, [
+                                'initValueText' => $noDoc,
+                                'options' => ['placeholder' => 'Pilih No. Referensi atau ketik manual...'],
+                                'pluginOptions' => [
+                                    'tags' => true,
+                                    'allowClear' => true,
+                                    'minimumInputLength' => 0,
+                                    'language' => [
+                                        'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
+                                    ],
+                                    'ajax' => [
+                                        'url' => Url::to(['ajax/lookup-no-ref-greige-keluar']),
+                                        'dataType' => 'json',
+                                        'data' => new JsExpression('function(params) { return {q:params.term}; }')
+                                    ],
+                                    'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+                                    'templateResult' => new JsExpression('function(res) { return res.text; }'),
+                                    'templateSelection' => new JsExpression('function (res) { return res.text; }'),
+                                ]
+                            ]);
+                            ?>
                         </div>
                     </div>
 
                     <?= $form->field($model, 'vendor')->textInput(['maxlength' => true]) ?>
 
                     <?= $form->field($model, 'jenis_beli')->radioList($model::jenisBeliOptions()) ?>
+
+                    <?php
+                    if ($model->is_hasil_setting === null || $model->is_hasil_setting === false) {
+                        $model->is_hasil_setting = 0;
+                    } else {
+                        $model->is_hasil_setting = (int)$model->is_hasil_setting;
+                    }
+                    ?>
+                    <?= $form->field($model, 'is_hasil_setting')->radioList([
+                        0 => 'Tidak',
+                        1 => 'Ya',
+                    ]) ?>
 
                     <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
 
