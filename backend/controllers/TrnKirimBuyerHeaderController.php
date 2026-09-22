@@ -37,6 +37,8 @@ class TrnKirimBuyerHeaderController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'posting' => ['POST'],
+                    'unposting' => ['POST'],
                 ],
             ],
         ];
@@ -453,6 +455,56 @@ class TrnKirimBuyerHeaderController extends Controller
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         }catch (\Throwable $t){
+            $transaction->rollBack();
+            throw $t;
+        }
+    }
+
+    /**
+     * Unposting an existing TrnKirimBuyerHeader model.
+     * If unposting is successful, the browser will be redirected to the 'view' page.
+     * @param integer $id
+     * @return mixed
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionUnposting($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->status != $model::STATUS_POSTED) {
+            Yii::$app->session->setFlash('error', 'Status tidak valid, hanya data yang sudah diposting yang dapat di-unpost.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $model->status = $model::STATUS_DRAFT;
+            if (!$flag = $model->save(false, ['status'])) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Gagal memproses, coba lagi. (1)');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+
+            foreach ($model->trnKirimBuyers as $trnKirimBuyer) {
+                foreach ($trnKirimBuyer->trnKirimBuyerItems as $trnKirimBuyerItem) {
+                    $stock = $trnKirimBuyerItem->stock;
+                    if ($stock !== null) {
+                        $stock->status = $stock::STATUS_SURAT_JALAN;
+                        if (!$flag = $stock->save(false, ['status'])) {
+                            $transaction->rollBack();
+                            Yii::$app->session->setFlash('error', 'Gagal memproses, coba lagi. (2)');
+                            return $this->redirect(['view', 'id' => $model->id]);
+                        }
+                    }
+                }
+            }
+
+            if ($flag) {
+                $transaction->commit();
+                Yii::$app->session->setFlash('success', 'Unposting berhasil.');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+        } catch (\Throwable $t) {
             $transaction->rollBack();
             throw $t;
         }

@@ -44,6 +44,14 @@ $formatter = Yii::$app->formatter;
                     'method' => 'post',
                 ],
             ]) ?>
+        <?php elseif($model->status == $model::STATUS_POSTED):?>
+            <?= Html::a('<i class="fa fa-undo"></i> Unposting', ['unposting', 'id' => $model->id], [
+                'class' => 'btn btn-danger',
+                'data' => [
+                    'confirm' => 'Anda yakin akan membatalkan posting (Unpost) untuk pengiriman ini? Stok akan dikembalikan ke status surat jalan.',
+                    'method' => 'post',
+                ],
+            ]) ?>
         <?php endif;?>
 
         <?= Html::a('Buat Baru', ['create'], ['class' => 'btn btn-success']) ?>
