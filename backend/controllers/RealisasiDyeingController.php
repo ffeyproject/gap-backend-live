@@ -325,7 +325,7 @@ class RealisasiDyeingController extends Controller
         while ($i < $n) {
             $woId = $rows[$i]['wo_id'];
             $j = $i + 1;
-            while ($j < $n && $rows[$j]['wo_id'] === $woId) {
+            while ($j < $n && (string)$rows[$j]['wo_id'] === (string)$woId) {
                 $merges[$j]['wo_skip'] = true;
                 $j++;
             }
@@ -336,7 +336,7 @@ class RealisasiDyeingController extends Controller
             while ($wStart < $j) {
                 $warna = $rows[$wStart]['warna'];
                 $wEnd = $wStart + 1;
-                while ($wEnd < $j && $rows[$wEnd]['warna'] === $warna) {
+                while ($wEnd < $j && (string)$rows[$wEnd]['warna'] === (string)$warna) {
                     $merges[$wEnd]['warna_skip'] = true;
                     $wEnd++;
                 }
@@ -641,7 +641,16 @@ class RealisasiDyeingController extends Controller
         if (!empty($searchModel->woYear)) {
             $searchModelNoNk = new TrnWoColorSearch();
             $searchModelNoNk->woYear = $searchModel->woYear;
-            $dataProviderNoNk = $searchModelNoNk->search(Yii::$app->request->queryParams);
+            $searchModelNoNk->woMonth = $searchModel->woMonth;
+            $paramsNoNk = ['TrnWoColorSearch' => [
+                'woYear' => $searchModel->woYear,
+                'woMonth' => $searchModel->woMonth,
+                'woNo' => $searchModel->woNo,
+                'customerName' => $searchModel->customerName,
+                'greigeName' => $searchModel->motif,
+                'dateRangeWo' => $searchModel->woDateRange,
+            ]];
+            $dataProviderNoNk = $searchModelNoNk->search($paramsNoNk);
             $dataProviderNoNk->query->andWhere(['=', 'trn_wo.status', TrnWo::STATUS_APPROVED]);
             $dataProviderNoNk->query->andWhere(['=', 'trn_sc_greige.process', TrnScGreige::PROCESS_DYEING]);
             $dataProviderNoNk->query->andWhere(['=', 'trn_wo.jenis_order', TrnSc::JENIS_ORDER_FRESH_ORDER]);
@@ -651,11 +660,24 @@ class RealisasiDyeingController extends Controller
                 ->where('trn_kartu_proses_dyeing.wo_id = trn_wo.id')
             ]);
             $dataProviderNoNk->query->join('CROSS JOIN', 'generate_series(1, GREATEST(1, CAST(COALESCE(trn_wo_color.qty, 1) AS integer))) AS batch_num');
-            $dataProviderNoNk->query->indexBy(function($row) {
-                static $idx = 0;
-                return $idx++;
-            });
-            $dataProviderNoNk->query->orderBy(['LENGTH(trn_wo.no)' => SORT_ASC, 'trn_wo.no' => SORT_ASC]);
+            $dataProviderNoNk->query->joinWith(['moColor']);
+
+            if (!empty($searchModel->warna)) {
+                $dataProviderNoNk->query->andFilterWhere(['ilike', 'trn_mo_color.color', $searchModel->warna]);
+            }
+            if (!empty($searchModel->woTglKirimRange)) {
+                $from = substr($searchModel->woTglKirimRange, 0, 10);
+                $to = substr($searchModel->woTglKirimRange, 14);
+                if ($from == $to) {
+                    $dataProviderNoNk->query->andFilterWhere(['trn_wo.tgl_kirim' => $from]);
+                } else {
+                    $dataProviderNoNk->query->andFilterWhere(['between', 'trn_wo.tgl_kirim', $from, $to]);
+                }
+            }
+            if (!empty($searchModel->nomor_kartu) || !empty($searchModel->dateRangeMasukPacking)) {
+                $dataProviderNoNk->query->andWhere('0=1');
+            }
+
             $dataProviderNoNk->pagination = false;
             $modelsNoNk = $dataProviderNoNk->getModels();
         }
@@ -860,7 +882,7 @@ class RealisasiDyeingController extends Controller
             $warna = $moColor ? $moColor->color : '';
 
             $nk = $model->nomor_kartu ?: '';
-            $panjangGreige = isset($itemsSumMap[$model->id]) ? (float)$itemsSumMap[$model->id] : 0;
+            $panjangGreige = isset($itemsSumMap[$model->id]) ? (float)$itemsSumMap[$model->id] : null;
             $psp = $getProcessDate($model->id, 1);
             $relaxing = $getProcessDate($model->id, 3);
             $dyeing = $getProcessDate($model->id, 8);
@@ -876,8 +898,8 @@ class RealisasiDyeingController extends Controller
                     $packing = date('d/m/y', strtotime($model->approved_at));
                 }
             }
-            $panjangJadi = (isset($processesMap[$model->id][11]['panjang_jadi']) && is_numeric($processesMap[$model->id][11]['panjang_jadi'])) ? (float)$processesMap[$model->id][11]['panjang_jadi'] : 0;
-            $totalQtyGudang = isset($inspectingMap[$model->id]) ? (float)$inspectingMap[$model->id] : 0;
+            $panjangJadi = (isset($processesMap[$model->id][11]['panjang_jadi']) && is_numeric($processesMap[$model->id][11]['panjang_jadi'])) ? (float)$processesMap[$model->id][11]['panjang_jadi'] : null;
+            $totalQtyGudang = isset($inspectingMap[$model->id]) ? (float)$inspectingMap[$model->id] : null;
 
             $rowsTable1[] = [
                 'wo_id' => $woId,
@@ -926,7 +948,7 @@ class RealisasiDyeingController extends Controller
                     'woInfo' => $woCache[$woId],
                     'warna' => $warna,
                     'nk' => 'Belum Ada NK',
-                    'panjangGreige' => 0,
+                    'panjangGreige' => null,
                     'psp' => '',
                     'relaxing' => '',
                     'dyeing' => '',
@@ -935,12 +957,12 @@ class RealisasiDyeingController extends Controller
                     'dy3' => '',
                     'topingLevel' => '',
                     'packing' => '',
-                    'panjangJadi' => 0,
-                    'totalQtyGudang' => 0,
+                    'panjangJadi' => null,
+                    'totalQtyGudang' => null,
                 ];
             }
 
-            // Sort unified table by WO No, motif, warna, nk
+            // Sort unified table by WO No length, WO No, motif, warna, nk
             usort($rowsTable1, function($a, $b) {
                 $woNoA = $a['woInfo']['woNo'];
                 $woNoB = $b['woInfo']['woNo'];
@@ -994,7 +1016,13 @@ class RealisasiDyeingController extends Controller
 
             $cIdx = $isProcessing ? 11 : 10;
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextLeft"><Data ss:Type="String">' . htmlspecialchars($r['nk'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
-            echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . $r['panjangGreige'] . '</Data></Cell>' . "\n";
+            
+            if ($r['panjangGreige'] !== null && is_numeric($r['panjangGreige']) && (float)$r['panjangGreige'] > 0) {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . (float)$r['panjangGreige'] . '</Data></Cell>' . "\n";
+            } else {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">-</Data></Cell>' . "\n";
+            }
+            
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['psp'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['relaxing'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['dyeing'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
@@ -1003,8 +1031,19 @@ class RealisasiDyeingController extends Controller
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['dy3'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['topingLevel'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
             echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">' . htmlspecialchars($r['packing'], ENT_QUOTES, 'UTF-8') . '</Data></Cell>' . "\n";
-            echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . $r['panjangJadi'] . '</Data></Cell>' . "\n";
-            echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . $r['totalQtyGudang'] . '</Data></Cell>' . "\n";
+            
+            if ($r['panjangJadi'] !== null && is_numeric($r['panjangJadi']) && (float)$r['panjangJadi'] > 0) {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . (float)$r['panjangJadi'] . '</Data></Cell>' . "\n";
+            } else {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">-</Data></Cell>' . "\n";
+            }
+            
+            if ($r['totalQtyGudang'] !== null && is_numeric($r['totalQtyGudang']) && (float)$r['totalQtyGudang'] > 0) {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="NumDec"><Data ss:Type="Number">' . (float)$r['totalQtyGudang'] . '</Data></Cell>' . "\n";
+            } else {
+                echo '    <Cell ss:Index="' . ($cIdx++) . '" ss:StyleID="TextCenter"><Data ss:Type="String">-</Data></Cell>' . "\n";
+            }
+            
             echo '   </Row>' . "\n";
         }
 

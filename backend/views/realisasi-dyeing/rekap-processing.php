@@ -67,7 +67,8 @@ $this->params['breadcrumbs'][] = $this->title;
         'filterModel' => $searchModel,
         'panel' => [
             'type' => 'default',
-            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-processing', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear, 'TrnKartuProsesDyeingSearch[woMonth]' => $searchModel->woMonth], ['class' => 'btn btn-default']),
+            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['rekap-processing', 'TrnKartuProsesDyeingSearch[woYear]' => $searchModel->woYear, 'TrnKartuProsesDyeingSearch[woMonth]' => $searchModel->woMonth], ['class' => 'btn btn-default']) . ' ' .
+                Html::a('<i class="fa fa-file-excel-o"></i> Export Excel', array_merge(['export-processing'], Yii::$app->request->queryParams), ['class' => 'btn btn-success', 'target' => '_blank', 'data-pjax' => '0', 'title' => 'Export Semua Data ke Excel']),
             //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
             //'footer'=>false
         ],
