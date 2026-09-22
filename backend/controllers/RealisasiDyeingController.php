@@ -391,16 +391,18 @@ class RealisasiDyeingController extends Controller
             if (!isset($woCache[$woId])) {
                 $wo = $modelColor->wo;
                 $sc = $modelColor->sc;
-                $woCache[$woId] = [
-                    'woNo' => $wo ? $wo->no : '',
-                    'buyer' => $sc ? $sc->customerName : '',
-                    'motif' => $wo ? $wo->greigeNamaKain : '',
-                    'handling' => ($wo && $wo->handling) ? $wo->handling->name : '-',
-                    'batchTotal' => $wo ? $wo->colorQty : 0,
-                    'jmlPanjang' => $wo ? (Yii::$app->formatter->asDecimal($wo->colorQtyFinish) . 'M / ' . Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) . 'Y') : '',
-                    'tglWo' => ($wo && $wo->date) ? date('d/m/y', strtotime($wo->date)) : '',
-                    'tglKirim' => ($wo && $wo->tgl_kirim) ? date('d/m/y', strtotime($wo->tgl_kirim)) : '',
-                ];
+                    $mFinish = ($wo && is_numeric($wo->colorQtyFinish)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinish) : '-';
+                    $yFinish = ($wo && is_numeric($wo->colorQtyFinishToYard)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) : '-';
+                    $woCache[$woId] = [
+                        'woNo' => $wo ? $wo->no : '',
+                        'buyer' => $sc ? $sc->customerName : '',
+                        'motif' => $wo ? $wo->greigeNamaKain : '',
+                        'handling' => ($wo && $wo->handling) ? $wo->handling->name : '-',
+                        'batchTotal' => $wo ? $wo->colorQty : 0,
+                        'jmlPanjang' => $wo ? ($mFinish . 'M / ' . $yFinish . 'Y') : '',
+                        'tglWo' => ($wo && $wo->date) ? date('d/m/y', strtotime($wo->date)) : '',
+                        'tglKirim' => ($wo && $wo->tgl_kirim) ? date('d/m/y', strtotime($wo->tgl_kirim)) : '',
+                    ];
             }
             $moColor = $modelColor->moColor;
             $warna = $moColor ? $moColor->color : '-';
@@ -840,13 +842,15 @@ class RealisasiDyeingController extends Controller
             if (!isset($woCache[$woId])) {
                 $wo = $model->wo;
                 $sc = $model->sc;
+                $mFinish = ($wo && is_numeric($wo->colorQtyFinish)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinish) : '-';
+                $yFinish = ($wo && is_numeric($wo->colorQtyFinishToYard)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) : '-';
                 $woCache[$woId] = [
                     'woNo' => $wo ? $wo->no : '',
                     'buyer' => $sc ? $sc->customerName : '',
                     'motif' => $wo ? $wo->greigeNamaKain : '',
                     'handling' => ($wo && $wo->handling) ? $wo->handling->name : '-',
                     'batchTotal' => $wo ? $wo->colorQty : 0,
-                    'jmlPanjang' => $wo ? (Yii::$app->formatter->asDecimal($wo->colorQtyFinish) . 'M / ' . Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) . 'Y') : '',
+                    'jmlPanjang' => $wo ? ($mFinish . 'M / ' . $yFinish . 'Y') : '',
                     'tglWo' => ($wo && $wo->date) ? date('d/m/y', strtotime($wo->date)) : '',
                     'tglKirim' => ($wo && $wo->tgl_kirim) ? date('d/m/y', strtotime($wo->tgl_kirim)) : '',
                 ];
@@ -872,7 +876,7 @@ class RealisasiDyeingController extends Controller
                     $packing = date('d/m/y', strtotime($model->approved_at));
                 }
             }
-            $panjangJadi = isset($processesMap[$model->id][11]['panjang_jadi']) ? (float)$processesMap[$model->id][11]['panjang_jadi'] : 0;
+            $panjangJadi = (isset($processesMap[$model->id][11]['panjang_jadi']) && is_numeric($processesMap[$model->id][11]['panjang_jadi'])) ? (float)$processesMap[$model->id][11]['panjang_jadi'] : 0;
             $totalQtyGudang = isset($inspectingMap[$model->id]) ? (float)$inspectingMap[$model->id] : 0;
 
             $rowsTable1[] = [
@@ -901,13 +905,15 @@ class RealisasiDyeingController extends Controller
                 if (!isset($woCache[$woId])) {
                     $wo = $modelColor->wo;
                     $sc = $modelColor->sc;
+                    $mFinish = ($wo && is_numeric($wo->colorQtyFinish)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinish) : '-';
+                    $yFinish = ($wo && is_numeric($wo->colorQtyFinishToYard)) ? Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) : '-';
                     $woCache[$woId] = [
                         'woNo' => $wo ? $wo->no : '',
                         'buyer' => $sc ? $sc->customerName : '',
                         'motif' => $wo ? $wo->greigeNamaKain : '',
                         'handling' => ($wo && $wo->handling) ? $wo->handling->name : '-',
                         'batchTotal' => $wo ? $wo->colorQty : 0,
-                        'jmlPanjang' => $wo ? (Yii::$app->formatter->asDecimal($wo->colorQtyFinish) . 'M / ' . Yii::$app->formatter->asDecimal($wo->colorQtyFinishToYard) . 'Y') : '',
+                        'jmlPanjang' => $wo ? ($mFinish . 'M / ' . $yFinish . 'Y') : '',
                         'tglWo' => ($wo && $wo->date) ? date('d/m/y', strtotime($wo->date)) : '',
                         'tglKirim' => ($wo && $wo->tgl_kirim) ? date('d/m/y', strtotime($wo->tgl_kirim)) : '',
                     ];

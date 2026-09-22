@@ -124,7 +124,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'JML PANJANG',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y';
+                    if (!$data->wo) return '-';
+                    $finish = is_numeric($data->wo->colorQtyFinish) ? Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) : '-';
+                    $finishToYard = is_numeric($data->wo->colorQtyFinishToYard) ? Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard) : '-';
+                    return $finish . 'M / ' . $finishToYard . 'Y';
                 },
                 'group' => true,
                 'subGroupOf' => 1,
@@ -171,7 +174,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Panjang Greige',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    return $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+                    $sum = $data->getTrnKartuProsesDyeingItems()->sum('panjang_m');
+                    return is_numeric($sum) ? (float)$sum : null;
                 },
                 'format'=>'decimal'
             ],
@@ -328,7 +332,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'label'=>'Panjang Jadi',
                 'value'=>function($data){
                     /* @var $data TrnKartuProsesDyeing*/
-                    $r = 0;
+                    $r = null;
                     $pc = (new \yii\db\Query())
                         ->from(\common\models\ar\KartuProcessDyeingProcess::tableName())
                         ->where(['kartu_process_id'=>$data->id, 'process_id'=>11])
@@ -336,8 +340,8 @@ $this->params['breadcrumbs'][] = $this->title;
                     ;
                     if($pc !== false){
                         $v = \yii\helpers\Json::decode($pc['value']);
-                        if(isset($v['panjang_jadi'])){
-                            $r = $v['panjang_jadi'];
+                        if(isset($v['panjang_jadi']) && is_numeric($v['panjang_jadi'])){
+                            $r = (float)$v['panjang_jadi'];
                         }
                     }
 
@@ -357,16 +361,16 @@ $this->params['breadcrumbs'][] = $this->title;
                         $qTotal = (new \yii\db\Query())->from(\common\models\ar\InspectingItem::tableName())
                         ->where(['inspecting_id'=>$item->id])
                         ->sum('qty');
-                        $total += $qTotal;
+                        $total += (float)$qTotal;
                         $id = $item->id;
                     }
                     if($id === null){
-                        return $total;
+                        return Yii::$app->formatter->asDecimal($total);
                     }
-                    return Html::a($total, ['/penerimaan-inspecting/view', 'id'=>$id], ['title'=>'Lihat Inspecting Detail', 'target'=>'blank']);
+                    return Html::a(Yii::$app->formatter->asDecimal($total), ['/penerimaan-inspecting/view', 'id'=>$id], ['title'=>'Lihat Inspecting Detail', 'target'=>'blank']);
 
                 },
-                'format'=>'html'
+                'format'=>'raw'
             ],
         ],
     ]); ?>
@@ -439,7 +443,10 @@ $this->params['breadcrumbs'][] = $this->title;
                         'label' => 'JML PANJANG',
                         'value' => function($data){
                             /* @var $data \common\models\ar\TrnWoColor*/
-                            return Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) .'M / '. Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard).'Y';
+                            if (!$data->wo) return '-';
+                            $finish = is_numeric($data->wo->colorQtyFinish) ? Yii::$app->formatter->asDecimal($data->wo->colorQtyFinish) : '-';
+                            $finishToYard = is_numeric($data->wo->colorQtyFinishToYard) ? Yii::$app->formatter->asDecimal($data->wo->colorQtyFinishToYard) : '-';
+                            return $finish . 'M / ' . $finishToYard . 'Y';
                         },
                         'group' => true,
                         'subGroupOf' => 1,
