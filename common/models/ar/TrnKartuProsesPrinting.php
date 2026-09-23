@@ -454,23 +454,30 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
     public static function generateNomorKartu()
     {
         $year2d = date('y');
-        $lastRecord = self::find()
+        $nomorKartuList = self::find()
+            ->select('nomor_kartu')
             ->where(['like', 'nomor_kartu', '/' . $year2d])
-            ->orderBy(['id' => SORT_DESC])
-            ->one();
+            ->asArray()
+            ->column();
 
-        $nextUrut = ($year2d === '26') ? 1000 : 1;
-        if ($lastRecord && !empty($lastRecord->nomor_kartu)) {
-            $pos = strrpos($lastRecord->nomor_kartu, '/');
-            if ($pos !== false) {
-                $prefix = substr($lastRecord->nomor_kartu, 0, $pos);
-                // Extract angka saja di depan (misal: "1499" dari "1499" atau "1499B")
-                if (preg_match('/^(\d+)/', $prefix, $matches)) {
-                    $num = (int)$matches[1];
-                    $nextUrut = max($nextUrut, $num + 1);
+        $maxNum = ($year2d === '26') ? 999 : 0;
+        foreach ($nomorKartuList as $nk) {
+            if (!empty($nk)) {
+                $pos = strrpos($nk, '/');
+                if ($pos !== false) {
+                    $prefix = substr($nk, 0, $pos);
+                    // Extract angka saja di depan (misal: "1499" dari "1499" atau "1499B")
+                    if (preg_match('/^(\d+)/', $prefix, $matches)) {
+                        $num = (int)$matches[1];
+                        if ($num > $maxNum) {
+                            $maxNum = $num;
+                        }
+                    }
                 }
             }
         }
+
+        $nextUrut = $maxNum + 1;
         return $nextUrut . '/' . $year2d;
     }
 

@@ -1038,11 +1038,19 @@ class InspectingMklBjController extends Controller
         $create_qr = 'INS2-' . $model->inspecting_id . '-' . $model->id;
 
         // Cek artikel / design
-        if ($model->inspecting->jenis == 1) {
+        $moProcess = $model->inspecting->wo->mo->process ?? ($model->inspecting->wo->scGreige->process ?? null);
+        if ($moProcess == TrnScGreige::PROCESS_DYEING) {
             $is_design_or_article = $model->inspecting->wo->mo->article;
         } else {
-            $articleIsNotNull = $model->inspecting->wo->mo->article ? '/' : '';
-            $is_design_or_article = $model->inspecting->wo->mo->article . $articleIsNotNull . $model->inspecting->wo->mo->design;
+            $article = $model->inspecting->wo->mo->article ?? '';
+            $design = $model->inspecting->wo->mo->design ?? '';
+            if ($article !== '' && $design !== '') {
+                $is_design_or_article = $article . '/' . $design;
+            } elseif ($article !== '') {
+                $is_design_or_article = $article;
+            } else {
+                $is_design_or_article = $design;
+            }
         }
 
         $getWidth = $model->inspecting->wo && $model->inspecting->wo->scGreige && $model->inspecting->wo->scGreige->lebar_kain
@@ -1228,11 +1236,19 @@ class InspectingMklBjController extends Controller
                 $countItems = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
 
                 $is_design_or_article = NULL;
-                if ($iI->inspecting->jenis == 1) { //1 == dyeing
+                $moProcess = $iI->inspecting->wo->mo->process ?? ($iI->inspecting->wo->scGreige->process ?? null);
+                if ($moProcess == TrnScGreige::PROCESS_DYEING) { //1 == dyeing
                     $is_design_or_article = $iI->inspecting->wo->mo->article;
-                } else { //2 == printing && //3 == pfp
-                    $articleIsNotNull = $iI->inspecting->wo->mo->article ? '/' : '';
-                    $is_design_or_article = $iI->inspecting->wo->mo->article.$articleIsNotNull.$iI->inspecting->wo->mo->design;
+                } else { //2 == printing && //3 == pfp && //4 == digital printing
+                    $article = $iI->inspecting->wo->mo->article ?? '';
+                    $design = $iI->inspecting->wo->mo->design ?? '';
+                    if ($article !== '' && $design !== '') {
+                        $is_design_or_article = $article . '/' . $design;
+                    } elseif ($article !== '') {
+                        $is_design_or_article = $article;
+                    } else {
+                        $is_design_or_article = $design;
+                    }
                 }
 
                 $getWidth = $iI->inspecting->wo && $iI->inspecting->wo->scGreige && $iI->inspecting->wo->scGreige->lebar_kain ? TrnScGreige::lebarKainOptions()[$iI->inspecting->wo->scGreige->lebar_kain] : '-';
@@ -1360,11 +1376,19 @@ class InspectingMklBjController extends Controller
                 $countItems = strlen($iI->qty_count) == 1 ? '00' : (strlen($iI->qty_count) == 2 ? '0' : '');
 
                 $is_design_or_article = NULL;
-                if ($iI->inspecting->jenis == 1) { //1 == dyeing
+                $moProcess = $iI->inspecting->wo->mo->process ?? ($iI->inspecting->wo->scGreige->process ?? null);
+                if ($moProcess == TrnScGreige::PROCESS_DYEING) { //1 == dyeing
                     $is_design_or_article = $iI->inspecting->wo->mo->article;
-                } else { //2 == printing && //3 == pfp
-                    $articleIsNotNull = $iI->inspecting->wo->mo->article ? '/' : '';
-                    $is_design_or_article = $iI->inspecting->wo->mo->article.$articleIsNotNull.$iI->inspecting->wo->mo->design;
+                } else { //2 == printing && //3 == pfp && //4 == digital printing
+                    $article = $iI->inspecting->wo->mo->article ?? '';
+                    $design = $iI->inspecting->wo->mo->design ?? '';
+                    if ($article !== '' && $design !== '') {
+                        $is_design_or_article = $article . '/' . $design;
+                    } elseif ($article !== '') {
+                        $is_design_or_article = $article;
+                    } else {
+                        $is_design_or_article = $design;
+                    }
                 }
 
                 $getWidth = $iI->inspecting->wo && $iI->inspecting->wo->scGreige && $iI->inspecting->wo->scGreige->lebar_kain ? TrnScGreige::lebarKainOptions()[$iI->inspecting->wo->scGreige->lebar_kain] : '-';
