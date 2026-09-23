@@ -85,30 +85,40 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
      {
          parent::afterSave($insert, $changedAttributes);
 
-         if (array_key_exists('status', $changedAttributes)) {
-             if ($this->status !== self::STATUS_STOCK) {
-                 TrnGudangJadiOpnamePcs::updateAll(
-                     [
-                         'status' => TrnGudangJadiOpnamePcs::STATUS_OUT,
-                         'updated_at' => time(),
-                     ],
-                     ['id_trn_gudang_jadi' => $this->id]
-                 );
-             } else {
-                 TrnGudangJadiOpnamePcs::updateAll(
-                     [
-                         'status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED,
-                         'updated_at' => time(),
-                     ],
-                     [
-                         'and',
-                         ['id_trn_gudang_jadi' => $this->id],
-                         ['status' => TrnGudangJadiOpnamePcs::STATUS_OUT]
-                     ]
-                 );
-             }
-         }
-     }
+        if (array_key_exists('status', $changedAttributes)) {
+            if ($this->status !== self::STATUS_STOCK) {
+                TrnGudangJadiOpnamePcs::updateAll(
+                    [
+                        'status' => TrnGudangJadiOpnamePcs::STATUS_OUT,
+                        'updated_at' => time(),
+                    ],
+                    ['id_trn_gudang_jadi' => $this->id]
+                );
+            } else {
+                TrnGudangJadiOpnamePcs::updateAll(
+                    [
+                        'status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED,
+                        'updated_at' => time(),
+                    ],
+                    [
+                        'and',
+                        ['id_trn_gudang_jadi' => $this->id],
+                        ['status' => TrnGudangJadiOpnamePcs::STATUS_OUT]
+                    ]
+                );
+            }
+        }
+
+        if (array_key_exists('qty', $changedAttributes)) {
+            TrnGudangJadiOpnamePcs::updateAll(
+                [
+                    'qty' => $this->qty,
+                    'updated_at' => time(),
+                ],
+                ['id_trn_gudang_jadi' => $this->id]
+            );
+        }
+    }
 
      /**
       * {@inheritdoc}
