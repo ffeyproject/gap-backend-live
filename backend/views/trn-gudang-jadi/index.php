@@ -283,7 +283,27 @@ if(!empty($searchModel->greige_id)){
                     ]
                 ],
             ],
-            'source_ref',
+            [
+                'contentOptions' => ['style' => 'white-space: nowrap;'],
+                'attribute' => 'source_ref',
+                'format' => 'raw',
+                'value' => function($data) {
+                    /* @var $data TrnGudangJadi */
+                    if (empty($data->source_ref)) {
+                        return '-';
+                    }
+                    $url = $data->getSourceUrl();
+                    if ($url) {
+                        return Html::a(Html::encode($data->source_ref), $url, [
+                            'target' => '_blank',
+                            'data-pjax' => '0',
+                            'title' => 'Buka detail inspecting di tab baru',
+                            'style' => 'text-decoration: underline; font-weight: bold; color: #337ab7;'
+                        ]);
+                    }
+                    return Html::encode($data->source_ref);
+                }
+            ],
             [
                 'header' => 'Made In Indonesia',
                 'class' => CheckboxColumn::class,

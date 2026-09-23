@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnPotongStockItem;
 use common\models\Model;
@@ -12,6 +13,7 @@ use yii\helpers\ArrayHelper;
 use yii\web\Controller;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
+use yii\web\Response;
 use yii\filters\VerbFilter;
 
 /**
@@ -107,7 +109,7 @@ class TrnPotongStockController extends Controller
                 }
 
                 //Total item potongan tidak boleh lebih dari qty kain yang dipotong
-                $itemsTotalQty = array_sum(ArrayHelper::getColumn(ArrayHelper::toArray($modelsItem), 'panjang_m'));
+                $itemsTotalQty = array_sum(ArrayHelper::getColumn(ArrayHelper::toArray($modelsItem), 'qty'));
 
                 if($itemsTotalQty > $model->stock->qty){
                     foreach ($modelsItem as $item) {
@@ -200,7 +202,7 @@ class TrnPotongStockController extends Controller
                 }
 
                 //Total item potongan tidak boleh lebih dari qty kain yang dipotong
-                $itemsTotalQty = array_sum(ArrayHelper::getColumn(ArrayHelper::toArray($modelsItem), 'panjang_m'));
+                $itemsTotalQty = array_sum(ArrayHelper::getColumn(ArrayHelper::toArray($modelsItem), 'qty'));
                 if($itemsTotalQty > $model->stock->qty){
 
                     foreach ($modelsItem as $item) {
@@ -306,58 +308,54 @@ class TrnPotongStockController extends Controller
                 return $this->redirect(['view', 'id' => $model->id]);
             }
 
-            $stockGudangJadi->dipotong = true;
-            $stockGudangJadi->status = $stockGudangJadi::STATUS_OUT;
-            if(!($flag = $stockGudangJadi->save(false, ['dipotong', 'status']))){
-                Yii::$app->session->setFlash('error', 'gagal merubah status stock yang akan dipotong, coba lagi.');
-                $transaction->rollBack();
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
-
-            // Kumpulkan daftar potong qty untuk format catatan ringkas
+            // Kumpulkan daftar potong qty
             $potongQtys = [];
             foreach ($model->trnPotongStockItems as $item) {
                 $potongQtys[] = (float)$item->qty;
             }
             $itemsTotal = array_sum($potongQtys);
-            $sisa = $stockGudangJadi->qty - $itemsTotal;
-            if ($sisa > 0) {
-                $potongQtys[] = (float)$sisa;
-            }
-            $potongText = implode(' dan ', $potongQtys);
-            $formattedNote = 'Pemotongan ID: ' . $model->id . ' qty: ' . (float)$stockGudangJadi->qty . ' dipotong ' . $potongText;
+            $sisa = (float)$stockGudangJadi->qty - $itemsTotal;
 
+            if ($sisa > 0) {
+                $stockGudangJadi->qty = $sisa;
+                $stockGudangJadi->status = TrnGudangJadi::STATUS_STOCK;
+                $stockGudangJadi->dipotong = false;
+                $noteText = 'Dipotong ' . $itemsTotal . ' (Potong ID: ' . $model->id . ', Sisa: ' . $sisa . ')';
+            } else {
+                $stockGudangJadi->qty = 0;
+                $stockGudangJadi->status = TrnGudangJadi::STATUS_OUT;
+                $stockGudangJadi->dipotong = true;
+                $noteText = 'Dipotong habis ' . $itemsTotal . ' (Potong ID: ' . $model->id . ')';
+            }
+
+            $stockGudangJadi->note = trim(($stockGudangJadi->note ? $stockGudangJadi->note . ' | ' : '') . $noteText);
+            $stockGudangJadi->updated_at = time();
+
+            if (!($flag = $stockGudangJadi->save(false, ['qty', 'status', 'dipotong', 'note', 'updated_at']))) {
+                Yii::$app->session->setFlash('error', 'Gagal merubah status dan qty stock yang dipotong, coba lagi.');
+                $transaction->rollBack();
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+
+            // Buat roll baru untuk setiap item hasil pemotongan
             foreach ($model->trnPotongStockItems as $trnPotongStockItem) {
                 $modelNewStock = new TrnGudangJadi();
-                $modelNewStock->load([$modelNewStock->formName()=>$stockGudangJadi->attributes]);
+                $modelNewStock->setAttributes($stockGudangJadi->attributes, false);
+                $modelNewStock->id = null;
+                $modelNewStock->isNewRecord = true;
                 $modelNewStock->qty = $trnPotongStockItem->qty;
                 $modelNewStock->locs_code = $stockGudangJadi->locs_code;
                 $modelNewStock->dipotong = false;
                 $modelNewStock->hasil_pemotongan = true;
-                $modelNewStock->note = $formattedNote;
-                $modelNewStock->status = $modelNewStock::STATUS_STOCK;
+                $modelNewStock->note = 'Hasil potong dari ID Stock: ' . $stockGudangJadi->id . ' (Potong ID: ' . $model->id . ')';
+                $modelNewStock->status = TrnGudangJadi::STATUS_STOCK;
+                $modelNewStock->qr_code = null;
+                $modelNewStock->qr_code_desc = null;
+                $modelNewStock->qr_print_at = null;
 
-                if(!($flag = $modelNewStock->save(false))){
+                if (!($flag = $modelNewStock->save(false))) {
                     $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'gagal menyimpan roll baru ke stock gudang, coba lagi.');
-                    return $this->redirect(['view', 'id' => $model->id]);
-                }
-            }
-
-            // jika masih ada sisa
-            // tambahan 1 roll lagi yang merupakan sisa pemotongan, data stock yang dipotong tidak dirubah sama sekali kecuali status nya, sisa pemotongan nya dimasukan ke data baru.
-            if($sisa > 0){
-                $modelNewStock = new TrnGudangJadi();
-                $modelNewStock->load([$modelNewStock->formName()=>$stockGudangJadi->attributes]);
-                $modelNewStock->qty = $sisa;
-                $modelNewStock->locs_code = $stockGudangJadi->locs_code;
-                $modelNewStock->note = $formattedNote;
-                $modelNewStock->status = $modelNewStock::STATUS_STOCK;
-                $modelNewStock->dipotong = false;
-                $modelNewStock->hasil_pemotongan = true;
-                if(!($flag = $modelNewStock->save(false))){
-                    $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', 'gagal menyimpan roll baru ke stock gudang jadi, coba lagi.');
+                    Yii::$app->session->setFlash('error', 'Gagal menyimpan roll baru ke stock gudang, coba lagi.');
                     return $this->redirect(['view', 'id' => $model->id]);
                 }
             }
@@ -374,6 +372,70 @@ class TrnPotongStockController extends Controller
         }
 
         return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    /**
+     * Mengambil data detail stock gudang jadi via AJAX
+     * @param int $id
+     * @return array
+     */
+    public function actionGetStock($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $stock = TrnGudangJadi::findOne($id);
+        if ($stock === null) {
+            return [
+                'success' => false,
+                'message' => 'Stock ID ' . Html::encode($id) . ' tidak ditemukan.'
+            ];
+        }
+
+        $unitName = MstGreigeGroup::unitOptions()[$stock->unit] ?? '-';
+        $gradeName = $stock->gradeName;
+        $jenisGudang = TrnGudangJadi::jenisGudangOptions()[$stock->jenis_gudang] ?? '-';
+        $statusName = TrnGudangJadi::statusOptions()[$stock->status] ?? '-';
+        $sourceName = TrnGudangJadi::sourceOptions()[$stock->source] ?? '-';
+        $woNo = $stock->wo ? $stock->wo->no : '-';
+        $namaKain = ($stock->wo && $stock->wo->greige) ? $stock->wo->greige->nama_kain : '-';
+        $article = ($stock->wo && $stock->wo->mo) ? $stock->wo->mo->article : '-';
+        $design = ($stock->wo && $stock->wo->mo) ? $stock->wo->mo->design : '-';
+        $color = $stock->color ?: '-';
+        $noLot = $stock->getNoLot();
+
+        $warnings = [];
+        if ($stock->status != TrnGudangJadi::STATUS_STOCK) {
+            $warnings[] = 'Status stock saat ini adalah "' . $statusName . '" (Hanya stock dengan status "Stock" yang valid untuk dipotong).';
+        }
+        if ($stock->dipotong) {
+            $warnings[] = 'Stock ini sudah pernah dipotong.';
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'id' => $stock->id,
+                'no' => $stock->no ?: '-',
+                'wo_no' => $woNo,
+                'nama_kain' => $namaKain,
+                'article' => $article,
+                'design' => $design,
+                'color' => $color,
+                'qty' => Yii::$app->formatter->asDecimal($stock->qty),
+                'qty_raw' => (float)$stock->qty,
+                'unit' => $unitName,
+                'grade' => $gradeName,
+                'jenis_gudang' => $jenisGudang,
+                'status' => $statusName,
+                'status_id' => $stock->status,
+                'dipotong' => (bool)$stock->dipotong,
+                'source' => $sourceName,
+                'source_ref' => $stock->source_ref ?: '-',
+                'no_lot' => $noLot,
+                'locs_code' => $stock->locs_code ?: '-',
+            ],
+            'warnings' => $warnings
+        ];
     }
 
     /**

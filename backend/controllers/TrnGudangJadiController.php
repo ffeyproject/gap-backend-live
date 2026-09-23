@@ -150,7 +150,7 @@ class TrnGudangJadiController extends Controller
     {
         $searchModel = new TrnGudangJadiSearch(['status'=>TrnGudangJadi::STATUS_STOCK]);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-        $dataProvider->sort->defaultOrder = ['qr_print_at' => SORT_ASC];
+        $dataProvider->sort->defaultOrder = ['id' => SORT_DESC];
 
         // $dataProvider->pagination->pageSize = 10;
         return $this->render('index', [
@@ -595,63 +595,87 @@ class TrnGudangJadiController extends Controller
         }else{
             $getMeter = round($model->qty * 0.9144, 2);
         }
-        if ($model->source == 1) { //1 == SOURCE_PACKING
+        $getTableData = null;
+        if (!empty($model->source_ref)) {
             $getTableData = (new \yii\db\Query())->from(TrnInspecting::tableName())
                 ->select('*')
-                ->where(['no'=>$model->source_ref])
+                ->where(['no' => $model->source_ref])
                 ->one();
             if (!$getTableData) {
                 $getTableData = (new \yii\db\Query())->from(InspectingMklBj::tableName())
                     ->select('*')
-                    ->where(['no'=>$model->source_ref])
+                    ->where(['no' => $model->source_ref])
                     ->one();
             }
+        }
+
+        if ($getTableData) {
+            $k3l_code = !empty($getTableData['k3l_code']) ? $getTableData['k3l_code'] : '-';
 
             if (array_key_exists('jenis_process', $getTableData)) {
-                if ($getTableData['jenis_process'] == 1) { //1 == dyeing
-                    $is_design_or_atikel = $model->wo->mo->article;
-                } else { //2 == printing && //3 == pfp
-                    $articleIsNotNull = $model->wo->mo->article ? '/' : '';
-                    $is_design_or_atikel = $model->wo->mo->article.$articleIsNotNull.$model->wo->mo->design;
+                if ($getTableData['jenis_process'] == 1) { // 1 == dyeing
+                    $is_design_or_atikel = ($model->wo && $model->wo->mo) ? $model->wo->mo->article : '-';
+                } else { // 2 == printing && 3 == pfp
+                    $articleIsNotNull = ($model->wo && $model->wo->mo && $model->wo->mo->article) ? '/' : '';
+                    $is_design_or_atikel = ($model->wo && $model->wo->mo) ? ($model->wo->mo->article . $articleIsNotNull . $model->wo->mo->design) : '-';
                 }
-
-                // $is_design_or_atikel = $getTableData['jenis_process'] == 1 ? ($model->grade == 1 ? $model->wo->mo->article : $model->wo->greige->group->nama_kain) : $model->wo->mo->design;
             } else {
-                if ($getTableData['jenis'] == 1) { //1 == dyeing
-                    $is_design_or_atikel = $model->wo->mo->article;
-                } else { //2 == printing && //3 == pfp
-                    $articleIsNotNull = $model->wo->mo->article ? '/' : '';
-                    $is_design_or_atikel = $model->wo->mo->article.$articleIsNotNull.$model->wo->mo->design;
+                if (isset($getTableData['jenis']) && $getTableData['jenis'] == 1) { // 1 == dyeing
+                    $is_design_or_atikel = ($model->wo && $model->wo->mo) ? $model->wo->mo->article : '-';
+                } else {
+                    $articleIsNotNull = ($model->wo && $model->wo->mo && $model->wo->mo->article) ? '/' : '';
+                    $is_design_or_atikel = ($model->wo && $model->wo->mo) ? ($model->wo->mo->article . $articleIsNotNull . $model->wo->mo->design) : '-';
                 }
-
-                // $is_design_or_atikel = $getTableData['jenis'] == 1 ? ($model->grade == 1 ? $model->wo->mo->article : $model->wo->greige->group->nama_kain) : $model->wo->mo->design;
             }
-            
-            $no_lot = $getTableData['no_lot'];
+
+            $rawLot = $getTableData['no_lot'] ?? '-';
+            if ($rawLot != '-' && !empty($rawLot)) {
+                if ($model->no_urut) {
+                    $no_lot = $rawLot . '/' . $model->no_urut;
+                } elseif ($model->no && strpos($model->no, '/') === false && strpos($rawLot, '/') === false) {
+                    $no_lot = $rawLot . '/' . $model->no;
+                } else {
+                    $no_lot = $rawLot;
+                }
+            } else {
+                $no_lot = '-';
+            }
         } else {
-            if ($model->wo->mo->process == 1) { //1 == dyeing
+            $k3l_code = ($model->wo && $model->wo->mo && !empty($model->wo->mo->k3l_code)) ? $model->wo->mo->k3l_code : '-';
+            if ($model->wo && $model->wo->mo && $model->wo->mo->process == 1) { // 1 == dyeing
                 $is_design_or_atikel = $model->wo->mo->article;
-            } else { //2 == printing && //3 == pfp
-                $articleIsNotNull = $model->wo->mo->article ? '/' : '';
-                $is_design_or_atikel = $model->wo->mo->article.$articleIsNotNull.$model->wo->mo->design;
+            } else {
+                $articleIsNotNull = ($model->wo && $model->wo->mo && $model->wo->mo->article) ? '/' : '';
+                $is_design_or_atikel = ($model->wo && $model->wo->mo) ? ($model->wo->mo->article . $articleIsNotNull . $model->wo->mo->design) : '-';
             }
-
-            // $is_design_or_atikel = $model->wo->mo->process == 1 ? ($model->grade == 1 ? $model->wo->mo->article : $model->wo->greige->group->nama_kain) : $model->wo->mo->design;
+            $no_lot = $model->getNoLot();
+            if ($no_lot != '-' && $model->no_urut && strpos($no_lot, '/') === false) {
+                $no_lot = $no_lot . '/' . $model->no_urut;
+            }
         }
-        
+
+        $qrCode = $model->qr_code;
+        if (empty($qrCode)) {
+            if ($model->id_from && $model->trans_from == 'INS' && $getTableData) {
+                $qrCode = 'INS-' . ($getTableData['id'] ?? '') . '-' . $model->id_from;
+            } elseif ($model->id_from && $model->trans_from == 'MKL' && $getTableData) {
+                $qrCode = 'MKL-' . ($getTableData['id'] ?? '') . '-' . $model->id_from;
+            } else {
+                $qrCode = 'STK-' . $model->id;
+            }
+        }
+
         $data = [];
-        $data['qr_code'] = $model->qr_code ? $model->qr_code : 'STK-'.$model->id;
-        $data['no_wo'] = $model->wo->no;
-        $data['k3l_code'] = '-';
-        $data['color'] = $model->color;
-        $data['is_design_or_artikel'] = $is_design_or_atikel ? $is_design_or_atikel : '-';
+        $data['qr_code'] = $qrCode;
+        $data['no_wo'] = $model->wo ? $model->wo->no : '-';
+        $data['k3l_code'] = $k3l_code;
+        $data['color'] = $model->color ?: '-';
+        $data['is_design_or_artikel'] = $is_design_or_atikel ?: '-';
         $data['length'] = str_replace(' ', '', $model->qty.' '.($model->unit == 1 ? 'YDS / '.$getMeter.' M' : ($model->unit == 2 ? 'M' : 'KG')));
-        $data['no_lot'] = $no_lot ? $no_lot : '-';
+        $data['no_lot'] = $no_lot ?: '-';
         $data['qty_count'] = 0;
         $data['grade'] = $getWidth.'"/'.$getGrade;
-        // $data['motif_greige'] = $model->wo->mo->scGreige->greigeGroup->nama_kain;
         $data['jenis_gudang'] = $model->jenis_gudang;
-        // $data['defect'] = str_replace(',', '|', $model->defect);
         $data['param1'] = $param1;
         $data['param2'] = $param2;
 
@@ -669,14 +693,14 @@ class TrnGudangJadiController extends Controller
                         '!'.$data['grade'].
                         // '!'.$data['motif_greige'].
                         '!'.$production;
-        $data['qr_code_desc'] = $model->qr_code_desc ? ($model->qr_code_desc == $qr_code_desc ? $model->qr_code_desc : $qr_code_desc) : $qr_code_desc;
+        $data['qr_code_desc'] = $qr_code_desc;
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
             $query = $this->findModel($id);
             $query['qr_code'] = $query->qr_code ? $query->qr_code : 'STK-'.$model->id;
-            $query['qr_code_desc'] = $query->qr_code_desc ? ($query->qr_code_desc == $qr_code_desc ? $query->qr_code_desc : $qr_code_desc) : $qr_code_desc;
-            $query['qr_print_at'] = $query->qr_print_at ? $query->qr_print_at : date('Y-m-d H:i:s');
+            $query['qr_code_desc'] = $qr_code_desc;
+            $query['qr_print_at'] = date('Y-m-d H:i:s');
             $query->save();
             $transaction->commit();
         }catch (\Throwable $t){

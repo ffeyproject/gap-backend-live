@@ -34,6 +34,14 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     'method' => 'post',
                 ],
             ]) ?>
+        <?php else: ?>
+            <?php
+            $isLokal = ($model->stock->wo && substr($model->stock->wo->no, -1) == 'L');
+            $param1 = 1;
+            $param2 = $isLokal ? 1 : 0;
+            $param3 = 1;
+            ?>
+            <?= Html::a('<i class="fa fa-qrcode"></i> Print QR Stock Asal (Sisa: ' . Yii::$app->formatter->asDecimal($model->stock->qty) . ' ' . $unit . ')', ['/trn-gudang-jadi/qr', 'id' => $model->stock_id, 'param1' => $param1, 'param2' => $param2, 'param3' => $param3], ['class' => 'btn btn-info', 'target' => '_blank']) ?>
         <?php endif;?>
 
         <?= Html::a('Add New', ['create'], ['class' => 'btn btn-default']) ?>
@@ -41,24 +49,58 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
 
     <div class="row">
         <div class="col-md-6">
-            <div class="box">
+            <div class="box box-primary">
                 <div class="box-header with-border">
-                    <!--<h3 class="box-title"><strong></strong></h3>
-                    <div class="box-tools pull-right"></div>-->
+                    <h3 class="box-title"><strong>Informasi Pemotongan & Stock Asal</strong></h3>
                 </div>
                 <div class="box-body">
+                    <?php
+                    $stockAsal = $model->stock;
+                    $statusAsalLabel = \common\models\ar\TrnGudangJadi::statusOptions()[$stockAsal->status] ?? '-';
+                    $statusBadge = $stockAsal->status == \common\models\ar\TrnGudangJadi::STATUS_STOCK ? '<span class="label label-success">' . $statusAsalLabel . '</span>' : '<span class="label label-danger">' . $statusAsalLabel . '</span>';
+                    ?>
                     <?= DetailView::widget([
                         'model' => $model,
                         'attributes' => [
                             'id',
-                            'stock_id',
-                            'no_urut',
                             'no',
+                            'no_urut',
+                            [
+                                'label' => 'ID Stock Asal',
+                                'format' => 'raw',
+                                'value' => '<strong>' . $model->stock_id . '</strong>' . ($model->status == $model::STATUS_POSTED ? ' ' . Html::a('<i class="fa fa-qrcode"></i> Print QR', ['/trn-gudang-jadi/qr', 'id' => $model->stock_id, 'param1' => $param1, 'param2' => $param2, 'param3' => $param3], ['class' => 'btn btn-info btn-xs', 'target' => '_blank']) : ''),
+                            ],
+                            [
+                                'label' => 'Nomor Roll / Stock',
+                                'value' => $stockAsal->no ?: '-',
+                            ],
+                            [
+                                'label' => 'Nomor WO',
+                                'value' => $stockAsal->wo ? $stockAsal->wo->no : '-',
+                            ],
+                            [
+                                'label' => 'Motif / Kain',
+                                'value' => ($stockAsal->wo && $stockAsal->wo->greige) ? $stockAsal->wo->greige->nama_kain : '-',
+                            ],
+                            [
+                                'label' => 'Warna',
+                                'value' => $stockAsal->color ?: '-',
+                            ],
+                            [
+                                'label' => 'Qty Stock Asal Saat Ini (Sisa)',
+                                'format' => 'raw',
+                                'value' => '<strong style="color: #0073b7; font-size: 14px;">' . Yii::$app->formatter->asDecimal($stockAsal->qty) . ' ' . $unit . '</strong>',
+                            ],
+                            [
+                                'label' => 'Status Stock Asal',
+                                'format' => 'raw',
+                                'value' => $statusBadge,
+                            ],
+                            'diperintahkan_oleh',
                             'note:ntext',
                             'date:date',
-                            'diperintahkan_oleh',
                             [
-                                'label'=>'Status',
+                                'label'=>'Status Dokumen Potong',
                                 'value'=>$model::statusOptions()[$model->status]
                             ],
                             'created_at:datetime',
@@ -72,36 +114,65 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
         </div>
 
         <div class="col-md-6">
-            <div class="box">
+            <div class="box box-success">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Items</h3>
+                    <h3 class="box-title"><strong>Roll Baru Hasil Pemotongan</strong></h3>
                     <div class="box-tools pull-right">
-                        <span class="label label-primary"><?=count($modelsItem)?></span>
+                        <span class="label label-primary"><?=count($modelsItem)?> Item</span>
                     </div>
                 </div>
                 <div class="box-body">
-                    <table class="table table-bordered">
+                    <?php
+                    $newStocks = [];
+                    if ($model->status == $model::STATUS_POSTED) {
+                        $newStocks = \common\models\ar\TrnGudangJadi::find()
+                            ->where(['like', 'note', 'Potong ID: ' . $model->id])
+                            ->andWhere(['hasil_pemotongan' => true])
+                            ->orderBy(['id' => SORT_ASC])
+                            ->all();
+                    }
+                    ?>
+                    <table class="table table-bordered table-striped">
                         <thead>
                         <tr>
-                            <th>No</th>
+                            <th style="width: 40px; text-align: center;">No</th>
                             <th>Qty (<?=$unit?>)</th>
-                            <th>Stock ID Gudang Jadi</th>
+                            <th>ID Stock Baru</th>
+                            <?php if ($model->status == $model::STATUS_POSTED): ?>
+                                <th style="width: 100px; text-align: center;">QR Code</th>
+                            <?php endif; ?>
                         </tr>
                         </thead>
                         <tbody>
                         <?php $totalQty = 0; foreach ($modelsItem as $index => $modelItem): ?>
                             <?php
                             $totalQty += $modelItem->qty;
+                            $matchedNewStock = $newStocks[$index] ?? null;
                             ?>
                             <tr>
-                                <td><span><?= ($index + 1) ?></span></td>
-                                <td><?= Yii::$app->formatter->asDecimal($modelItem->qty) ?></td>
-                                <td><?=$modelItem->potongStock->stock_id?></td>
+                                <td style="text-align: center; vertical-align: middle;"><strong><?= ($index + 1) ?></strong></td>
+                                <td style="vertical-align: middle;"><?= Yii::$app->formatter->asDecimal($modelItem->qty) ?></td>
+                                <td style="vertical-align: middle;">
+                                    <?php if ($matchedNewStock): ?>
+                                        <span class="badge bg-green">ID: <?=$matchedNewStock->id?></span> (<?=$matchedNewStock->no ?: '-'?>)
+                                    <?php else: ?>
+                                        <span class="text-muted"><em>Menunggu Posting</em></span>
+                                    <?php endif; ?>
+                                </td>
+                                <?php if ($model->status == $model::STATUS_POSTED): ?>
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        <?php if ($matchedNewStock): ?>
+                                            <?= Html::a('<i class="fa fa-qrcode"></i> Print QR', ['/trn-gudang-jadi/qr', 'id' => $matchedNewStock->id, 'param1' => $param1, 'param2' => $param2, 'param3' => $param3], ['class' => 'btn btn-success btn-xs', 'target' => '_blank']) ?>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endforeach;?>
-                        <tr>
-                            <td><strong>TOTAL (<?=$unit?>)</strong></td>
-                            <td><strong><?=Yii::$app->formatter->asDecimal($totalQty)?></strong></td>
+                        <tr style="background-color: #f9f9f9;">
+                            <td><strong>TOTAL</strong></td>
+                            <td colspan="<?=$model->status == $model::STATUS_POSTED ? 3 : 2?>"><strong style="color: #00a65a; font-size: 14px;"><?=Yii::$app->formatter->asDecimal($totalQty)?> <?=$unit?></strong></td>
                         </tr>
                         </tbody>
                     </table>

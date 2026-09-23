@@ -253,4 +253,72 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
         }
         return '-';
     }
+
+    /**
+     * Mendapatkan URL link untuk referensi source (Inspecting, Makloon, Retur, Beli Jadi, dll)
+     * @return string|null
+     */
+    public function getSourceUrl()
+    {
+        if (empty($this->source_ref)) {
+            return null;
+        }
+
+        switch ($this->source) {
+            case self::SOURCE_PACKING:
+                $ins = TrnInspecting::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($ins) {
+                    return \yii\helpers\Url::to(['/trn-inspecting/view', 'id' => $ins['id']]);
+                }
+                $insMkl = InspectingMklBj::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($insMkl) {
+                    return \yii\helpers\Url::to(['/inspecting-mkl-bj/view', 'id' => $insMkl['id']]);
+                }
+                break;
+            case self::SOURCE_MAKLOON_PROSES:
+                $insMkl = InspectingMklBj::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($insMkl) {
+                    return \yii\helpers\Url::to(['/inspecting-mkl-bj/view', 'id' => $insMkl['id']]);
+                }
+                $mkl = TrnTerimaMakloonProcess::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($mkl) {
+                    return \yii\helpers\Url::to(['/trn-terima-makloon-process/view', 'id' => $mkl['id']]);
+                }
+                break;
+            case self::SOURCE_MAKLOON_FINISH:
+                $insMkl = InspectingMklBj::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($insMkl) {
+                    return \yii\helpers\Url::to(['/inspecting-mkl-bj/view', 'id' => $insMkl['id']]);
+                }
+                $mkl = TrnTerimaMakloonFinish::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($mkl) {
+                    return \yii\helpers\Url::to(['/trn-terima-makloon-finish/view', 'id' => $mkl['id']]);
+                }
+                break;
+            case self::SOURCE_RETUR:
+                $retur = TrnReturBuyer::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($retur) {
+                    return \yii\helpers\Url::to(['/trn-retur-buyer/view', 'id' => $retur['id']]);
+                }
+                break;
+            case self::SOURCE_BELI_JADI:
+                $beli = TrnBeliKainJadi::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+                if ($beli) {
+                    return \yii\helpers\Url::to(['/trn-beli-kain-jadi/view', 'id' => $beli['id']]);
+                }
+                break;
+        }
+
+        // Fallback jika tidak terpetakan di switch case
+        $ins = TrnInspecting::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+        if ($ins) {
+            return \yii\helpers\Url::to(['/trn-inspecting/view', 'id' => $ins['id']]);
+        }
+        $insMkl = InspectingMklBj::find()->select(['id'])->where(['no' => $this->source_ref])->asArray()->one();
+        if ($insMkl) {
+            return \yii\helpers\Url::to(['/inspecting-mkl-bj/view', 'id' => $insMkl['id']]);
+        }
+
+        return null;
+    }
 }

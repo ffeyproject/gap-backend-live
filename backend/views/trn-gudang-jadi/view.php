@@ -35,7 +35,15 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                                 'attribute'=>'source',
                                 'value'=>$model::sourceOptions()[$model->source]
                             ],
-                            'source_ref',
+                            [
+                                'attribute'=>'source_ref',
+                                'format'=>'raw',
+                                'value'=> function($model) {
+                                    if (empty($model->source_ref)) return '-';
+                                    $url = $model->getSourceUrl();
+                                    return $url ? Html::a(Html::encode($model->source_ref), $url, ['target'=>'_blank', 'style'=>'text-decoration: underline; font-weight: bold; color: #337ab7;']) : Html::encode($model->source_ref);
+                                }
+                            ],
                             'qty:decimal',
                             [
                                 'attribute'=>'unit',
