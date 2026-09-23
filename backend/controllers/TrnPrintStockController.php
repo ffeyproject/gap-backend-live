@@ -260,19 +260,23 @@ class TrnPrintStockController extends Controller
 
                 $potongQtys = array_map('floatval', $pItems);
                 $sumP = array_sum($potongQtys);
-                $origQty = (float)$psRow['original_qty'];
-                $sisa = $origQty - $sumP;
-                if ($sisa > 0) {
-                    $potongQtys[] = (float)$sisa;
-                }
+                $currentSisa = (float)$psRow['original_qty'];
+                $origQty = $currentSisa + $sumP;
+
                 $tglRaw = $psRow['date'] ?: date('Y-m-d');
                 $tglFormatted = date('d/m/Y', strtotime($tglRaw));
                 $noDoc = !empty($psRow['no']) ? 'No: ' . $psRow['no'] : 'ID: ' . $psRow['id'];
                 $noteText = !empty($psRow['note']) ? ' [' . trim($psRow['note']) . ']' : '';
 
+                if ($currentSisa > 0) {
+                    $descText = 'Qty Asal ' . $origQty . ' dipotong ' . implode(' + ', $potongQtys) . ' (Sisa Stock: ' . $currentSisa . ')';
+                } else {
+                    $descText = 'Qty Asal ' . $origQty . ' dipotong habis menjadi ' . implode(' + ', $potongQtys);
+                }
+
                 $historyEntries[] = [
                     'date' => $tglRaw,
-                    'text' => $tglFormatted . ' - PEMOTONGAN STOCK (' . $noDoc . '): Qty Asal ' . $origQty . ' dipotong menjadi ' . implode(' + ', $potongQtys) . $noteText
+                    'text' => $tglFormatted . ' - PEMOTONGAN STOCK (' . $noDoc . '): ' . $descText . $noteText
                 ];
             }
 
@@ -312,22 +316,27 @@ class TrnPrintStockController extends Controller
                         $recordedPotongIds[$potongId] = true;
                         $potongModel = \common\models\ar\TrnPotongStock::findOne($potongId);
                         if ($potongModel && $potongModel->stock) {
-                            $origQty = (float)$potongModel->stock->qty;
                             $pItems = [];
                             foreach ($potongModel->trnPotongStockItems as $pItem) {
                                 $pItems[] = (float)$pItem->qty;
                             }
                             $sumP = array_sum($pItems);
-                            $sisa = $origQty - $sumP;
-                            if ($sisa > 0) {
-                                $pItems[] = (float)$sisa;
-                            }
+                            $currentSisa = (float)$potongModel->stock->qty;
+                            $origQty = $currentSisa + $sumP;
+
                             $tglRaw = $potongModel->date ?: date('Y-m-d');
                             $tglFormatted = date('d/m/Y', strtotime($tglRaw));
                             $noDoc = !empty($potongModel->no) ? 'No: ' . $potongModel->no : 'ID: ' . $potongId;
+
+                            if ($currentSisa > 0) {
+                                $descText = 'Qty Asal ' . $origQty . ' dipotong ' . implode(' + ', $pItems) . ' (Sisa Stock: ' . $currentSisa . ')';
+                            } else {
+                                $descText = 'Qty Asal ' . $origQty . ' dipotong habis menjadi ' . implode(' + ', $pItems);
+                            }
+
                             $historyEntries[] = [
                                 'date' => $tglRaw,
-                                'text' => $tglFormatted . ' - PEMOTONGAN STOCK (' . $noDoc . '): Qty Asal ' . $origQty . ' dipotong menjadi ' . implode(' + ', $pItems)
+                                'text' => $tglFormatted . ' - PEMOTONGAN STOCK (' . $noDoc . '): ' . $descText
                             ];
                             continue;
                         }

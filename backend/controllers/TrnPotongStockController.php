@@ -337,12 +337,13 @@ class TrnPotongStockController extends Controller
                 return $this->redirect(['view', 'id' => $model->id]);
             }
 
+            $baseAttributes = $stockGudangJadi->attributes;
+            unset($baseAttributes['id']);
+
             // Buat roll baru untuk setiap item hasil pemotongan
             foreach ($model->trnPotongStockItems as $trnPotongStockItem) {
                 $modelNewStock = new TrnGudangJadi();
-                $modelNewStock->setAttributes($stockGudangJadi->attributes, false);
-                $modelNewStock->id = null;
-                $modelNewStock->isNewRecord = true;
+                $modelNewStock->setAttributes($baseAttributes, false);
                 $modelNewStock->qty = $trnPotongStockItem->qty;
                 $modelNewStock->locs_code = $stockGudangJadi->locs_code;
                 $modelNewStock->dipotong = false;
