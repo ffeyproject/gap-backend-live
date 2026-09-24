@@ -432,6 +432,7 @@ class TrnStockGreigeController extends Controller
 
             $transaction->commit();
             Yii::$app->session->setFlash('success', "Dokumen {$no_doc} berhasil diposting ke database stock.");
+            return $this->redirect(['index']);
         } catch (\Throwable $e) {
             $transaction->rollBack();
             Yii::$app->session->setFlash('error', 'Gagal memposting: ' . $e->getMessage());

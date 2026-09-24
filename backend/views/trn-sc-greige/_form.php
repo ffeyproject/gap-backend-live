@@ -72,6 +72,32 @@ use yii\widgets\ActiveForm;
             <?= $form->field($model, 'merek')->textInput(['maxlength' => true]) ?>
             <?= $form->field($model, 'artikel_sc')->textInput(['maxlength' => true]) ?>
 
+            <div id="printing-finish-calculator" style="display: none; background: #f0f7fd; border: 1px solid #d0e5f5; border-radius: 4px; padding: 10px 15px; margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #20638f; margin-bottom: 6px; display: block;">
+                    <i class="fa fa-calculator"></i> Kalkulator Qty Finish (Printing):
+                </label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="control-label" style="font-size: 12px; margin-bottom: 3px;">Pilihan Qty Finish:</label>
+                        <div style="margin-top: 3px;">
+                            <label class="radio-inline" style="font-size: 13px; font-weight: normal; cursor: pointer;">
+                                <input type="radio" name="qty_finish_type" value="meter" checked> Qty Finish Meter
+                            </label>
+                            <label class="radio-inline" style="font-size: 13px; font-weight: normal; cursor: pointer;">
+                                <input type="radio" name="qty_finish_type" value="yard"> Qty Finish Yard
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="control-label" id="qty_finish_label" style="font-size: 12px; margin-bottom: 3px;">Jumlah Qty Finish (Meter):</label>
+                        <input type="number" step="any" min="0" class="form-control input-sm" id="qty_finish_val" placeholder="Masukkan jumlah qty finish...">
+                    </div>
+                </div>
+                <div id="greige-group-info" style="margin-top: 8px; font-size: 12px; color: #666;">
+                    <span class="text-muted"><i class="fa fa-info-circle"></i> Pilih Greige Group terlebih dahulu untuk kalkulasi otomatis.</span>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-md-6"><?= $form->field($model, 'qty')->textInput(['maxlength' => true]) ?></div>
 
@@ -117,4 +143,7 @@ use yii\widgets\ActiveForm;
 </div>
 
 <?php
+$ajaxGetGreigeGroupUrl = Url::to(['/ajax/get-greige-group']);
+$processPrintingVal = TrnScGreige::PROCESS_PRINTING;
+$this->registerJs("var ajaxGetGreigeGroupUrl = '{$ajaxGetGreigeGroupUrl}'; var processPrintingVal = {$processPrintingVal};", \yii\web\View::POS_HEAD);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), \yii\web\View::POS_END, 'scGreigeFormJs');

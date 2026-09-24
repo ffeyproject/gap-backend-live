@@ -248,6 +248,29 @@ class AjaxController extends Controller
     }
 
     /**
+     * @param int $id
+     * @return array|null
+     */
+    public function actionGetGreigeGroup($id){
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $model = MstGreigeGroup::findOne($id);
+        if($model !== null){
+            return [
+                'id' => $model->id,
+                'nama_kain' => $model->nama_kain,
+                'qty_per_batch' => (float)$model->qty_per_batch,
+                'unit' => (int)$model->unit,
+                'unit_name' => $model->unitName,
+                'nilai_penyusutan' => (float)$model->nilai_penyusutan,
+                'qty_finish' => (float)$model->qtyFinish,
+                'qty_finish_to_yard' => (float)$model->qtyFinishToYard,
+                'qty_finish_to_meter' => (float)$model->qtyFinishToMeter,
+            ];
+        }
+        return null;
+    }
+
+    /**
      * @param null $q
      * @return array
      * @throws \yii\db\Exception
