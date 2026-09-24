@@ -30,6 +30,7 @@ class StockGreigeForm extends Model
     public $pengirim;
     public $mengetahui;
     public $note;
+    public $is_hasil_setting;
 
     /**
      * {@inheritdoc}
@@ -40,6 +41,8 @@ class StockGreigeForm extends Model
             [['greige_id', 'asal_greige', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'pengirim', 'mengetahui'], 'required'],
             [['greige_id', 'status_tsd'], 'default', 'value' => null],
             [['greige_id', 'status_tsd'], 'integer'],
+            [['is_hasil_setting'], 'boolean'],
+            ['is_hasil_setting', 'default', 'value' => false],
             [['note'], 'string'],
             ['no_lapak', 'default', 'value'=>'-'],
             [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_document', 'pengirim', 'mengetahui'], 'string', 'max' => 255],
@@ -63,6 +66,7 @@ class StockGreigeForm extends Model
             'pengirim' => 'Pengirim',
             'mengetahui' => 'Mengetahui',
             'note' => 'Note',
+            'is_hasil_setting' => 'Hasil Setting',
         ];
     }
 }

@@ -45,6 +45,8 @@ class TrnStockGreigeController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'delete-doc' => ['POST'],
+                    'posting-doc' => ['POST'],
                 ],
             ],
         ];
@@ -164,8 +166,8 @@ class TrnStockGreigeController extends Controller
     }
 
     /**
-     * Creates a new TrnStockGreige model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
+     * Creates a new TrnStockGreige bulk model (Draft / Pending).
+     * If creation is successful, the browser will be redirected to the 'view-doc' page.
      * @return mixed
      */
     public function actionCreateDua()
@@ -179,8 +181,6 @@ class TrnStockGreigeController extends Controller
             $modelsStock = Model::createMultiple(StockGreige::classname());
             Model::loadMultiple($modelsStock, Yii::$app->request->post());
 
-            //BaseVarDumper::dump([$model], 10, true);Yii::$app->end();
-
             // validate all models
             $valid = $model->validate();
             $valid = Model::validateMultiple($modelsStock) && $valid;
@@ -188,7 +188,6 @@ class TrnStockGreigeController extends Controller
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
                 try{
-                    $greyQty = 0;
                     $date = date('Y-m-d');
                     foreach ($modelsStock as $modelStock) {
                         $modelStock->greige_id = $model->greige_id;
@@ -202,35 +201,23 @@ class TrnStockGreigeController extends Controller
                         $modelStock->pengirim = $model->pengirim;
                         $modelStock->mengetahui = $model->mengetahui;
                         $modelStock->note = $model->note;
+                        $modelStock->is_hasil_setting = $model->is_hasil_setting ? true : false;
                         $modelStock->date = $date;
-                        $modelStock->status = $modelStock::STATUS_VALID;
+                        $modelStock->status = $modelStock::STATUS_PENDING;
                         $modelStock->jenis_gudang = $modelStock::JG_FRESH;
                         if(!$modelStock->save(false)){
                             $transaction->rollBack();
-                            Yii::$app->session->setFlash('error', 'Gagal memproses, coba lagi 1.');
+                            Yii::$app->session->setFlash('error', 'Gagal memproses data roll, periksa kembali inputan Anda.');
                             return $this->render('create-dua', ['model' => $model, 'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock]);
                         }
-
-                        $greyQty += $modelStock->panjang_m;
                     }
 
-                    //Yii::$app->db->createCommand('UPDATE mst_greige SET stock = stock + '.$greyQty.' WHERE id=:id')->bindParam(':id', $model->greige_id)->execute();
-                    Yii::$app->db->createCommand()
-                        ->update(
-                            MstGreige::tableName(),
-                            [
-                                'stock' => new Expression("mst_greige.stock + {$greyQty}"),
-                                'available' => new Expression("mst_greige.available + {$greyQty}")
-                            ],
-                            ['id'=>$model->greige_id]
-                        )->execute();
-
                     $transaction->commit();
-                    Yii::$app->session->setFlash('success', 'Proses berhasil.');
-                    return $this->redirect(['index']);
+                    Yii::$app->session->setFlash('success', 'Packing list berhasil disimpan sebagai DRAFT (Pending). Silakan periksa kembali dan klik "Posting ke Stock" untuk memasukkannya ke stock.');
+                    return $this->redirect(['view-doc', 'no_doc' => $model->no_document]);
                 }catch (\Throwable $e){
                     $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', $e->getMessage().'---');
+                    Yii::$app->session->setFlash('error', 'Error: ' . $e->getMessage());
                     return $this->render('create-dua', ['model' => $model, 'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock]);
                 }
             }
@@ -240,6 +227,217 @@ class TrnStockGreigeController extends Controller
             'model' => $model,
             'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock
         ]);
+    }
+
+    /**
+     * Menampilkan dokumen packing list greige per no_document.
+     * @param string $no_doc
+     * @return mixed
+     * @throws NotFoundHttpException
+     */
+    public function actionViewDoc($no_doc)
+    {
+        // Prioritaskan mengambil item yang masih PENDING untuk nomor dokumen ini
+        $models = TrnStockGreige::find()->where(['no_document' => $no_doc, 'status' => TrnStockGreige::STATUS_PENDING])->orderBy(['id' => SORT_ASC])->all();
+        
+        // Jika tidak ada data pending (misalnya dokumen sudah diposting), ambil seluruh data untuk no_doc tersebut
+        if (empty($models)) {
+            $models = TrnStockGreige::find()->where(['no_document' => $no_doc])->orderBy(['id' => SORT_ASC])->all();
+        }
+
+        if (empty($models)) {
+            throw new NotFoundHttpException('Dokumen packing list greige tidak ditemukan.');
+        }
+
+        $header = $models[0];
+        $totalRoll = count($models);
+        $totalMeter = 0;
+        $gradeBreakdown = [];
+        $gradeOptions = StockGreige::gradeOptions();
+
+        foreach ($models as $item) {
+            $totalMeter += (float)$item->panjang_m;
+            $gLabel = isset($gradeOptions[$item->grade]) ? $gradeOptions[$item->grade] : ($item->grade ?: 'Lainnya');
+            if (!isset($gradeBreakdown[$gLabel])) {
+                $gradeBreakdown[$gLabel] = ['qty' => 0, 'roll' => 0];
+            }
+            $gradeBreakdown[$gLabel]['qty'] += (float)$item->panjang_m;
+            $gradeBreakdown[$gLabel]['roll'] += 1;
+        }
+
+        return $this->render('view-doc', [
+            'noDoc' => $no_doc,
+            'header' => $header,
+            'models' => $models,
+            'totalRoll' => $totalRoll,
+            'totalMeter' => $totalMeter,
+            'gradeBreakdown' => $gradeBreakdown,
+        ]);
+    }
+
+    /**
+     * Mengubah packing list greige yang statusnya masih PENDING.
+     * @param string $no_doc
+     * @return mixed
+     * @throws NotFoundHttpException
+     */
+    public function actionUpdateDoc($no_doc)
+    {
+        $items = TrnStockGreige::find()->where(['no_document' => $no_doc, 'status' => TrnStockGreige::STATUS_PENDING])->orderBy(['id' => SORT_ASC])->all();
+        if (empty($items)) {
+            throw new NotFoundHttpException('Dokumen tidak ditemukan atau sudah diposting.');
+        }
+
+        $firstItem = $items[0];
+        $model = new StockGreigeForm();
+        $model->greige_id = $firstItem->greige_id;
+        $model->asal_greige = $firstItem->asal_greige;
+        $model->no_lapak = $firstItem->no_lapak;
+        $model->lot_lusi = $firstItem->lot_lusi;
+        $model->lot_pakan = $firstItem->lot_pakan;
+        $model->status_tsd = $firstItem->status_tsd;
+        $model->no_document = $firstItem->no_document;
+        $model->pengirim = $firstItem->pengirim;
+        $model->mengetahui = $firstItem->mengetahui;
+        $model->note = $firstItem->note;
+        $model->is_hasil_setting = $firstItem->is_hasil_setting ? 1 : 0;
+
+        $modelsStock = [];
+        foreach ($items as $item) {
+            $s = new StockGreige();
+            $s->grade = $item->grade;
+            $s->no_set_lusi = $item->no_set_lusi;
+            $s->panjang_m = (float)$item->panjang_m;
+            $modelsStock[] = $s;
+        }
+
+        if ($model->load(Yii::$app->request->post())) {
+            $modelsStock = Model::createMultiple(StockGreige::classname());
+            Model::loadMultiple($modelsStock, Yii::$app->request->post());
+
+            $valid = $model->validate();
+            $valid = Model::validateMultiple($modelsStock) && $valid;
+
+            if ($valid) {
+                $transaction = Yii::$app->db->beginTransaction();
+                try {
+                    // Delete previous pending records of this document
+                    TrnStockGreige::deleteAll([
+                        'no_document' => $no_doc,
+                        'status' => TrnStockGreige::STATUS_PENDING
+                    ]);
+
+                    $date = date('Y-m-d');
+                    foreach ($modelsStock as $modelStock) {
+                        $modelStock->greige_id = $model->greige_id;
+                        $modelStock->greige_group_id = MstGreige::findOne($model->greige_id)->group_id;
+                        $modelStock->asal_greige = $model->asal_greige;
+                        $modelStock->no_lapak = $model->no_lapak;
+                        $modelStock->lot_lusi = $model->lot_lusi;
+                        $modelStock->lot_pakan = $model->lot_pakan;
+                        $modelStock->status_tsd = $model->status_tsd;
+                        $modelStock->no_document = $model->no_document;
+                        $modelStock->pengirim = $model->pengirim;
+                        $modelStock->mengetahui = $model->mengetahui;
+                        $modelStock->note = $model->note;
+                        $modelStock->is_hasil_setting = $model->is_hasil_setting ? true : false;
+                        $modelStock->date = $date;
+                        $modelStock->status = $modelStock::STATUS_PENDING;
+                        $modelStock->jenis_gudang = $modelStock::JG_FRESH;
+                        if (!$modelStock->save(false)) {
+                            $transaction->rollBack();
+                            Yii::$app->session->setFlash('error', 'Gagal menyimpan perubahan roll.');
+                            return $this->render('update-dua', ['model' => $model, 'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock]);
+                        }
+                    }
+
+                    $transaction->commit();
+                    Yii::$app->session->setFlash('success', 'Dokumen berhasil diperbarui.');
+                    return $this->redirect(['view-doc', 'no_doc' => $model->no_document]);
+                } catch (\Throwable $e) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Error: ' . $e->getMessage());
+                    return $this->render('update-dua', ['model' => $model, 'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock]);
+                }
+            }
+        }
+
+        return $this->render('update-dua', [
+            'model' => $model,
+            'modelsStock' => (empty($modelsStock)) ? [new StockGreige] : $modelsStock,
+        ]);
+    }
+
+    /**
+     * Menghapus dokumen packing list greige yang berstatus PENDING.
+     * @param string $no_doc
+     * @return mixed
+     * @throws NotFoundHttpException
+     */
+    public function actionDeleteDoc($no_doc)
+    {
+        $condition = ['no_document' => $no_doc, 'status' => TrnStockGreige::STATUS_PENDING];
+        $items = TrnStockGreige::findAll($condition);
+        if (empty($items)) {
+            throw new NotFoundHttpException('Dokumen draft tidak ditemukan atau sudah diposting.');
+        }
+
+        TrnStockGreige::deleteAll($condition);
+        Yii::$app->session->setFlash('success', "Dokumen {$no_doc} berhasil dihapus.");
+        return $this->redirect(['index']);
+    }
+
+    /**
+     * Memposting dokumen packing list greige (STATUS_PENDING -> STATUS_VALID) dan menambahkan stock ke mst_greige.
+     * @param string $no_doc
+     * @return mixed
+     */
+    public function actionPostingDoc($no_doc)
+    {
+        $condition = ['no_document' => $no_doc, 'status' => TrnStockGreige::STATUS_PENDING];
+        $items = TrnStockGreige::findAll($condition);
+        if (empty($items)) {
+            Yii::$app->session->setFlash('error', 'Tidak ada data pending yang dapat diposting untuk dokumen ini.');
+            return $this->redirect(['view-doc', 'no_doc' => $no_doc]);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $greyQty = [];
+            foreach ($items as $item) {
+                $item->status = TrnStockGreige::STATUS_VALID;
+                if (!$item->save(false, ['status'])) {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Gagal memposting data item.');
+                    return $this->redirect(['view-doc', 'no_doc' => $no_doc]);
+                }
+
+                if (!isset($greyQty[$item->greige_id])) {
+                    $greyQty[$item->greige_id] = 0;
+                }
+                $greyQty[$item->greige_id] += (float)$item->panjang_m;
+            }
+
+            foreach ($greyQty as $greigeId => $qty) {
+                Yii::$app->db->createCommand()
+                    ->update(
+                        MstGreige::tableName(),
+                        [
+                            'stock' => new Expression("mst_greige.stock + {$qty}"),
+                            'available' => new Expression("mst_greige.available + {$qty}")
+                        ],
+                        ['id' => $greigeId]
+                    )->execute();
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', "Dokumen {$no_doc} berhasil diposting ke database stock.");
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Gagal memposting: ' . $e->getMessage());
+        }
+
+        return $this->redirect(['view-doc', 'no_doc' => $no_doc]);
     }
 
     /**

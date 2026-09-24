@@ -110,6 +110,18 @@ use backend\models\form\StockGreigeForm;
                         <div class="col-md-6"><?= $form->field($model, 'no_document')->textInput(['maxlength' => true]) ?></div>
                     </div>
 
+                    <?php
+                    if ($model->is_hasil_setting === null || $model->is_hasil_setting === false) {
+                        $model->is_hasil_setting = 0;
+                    } else {
+                        $model->is_hasil_setting = (int)$model->is_hasil_setting;
+                    }
+                    ?>
+                    <?= $form->field($model, 'is_hasil_setting')->radioList([
+                        0 => 'Tidak',
+                        1 => 'Ya',
+                    ]) ?>
+
                     <?= $form->field($model, 'note')->textInput() ?>
                 </div>
             </div>
@@ -134,6 +146,7 @@ use backend\models\form\StockGreigeForm;
                         'model' => $modelsStock[0],
                         'formId' => 'dynamic-form',
                         'formFields' => [
+                            'grade',
                             'no_set_lusi',
                             'panjang_m',
                         ],
@@ -161,7 +174,7 @@ use backend\models\form\StockGreigeForm;
                                 <td class="panel-title-address"><?=$index + 1?></td>
                                 <td>
                                     <?php
-                                    echo $form->field($modelStock, "[{$index}]grade")->dropDownList($grdOpts)->label(false);
+                                    echo $form->field($modelStock, "[{$index}]grade")->dropDownList($grdOpts, ['class' => 'form-control grade_select'])->label(false);
                                     ?>
                                 </td>
                                 <td><?= $form->field($modelStock, "[{$index}]no_set_lusi")->textInput()->label(false) ?></td>
@@ -182,7 +195,10 @@ use backend\models\form\StockGreigeForm;
                     </table>
                     <?php DynamicFormWidget::end();?>
 
-                    <p><strong>TOTAL: <span id="TotalLength">0</span></strong></p>
+                    <div class="well well-sm" style="margin-top: 10px; padding: 10px 15px; font-size: 14px;">
+                        <strong>TOTAL: <span id="TotalLength" class="text-primary font-weight-bold" style="font-size: 16px;">0</span></strong>
+                        <span id="GradeBreakdown" style="margin-left: 20px; font-weight: 600; color: #333; display: none;"></span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -29,6 +29,7 @@ class StokOpnameGudangJadiController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'delete-batch' => ['POST'],
                     'save-location' => ['POST'],
                     'move-location' => ['POST'],
                 ],
@@ -229,6 +230,64 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
+     * Menghapus banyak data Stok Opname terpilih yang statusnya masih Stock.
+     * @return array
+     */
+    public function actionDeleteBatch()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ids = Yii::$app->request->post('ids');
+        if (empty($ids) || !is_array($ids)) {
+            return ['success' => false, 'message' => 'Pilih data yang akan dihapus terlebih dahulu.'];
+        }
+
+        // Ambil data yang berstatus STATUS_STOCK
+        $modelsToDelete = TrnGudangJadiOpnamePcs::find()
+            ->where(['id' => $ids])
+            ->andWhere(['status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])
+            ->all();
+
+        if (empty($modelsToDelete)) {
+            return [
+                'success' => false,
+                'message' => 'Tidak ada data berstatus Stock di antara item yang dipilih. Data berstatus Verified atau Out tidak dapat dihapus.'
+            ];
+        }
+
+        $deletedCount = 0;
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            foreach ($modelsToDelete as $m) {
+                if ($m->delete()) {
+                    $deletedCount++;
+                }
+            }
+            $transaction->commit();
+
+            $totalSelected = count($ids);
+            $skippedCount = $totalSelected - $deletedCount;
+            $msg = "Berhasil menghapus {$deletedCount} data Stok Opname berstatus Stock.";
+            if ($skippedCount > 0) {
+                $msg .= " ({$skippedCount} data dilewati karena statusnya bukan Stock).";
+            }
+
+            return [
+                'success' => true,
+                'message' => $msg,
+                'deleted_count' => $deletedCount,
+                'skipped_count' => $skippedCount,
+            ];
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Rekap Stok Opname Gudang Jadi (by Motif, Color, Opname Code, Location, Grade & Status).
      * @return mixed
      */
@@ -275,7 +334,7 @@ class StokOpnameGudangJadiController extends Controller
     }
 
     /**
-     * Deletes an existing TrnGudangJadiOpnamePcs model.
+     * Deletes an existing TrnGudangJadiOpnamePcs model (hanya jika statusnya masih Stock).
      * If deletion is successful, the browser will be redirected to the previous page or 'index'.
      * @param integer $id
      * @return mixed
@@ -286,6 +345,11 @@ class StokOpnameGudangJadiController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
+        if ($model->status !== TrnGudangJadiOpnamePcs::STATUS_STOCK) {
+            Yii::$app->session->setFlash('error', 'Hanya data opname berstatus Stock yang dapat dihapus.');
+            return $this->redirect(Yii::$app->request->referrer ?: ['index']);
+        }
+
         $qrCode = $model->qr_code;
         $model->delete();
 

@@ -42,6 +42,15 @@ if (Helper::checkRoute('move-location')) {
     ]);
 }
 
+if (Helper::checkRoute('delete-batch')) {
+    $panelButtons[] = Html::button('<i class="fa fa-trash"></i> Hapus Terpilih <span class="badge bg-red" id="badge-delete-count" style="display: none; margin-left: 5px;">0</span>', [
+        'class' => 'btn btn-danger',
+        'id' => 'btn-delete-batch',
+        'onclick' => 'submitDeleteBatch(event);',
+        'title' => 'Hapus item terpilih yang berstatus Stock'
+    ]);
+}
+
 if (Helper::checkRoute('sync-status-out')) {
     $panelButtons[] = Html::a('<i class="fa fa-refresh"></i> Sync Status Out', ['sync-status-out'], [
         'class' => 'btn btn-default',
@@ -72,7 +81,7 @@ if (Helper::checkRoute('rekap')) {
 
 $gridColumns = [];
 
-if (Helper::checkRoute('move-location')) {
+if (Helper::checkRoute('move-location') || Helper::checkRoute('delete-batch')) {
     $gridColumns[] = [
         'class' => 'kartik\grid\CheckboxColumn',
         'headerOptions' => ['class' => 'kartik-sheet-style'],
@@ -80,6 +89,24 @@ if (Helper::checkRoute('move-location')) {
 }
 
 $gridColumns[] = ['class' => 'kartik\grid\SerialColumn'];
+
+$gridColumns[] = [
+    'class' => 'kartik\grid\ActionColumn',
+    'template' => '{view} {delete}',
+    'buttons' => [
+        'delete' => function($url, $model, $key) {
+            if ($model->status === TrnGudangJadiOpnamePcs::STATUS_STOCK) {
+                return Html::a('<span class="glyphicon glyphicon-trash text-danger"></span>', ['delete', 'id' => $model->id], [
+                    'title' => 'Hapus Opname (Status Stock)',
+                    'data-confirm' => 'Apakah Anda yakin ingin menghapus data opname #' . $model->id . ' (' . $model->qr_code . ')?',
+                    'data-method' => 'post',
+                    'style' => 'margin-left: 5px;',
+                ]);
+            }
+            return '';
+        }
+    ]
+];
 
 $gridColumns[] = [
     'attribute' => 'id',
@@ -381,6 +408,7 @@ $gridColumns[] = [
 
 <?php
 $moveLocationUrl = Url::to(['move-location']);
+$deleteBatchUrl = Url::to(['delete-batch']);
 $js = <<<JS
 window.getSelectedOpnameIds = function() {
     var ids = [];
@@ -396,12 +424,15 @@ window.getSelectedOpnameIds = function() {
 window.syncMoveButtonBadge = function() {
     var ids = window.getSelectedOpnameIds();
     var count = ids.length;
-    var \$badge = $('#badge-move-count');
+    var \$badgeMove = $('#badge-move-count');
+    var \$badgeDelete = $('#badge-delete-count');
     
     if (count > 0) {
-        \$badge.text(count).show();
+        \$badgeMove.text(count).show();
+        \$badgeDelete.text(count).show();
     } else {
-        \$badge.text('0').hide();
+        \$badgeMove.text('0').hide();
+        \$badgeDelete.text('0').hide();
     }
 };
 
@@ -478,6 +509,48 @@ window.submitMoveLocation = function(e) {
     return false;
 };
 
+window.submitDeleteBatch = function(e) {
+    if (e) e.preventDefault();
+    var ids = window.getSelectedOpnameIds();
+    if (ids.length === 0) {
+        alert('Harap pilih / centang minimal 1 data terlebih dahulu pada kotak pilihan tabel.');
+        return false;
+    }
+
+    if (!confirm('Apakah Anda yakin ingin menghapus ' + ids.length + ' data terpilih yang berstatus Stock?')) {
+        return false;
+    }
+
+    var \$btn = $('#btn-delete-batch');
+    var oldText = \$btn.html();
+    \$btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menghapus...');
+
+    $.ajax({
+        url: '{$deleteBatchUrl}',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            ids: ids
+        },
+        success: function(res) {
+            if (res.success) {
+                alert(res.message);
+                $.pjax.reload({container: '#StokOpnameGdJadiGrid-pjax'});
+            } else {
+                alert(res.message || 'Gagal menghapus data.');
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Terjadi kesalahan pada server: ' + (xhr.responseText || error));
+        },
+        complete: function() {
+            \$btn.prop('disabled', false).html(oldText);
+            setTimeout(window.syncMoveButtonBadge, 300);
+        }
+    });
+    return false;
+};
+
 $(document).on('change', 'input[name="selection[]"], input[name="selection_all"], .select-on-check-all, .kv-all-select', function() {
     setTimeout(window.syncMoveButtonBadge, 50);
 });
@@ -488,6 +561,10 @@ $(document).on('pjax:success pjax:complete pjax:end', function() {
 
 $(document).on('click', '#btn-move-location', function(e) {
     window.openModalMoveLocation(e);
+});
+
+$(document).on('click', '#btn-delete-batch', function(e) {
+    window.submitDeleteBatch(e);
 });
 
 window.syncMoveButtonBadge();

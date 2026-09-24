@@ -181,7 +181,17 @@ echo AjaxModal::widget([
                     ]
                 ],
             ],
-            'no_document',
+            [
+                'attribute' => 'no_document',
+                'format' => 'raw',
+                'value' => function($data) {
+                    /* @var $data \common\models\ar\TrnStockGreige */
+                    if (!empty($data->no_document)) {
+                        return Html::a(Html::encode($data->no_document), ['view-doc', 'no_doc' => $data->no_document], ['title' => 'Lihat Dokumen Packing List']);
+                    }
+                    return '-';
+                }
+            ],
             'no_lapak',
             [
                 'attribute'=>'status_tsd',
