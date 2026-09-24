@@ -21,6 +21,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
     private $from_date;
     private $to_date;
     public $no_lot;
+    public $id_asal;
 
     /**
      * {@inheritdoc}
@@ -30,7 +31,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
         return [
             [['id', 'jenis_gudang', 'wo_id', 'source', 'unit', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'greige_id'], 'integer'],
             ['qty', 'number'],
-            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade','locs_code','no_lot'], 'safe'],
+            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade','locs_code','no_lot', 'id_asal'], 'safe'],
         ];
     }
 
@@ -104,6 +105,11 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             'desc' => ['trn_wo.greige_id' => SORT_DESC],
         ];
 
+        $dataProvider->sort->attributes['id_asal'] = [
+            'asc' => ['trn_gudang_jadi.qr_code' => SORT_ASC],
+            'desc' => ['trn_gudang_jadi.qr_code' => SORT_DESC],
+        ];
+
 
 
         $this->load($params);
@@ -156,6 +162,15 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             ->andFilterWhere(['ilike', 'trn_sc.no', $this->scNo])
             ->andFilterWhere(['ilike', 'trn_gudang_jadi.locs_code', $this->locs_code])
         ;
+
+        if (!empty($this->id_asal)) {
+            $term = trim($this->id_asal);
+            $query->andWhere([
+                'or',
+                ['ilike', 'trn_gudang_jadi.qr_code', $term],
+                ['ilike', new Expression('CAST(trn_gudang_jadi.id_from AS TEXT)'), $term],
+            ]);
+        }
 
         if ($this->no_lot) {
             $query->andWhere([

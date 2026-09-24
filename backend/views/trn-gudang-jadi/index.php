@@ -143,7 +143,6 @@ if(!empty($searchModel->greige_id)){
                 'contentOptions' => ['style' => 'white-space: nowrap;'],
                 'attribute' => 'id_asal',
                 'format' => 'raw',
-                'filter' => false, // Disable filter for this column
                 // 'headerOptions' => ['style' => 'width:100px;'],
                 'label'=>'ID Inspecting',
                 'value' => function($data){
