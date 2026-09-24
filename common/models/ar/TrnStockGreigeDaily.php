@@ -270,7 +270,7 @@ class TrnStockGreigeDaily extends ActiveRecord
         $query = (new Query())
             ->select([
                 'greige_id' => 'tsg.greige_id',
-                'greige_group_id' => 'tsg.greige_group_id',
+                'greige_group_id' => new Expression('COALESCE(mg.group_id, MAX(tsg.greige_group_id))'),
                 'asal_greige' => 'tsg.asal_greige',
                 'total_panjang' => new Expression('COALESCE(SUM(tsg.panjang_m), 0)'),
                 'total_roll' => new Expression('COUNT(tsg.id)'),
@@ -290,11 +290,12 @@ class TrnStockGreigeDaily extends ActiveRecord
                 ]) . ') THEN tsg.panjang_m ELSE 0 END), 0)'),
             ])
             ->from(['tsg' => TrnStockGreige::tableName()])
+            ->innerJoin(['mg' => MstGreige::tableName()], 'mg.id = tsg.greige_id')
             ->where([
                 'tsg.jenis_gudang' => TrnStockGreige::JG_FRESH,
                 'tsg.status' => TrnStockGreige::STATUS_VALID,
             ])
-            ->groupBy(['tsg.greige_id', 'tsg.greige_group_id', 'tsg.asal_greige']);
+            ->groupBy(['tsg.greige_id', 'tsg.asal_greige', 'mg.group_id']);
 
         $rows = $query->all();
 
