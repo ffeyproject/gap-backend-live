@@ -474,7 +474,7 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             $this->updated_by = $userId;
             $this->save(false);
 
-            if (empty($gj->locs_code) && !empty($this->locs_code)) {
+            if (!empty($this->locs_code) && $gj->locs_code !== $this->locs_code) {
                 $gj->locs_code = substr($this->locs_code, 0, 25);
                 $gj->save(false, ['locs_code']);
             }

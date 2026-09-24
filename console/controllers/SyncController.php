@@ -217,33 +217,41 @@ class SyncController extends Controller
     }
 
     /**
-     * Menjalankan sinkronisasi status Stock dari Stok Opname ke Gudang Jadi.
+     * Menjalankan sinkronisasi status Stock dan Lokasi dari Stok Opname ke Gudang Jadi.
      * Dipanggil dengan perintah: php yii sync/opname-stock-gudang-jadi
      */
     public function actionOpnameStockGudangJadi()
     {
-        echo "=== MEMULAI SINKRONISASI STATUS STOCK KE GUDANG JADI ===\n";
+        echo "=== MEMULAI SINKRONISASI STATUS STOCK & LOKASI KE GUDANG JADI ===\n";
 
-        $activeOpnameGudangJadiIds = (new \yii\db\Query())
-            ->select('id_trn_gudang_jadi')
-            ->from('trn_gudang_jadi_opname_pcs')
-            ->where(['!=', 'status', \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT])
-            ->andWhere(['is not', 'id_trn_gudang_jadi', null]);
+        $db = \Yii::$app->db;
+        $now = time();
 
-        $updatedStock = \common\models\ar\TrnGudangJadi::updateAll(
-            [
-                'status' => \common\models\ar\TrnGudangJadi::STATUS_STOCK,
-                'updated_at' => time(),
-                'updated_by' => 1,
-            ],
-            [
-                'and',
-                ['in', 'id', $activeOpnameGudangJadiIds],
-                ['!=', 'status', \common\models\ar\TrnGudangJadi::STATUS_STOCK],
-            ]
-        );
+        $sql = "
+            UPDATE trn_gudang_jadi gj
+            SET 
+                status = :status_stock,
+                locs_code = COALESCE(NULLIF(op.locs_code, ''), gj.locs_code),
+                updated_at = :updated_at,
+                updated_by = :updated_by
+            FROM trn_gudang_jadi_opname_pcs op
+            WHERE op.id_trn_gudang_jadi = gj.id
+              AND op.status != :status_out
+              AND op.id_trn_gudang_jadi IS NOT NULL
+              AND (
+                  gj.status != :status_stock 
+                  OR (op.locs_code IS NOT NULL AND op.locs_code != '' AND (gj.locs_code IS NULL OR gj.locs_code != op.locs_code))
+              )
+        ";
 
-        echo "-> Selesai: {$updatedStock} item di master Gudang Jadi berhasil diubah statusnya menjadi Stock.\n";
+        $updatedStock = $db->createCommand($sql, [
+            ':status_stock' => \common\models\ar\TrnGudangJadi::STATUS_STOCK,
+            ':status_out' => \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT,
+            ':updated_at' => $now,
+            ':updated_by' => 1,
+        ])->execute();
+
+        echo "-> Selesai: {$updatedStock} item di master Gudang Jadi berhasil diperbarui status Stock & Lokasi (locs_code).\n";
         echo "=== SINKRONISASI SELESAI ===\n\n";
     }
 
