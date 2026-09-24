@@ -300,8 +300,10 @@ class TrnStockGreigeDaily extends ActiveRecord
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
+            // Hapus snapshot lama pada tanggal ini agar data bersih dan tidak ada sisa sebelum migrasi
+            self::deleteAll(['date' => $date]);
+
             $savedCount = 0;
-            $updatedCount = 0;
             $grandTotalM = 0;
             $grandTotalRoll = 0;
 
@@ -310,19 +312,11 @@ class TrnStockGreigeDaily extends ActiveRecord
                 $greigeGroupId = (int)$row['greige_group_id'];
                 $asalGreige = (int)$row['asal_greige'];
 
-                $model = self::findOne(['date' => $date, 'greige_id' => $greigeId, 'asal_greige' => $asalGreige]);
-                $isNew = false;
-                if ($model === null) {
-                    $model = new self();
-                    $model->date = $date;
-                    $model->greige_id = $greigeId;
-                    $model->greige_group_id = $greigeGroupId;
-                    $model->asal_greige = $asalGreige;
-                    $isNew = true;
-                } else {
-                    $model->greige_group_id = $greigeGroupId;
-                }
-
+                $model = new self();
+                $model->date = $date;
+                $model->greige_id = $greigeId;
+                $model->greige_group_id = $greigeGroupId;
+                $model->asal_greige = $asalGreige;
                 $model->total_panjang = (float)$row['total_panjang'];
                 $model->total_roll = (int)$row['total_roll'];
                 $model->grade_a = (float)$row['grade_a'];
@@ -337,12 +331,7 @@ class TrnStockGreigeDaily extends ActiveRecord
                     throw new Exception('Gagal menyimpan snapshot: ' . json_encode($model->errors));
                 }
 
-                if ($isNew) {
-                    $savedCount++;
-                } else {
-                    $updatedCount++;
-                }
-
+                $savedCount++;
                 $grandTotalM += (float)$row['total_panjang'];
                 $grandTotalRoll += (int)$row['total_roll'];
             }
@@ -354,7 +343,7 @@ class TrnStockGreigeDaily extends ActiveRecord
                 'date' => $date,
                 'total_motifs' => count($rows),
                 'new_saved' => $savedCount,
-                'updated' => $updatedCount,
+                'updated' => 0,
                 'grand_total_m' => $grandTotalM,
                 'grand_total_roll' => $grandTotalRoll,
             ];
