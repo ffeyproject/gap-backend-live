@@ -393,6 +393,69 @@ $currentDateFilter = $searchModel->dateRange ?: $searchModel->date;
             ],
 
             [
+                'attribute' => 'grade_a',
+                'label' => 'Grade A (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #e8f8f5;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px;'],
+            ],
+
+            [
+                'attribute' => 'grade_b',
+                'label' => 'Grade B (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #e8f8f5;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px;'],
+            ],
+
+            [
+                'attribute' => 'grade_c',
+                'label' => 'Grade C (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #e8f8f5;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px;'],
+            ],
+
+            [
+                'attribute' => 'grade_d',
+                'label' => 'Grade D (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #e8f8f5;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px;'],
+            ],
+
+            [
+                'attribute' => 'grade_e',
+                'label' => 'Grade E (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #e8f8f5;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px;'],
+            ],
+
+            [
+                'attribute' => 'grade_ng',
+                'label' => 'Grade NG (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #fdebd0;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px; color: #c0392b;'],
+            ],
+
+            [
+                'attribute' => 'grade_lain',
+                'label' => 'Grade Lain (m)',
+                'format' => 'decimal',
+                'pageSummary' => true,
+                'headerOptions' => ['style' => 'text-align: right; background-color: #f2f4f4;'],
+                'contentOptions' => ['style' => 'text-align: right; font-size: 12px; color: #7f8c8d;'],
+            ],
+
+            [
                 'attribute' => 'created_at',
                 'label' => 'Waktu Simpan',
                 'value' => function ($model) {

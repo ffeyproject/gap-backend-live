@@ -99,6 +99,7 @@ class TrnStockGreigeDailyController extends Controller
         }
 
         $query->orderBy([
+            new Expression("CASE WHEN mg.nama_kain ~* '^[a-z]' THEN 0 ELSE 1 END ASC"),
             'mg.nama_kain' => SORT_ASC,
             'tsgd.date' => SORT_ASC,
         ]);

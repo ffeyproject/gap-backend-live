@@ -73,7 +73,7 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
             'sort' => [
                 'defaultOrder' => [
                     'date' => SORT_DESC,
-                    'total_panjang' => SORT_DESC,
+                    'greigeNamaKain' => SORT_ASC,
                 ],
                 'attributes' => [
                     'id',
@@ -81,11 +81,24 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
                     'greige_id',
                     'asal_greige',
                     'greigeNamaKain' => [
-                        'asc' => ['mst_greige.nama_kain' => SORT_ASC],
-                        'desc' => ['mst_greige.nama_kain' => SORT_DESC],
+                        'asc' => [
+                            new Expression("CASE WHEN mst_greige.nama_kain ~* '^[a-z]' THEN 0 ELSE 1 END ASC"),
+                            'mst_greige.nama_kain' => SORT_ASC,
+                        ],
+                        'desc' => [
+                            new Expression("CASE WHEN mst_greige.nama_kain ~* '^[a-z]' THEN 0 ELSE 1 END ASC"),
+                            'mst_greige.nama_kain' => SORT_DESC,
+                        ],
                     ],
                     'total_panjang',
                     'total_roll',
+                    'grade_a',
+                    'grade_b',
+                    'grade_c',
+                    'grade_d',
+                    'grade_e',
+                    'grade_ng',
+                    'grade_lain',
                     'prev_total_panjang',
                     'diff_panjang',
                     'diff_roll',
