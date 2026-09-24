@@ -13,6 +13,7 @@ use common\models\Model;
 use common\models\rekap\LaporanStockSearch;
 use Yii;
 use common\models\ar\TrnStockGreige;
+use common\models\ar\TrnStockGreigeDaily;
 use common\models\ar\TrnStockGreigeSearch;
 use common\models\ar\TrnGudangInspect;
 use common\models\ar\TrnGudangInspectItem;
@@ -71,6 +72,41 @@ class TrnStockGreigeController extends Controller
             'searchModel'  => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
+    }
+
+    /**
+     * Menyimpan snapshot stock harian per motif dari Packing List Greige.
+     * @return mixed
+     */
+    public function actionSaveDailyStock()
+    {
+        $date = Yii::$app->request->post('date', Yii::$app->request->get('date', date('Y-m-d')));
+
+        try {
+            $result = TrnStockGreigeDaily::snapshotStock($date);
+            $msg = sprintf(
+                'Berhasil menyimpan stock harian tanggal %s. Total %d motif (%s m, %d roll). Baru: %d, Terupdate: %d.',
+                $result['date'],
+                $result['total_motifs'],
+                Yii::$app->formatter->asDecimal($result['grand_total_m']),
+                $result['grand_total_roll'],
+                $result['new_saved'],
+                $result['updated']
+            );
+
+            if (Yii::$app->request->isAjax) {
+                return $this->asJson(['success' => true, 'message' => $msg, 'data' => $result]);
+            }
+            Yii::$app->session->setFlash('success', $msg);
+        } catch (\Throwable $e) {
+            $msg = 'Gagal menyimpan snapshot stock harian: ' . $e->getMessage();
+            if (Yii::$app->request->isAjax) {
+                return $this->asJson(['success' => false, 'message' => $msg]);
+            }
+            Yii::$app->session->setFlash('error', $msg);
+        }
+
+        return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }
 
     /**

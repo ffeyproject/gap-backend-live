@@ -37,7 +37,19 @@ echo AjaxModal::widget([
             'data-target'=>"#allStockModal",
             'data-title' => 'Lihat Stock Keseluruhan'
         ])?>
+        <?=Html::a('<i class="glyphicon glyphicon-camera"></i> Simpan Stock Harian', '#', [
+            'class' => 'btn btn-primary',
+            'title' => 'Simpan snapshot stock harian per motif dari data Packing List Greige',
+            'data-toggle' => 'modal',
+            'data-target' => '#modal-save-daily-stock',
+        ])?>
+        <?=Html::a('<i class="glyphicon glyphicon-calendar"></i> Rekap Stock Harian & Perubahan', ['/trn-stock-greige-daily/index'], [
+            'class' => 'btn btn-info',
+            'title' => 'Lihat catatan stock harian dan tambahan dari hari ke hari'
+        ])?>
     </p>
+
+    <?=$this->render('@backend/views/trn-stock-greige-daily/_save_modal')?>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,

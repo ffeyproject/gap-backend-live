@@ -298,6 +298,10 @@ $moduleId = $controller->module->id;
                         'url' => '#',
                         'items' => [
                             [
+                                'label' => 'Stock Harian & Tambahan', 'icon' => 'circle', 'url' => ['/trn-stock-greige-daily/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-greige-daily'
+                            ],
+                            [
                                 'label' => 'Laporan Stock Greige', 'icon' => 'circle', 'url' => ['/trn-stock-greige/laporan-stock'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'trn-stock-greige' && $actionId=='laporan-stock'
                             ],
