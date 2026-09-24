@@ -23,7 +23,7 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
     public function rules()
     {
         return [
-            [['id', 'greige_id', 'greige_group_id', 'total_roll', 'created_by', 'updated_by'], 'integer'],
+            [['id', 'greige_id', 'greige_group_id', 'asal_greige', 'total_roll', 'created_by', 'updated_by'], 'integer'],
             [['date', 'dateRange', 'fromDate', 'toDate', 'greigeNamaKain', 'diffStatus', 'note'], 'safe'],
             [['total_panjang', 'diff_panjang', 'prev_total_panjang'], 'number'],
         ];
@@ -48,7 +48,9 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
         $lateralSubquery = '(
             SELECT p.total_panjang, p.total_roll, p.date
             FROM trn_stock_greige_daily p
-            WHERE p.greige_id = tsgd.greige_id AND p.date < tsgd.date
+            WHERE p.greige_id = tsgd.greige_id 
+              AND p.asal_greige = tsgd.asal_greige 
+              AND p.date < tsgd.date
             ORDER BY p.date DESC
             LIMIT 1
         )';
@@ -77,6 +79,7 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
                     'id',
                     'date',
                     'greige_id',
+                    'asal_greige',
                     'greigeNamaKain' => [
                         'asc' => ['mst_greige.nama_kain' => SORT_ASC],
                         'desc' => ['mst_greige.nama_kain' => SORT_DESC],
@@ -121,6 +124,7 @@ class TrnStockGreigeDailySearch extends TrnStockGreigeDaily
             'tsgd.date' => $this->date,
             'tsgd.greige_id' => $this->greige_id,
             'tsgd.greige_group_id' => $this->greige_group_id,
+            'tsgd.asal_greige' => $this->asal_greige,
             'tsgd.total_roll' => $this->total_roll,
         ]);
 

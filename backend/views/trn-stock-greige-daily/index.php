@@ -283,6 +283,23 @@ $currentDateFilter = $searchModel->dateRange ?: $searchModel->date;
             ],
 
             [
+                'attribute' => 'asal_greige',
+                'label' => 'Asal Greige',
+                'value' => function ($model) {
+                    /** @var TrnStockGreigeDaily $model */
+                    return $model->asalGreigeName;
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => \common\models\ar\TrnStockGreige::asalGreigeOptions(),
+                    'options' => ['placeholder' => 'Pilih Asal Greige...'],
+                    'pluginOptions' => ['allowClear' => true],
+                ],
+                'headerOptions' => ['style' => 'width: 140px;'],
+                'contentOptions' => ['style' => 'font-size: 12px;'],
+            ],
+
+            [
                 'attribute' => 'total_panjang',
                 'label' => 'Stock Hari Ini (m)',
                 'format' => 'decimal',
