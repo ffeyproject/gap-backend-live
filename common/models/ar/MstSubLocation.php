@@ -64,6 +64,14 @@ class MstSubLocation extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getLocation()
+    {
+        return $this->hasOne(MstLocation::className(), ['loc_id' => 'locs_loc_id']);
+    }
+
+    /**
      * @return array
      */
     public static function optionList(){

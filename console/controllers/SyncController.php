@@ -293,4 +293,33 @@ class SyncController extends Controller
         echo "-> Selesai: {$createdCount} dibuat, {$linkedCount} dihubungkan, {$failedCount} gagal.\n";
         echo "=== SINKRONISASI STOCK GUDANG JADI OPNAME SELESAI ===\n\n";
     }
+
+    /**
+     * Menjalankan snapshot stock greige harian per motif dan asal greige.
+     * Dipanggil dengan perintah: php yii sync/stock-greige-daily [YYYY-MM-DD]
+     * @param string|null $date
+     */
+    public function actionStockGreigeDaily($date = null)
+    {
+        $targetDate = $date ?: date('Y-m-d');
+        echo "=== MEMULAI SNAPSHOT STOCK GREIGE HARIAN TANGGAL {$targetDate} ===\n";
+
+        try {
+            $result = \common\models\ar\TrnStockGreigeDaily::snapshotStock($targetDate);
+
+            echo sprintf(
+                "-> Berhasil menyimpan stock harian tanggal %s.\n   Total Motif: %d\n   Total Meter: %s m\n   Total Roll: %d roll\n   Data Baru: %d, Terupdate: %d\n",
+                $result['date'],
+                $result['total_motifs'],
+                Yii::$app->formatter->asDecimal($result['grand_total_m']),
+                $result['grand_total_roll'],
+                $result['new_saved'],
+                $result['updated']
+            );
+            echo "=== SNAPSHOT STOCK GREIGE HARIAN SELESAI ===\n\n";
+        } catch (\Throwable $e) {
+            echo "-> Gagal mengambil snapshot stock greige harian: " . $e->getMessage() . "\n";
+            echo "=== SNAPSHOT STOCK GREIGE HARIAN GAGAL ===\n\n";
+        }
+    }
 }

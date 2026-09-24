@@ -18,35 +18,57 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
-        // 'filterModel' => $searchModel,
+        'filterModel' => $searchModel,
         'responsiveWrap' => false,
+        'pjax' => true,
         'panel' => [
             'type' => 'default',
             'before'=>Html::tag(
                 'div',
-                Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).
-                Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']),
+                Html::a('<i class="glyphicon glyphicon-refresh"></i> Refresh', ['index'], ['class' => 'btn btn-default']).' '.
+                Html::a('<i class="glyphicon glyphicon-plus"></i> Tambah Sub Lokasi', ['create'], ['class' => 'btn btn-success']),
                 ['class'=>'btn-group', 'role'=>'group']
             ),
-            //'after'=>Html::a('<i class="glyphicon glyphicon-repeat"></i> Reset Grid', ['index'], ['class' => 'btn btn-info']),
-            //'footer'=>false
         ],
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
             ['class' => 'kartik\grid\ActionColumn', 'template'=>'{view}'],
             [
-                'attribute' => 'Kode Lokasi',
+                'attribute' => 'locs_code',
+                'label' => 'Kode Sub Lokasi',
                 'value' => function($data){
-                    /* @var $data MstGreige*/
                     return Html::a($data->locs_code, ['view', 'id'=>$data->locs_code], ['title'=>'Detail Sub Location']);
                 },
                 'format'=>'raw'
             ],
+            'locs_description',
             'locs_floor_code',
             'locs_line_code',
             'locs_column_code',
             'locs_rack_code',
-            'locs_loc_id',
+            [
+                'attribute' => 'locs_loc_id',
+                'label' => 'Master Location',
+                'value' => function($data){
+                    return $data->location ? $data->location->loc_name : $data->locs_loc_id;
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => \yii\helpers\ArrayHelper::map(MstLocation::find()->all(), 'loc_id', 'loc_name'),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true,
+                    ]
+                ],
+            ],
+            [
+                'attribute' => 'locs_active',
+                'label' => 'Aktif',
+                'value' => function($data){
+                    return ($data->locs_active === 'Y' || $data->locs_active === true || $data->locs_active === 1 || $data->locs_active === '1') ? 'Ya' : 'Tidak';
+                },
+                'filter' => ['Y' => 'Ya', 'N' => 'Tidak'],
+            ],
         ],
     ]); ?>
 </div>
