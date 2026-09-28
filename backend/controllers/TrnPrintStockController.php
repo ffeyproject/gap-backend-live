@@ -77,9 +77,12 @@ class TrnPrintStockController extends Controller
                 $no_wo_map = [];
 
                 foreach ($opnameRows as $opRow) {
-                    $no_wo = ($opRow->gudangJadi && $opRow->gudangJadi->wo) ? $opRow->gudangJadi->wo->no : '-';
-                    $design = ($opRow->gudangJadi && $opRow->gudangJadi->wo) ? $opRow->gudangJadi->wo->greigeNamaKain : (!empty($opRow->qr_code_desc) ? $opRow->qr_code_desc : '-');
-                    $color = ($opRow->gudangJadi && !empty($opRow->gudangJadi->color)) ? $opRow->gudangJadi->color : '-';
+                    $no_wo = $opRow->woNo;
+                    $design = $opRow->motif;
+                    $color = $opRow->color;
+                    if (empty($color) || trim($color) === '') {
+                        $color = '-';
+                    }
                     $unit = (int)$opRow->unit;
                     $qty = (float)$opRow->qty;
                     $grade = (int)$opRow->grade;
@@ -187,7 +190,28 @@ class TrnPrintStockController extends Controller
                     $no_wo = $row['no_wo'] ?: '-';
                     $unit = (int)$row['unit'];
                     $qty = (float)$row['qty'];
-                    $color = $row['color'] ?: '-';
+                    $color = (!empty($row['color']) && trim($row['color']) !== '-') ? $row['color'] : '-';
+                    if ($color === '-' && !empty($row['source_ref'])) {
+                        $insNoLot = (new Query())
+                            ->from(TrnInspecting::tableName())
+                            ->select('no_lot')
+                            ->where(['no' => $row['source_ref']])
+                            ->scalar();
+                        if (!$insNoLot) {
+                            $insNoLot = (new Query())
+                                ->from(InspectingMklBj::tableName())
+                                ->select('no_lot')
+                                ->where(['no' => $row['source_ref']])
+                                ->scalar();
+                        }
+                        if ($insNoLot) {
+                            $lotColor = TrnGudangJadiOpnamePcs::extractColorFromLot($insNoLot);
+                            if (!empty($lotColor)) {
+                                $color = $lotColor;
+                            }
+                        }
+                    }
+
                     $grade = (int)$row['grade'];
                     $itemObj = [
                         'id' => $row['id'],
@@ -495,5 +519,3 @@ class TrnPrintStockController extends Controller
     }
 
 }
-
-
