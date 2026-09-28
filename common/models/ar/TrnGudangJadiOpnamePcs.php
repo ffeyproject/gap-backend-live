@@ -43,8 +43,17 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
         return [
             self::STATUS_STOCK => 'Stock',
             self::STATUS_VERIFIED => 'Verified',
-            self::STATUS_OUT => 'Out / Keluar',
+            self::STATUS_OUT => 'Out',
         ];
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatusName()
+    {
+        $options = self::statusOptions();
+        return isset($options[$this->status]) ? $options[$this->status] : 'Unknown';
     }
 
     /**
@@ -61,30 +70,9 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     public function behaviors()
     {
         return [
-            TimestampBehavior::class,
-            BlameableBehavior::class,
+            TimestampBehavior::className(),
+            BlameableBehavior::className(),
         ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function afterSave($insert, $changedAttributes)
-    {
-        parent::afterSave($insert, $changedAttributes);
-
-        if (!empty($this->id_trn_gudang_jadi)) {
-            // Jika status opname adalah STOCK atau VERIFIED (belum OUT), sinkronkan status trn_gudang_jadi menjadi STATUS_STOCK
-            if ($this->status !== self::STATUS_OUT) {
-                $gj = TrnGudangJadi::findOne($this->id_trn_gudang_jadi);
-                if ($gj && $gj->status !== TrnGudangJadi::STATUS_STOCK) {
-                    $gj->status = TrnGudangJadi::STATUS_STOCK;
-                    $gj->updated_at = time();
-                    $gj->updated_by = (Yii::$app instanceof \yii\web\Application && !Yii::$app->user->isGuest) ? Yii::$app->user->id : ($this->updated_by ?: 1);
-                    $gj->save(false, ['status', 'updated_at', 'updated_by']);
-                }
-            }
-        }
     }
 
     /**
@@ -93,9 +81,9 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['opname_code', 'qr_code', 'qty'], 'required'],
             [['id_trn_gudang_jadi', 'grade', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
             [['id_trn_gudang_jadi', 'grade', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['opname_code', 'qr_code', 'qty', 'unit', 'grade', 'locs_code'], 'required'],
             [['qty'], 'number'],
             [['qr_code_desc', 'remark'], 'string'],
             [['opname_code', 'qr_code'], 'string', 'max' => 100],
@@ -157,7 +145,7 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     public static function parseQrData($qr, $qrDesc = null)
     {
         $result = [
-            'ins_type' => null,     // 'INS' or 'MKL'
+            'ins_type' => null,     // 'INS', 'INS2', or 'MKL'
             'ins_id' => null,       // int inspecting header id
             'item_id' => null,      // int inspecting item id
             'k3l' => null,
@@ -174,13 +162,13 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             return $result;
         }
 
-        // 1. Extract prefix pattern like [INS-65911-1444388] or [MKL-123-456]
-        if (preg_match('/^\[(INS|MKL)-(\d+)-(\d+)\](.*)$/i', $sourceStr, $matches)) {
+        // 1. Extract prefix pattern like [INS2-50514-946687], [INS-65911-1444388] or [MKL-123-456]
+        if (preg_match('/^\[(INS2|INS|MKL)-(\d+)-(\d+)\](.*)$/i', $sourceStr, $matches)) {
             $result['ins_type'] = strtoupper($matches[1]);
             $result['ins_id'] = (int)$matches[2];
             $result['item_id'] = (int)$matches[3];
             $sourceStr = $matches[4];
-        } elseif (preg_match('/^(INS|MKL)-(\d+)-(\d+)$/i', $sourceStr, $matches)) {
+        } elseif (preg_match('/^(INS2|INS|MKL)-(\d+)-(\d+)$/i', $sourceStr, $matches)) {
             $result['ins_type'] = strtoupper($matches[1]);
             $result['ins_id'] = (int)$matches[2];
             $result['item_id'] = (int)$matches[3];
@@ -188,7 +176,7 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
 
         // If qrDesc has prefix but qr doesn't
         if (empty($result['ins_type']) && !empty($qrDesc)) {
-            if (preg_match('/^\[(INS|MKL)-(\d+)-(\d+)\]/i', trim($qrDesc), $mDesc)) {
+            if (preg_match('/^\[(INS2|INS|MKL)-(\d+)-(\d+)\]/i', trim($qrDesc), $mDesc)) {
                 $result['ins_type'] = strtoupper($mDesc[1]);
                 $result['ins_id'] = (int)$mDesc[2];
                 $result['item_id'] = (int)$mDesc[3];
@@ -198,11 +186,11 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
         // Split by exclamation mark (!)
         $parts = explode('!', $sourceStr);
 
-        // Find WO in parts: e.g. D2510/03081L, D2512/03804L, P25..., etc
+        // Find WO in parts: e.g. 26-D-002705, D2510/03081L, D2512/03804L, P25..., etc
         foreach ($parts as $p) {
             $p = trim($p);
             if (empty($p)) continue;
-            if (preg_match('/^[DP]\d{4}\/\d{4,6}[A-Z]?$/i', $p)) {
+            if (preg_match('/^[DP]\d{4}\/\d{4,6}[A-Z]?$/i', $p) || preg_match('/^\d{2}-[A-Z]-\d{6}$/i', $p)) {
                 $result['wo_no'] = strtoupper($p);
                 break;
             }
@@ -239,9 +227,11 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
         if (empty($result['color']) && !empty($qrDesc) && $qrDesc !== $qr) {
             $descParts = explode('!', $qrDesc);
             foreach ($descParts as $dp) {
-                if (preg_match('/^[DP]\d{4}\/\d{4,6}[A-Z]?$/i', trim($dp))) {
+                if (preg_match('/^[DP]\d{4}\/\d{4,6}[A-Z]?$/i', trim($dp)) || preg_match('/^\d{2}-[A-Z]-\d{6}$/i', trim($dp))) {
                     $wIdx = array_search($dp, $descParts);
-                    if ($wIdx !== false && isset($descParts[$wIdx + 2])) {
+                    if ($wIdx !== false && isset($descParts[$wIdx + 3])) {
+                        $result['color'] = trim($descParts[$wIdx + 3]);
+                    } elseif ($wIdx !== false && isset($descParts[$wIdx + 2])) {
                         $result['color'] = trim($descParts[$wIdx + 2]);
                     }
                     if ($wIdx !== false && isset($descParts[$wIdx + 1]) && empty($result['motif'])) {
@@ -282,7 +272,7 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
 
         $parsed = $this->getParsedQrData();
         if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
-            if ($parsed['ins_type'] === 'MKL') {
+            if ($parsed['ins_type'] === 'MKL' || $parsed['ins_type'] === 'INS2') {
                 $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
                 if ($mklItem && $mklItem->inspecting && $mklItem->inspecting->wo) {
                     $this->_cachedWo = $mklItem->inspecting->wo;
@@ -375,27 +365,96 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     }
 
     /**
+     * Ekstrak nama warna dari string No. Lot jika warna diisi di lot (contoh: ET 04 / COKLAT TUA -> COKLAT TUA)
+     * @param string|null $lot
+     * @return string|null
+     */
+    public static function extractColorFromLot($lot)
+    {
+        if (empty($lot) || trim($lot) === '-') {
+            return null;
+        }
+        $lot = trim($lot);
+
+        if (strpos($lot, '/') !== false) {
+            $parts = array_map('trim', explode('/', $lot));
+            for ($i = count($parts) - 1; $i >= 0; $i--) {
+                $p = $parts[$i];
+                $cleanP = trim(preg_replace('/^\d+\s*[\/-]?\s*/', '', $p));
+                if (preg_match('/[a-zA-Z]{3,}/', $cleanP)) {
+                    return $cleanP;
+                }
+            }
+            $last = end($parts);
+            if (!empty($last)) {
+                return $last;
+            }
+        }
+
+        return $lot;
+    }
+
+    /**
      * @return string
      */
     public function getColor()
     {
-        if ($this->gudangJadi && !empty($this->gudangJadi->color)) {
+        if ($this->gudangJadi && !empty($this->gudangJadi->color) && trim($this->gudangJadi->color) !== '-') {
             return $this->gudangJadi->color;
         }
         $parsed = $this->getParsedQrData();
-        if (!empty($parsed['color'])) {
+        if (!empty($parsed['color']) && trim($parsed['color']) !== '-') {
             return $parsed['color'];
         }
         if (!empty($parsed['item_id'])) {
-            if ($parsed['ins_type'] === 'MKL') {
+            if ($parsed['ins_type'] === 'MKL' || $parsed['ins_type'] === 'INS2') {
                 $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
-                if ($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->colorName)) {
-                    return $mklItem->inspecting->colorName;
+                if ($mklItem && $mklItem->inspecting) {
+                    if (!empty($mklItem->inspecting->colorName) && trim($mklItem->inspecting->colorName) !== '-') {
+                        return $mklItem->inspecting->colorName;
+                    }
+                    if (!empty($mklItem->inspecting->no_lot)) {
+                        $lotColor = self::extractColorFromLot($mklItem->inspecting->no_lot);
+                        if (!empty($lotColor)) {
+                            return $lotColor;
+                        }
+                    }
                 }
             } else {
                 $insItem = InspectingItem::findOne($parsed['item_id']);
-                if ($insItem && $insItem->inspecting && !empty($insItem->inspecting->kombinasi)) {
-                    return $insItem->inspecting->kombinasi;
+                if ($insItem && $insItem->inspecting) {
+                    if (!empty($insItem->inspecting->kombinasi) && trim($insItem->inspecting->kombinasi) !== '-') {
+                        return $insItem->inspecting->kombinasi;
+                    }
+                    if (!empty($insItem->inspecting->no_lot)) {
+                        $lotColor = self::extractColorFromLot($insItem->inspecting->no_lot);
+                        if (!empty($lotColor)) {
+                            return $lotColor;
+                        }
+                    }
+                }
+            }
+        }
+        if ($this->gudangJadi) {
+            $gjLot = $this->gudangJadi->getNoLot();
+            if (!empty($gjLot) && $gjLot !== '-') {
+                $lotColor = self::extractColorFromLot($gjLot);
+                if (!empty($lotColor)) {
+                    return $lotColor;
+                }
+            }
+        }
+        if (!empty($parsed['lot'])) {
+            $lotColor = self::extractColorFromLot($parsed['lot']);
+            if (!empty($lotColor)) {
+                return $lotColor;
+            }
+        }
+        $wo = $this->getWo();
+        if ($wo && $wo->woColors) {
+            foreach ($wo->woColors as $wc) {
+                if ($wc->moColor && !empty($wc->moColor->color)) {
+                    return $wc->moColor->color;
                 }
             }
         }
@@ -408,13 +467,10 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     public function getUnitName()
     {
         if (is_numeric($this->unit)) {
-            $unitMap = MstGreigeGroup::unitOptions();
-            return isset($unitMap[(int)$this->unit]) ? $unitMap[(int)$this->unit] : (string)$this->unit;
+            $units = MstGreigeGroup::unitOptions();
+            return isset($units[$this->unit]) ? $units[$this->unit] : $this->unit;
         }
-        if (!empty($this->unit)) {
-            return ucfirst(strtolower($this->unit));
-        }
-        return 'Yard';
+        return $this->unit;
     }
 
     /**
@@ -422,161 +478,8 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
      */
     public function getGradeName()
     {
-        $gradeMap = TrnStockGreige::gradeOptions();
-        return isset($gradeMap[$this->grade]) ? $gradeMap[$this->grade] : (string)$this->grade;
-    }
-
-    /**
-     * @return string
-     */
-    public function getStatusName()
-    {
-        $statusMap = self::statusOptions();
-        return isset($statusMap[$this->status]) ? $statusMap[$this->status] : (string)$this->status;
-    }
-
-    /**
-     * Sinkronkan atau buat stok di TrnGudangJadi berdasarkan data opname ini.
-     * @param int|null $userId
-     * @return array ['success' => bool, 'action' => 'linked'|'created'|'failed', 'message' => string, 'gj_id' => int|null]
-     */
-    public function syncGudangJadiStock($userId = null)
-    {
-        if ($userId === null) {
-            $userId = (Yii::$app instanceof \yii\web\Application && !Yii::$app->user->isGuest)
-                ? Yii::$app->user->id
-                : ($this->created_by ?: 1);
-        }
-
-        $parsed = $this->getParsedQrData();
-
-        // 1. Cek apakah sudah ada TrnGudangJadi yang match
-        $gj = null;
-        if (!empty($this->id_trn_gudang_jadi)) {
-            $gj = TrnGudangJadi::findOne($this->id_trn_gudang_jadi);
-        }
-
-        if (!$gj && !empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
-            $gj = TrnGudangJadi::findOne(['id_from' => $parsed['item_id'], 'trans_from' => $parsed['ins_type']]);
-        }
-
-        if (!$gj) {
-            $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
-                ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
-                : substr($this->qr_code, 0, 25);
-            $gj = TrnGudangJadi::findOne(['qr_code' => $cleanQr]);
-        }
-
-        // Jika TrnGudangJadi sudah ditemukan di DB
-        if ($gj) {
-            $this->id_trn_gudang_jadi = $gj->id;
-            $this->updated_at = time();
-            $this->updated_by = $userId;
-            $this->save(false);
-
-            if (!empty($this->locs_code) && $gj->locs_code !== $this->locs_code) {
-                $gj->locs_code = substr($this->locs_code, 0, 25);
-                $gj->save(false, ['locs_code']);
-            }
-
-            return [
-                'success' => true,
-                'action' => 'linked',
-                'gj_id' => $gj->id,
-                'message' => "Data Opname #{$this->id} berhasil dihubungkan ke Stock Gudang Jadi #{$gj->id}."
-            ];
-        }
-
-        // 2. Jika belum ada, buat record baru di TrnGudangJadi
-        $wo = $this->getWo();
-        $insItem = null;
-        $mklItem = null;
-
-        if (!empty($parsed['item_id'])) {
-            if ($parsed['ins_type'] === 'MKL') {
-                $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
-            } else {
-                $insItem = InspectingItem::findOne($parsed['item_id']);
-            }
-        }
-
-        if (!$wo) {
-            return [
-                'success' => false,
-                'action' => 'failed',
-                'gj_id' => null,
-                'message' => "Gagal: Nomor WO tidak dapat diidentifikasi dari QR Code ({$this->qr_code})."
-            ];
-        }
-
-        $color = !empty($parsed['color']) ? $parsed['color'] : ($insItem && $insItem->inspecting ? $insItem->inspecting->kombinasi : ($mklItem && $mklItem->inspecting ? $mklItem->inspecting->colorName : '-'));
-        $sourceRef = ($insItem && $insItem->inspecting && !empty($insItem->inspecting->no)) ? $insItem->inspecting->no : (($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->no)) ? $mklItem->inspecting->no : ('Opname ' . $this->opname_code));
-        $source = ($parsed['ins_type'] === 'MKL') ? TrnGudangJadi::SOURCE_MAKLOON_FINISH : TrnGudangJadi::SOURCE_PACKING;
-        $grade = (int)$this->grade ?: TrnStockGreige::GRADE_A;
-        $jenisGudang = ($grade == TrnStockGreige::GRADE_B) ? TrnGudangJadi::JENIS_GUDANG_GRADE_B : TrnGudangJadi::JENIS_GUDANG_LOKAL;
-
-        $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
-            ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
-            : substr('OPN-' . $this->id . '-' . $this->opname_code, 0, 25);
-
-        $unitVal = 1;
-        if (is_numeric($this->unit)) {
-            $unitVal = (int)$this->unit;
-        } elseif ($insItem && $insItem->inspecting) {
-            $unitVal = (int)$insItem->inspecting->unit;
-        } elseif ($mklItem && $mklItem->inspecting) {
-            $unitVal = (int)($mklItem->inspecting->satuan ?: $mklItem->inspecting->unit);
-        }
-
-        $qrDesc = !empty($this->qr_code_desc) ? substr($this->qr_code_desc, 0, 255) : substr($this->qr_code, 0, 255);
-
-        $newGj = new TrnGudangJadi([
-            'jenis_gudang' => $jenisGudang,
-            'wo_id' => $wo->id,
-            'source' => $source,
-            'source_ref' => substr($sourceRef, 0, 255),
-            'unit' => $unitVal,
-            'qty' => (float)$this->qty,
-            'date' => date('Y-m-d'),
-            'status' => TrnGudangJadi::STATUS_STOCK,
-            'note' => 'Dibuat otomatis dari Stok Opname ' . $this->opname_code,
-            'color' => substr($color, 0, 255),
-            'grade' => $grade,
-            'locs_code' => substr($this->locs_code ?: 'TRANSIT', 0, 25),
-            'trans_from' => $parsed['ins_type'] ?: 'INS',
-            'id_from' => $parsed['item_id'] ?: null,
-            'qr_code' => $cleanQr,
-            'qr_code_desc' => $qrDesc,
-            'created_by' => $userId,
-            'updated_by' => $userId,
-        ]);
-
-        $newGj->detachBehaviors();
-        $newGj->created_at = time();
-        $newGj->updated_at = time();
-        $newGj->created_by = $userId;
-        $newGj->updated_by = $userId;
-
-        if (!$newGj->save(false)) {
-            return [
-                'success' => false,
-                'action' => 'failed',
-                'gj_id' => null,
-                'message' => "Gagal menyimpan record baru di Gudang Jadi untuk Opname #{$this->id}."
-            ];
-        }
-
-        $this->id_trn_gudang_jadi = $newGj->id;
-        $this->updated_at = time();
-        $this->updated_by = $userId;
-        $this->save(false);
-
-        return [
-            'success' => true,
-            'action' => 'created',
-            'gj_id' => $newGj->id,
-            'message' => "Stock Gudang Jadi #{$newGj->id} berhasil dibuat & dihubungkan ke Opname #{$this->id}."
-        ];
+        $grades = TrnStockGreige::gradeOptions();
+        return isset($grades[$this->grade]) ? $grades[$this->grade] : 'Grade ' . $this->grade;
     }
 }
 
