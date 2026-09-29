@@ -51,6 +51,15 @@ if (Helper::checkRoute('delete-batch')) {
     ]);
 }
 
+if (Helper::checkRoute('sync-color')) {
+    $panelButtons[] = Html::button('<i class="fa fa-paint-brush"></i> Sync Color / Warna <span class="badge bg-purple" id="badge-color-count" style="display: none; margin-left: 5px;">0</span>', [
+        'class' => 'btn btn-info',
+        'id' => 'btn-sync-color',
+        'onclick' => 'submitSyncColor(event);',
+        'title' => 'Sinkronkan Warna / Color item terpilih ke Stock Gudang Jadi'
+    ]);
+}
+
 if (Helper::checkRoute('sync-status-out')) {
     $panelButtons[] = Html::a('<i class="fa fa-refresh"></i> Sync Status Out', ['sync-status-out'], [
         'class' => 'btn btn-default',
@@ -81,7 +90,7 @@ if (Helper::checkRoute('rekap')) {
 
 $gridColumns = [];
 
-if (Helper::checkRoute('move-location') || Helper::checkRoute('delete-batch')) {
+if (Helper::checkRoute('move-location') || Helper::checkRoute('delete-batch') || Helper::checkRoute('sync-color')) {
     $gridColumns[] = [
         'class' => 'kartik\grid\CheckboxColumn',
         'headerOptions' => ['class' => 'kartik-sheet-style'],
@@ -409,6 +418,7 @@ $gridColumns[] = [
 <?php
 $moveLocationUrl = Url::to(['move-location']);
 $deleteBatchUrl = Url::to(['delete-batch']);
+$syncColorUrl = Url::to(['sync-color']);
 $js = <<<JS
 window.getSelectedOpnameIds = function() {
     var ids = [];
@@ -426,13 +436,16 @@ window.syncMoveButtonBadge = function() {
     var count = ids.length;
     var \$badgeMove = $('#badge-move-count');
     var \$badgeDelete = $('#badge-delete-count');
+    var \$badgeColor = $('#badge-color-count');
     
     if (count > 0) {
         \$badgeMove.text(count).show();
         \$badgeDelete.text(count).show();
+        \$badgeColor.text(count).show();
     } else {
         \$badgeMove.text('0').hide();
         \$badgeDelete.text('0').hide();
+        \$badgeColor.text('0').hide();
     }
 };
 
@@ -551,6 +564,48 @@ window.submitDeleteBatch = function(e) {
     return false;
 };
 
+window.submitSyncColor = function(e) {
+    if (e) e.preventDefault();
+    var ids = window.getSelectedOpnameIds();
+    if (ids.length === 0) {
+        alert('Harap pilih / centang minimal 1 data terlebih dahulu pada kotak pilihan tabel.');
+        return false;
+    }
+
+    if (!confirm('Apakah Anda yakin ingin menyinkronkan Warna / Color untuk ' + ids.length + ' item terpilih ke Stok Gudang Jadi?')) {
+        return false;
+    }
+
+    var \$btn = $('#btn-sync-color');
+    var oldText = \$btn.html();
+    \$btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Menyinkronkan...');
+
+    $.ajax({
+        url: '{$syncColorUrl}',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            ids: ids
+        },
+        success: function(res) {
+            if (res.success) {
+                alert(res.message);
+                $.pjax.reload({container: '#StokOpnameGdJadiGrid-pjax'});
+            } else {
+                alert(res.message || 'Gagal menyinkronkan warna.');
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Terjadi kesalahan pada server: ' + (xhr.responseText || error));
+        },
+        complete: function() {
+            \$btn.prop('disabled', false).html(oldText);
+            setTimeout(window.syncMoveButtonBadge, 300);
+        }
+    });
+    return false;
+};
+
 $(document).on('change', 'input[name="selection[]"], input[name="selection_all"], .select-on-check-all, .kv-all-select', function() {
     setTimeout(window.syncMoveButtonBadge, 50);
 });
@@ -565,6 +620,10 @@ $(document).on('click', '#btn-move-location', function(e) {
 
 $(document).on('click', '#btn-delete-batch', function(e) {
     window.submitDeleteBatch(e);
+});
+
+$(document).on('click', '#btn-sync-color', function(e) {
+    window.submitSyncColor(e);
 });
 
 window.syncMoveButtonBadge();

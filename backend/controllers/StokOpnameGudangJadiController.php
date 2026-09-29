@@ -32,6 +32,7 @@ class StokOpnameGudangJadiController extends Controller
                     'delete-batch' => ['POST'],
                     'save-location' => ['POST'],
                     'move-location' => ['POST'],
+                    'sync-color' => ['POST'],
                 ],
             ],
         ];
@@ -267,7 +268,7 @@ class StokOpnameGudangJadiController extends Controller
 
             $totalSelected = count($ids);
             $skippedCount = $totalSelected - $deletedCount;
-            $msg = "Berhasil menghapus {$deletedCount} data Stok Opname berstatus Stock.";
+            $msg = "Berhasil menghapus {$deletedCount} data Stok Opname berstatus Stock dan mengubah lokasi stock roll terkait di Gudang Jadi menjadi Transit.";
             if ($skippedCount > 0) {
                 $msg .= " ({$skippedCount} data dilewati karena statusnya bukan Stock).";
             }
@@ -283,6 +284,102 @@ class StokOpnameGudangJadiController extends Controller
             return [
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Sinkronkan Warna/Color item Stok Opname terpilih ke master Gudang Jadi (trn_gudang_jadi.color).
+     * @return array
+     */
+    public function actionSyncColor()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ids = Yii::$app->request->post('ids');
+        if (empty($ids) || !is_array($ids)) {
+            return ['success' => false, 'message' => 'Pilih data yang akan disinkronkan warnanya terlebih dahulu.'];
+        }
+
+        $models = TrnGudangJadiOpnamePcs::find()->where(['id' => $ids])->all();
+        if (empty($models)) {
+            return ['success' => false, 'message' => 'Data opname tidak ditemukan.'];
+        }
+
+        $updatedCount = 0;
+        $skippedCount = 0;
+        $failedCount = 0;
+        $userId = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            foreach ($models as $m) {
+                $gudangJadi = null;
+                if (!empty($m->id_trn_gudang_jadi)) {
+                    $gudangJadi = TrnGudangJadi::findOne($m->id_trn_gudang_jadi);
+                }
+
+                if (!$gudangJadi) {
+                    $parsed = $m->getParsedQrData();
+                    if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
+                        $gudangJadi = TrnGudangJadi::findOne(['id_from' => $parsed['item_id'], 'trans_from' => $parsed['ins_type']]);
+                    }
+                }
+
+                if (!$gudangJadi && !empty($m->qr_code)) {
+                    $parsed = $m->getParsedQrData();
+                    $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
+                        ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
+                        : substr($m->qr_code, 0, 25);
+                    $gudangJadi = TrnGudangJadi::findOne(['qr_code' => $cleanQr]);
+                }
+
+                if ($gudangJadi !== null) {
+                    // Dapatkan warna hasil resolve dari opname / QR / Inspecting / No Lot / MO
+                    $resolvedColor = $m->getResolvedColor();
+
+                    if (!empty($resolvedColor) && trim($resolvedColor) !== '-') {
+                        $gudangJadi->color = substr(trim($resolvedColor), 0, 255);
+                        $gudangJadi->updated_at = time();
+                        $gudangJadi->updated_by = $userId;
+                        $gudangJadi->save(false, ['color', 'updated_at', 'updated_by']);
+
+                        if (empty($m->id_trn_gudang_jadi)) {
+                            $m->id_trn_gudang_jadi = $gudangJadi->id;
+                            $m->save(false, ['id_trn_gudang_jadi']);
+                        }
+
+                        $updatedCount++;
+                    } else {
+                        $skippedCount++;
+                    }
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            $transaction->commit();
+
+            $msg = "Sinkronisasi Warna selesai: {$updatedCount} stock roll di Gudang Jadi berhasil diperbarui warnanya.";
+            if ($skippedCount > 0) {
+                $msg .= " ({$skippedCount} item dilewati karena warna belum teridentifikasi).";
+            }
+            if ($failedCount > 0) {
+                $msg .= " ({$failedCount} item belum terhubung ke Gudang Jadi).";
+            }
+
+            return [
+                'success' => true,
+                'message' => $msg,
+                'updated_count' => $updatedCount,
+                'skipped_count' => $skippedCount,
+                'failed_count' => $failedCount,
+            ];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyinkronkan warna: ' . $e->getMessage()
             ];
         }
     }
@@ -353,7 +450,7 @@ class StokOpnameGudangJadiController extends Controller
         $qrCode = $model->qr_code;
         $model->delete();
 
-        Yii::$app->session->setFlash('success', "Data Stok Opname Pcs #{$id} ({$qrCode}) berhasil dihapus.");
+        Yii::$app->session->setFlash('success', "Data Stok Opname Pcs #{$id} ({$qrCode}) berhasil dihapus dan lokasi stock roll di Gudang Jadi telah diubah menjadi Transit.");
 
         return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }

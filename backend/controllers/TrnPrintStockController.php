@@ -83,6 +83,19 @@ class TrnPrintStockController extends Controller
                     if (empty($color) || trim($color) === '') {
                         $color = '-';
                     }
+
+                    // Jika warna strip '-' atau nomer WO depannya sebelum '/' adalah D0000 maka color mengikuti No.Lot
+                    $woPrefix = strtoupper(trim(explode('/', (string)$no_wo)[0]));
+                    $isWoD0000 = ($woPrefix === 'D0000');
+                    $isColorDash = ($color === '-');
+
+                    if ($isColorDash || $isWoD0000) {
+                        $noLot = $opRow->getNoLot();
+                        if (!empty($noLot) && trim($noLot) !== '-') {
+                            $color = $noLot;
+                        }
+                    }
+
                     $unit = (int)$opRow->unit;
                     $qty = (float)$opRow->qty;
                     $grade = (int)$opRow->grade;
@@ -191,7 +204,9 @@ class TrnPrintStockController extends Controller
                     $unit = (int)$row['unit'];
                     $qty = (float)$row['qty'];
                     $color = (!empty($row['color']) && trim($row['color']) !== '-') ? $row['color'] : '-';
-                    if ($color === '-' && !empty($row['source_ref'])) {
+
+                    $insNoLot = null;
+                    if (!empty($row['source_ref'])) {
                         $insNoLot = (new Query())
                             ->from(TrnInspecting::tableName())
                             ->select('no_lot')
@@ -204,11 +219,16 @@ class TrnPrintStockController extends Controller
                                 ->where(['no' => $row['source_ref']])
                                 ->scalar();
                         }
-                        if ($insNoLot) {
-                            $lotColor = TrnGudangJadiOpnamePcs::extractColorFromLot($insNoLot);
-                            if (!empty($lotColor)) {
-                                $color = $lotColor;
-                            }
+                    }
+
+                    // Jika warna strip '-' atau nomer WO depannya sebelum '/' adalah D0000 maka color mengikuti No.Lot
+                    $woPrefix = strtoupper(trim(explode('/', (string)$no_wo)[0]));
+                    $isWoD0000 = ($woPrefix === 'D0000');
+                    $isColorDash = ($color === '-');
+
+                    if ($isColorDash || $isWoD0000) {
+                        if (!empty($insNoLot) && trim($insNoLot) !== '-') {
+                            $color = $insNoLot;
                         }
                     }
 
