@@ -451,8 +451,8 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             }
         }
         $wo = $this->getWo();
-        if ($wo && $wo->woColors) {
-            foreach ($wo->woColors as $wc) {
+        if ($wo && !empty($wo->trnWoColors)) {
+            foreach ($wo->trnWoColors as $wc) {
                 if ($wc->moColor && !empty($wc->moColor->color)) {
                     return $wc->moColor->color;
                 }
@@ -517,8 +517,8 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
 
         // Ambil dari MO/WO Colors
         $wo = $this->getWo();
-        if ($wo && $wo->woColors) {
-            foreach ($wo->woColors as $wc) {
+        if ($wo && !empty($wo->trnWoColors)) {
+            foreach ($wo->trnWoColors as $wc) {
                 if ($wc->moColor && !empty($wc->moColor->color)) {
                     return $wc->moColor->color;
                 }
