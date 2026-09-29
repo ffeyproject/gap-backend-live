@@ -49,6 +49,12 @@ if(!empty($searchModel->greige_id)){
             'type' => 'default',
             'before'=>
                     Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).' '.
+                    Html::button('<i class="fa fa-arrows"></i> Move Location <span class="badge bg-green" id="badge-move-count" style="display: none; margin-left: 5px;">0</span>', [
+                        'class' => 'btn btn-warning',
+                        'id' => 'btn-move-location',
+                        'onclick' => 'openModalMoveLocation(event);',
+                        'title' => 'Pindahkan lokasi untuk item yang dipilih'
+                    ]).' '.
                     Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> Add All Items', 'javascript:void(0)', [
                         'class' => 'btn btn-success',
                         'onclick' => 'choseAllItems(); return false;'
@@ -57,11 +63,10 @@ if(!empty($searchModel->greige_id)){
         ],
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
-            /*['class' => 'kartik\grid\ActionColumn', 'template' => '{view}'],
             [
                 'class' => 'kartik\grid\CheckboxColumn',
-                // you may configure additional properties here
-            ],*/
+                'headerOptions' => ['class' => 'kartik-sheet-style', 'style' => 'width: 30px;'],
+            ],
             [
                 'class' => 'kartik\grid\ActionColumn',
                 'template'=>'{add-mix}',
@@ -441,15 +446,159 @@ if(!empty($searchModel->greige_id)){
     </div>
 </div>
 
+<!-- Modal Move Location Gudang Jadi -->
+<div class="modal fade" id="modal-move-location" tabindex="-1" role="dialog" aria-labelledby="modalMoveLocationLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-yellow">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalMoveLocationLabel"><i class="fa fa-arrows"></i> Pindahkan Lokasi Barang (Gudang Jadi)</h4>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    Jumlah item terpilih: <strong><span id="count-selected-items">0</span> item</strong>
+                </div>
+                <div class="form-group">
+                    <label class="control-label" for="target-locs-code">Pilih Lokasi Tujuan: <span class="text-danger">*</span></label>
+                    <select id="target-locs-code" name="target_locs_code" class="form-control" style="width: 100%;">
+                        <option value="">-- Pilih Lokasi Tujuan --</option>
+                        <?php foreach (\common\models\ar\MstSubLocation::optionList() as $locCode => $locDesc): ?>
+                            <option value="<?= Html::encode($locCode) ?>"><?= Html::encode($locDesc) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning" id="btn-submit-move-location" onclick="submitMoveLocation(event);"><i class="fa fa-check"></i> Simpan Perpindahan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 $this->registerJsVar('selectedItems', []);
 $this->registerJsVar('wmsLocationsUrl', Url::to(['ajax/wms-locations']));
 $this->registerJsVar('saveLocationUrl', Url::to(['trn-gudang-jadi/save-location']));
 $this->registerJsVar('setStockKeluarUrl', Url::to(['trn-gudang-jadi/set-stock-keluar']));
+$this->registerJsVar('moveLocationUrl', Url::to(['trn-gudang-jadi/move-location']));
 
 $this->registerJs($this->renderFile(__DIR__.'/js/index.js'), View::POS_END);
 // Define a global JavaScript variable with the base URL
 $this->registerJs('var baseUrl = ' . json_encode(Yii::$app->urlManager->createUrl(['/'])), View::POS_HEAD);
+
+$jsMoveLocation = <<<JS
+window.getSelectedGudangJadiIds = function() {
+    var ids = [];
+    $('input[name="selection[]"]:checked').each(function() {
+        var v = $(this).val();
+        if (v) {
+            ids.push(v);
+        }
+    });
+    return ids;
+};
+
+window.syncMoveButtonBadge = function() {
+    var ids = window.getSelectedGudangJadiIds();
+    var count = ids.length;
+    var \$badgeMove = $('#badge-move-count');
+    
+    if (count > 0) {
+        \$badgeMove.text(count).show();
+    } else {
+        \$badgeMove.text('0').hide();
+    }
+};
+
+window.openModalMoveLocation = function(e) {
+    if (e) e.preventDefault();
+    var ids = window.getSelectedGudangJadiIds();
+
+    if (ids.length === 0) {
+        alert('Harap pilih / centang minimal 1 data terlebih dahulu pada kotak pilihan tabel.');
+        return false;
+    }
+
+    $('#count-selected-items').text(ids.length);
+    $('#target-locs-code').val('');
+    if ($.fn.select2) {
+        $('#target-locs-code').select2({
+            dropdownParent: $('#modal-move-location'),
+            width: '100%'
+        });
+    }
+    $('#modal-move-location').modal('show');
+    return false;
+};
+
+window.submitMoveLocation = function(e) {
+    if (e) e.preventDefault();
+    var ids = window.getSelectedGudangJadiIds();
+    if (ids.length === 0) {
+        alert('Tidak ada data yang dipilih.');
+        $('#modal-move-location').modal('hide');
+        window.syncMoveButtonBadge();
+        return false;
+    }
+
+    var targetLoc = $('#target-locs-code').val();
+    if (!targetLoc) {
+        alert('Harap pilih lokasi tujuan terlebih dahulu.');
+        return false;
+    }
+
+    if (!confirm('Apakah Anda yakin ingin memindahkan ' + ids.length + ' item ke lokasi "' + targetLoc + '"?')) {
+        return false;
+    }
+
+    var \$btn = $('#btn-submit-move-location');
+    var oldText = \$btn.html();
+    \$btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+
+    $.ajax({
+        url: moveLocationUrl,
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            ids: ids,
+            target_locs_code: targetLoc
+        },
+        success: function(res) {
+            if (res.success) {
+                $('#modal-move-location').modal('hide');
+                alert(res.message);
+                $.pjax.reload({container: '#GdJadiGrid-pjax'});
+            } else {
+                alert(res.message || 'Gagal memindahkan lokasi.');
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('Terjadi kesalahan pada server: ' + (xhr.responseText || error));
+        },
+        complete: function() {
+            \$btn.prop('disabled', false).html(oldText);
+            setTimeout(window.syncMoveButtonBadge, 300);
+        }
+    });
+    return false;
+};
+
+$(document).on('change', 'input[name="selection[]"], input[name="selection_all"], .select-on-check-all, .kv-all-select', function() {
+    setTimeout(window.syncMoveButtonBadge, 50);
+});
+
+$(document).on('pjax:success pjax:complete pjax:end', function() {
+    setTimeout(window.syncMoveButtonBadge, 50);
+});
+
+$(document).on('click', '#btn-move-location', function(e) {
+    window.openModalMoveLocation(e);
+});
+
+window.syncMoveButtonBadge();
+JS;
+$this->registerJs($jsMoveLocation, View::POS_END);
 
 $jsStockKeluar = <<<JS
 function openModalStockKeluar(e, id) {

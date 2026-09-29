@@ -5,6 +5,7 @@ namespace backend\controllers;
 use common\models\ar\{ MstGreigeGroup, MutasiExFinishAlt, MutasiExFinishAltItem };
 use common\models\ar\{ TrnGudangJadi, TrnGudangJadiSearch, TrnWo, TrnScGreige, TrnStockGreige };
 use common\models\ar\{ TrnInspecting, InspectingMklBj, TrnBeliKainJadi, TrnTerimaMakloonProcess, TrnTerimaMakloonFinish, TrnReturBuyer }; //header_source
+use common\models\ar\{ WmsMoveLocationMstr, WmsMoveLocationDtl, TrnGudangJadiOpnamePcs };
 use common\models\User;
 use kartik\mpdf\Pdf;
 use Yii;
@@ -34,6 +35,9 @@ class TrnGudangJadiController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'set-stock-keluar' => ['POST'],
+                    'save-location' => ['POST'],
+                    'move-location' => ['POST'],
                 ],
             ],
         ];
@@ -866,6 +870,96 @@ class TrnGudangJadiController extends Controller
         }
 
         throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
+    }
+
+    /**
+     * Move location for selected TrnGudangJadi items and record to WMS Move Location
+     * @return array
+     */
+    public function actionMoveLocation()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $ids = Yii::$app->request->post('ids');
+        $targetLocsCode = trim((string)Yii::$app->request->post('target_locs_code'));
+
+        if (empty($ids) || !is_array($ids) || empty($targetLocsCode)) {
+            return ['success' => false, 'message' => 'Pilih data yang akan dipindahkan dan tentukan lokasi tujuan.'];
+        }
+
+        $models = TrnGudangJadi::find()->where(['id' => $ids])->all();
+        if (empty($models)) {
+            return ['success' => false, 'message' => 'Data stock tidak ditemukan.'];
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $moveCode = WmsMoveLocationMstr::generateMoveCode();
+            $fromLocations = [];
+            foreach ($models as $model) {
+                if (!empty($model->locs_code)) {
+                    $fromLocations[] = $model->locs_code;
+                }
+            }
+            $fromLocations = array_values(array_unique($fromLocations));
+            $fromLocStr = !empty($fromLocations) ? implode(', ', $fromLocations) : '-';
+
+            // Insert Master
+            $moveMstr = new WmsMoveLocationMstr();
+            $moveMstr->move_code = $moveCode;
+            $moveMstr->move_date = date('Y-m-d');
+            $moveMstr->move_create_at = date('Y-m-d H:i:s');
+            $moveMstr->move_create_by = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+            $moveMstr->move_count = count($models);
+            $moveMstr->move_locs_code_from = $fromLocStr;
+            $moveMstr->move_locs_code_to = $targetLocsCode;
+
+            if (!$moveMstr->save(false)) {
+                throw new \Exception('Gagal menyimpan master perpindahan lokasi.');
+            }
+
+            $userId = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+            $now = time();
+
+            foreach ($models as $m) {
+                // Insert Detail
+                $moveDtl = new WmsMoveLocationDtl();
+                $moveDtl->moved_move_code = $moveCode;
+                $moveDtl->moved_id_stok = $m->id;
+                if (!$moveDtl->save(false)) {
+                    throw new \Exception('Gagal menyimpan detail perpindahan lokasi.');
+                }
+
+                // Update locs_code in trn_gudang_jadi
+                $m->locs_code = $targetLocsCode;
+                $m->updated_at = $now;
+                $m->updated_by = $userId;
+                $m->save(false, ['locs_code', 'updated_at', 'updated_by']);
+
+                // If also present in opname pcs, update opname pcs locs_code too
+                TrnGudangJadiOpnamePcs::updateAll(
+                    [
+                        'locs_code' => $targetLocsCode,
+                        'updated_at' => $now,
+                        'updated_by' => $userId,
+                    ],
+                    ['id_trn_gudang_jadi' => $m->id]
+                );
+            }
+
+            $transaction->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Berhasil memindahkan ' . count($models) . " item ke lokasi {$targetLocsCode} (No. Move: {$moveCode})."
+            ];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memindahkan lokasi: ' . $e->getMessage()
+            ];
+        }
     }
 
 }
