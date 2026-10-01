@@ -151,8 +151,15 @@ if(!empty($searchModel->greige_id)){
                 // 'headerOptions' => ['style' => 'width:100px;'],
                 'label'=>'ID Inspecting',
                 'value' => function($data){
-                    $asal = $data->id_from && $data->trans_from == 'INS' && $data->inspecting ? $data->qr_code : ($data->id_from && $data->trans_from == 'MKL' && $data->inspectingMklbj ? $data->qr_code : NULL);
-                    return $asal;
+                    /* @var $data TrnGudangJadi */
+                    if (!empty($data->qr_code)) {
+                        return $data->qr_code;
+                    }
+                    if (!empty($data->id_from)) {
+                        $prefix = $data->trans_from ?: 'INS';
+                        return $prefix . '-' . $data->id_from;
+                    }
+                    return null;
                 },
             ],
             [
