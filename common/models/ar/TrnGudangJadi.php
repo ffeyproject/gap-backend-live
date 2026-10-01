@@ -81,6 +81,38 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
      /**
       * {@inheritdoc}
       */
+     public function beforeSave($insert)
+     {
+         if (!parent::beforeSave($insert)) {
+             return false;
+         }
+
+         if (!empty($this->id_from) && empty($this->qr_code)) {
+             if ($this->trans_from === 'MKL') {
+                 $item = InspectingMklBjItems::findOne($this->id_from);
+                 if ($item) {
+                     $this->qr_code = $item->qr_code ?: ('MKL-' . $item->inspecting_id . '-' . $item->id);
+                     if (empty($this->qr_code_desc) && !empty($item->qr_code_desc)) {
+                         $this->qr_code_desc = $item->qr_code_desc;
+                     }
+                 }
+             } else {
+                 $item = InspectingItem::findOne($this->id_from);
+                 if ($item) {
+                     $this->qr_code = $item->qr_code ?: ('INS-' . $item->inspecting_id . '-' . $item->id);
+                     if (empty($this->qr_code_desc) && !empty($item->qr_code_desc)) {
+                         $this->qr_code_desc = $item->qr_code_desc;
+                     }
+                 }
+             }
+         }
+
+         return true;
+     }
+
+     /**
+      * {@inheritdoc}
+      */
      public function afterSave($insert, $changedAttributes)
      {
          parent::afterSave($insert, $changedAttributes);
@@ -128,8 +160,8 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
          return [
              [['wo_id', 'source', 'qty', 'date', 'created_at', 'created_by'], 'required'],
 
-             [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair'], 'default', 'value' => null],
-             [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+             [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair', 'id_from', 'trans_from', 'qr_code', 'qr_code_desc'], 'default', 'value' => null],
+             [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'id_from'], 'integer'],
 
              ['qty', 'number'],
 
@@ -147,7 +179,7 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
             ['jenis_gudang', 'in', 'range' => [self::JENIS_GUDANG_LOKAL, self::JENIS_GUDANG_EXPORT, self::JENIS_GUDANG_GRADE_B]],
 
             [['note'], 'string'],
-            [['source_ref', 'no', 'color', 'no_memo_repair', 'no_memo_ganti_greige', 'locs_code'], 'string', 'max' => 255],
+            [['source_ref', 'no', 'color', 'no_memo_repair', 'no_memo_ganti_greige', 'locs_code', 'trans_from', 'qr_code', 'qr_code_desc'], 'string', 'max' => 255],
             [['wo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnWo::className(), 'targetAttribute' => ['wo_id' => 'id']],
 
             [['hasil_pemotongan', 'dipotong'], 'boolean'],
@@ -186,6 +218,10 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
             'dipotong' => 'Dipotong',
             'gradeName' => 'Grade',
             'locs_code' => 'Location',
+            'id_from' => 'ID Inspecting Item (id_from)',
+            'trans_from' => 'Tipe Inspecting (trans_from)',
+            'qr_code' => 'QR Code',
+            'qr_code_desc' => 'QR Code Desc',
         ];
     }
 

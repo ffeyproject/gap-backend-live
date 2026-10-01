@@ -51,7 +51,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     // you may configure additional properties here
                 ],
 
-                //'id',
+                'id',
                 [
                     'attribute' => 'jenis_gudang',
                     'value' => function($data){

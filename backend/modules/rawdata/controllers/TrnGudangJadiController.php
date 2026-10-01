@@ -142,6 +142,47 @@ class TrnGudangJadiController extends Controller
     }
 
     /**
+     * AJAX endpoint to lookup inspecting item information
+     * @param int $id
+     * @param string $trans_from
+     * @return array
+     */
+    public function actionGetInspectingInfo($id, $trans_from = 'INS')
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $qrCode = null;
+        $qrCodeDesc = null;
+        $inspectingId = null;
+        $found = false;
+
+        if ($trans_from === 'MKL') {
+            $item = \common\models\ar\InspectingMklBjItems::findOne($id);
+            if ($item) {
+                $found = true;
+                $inspectingId = $item->inspecting_id;
+                $qrCode = $item->qr_code ?: ('MKL-' . $item->inspecting_id . '-' . $item->id);
+                $qrCodeDesc = isset($item->qr_code_desc) ? $item->qr_code_desc : null;
+            }
+        } else {
+            $item = \common\models\ar\InspectingItem::findOne($id);
+            if ($item) {
+                $found = true;
+                $inspectingId = $item->inspecting_id;
+                $qrCode = $item->qr_code ?: ('INS-' . $item->inspecting_id . '-' . $item->id);
+                $qrCodeDesc = isset($item->qr_code_desc) ? $item->qr_code_desc : null;
+            }
+        }
+
+        return [
+            'success' => $found,
+            'qr_code' => $qrCode,
+            'qr_code_desc' => $qrCodeDesc,
+            'inspecting_id' => $inspectingId,
+        ];
+    }
+
+    /**
      * Finds the TrnGudangJadi model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param integer $id

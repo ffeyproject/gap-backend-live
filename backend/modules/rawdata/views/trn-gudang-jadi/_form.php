@@ -82,7 +82,21 @@ use kartik\widgets\ActiveForm;
         <div class="col-md-4">
             <div class="box">
                 <div class="box-body">
-                    <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
+                    <?= $form->field($model, 'id_from')->textInput(['type' => 'number'])->label('ID Inspecting Item (id_from)') ?>
+
+                    <?=$form->field($model, 'trans_from')->widget(Select2::classname(), [
+                        'data' => ['INS' => 'INS (Inspecting)', 'MKL' => 'MKL (Inspecting Makloon BJ)'],
+                        'options' => ['placeholder' => 'Pilih Tipe ...'],
+                        'pluginOptions' => [
+                            'allowClear' => true
+                        ],
+                    ])->label('Tipe Inspecting (trans_from)')?>
+
+                    <?= $form->field($model, 'qr_code')->textInput(['maxlength' => true])->label('QR Code') ?>
+
+                    <?= $form->field($model, 'locs_code')->textInput(['maxlength' => true])->label('Location (locs_code)') ?>
+
+                    <?= $form->field($model, 'note')->textarea(['rows' => 4]) ?>
                 </div>
             </div>
         </div>
@@ -95,3 +109,54 @@ use kartik\widgets\ActiveForm;
     <?php ActiveForm::end(); ?>
 
 </div>
+
+<?php
+$urlGetInspecting = \yii\helpers\Url::to(['get-inspecting-info']);
+$js = <<<JS
+function fetchInspectingQr() {
+    var idFrom = $('#trngudangjadi-id_from').val();
+    var transFrom = $('#trngudangjadi-trans_from').val() || 'INS';
+    
+    if (!idFrom || parseInt(idFrom) <= 0) {
+        return;
+    }
+    
+    $.ajax({
+        url: '{$urlGetInspecting}',
+        type: 'GET',
+        data: {
+            id: idFrom,
+            trans_from: transFrom
+        },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success && res.qr_code) {
+                $('#trngudangjadi-qr_code').val(res.qr_code);
+            } else {
+                var prefix = transFrom === 'MKL' ? 'MKL' : 'INS';
+                if (!$('#trngudangjadi-qr_code').val()) {
+                    $('#trngudangjadi-qr_code').val(prefix + '-' + idFrom);
+                }
+            }
+        },
+        error: function() {
+            var prefix = transFrom === 'MKL' ? 'MKL' : 'INS';
+            if (!$('#trngudangjadi-qr_code').val()) {
+                $('#trngudangjadi-qr_code').val(prefix + '-' + idFrom);
+            }
+        }
+    });
+}
+
+$('#trngudangjadi-id_from').on('change blur', function() {
+    fetchInspectingQr();
+});
+
+$('#trngudangjadi-trans_from').on('change', function() {
+    if ($('#trngudangjadi-id_from').val()) {
+        fetchInspectingQr();
+    }
+});
+JS;
+$this->registerJs($js, \yii\web\View::POS_READY);
+?>

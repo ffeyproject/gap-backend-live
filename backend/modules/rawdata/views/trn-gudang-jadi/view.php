@@ -47,6 +47,10 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                                 'value'=>$model::sourceOptions()[$model->source]
                             ],
                             'source_ref',
+                            'id_from',
+                            'trans_from',
+                            'qr_code',
+                            'locs_code',
                             'qty:decimal',
                             [
                                 'attribute'=>'unit',
