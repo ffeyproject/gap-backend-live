@@ -114,6 +114,7 @@ switch ($scGreige->process){
                                 'attribute'=>'status',
                                 'value'=>$model::statusOptions()[$model->status]
                             ],
+                            'posted_at:datetime',
                         ],
                     ]) ?>
                 </div>
