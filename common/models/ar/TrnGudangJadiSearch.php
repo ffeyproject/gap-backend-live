@@ -162,14 +162,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             ->andFilterWhere(['ilike', 'trn_gudang_jadi.locs_code', $this->locs_code])
         ;
 
-        if (!empty($this->color)) {
-            $colorTerm = trim($this->color);
-            $query->andWhere([
-                'or',
-                ['ilike', 'trn_gudang_jadi.color', $colorTerm],
-                ['ilike', 'trn_gudang_jadi_opname_pcs.color', $colorTerm],
-            ]);
-        }
+        $query->andFilterWhere(['ilike', 'trn_gudang_jadi.color', $this->color]);
 
         if (!empty($this->id_asal)) {
             $term = trim($this->id_asal);
