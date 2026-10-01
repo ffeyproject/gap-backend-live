@@ -159,6 +159,9 @@ if(!empty($searchModel->greige_id)){
                         $prefix = $data->trans_from ?: 'INS';
                         return $prefix . '-' . $data->id_from;
                     }
+                    if ($data->opnamePcs !== null && !empty($data->opnamePcs->qr_code)) {
+                        return $data->opnamePcs->qr_code;
+                    }
                     return null;
                 },
             ],

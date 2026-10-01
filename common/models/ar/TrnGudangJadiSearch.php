@@ -169,6 +169,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
                 'or',
                 ['ilike', 'trn_gudang_jadi.qr_code', $term],
                 ['ilike', new Expression('CAST(trn_gudang_jadi.id_from AS TEXT)'), $term],
+                ['ilike', 'trn_gudang_jadi_opname_pcs.qr_code', $term],
             ]);
         }
 

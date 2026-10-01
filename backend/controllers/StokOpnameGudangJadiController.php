@@ -139,6 +139,8 @@ class StokOpnameGudangJadiController extends Controller
             SET 
                 status = :status_stock,
                 locs_code = COALESCE(NULLIF(op.locs_code, ''), gj.locs_code),
+                qr_code = COALESCE(NULLIF(gj.qr_code, ''), NULLIF(op.qr_code, '')),
+                qr_code_desc = COALESCE(NULLIF(gj.qr_code_desc, ''), NULLIF(op.qr_code_desc, '')),
                 updated_at = :updated_at,
                 updated_by = :updated_by
             FROM trn_gudang_jadi_opname_pcs op
@@ -148,6 +150,7 @@ class StokOpnameGudangJadiController extends Controller
               AND (
                   gj.status != :status_stock 
                   OR (op.locs_code IS NOT NULL AND op.locs_code != '' AND (gj.locs_code IS NULL OR gj.locs_code != op.locs_code))
+                  OR (op.qr_code IS NOT NULL AND op.qr_code != '' AND (gj.qr_code IS NULL OR gj.qr_code = ''))
               )
         ";
 
@@ -158,7 +161,7 @@ class StokOpnameGudangJadiController extends Controller
             ':updated_by' => $userId,
         ])->execute();
 
-        Yii::$app->session->setFlash('success', "Sinkronisasi selesai: {$updatedStock} item di Gudang Jadi berhasil diperbarui status Stock & Lokasi (locs_code).");
+        Yii::$app->session->setFlash('success', "Sinkronisasi selesai: {$updatedStock} item di Gudang Jadi berhasil diperbarui status Stock, Lokasi, dan QR Code.");
         return $this->redirect(Yii::$app->request->referrer ?: ['index']);
     }
 
