@@ -53,10 +53,15 @@ class StokOpnameGudangJadiController extends Controller
         $queryQty = clone $dataProvider->query;
         $totalQty = $queryQty->sum('t.qty') ?: 0;
 
-        $queryVerified = clone $dataProvider->query;
-        $totalVerified = $queryVerified->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->count();
-        $queryQtyVerified = clone $dataProvider->query;
-        $totalQtyVerified = $queryQtyVerified->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED])->sum('t.qty') ?: 0;
+        $queryRak = clone $dataProvider->query;
+        $listRak = $queryRak->select('t.locs_code')
+            ->distinct()
+            ->andWhere(['is not', 't.locs_code', null])
+            ->andWhere(['!=', 't.locs_code', ''])
+            ->orderBy(['t.locs_code' => SORT_ASC])
+            ->column();
+
+        $totalRak = count($listRak);
 
         $queryStock = clone $dataProvider->query;
         $totalStock = $queryStock->andWhere(['t.status' => TrnGudangJadiOpnamePcs::STATUS_STOCK])->count();
@@ -73,8 +78,8 @@ class StokOpnameGudangJadiController extends Controller
             'dataProvider' => $dataProvider,
             'totalPcs' => $totalPcs,
             'totalQty' => $totalQty,
-            'totalVerified' => $totalVerified,
-            'totalQtyVerified' => $totalQtyVerified,
+            'totalRak' => $totalRak,
+            'listRak' => $listRak,
             'totalStock' => $totalStock,
             'totalQtyStock' => $totalQtyStock,
             'totalOut' => $totalOut,

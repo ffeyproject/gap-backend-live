@@ -146,7 +146,6 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             'trn_gudang_jadi.created_by' => $this->created_by,
             'trn_gudang_jadi.updated_at' => $this->updated_at,
             'trn_gudang_jadi.updated_by' => $this->updated_by,
-            'trn_gudang_jadi.color' => $this->color,
             'trn_gudang_jadi.grade' => $this->grade,
             'dipotong' => $this->dipotong,
             'hasil_pemotongan' => $this->hasil_pemotongan,
@@ -162,6 +161,15 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             ->andFilterWhere(['ilike', 'trn_sc.no', $this->scNo])
             ->andFilterWhere(['ilike', 'trn_gudang_jadi.locs_code', $this->locs_code])
         ;
+
+        if (!empty($this->color)) {
+            $colorTerm = trim($this->color);
+            $query->andWhere([
+                'or',
+                ['ilike', 'trn_gudang_jadi.color', $colorTerm],
+                ['ilike', 'trn_gudang_jadi_opname_pcs.color', $colorTerm],
+            ]);
+        }
 
         if (!empty($this->id_asal)) {
             $term = trim($this->id_asal);

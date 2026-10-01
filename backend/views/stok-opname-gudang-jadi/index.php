@@ -16,8 +16,8 @@ use yii\helpers\Url;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 /* @var $totalPcs int */
 /* @var $totalQty float */
-/* @var $totalVerified int */
-/* @var $totalQtyVerified float */
+/* @var $totalRak int */
+/* @var $listRak array */
 /* @var $totalStock int */
 /* @var $totalQtyStock float */
 /* @var $totalOut int */
@@ -155,11 +155,14 @@ $gridColumns[] = [
         </div>
 
         <div class="col-md-2 col-sm-6 col-xs-12">
-            <div class="info-box bg-teal">
-                <span class="info-box-icon"><i class="fa fa-check-circle"></i></span>
+            <div class="info-box bg-teal" style="cursor: pointer;" data-toggle="collapse" data-target="#listRakCollapse" title="Klik untuk melihat/menyembunyikan daftar nama rak">
+                <span class="info-box-icon"><i class="fa fa-map-marker"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Terverifikasi</span>
-                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalVerified) ?> Roll (<?= Yii::$app->formatter->asDecimal($totalQtyVerified, 2) ?>)</span>
+                    <span class="info-box-text">Total Rak / Lokasi</span>
+                    <span class="info-box-number"><?= Yii::$app->formatter->asInteger($totalRak) ?> Rak</span>
+                    <span class="progress-description" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= Html::encode(implode(', ', $listRak)) ?>">
+                        <?= !empty($listRak) ? Html::encode(implode(', ', $listRak)) : '-' ?>
+                    </span>
                 </div>
             </div>
         </div>
@@ -184,6 +187,28 @@ $gridColumns[] = [
             </div>
         </div>
     </div>
+
+    <?php if (!empty($listRak)): ?>
+        <div class="collapse in" id="listRakCollapse" style="margin-bottom: 15px;">
+            <div class="box box-solid box-default" style="margin-bottom: 0; border: 1px solid #00a65a33;">
+                <div class="box-header with-border" style="padding: 6px 12px; background-color: #f4f8fa;">
+                    <h3 class="box-title" style="font-size: 13px; font-weight: bold;">
+                        <i class="fa fa-map-marker text-teal"></i> Daftar Nama Rak / Lokasi (<?= count($listRak) ?> Rak)
+                    </h3>
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-box-tool" data-toggle="collapse" data-target="#listRakCollapse" title="Sembunyikan / Tampilkan"><i class="fa fa-minus"></i></button>
+                    </div>
+                </div>
+                <div class="box-body" style="padding: 8px 12px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        <?php foreach ($listRak as $rak): ?>
+                            <span class="label label-info" style="font-size: 12px; padding: 4px 8px; font-family: monospace;"><?= Html::encode($rak) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <?= GridView::widget([
         'dataProvider' => $dataProvider,

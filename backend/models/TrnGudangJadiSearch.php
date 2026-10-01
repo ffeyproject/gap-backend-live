@@ -142,7 +142,6 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             'trn_gudang_jadi.created_by' => $this->created_by,
             'trn_gudang_jadi.updated_at' => $this->updated_at,
             'trn_gudang_jadi.updated_by' => $this->updated_by,
-            'trn_gudang_jadi.color' => $this->color,
             'trn_sc.tipe_kontrak' => $this->scOrientasi,
             'trn_sc.currency' => $this->scCurrencyId,
             'trn_sc_greige.process' => $this->scGreigeProcessId,
@@ -160,6 +159,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             ->andFilterWhere(['ilike', 'trn_sc.date', $this->scDate])
             ->andFilterWhere(['ilike', 'mst_greige_group.nama_kain', $this->scGreigeNamaKain])
             ->andFilterWhere(['ilike', 'trn_mo.no', $this->moNo])
+            ->andFilterWhere(['ilike', 'trn_gudang_jadi.color', $this->color])
         ;
 
         //$query->orderBy(['trn_sc.no'=>SORT_ASC]);
