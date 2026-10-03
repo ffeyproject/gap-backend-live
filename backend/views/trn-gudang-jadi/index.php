@@ -320,40 +320,45 @@ if(!empty($searchModel->greige_id)){
             ],
             [
                 'header' => 'Made In Indonesia',
-                'class' => CheckboxColumn::class,
-                'checkboxOptions' => function ($data, $key, $index, $column) {
-                    $no_wo = substr($data->wo->no, -1);
-                    $defaultCheck = ($no_wo == 'L' ? true : false);
-                    return [
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'text-center'],
+                'contentOptions' => ['class' => 'text-center'],
+                'value' => function ($data) {
+                    $no_wo = !empty($data->wo->no) ? substr($data->wo->no, -1) : '';
+                    $defaultCheck = ($no_wo == 'L');
+                    return Html::checkbox('param1_' . $data->id, $defaultCheck, [
                         'class' => 'checkbox-param1',
                         'id' => 'param1-' . $data->id,
-                        'checked' => $defaultCheck,
-                    ];
+                        'value' => 1,
+                    ]);
                 },
             ],
             [
                 'header' => 'Registrasi K3L',
-                'class' => CheckboxColumn::class,
-                'checkboxOptions' => function ($data, $key, $index, $column) {
-                    $no_wo = substr($data->wo->no, -1);
-                    $defaultCheck = ($no_wo == 'L' ? true : false);
-                    return [
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'text-center'],
+                'contentOptions' => ['class' => 'text-center'],
+                'value' => function ($data) {
+                    $no_wo = !empty($data->wo->no) ? substr($data->wo->no, -1) : '';
+                    $defaultCheck = ($no_wo == 'L');
+                    return Html::checkbox('param2_' . $data->id, $defaultCheck, [
                         'class' => 'checkbox-param2',
                         'id' => 'param2-' . $data->id,
-                        'checked' => $defaultCheck,
-                    ];
+                        'value' => 1,
+                    ]);
                 },
             ],
             [
                 'header' => 'Aktifkan Pembulatan Decimal',
-                'class' => CheckboxColumn::class,
-                'checkboxOptions' => function ($data, $key, $index, $column) {
-                    $defaultCheck = true;
-                    return [
+                'format' => 'raw',
+                'headerOptions' => ['class' => 'text-center'],
+                'contentOptions' => ['class' => 'text-center'],
+                'value' => function ($data) {
+                    return Html::checkbox('param3_' . $data->id, true, [
                         'class' => 'checkbox-param3',
                         'id' => 'param3-' . $data->id,
-                        'checked' => $defaultCheck,
-                    ];
+                        'value' => 1,
+                    ]);
                 },
             ],
             [
@@ -500,9 +505,9 @@ $this->registerJs('var baseUrl = ' . json_encode(Yii::$app->urlManager->createUr
 $jsMoveLocation = <<<JS
 window.getSelectedGudangJadiIds = function() {
     var ids = [];
-    $('input[name="selection[]"]:checked').each(function() {
+    $('#GdJadiGrid input[name="selection[]"]:checked').each(function() {
         var v = $(this).val();
-        if (v) {
+        if (v && ids.indexOf(v) === -1) {
             ids.push(v);
         }
     });
@@ -596,6 +601,10 @@ window.submitMoveLocation = function(e) {
 
 $(document).on('change', 'input[name="selection[]"], input[name="selection_all"], .select-on-check-all, .kv-all-select', function() {
     setTimeout(window.syncMoveButtonBadge, 50);
+});
+
+$(document).on('click', '.select-on-check-all, .kv-all-select, input[name="selection_all"]', function() {
+    setTimeout(window.syncMoveButtonBadge, 100);
 });
 
 $(document).on('pjax:success pjax:complete pjax:end', function() {

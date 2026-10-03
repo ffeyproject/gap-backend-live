@@ -96,7 +96,24 @@ class TrnPrintStockController extends Controller
                         }
                     }
 
-                    $unit = (int)$opRow->unit;
+                    $rawUnit = $opRow->unit;
+                    if (is_numeric($rawUnit) && (int)$rawUnit > 0) {
+                        $unit = (int)$rawUnit;
+                    } elseif ($opRow->gudangJadi && !empty($opRow->gudangJadi->unit)) {
+                        $unit = (int)$opRow->gudangJadi->unit;
+                    } else {
+                        $uUpper = strtoupper(trim((string)$rawUnit));
+                        if (strpos($uUpper, 'MET') !== false || $uUpper === 'M') {
+                            $unit = \common\models\ar\MstGreigeGroup::UNIT_METER;
+                        } elseif (strpos($uUpper, 'PC') !== false) {
+                            $unit = \common\models\ar\MstGreigeGroup::UNIT_PCS;
+                        } elseif (strpos($uUpper, 'KG') !== false || strpos($uUpper, 'KILO') !== false) {
+                            $unit = \common\models\ar\MstGreigeGroup::UNIT_KILOGRAM;
+                        } else {
+                            $unit = \common\models\ar\MstGreigeGroup::UNIT_YARD;
+                        }
+                    }
+
                     $qty = (float)$opRow->qty;
                     $grade = (int)$opRow->grade;
                     $itemObj = [

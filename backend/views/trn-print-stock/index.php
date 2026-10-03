@@ -200,15 +200,22 @@ $this->params['breadcrumbs'][] = $this->title;
                             <th class="piece-cell">9</th>
                             <th class="piece-cell">10</th>
                             <th style="width: 6%;">PCS</th>
-                            <th style="width: 8%;">YARD</th>
+                            <th style="width: 8%;">TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (count($dataProvider->models) > 0): 
                             $countTotalPcs = 0;
-                            $grandTotalYard = 0;
+                            $grandTotalByUnit = [];
                             $totalQtyByGrade = [];
                             $stockNotes = !empty($outNotes) ? $outNotes : [];
+
+                            $getUnitLabel = function($unitCode) {
+                                if (is_numeric($unitCode)) {
+                                    return strtoupper(MstGreigeGroup::unitOptions()[$unitCode] ?? 'YARD');
+                                }
+                                return strtoupper(trim((string)$unitCode)) ?: 'YARD';
+                            };
                             
                             foreach ($dataProvider->models as $dP):
                                 $no_wo = array_key_exists('no_wo', $dP) ? $dP['no_wo'] : '';
@@ -244,24 +251,30 @@ $this->params['breadcrumbs'][] = $this->title;
                                         $itemsCount = count($items);
                                         $chunks = array_chunk($items, 10);
                                         $totalRows = count($chunks) ?: 1;
-                                        $sumQtyYard = 0;
+                                        $sumQty = 0;
                                         
                                         foreach ($items as $it) {
-                                            $qYard = $it['qty'];
-                                            if ($it['unit'] == MstGreigeGroup::UNIT_METER) {
-                                                $qYard = Converter::meterToYard($it['qty']);
-                                            }
-                                            $sumQtyYard += $qYard;
+                                            $q = (float)$it['qty'];
+                                            $u = $it['unit'] ?? MstGreigeGroup::UNIT_YARD;
+                                            $uName = $getUnitLabel($u);
                                             
+                                            $sumQty += $q;
                                             $countTotalPcs++;
-                                            $grandTotalYard += $qYard;
+
+                                            if (!isset($grandTotalByUnit[$uName])) {
+                                                $grandTotalByUnit[$uName] = 0;
+                                            }
+                                            $grandTotalByUnit[$uName] += $q;
 
                                             $gVal = $it['grade'];
                                             if (!isset($totalQtyByGrade[$gVal])) {
-                                                $totalQtyByGrade[$gVal] = ['pcs' => 0, 'total_qty' => 0];
+                                                $totalQtyByGrade[$gVal] = ['pcs' => 0, 'units' => []];
                                             }
                                             $totalQtyByGrade[$gVal]['pcs']++;
-                                            $totalQtyByGrade[$gVal]['total_qty'] += $qYard;
+                                            if (!isset($totalQtyByGrade[$gVal]['units'][$uName])) {
+                                                $totalQtyByGrade[$gVal]['units'][$uName] = 0;
+                                            }
+                                            $totalQtyByGrade[$gVal]['units'][$uName] += $q;
                                         }
                                         ?>
                                         
@@ -290,7 +303,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                                         <strong><?= $itemsCount ?></strong>
                                                     </td>
                                                     <td rowspan="<?= $totalRows ?>" class="text-right">
-                                                        <strong><?= number_format($sumQtyYard, 0) ?></strong>
+                                                        <strong><?= number_format($sumQty, 0) ?></strong>
                                                     </td>
                                                 <?php endif; ?>
                                             </tr>
@@ -308,26 +321,60 @@ $this->params['breadcrumbs'][] = $this->title;
 
                 <!-- Summary Box -->
                 <?php if (count($dataProvider->models) > 0): ?>
-                    <table class="summary-box" style="margin-top: 10px; width: 320px;">
-                        <tr>
-                            <td width="100"><strong>TOTAL :</strong></td>
-                            <td width="50" class="text-right"><strong><?= number_format($countTotalPcs) ?></strong></td>
-                            <td width="20" class="text-center">:</td>
-                            <td class="text-right"><strong><?= number_format($grandTotalYard, 0) ?></strong></td>
-                            <td><strong>YARD</strong></td>
-                        </tr>
-                        <?php
-                            ksort($totalQtyByGrade);
-                            foreach ($totalQtyByGrade as $gradeVal => $stat):
+                    <table class="summary-box" style="margin-top: 10px; width: 340px;">
+                        <?php if (count($grandTotalByUnit) <= 1): 
+                            $singleUnitName = !empty($grandTotalByUnit) ? array_keys($grandTotalByUnit)[0] : 'YARD';
+                            $singleTotalQty = !empty($grandTotalByUnit) ? array_values($grandTotalByUnit)[0] : 0;
                         ?>
                             <tr>
-                                <td>GRADE <?= Html::encode(TrnStockGreige::gradeOptions()[$gradeVal]) ?> :</td>
-                                <td class="text-right"><?= number_format($stat['pcs']) ?></td>
-                                <td class="text-center">:</td>
-                                <td class="text-right"><?= number_format($stat['total_qty'], 0) ?></td>
-                                <td>YARD</td>
+                                <td width="100"><strong>TOTAL :</strong></td>
+                                <td width="50" class="text-right"><strong><?= number_format($countTotalPcs) ?></strong></td>
+                                <td width="20" class="text-center">:</td>
+                                <td class="text-right"><strong><?= number_format($singleTotalQty, 0) ?></strong></td>
+                                <td><strong><?= Html::encode($singleUnitName) ?></strong></td>
                             </tr>
-                        <?php endforeach; ?>
+                            <?php
+                                ksort($totalQtyByGrade);
+                                foreach ($totalQtyByGrade as $gradeVal => $stat):
+                                    $gQty = !empty($stat['units'][$singleUnitName]) ? $stat['units'][$singleUnitName] : array_sum($stat['units']);
+                            ?>
+                                <tr>
+                                    <td>GRADE <?= Html::encode(TrnStockGreige::gradeOptions()[$gradeVal] ?? $gradeVal) ?> :</td>
+                                    <td class="text-right"><?= number_format($stat['pcs']) ?></td>
+                                    <td class="text-center">:</td>
+                                    <td class="text-right"><?= number_format($gQty, 0) ?></td>
+                                    <td><?= Html::encode($singleUnitName) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <?php
+                                $grandTotalList = [];
+                                foreach ($grandTotalByUnit as $uName => $totQ) {
+                                    $grandTotalList[] = number_format($totQ, 0) . ' ' . $uName;
+                                }
+                            ?>
+                            <tr>
+                                <td width="100"><strong>TOTAL :</strong></td>
+                                <td width="50" class="text-right"><strong><?= number_format($countTotalPcs) ?></strong></td>
+                                <td width="20" class="text-center">:</td>
+                                <td class="text-right" colspan="2"><strong><?= Html::encode(implode(' / ', $grandTotalList)) ?></strong></td>
+                            </tr>
+                            <?php
+                                ksort($totalQtyByGrade);
+                                foreach ($totalQtyByGrade as $gradeVal => $stat):
+                                    $gList = [];
+                                    foreach ($stat['units'] as $uName => $totQ) {
+                                        $gList[] = number_format($totQ, 0) . ' ' . $uName;
+                                    }
+                            ?>
+                                <tr>
+                                    <td>GRADE <?= Html::encode(TrnStockGreige::gradeOptions()[$gradeVal] ?? $gradeVal) ?> :</td>
+                                    <td class="text-right"><?= number_format($stat['pcs']) ?></td>
+                                    <td class="text-center">:</td>
+                                    <td class="text-right" colspan="2"><?= Html::encode(implode(' / ', $gList)) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </table>
                 <?php endif; ?>
 
