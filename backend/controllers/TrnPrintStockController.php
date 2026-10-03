@@ -43,22 +43,17 @@ class TrnPrintStockController extends Controller
         }
         $subLocParam = trim((string)$subLocParam);
 
-        $sumberDataParam = Yii::$app->request->get('sumber_data', 'auto');
+        $sumberDataParam = Yii::$app->request->get('sumber_data', 'system');
         if (!in_array($sumberDataParam, ['auto', 'opname', 'system'])) {
-            $sumberDataParam = 'auto';
+            $sumberDataParam = 'system';
         }
 
         $results = [];
         $sumberDataUsed = 'system';
 
         if (!empty($subLocParam)) {
-            $opnameCount = TrnGudangJadiOpnamePcs::find()
-                ->where(['locs_code' => $subLocParam])
-                ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
-                ->count();
-
-            // Jika mode opname dipilih atau (mode auto dan lokasi ini memiliki data opname aktif)
-            if ($sumberDataParam === 'opname' || ($sumberDataParam === 'auto' && $opnameCount > 0)) {
+            // Jika mode opname dipilih secara eksplisit
+            if ($sumberDataParam === 'opname') {
                 $sumberDataUsed = 'opname';
                 $opnameRows = TrnGudangJadiOpnamePcs::find()
                     ->alias('t')

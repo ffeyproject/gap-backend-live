@@ -5,7 +5,7 @@ namespace backend\controllers;
 use common\models\ar\{ MstGreigeGroup, MutasiExFinishAlt, MutasiExFinishAltItem };
 use common\models\ar\{ TrnGudangJadi, TrnGudangJadiSearch, TrnWo, TrnScGreige, TrnStockGreige };
 use common\models\ar\{ TrnInspecting, InspectingMklBj, TrnBeliKainJadi, TrnTerimaMakloonProcess, TrnTerimaMakloonFinish, TrnReturBuyer }; //header_source
-use common\models\ar\{ WmsMoveLocationMstr, WmsMoveLocationDtl, TrnGudangJadiOpnamePcs };
+use common\models\ar\{ WmsMoveLocationMstr, WmsMoveLocationDtl, TrnGudangJadiOpnamePcs, MstSubLocation };
 use common\models\User;
 use kartik\mpdf\Pdf;
 use Yii;
@@ -887,6 +887,11 @@ class TrnGudangJadiController extends Controller
             return ['success' => false, 'message' => 'Pilih data yang akan dipindahkan dan tentukan lokasi tujuan.'];
         }
 
+        $targetLocModel = MstSubLocation::findOne(['locs_code' => $targetLocsCode]);
+        if (!$targetLocModel) {
+            return ['success' => false, 'message' => "Lokasi tujuan '{$targetLocsCode}' tidak valid atau tidak terdaftar di master lokasi."];
+        }
+
         $models = TrnGudangJadi::find()->where(['id' => $ids])->all();
         if (empty($models)) {
             return ['success' => false, 'message' => 'Data stock tidak ditemukan.'];
@@ -897,12 +902,21 @@ class TrnGudangJadiController extends Controller
             $moveCode = WmsMoveLocationMstr::generateMoveCode();
             $fromLocations = [];
             foreach ($models as $model) {
-                if (!empty($model->locs_code)) {
-                    $fromLocations[] = $model->locs_code;
+                $c = trim((string)$model->locs_code);
+                if (!empty($c) && $c !== '-') {
+                    $fromLocations[] = $c;
                 }
             }
             $fromLocations = array_values(array_unique($fromLocations));
-            $fromLocStr = !empty($fromLocations) ? implode(', ', $fromLocations) : '-';
+            
+            // Validasi foreign key: kolom move_locs_code_from merujuk ke wms_locs_sub.locs_code
+            $fromLocCode = null;
+            if (count($fromLocations) === 1) {
+                $checkLoc = MstSubLocation::findOne(['locs_code' => $fromLocations[0]]);
+                if ($checkLoc) {
+                    $fromLocCode = $checkLoc->locs_code;
+                }
+            }
 
             // Insert Master
             $moveMstr = new WmsMoveLocationMstr();
@@ -911,8 +925,8 @@ class TrnGudangJadiController extends Controller
             $moveMstr->move_create_at = date('Y-m-d H:i:s');
             $moveMstr->move_create_by = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
             $moveMstr->move_count = count($models);
-            $moveMstr->move_locs_code_from = $fromLocStr;
-            $moveMstr->move_locs_code_to = $targetLocsCode;
+            $moveMstr->move_locs_code_from = $fromLocCode;
+            $moveMstr->move_locs_code_to = $targetLocModel->locs_code;
 
             if (!$moveMstr->save(false)) {
                 throw new \Exception('Gagal menyimpan master perpindahan lokasi.');

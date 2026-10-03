@@ -46,14 +46,13 @@ $this->params['breadcrumbs'][] = $this->title;
                             echo '<label>Sumber Data</label>';
                             echo Select2::widget([
                                 'name' => 'sumber_data',
-                                'value' => $sumber_data,
+                                'value' => !empty($sumber_data) ? $sumber_data : 'system',
                                 'pluginOptions' => [
                                     'allowClear' => false,
                                 ],
                                 'data' => [
-                                    'auto' => 'Otomatis (Stok Opname / Stok Sistem)',
-                                    'opname' => 'Hasil Stok Opname (Fisik / Opname Pcs)',
                                     'system' => 'Stok Gudang Jadi (Sistem)',
+                                    'opname' => 'Hasil Stok Opname (Fisik / Opname Pcs)',
                                 ],
                                 'options' => ['multiple' => false]
                             ]); 
