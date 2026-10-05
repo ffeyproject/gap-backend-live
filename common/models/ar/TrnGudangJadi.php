@@ -367,4 +367,54 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
 
         return null;
     }
+
+    /**
+     * Mendapatkan nama warna yang telah diselesaikan (mengambil dari source_ref atau inspecting jika color kosong/placeholder)
+     * @return string
+     */
+    public function getColorResolved()
+    {
+        if (!empty($this->color) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($this->color)) {
+            return $this->color;
+        }
+
+        if (!empty($this->source_ref)) {
+            $srcColor = TrnGudangJadiOpnamePcs::getColorFromSourceRef($this->source_ref);
+            if (!empty($srcColor) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($srcColor)) {
+                return $srcColor;
+            }
+        }
+
+        if (!empty($this->id_from)) {
+            if ($this->trans_from === 'MKL' || $this->trans_from === 'INS2') {
+                $item = InspectingMklBjItems::findOne($this->id_from);
+                if ($item && $item->inspecting && !empty($item->inspecting->colorName) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($item->inspecting->colorName)) {
+                    return $item->inspecting->colorName;
+                }
+            } else {
+                $item = InspectingItem::findOne($this->id_from);
+                if ($item && $item->inspecting && !empty($item->inspecting->kombinasi) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($item->inspecting->kombinasi)) {
+                    return $item->inspecting->kombinasi;
+                }
+            }
+        }
+
+        $noLot = $this->getNoLot();
+        if (!empty($noLot) && $noLot !== '-') {
+            $lotColor = TrnGudangJadiOpnamePcs::extractColorFromLot($noLot);
+            if (!empty($lotColor) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($lotColor)) {
+                return $lotColor;
+            }
+        }
+
+        if ($this->wo && !empty($this->wo->trnWoColors)) {
+            foreach ($this->wo->trnWoColors as $wc) {
+                if ($wc->moColor && !empty($wc->moColor->color) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($wc->moColor->color)) {
+                    return $wc->moColor->color;
+                }
+            }
+        }
+
+        return !empty($this->color) ? $this->color : '-';
+    }
 }

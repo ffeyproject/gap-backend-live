@@ -347,7 +347,7 @@ class StokOpnameGudangJadiController extends Controller
                     // Dapatkan warna hasil resolve dari opname / QR / Inspecting / No Lot / MO
                     $resolvedColor = $m->getResolvedColor();
 
-                    if (!empty($resolvedColor) && trim($resolvedColor) !== '-') {
+                    if (!empty($resolvedColor) && !TrnGudangJadiOpnamePcs::isPlaceholderColor($resolvedColor)) {
                         $gudangJadi->color = substr(trim($resolvedColor), 0, 255);
                         $gudangJadi->updated_at = time();
                         $gudangJadi->updated_by = $userId;

@@ -129,6 +129,20 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
                 'or',
                 ['ilike', 'COALESCE(gj.color, \'\')', $this->color],
                 ['ilike', 't.qr_code_desc', $this->color],
+                ['ilike', 't.qr_code', $this->color],
+                ['exists', (new \yii\db\Query())
+                    ->select(new \yii\db\Expression('1'))
+                    ->from(['mkl' => 'inspecting_mkl_bj'])
+                    ->leftJoin(['mc' => 'trn_mo_color'], 'mkl.wo_color_id = mc.id')
+                    ->where('mkl.no = gj.source_ref')
+                    ->andWhere(['ilike', 'mc.color', $this->color])
+                ],
+                ['exists', (new \yii\db\Query())
+                    ->select(new \yii\db\Expression('1'))
+                    ->from(['ins' => 'trn_inspecting'])
+                    ->where('ins.no = gj.source_ref')
+                    ->andWhere(['ilike', 'ins.kombinasi', $this->color])
+                ],
             ]);
         }
 

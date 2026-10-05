@@ -206,6 +206,9 @@ if(!empty($searchModel->greige_id)){
             [
                 'attribute' => 'color',
                 'contentOptions' => ['style' => 'white-space: nowrap;'],
+                'value' => function($data) {
+                    return $data->getColorResolved();
+                },
             ],
             // 'color',
             [

@@ -365,6 +365,94 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     }
 
     /**
+     * Memeriksa apakah nilai warna merupakan string placeholder / kosong / invalid (seperti '-', '-/1', '-/2', '/1', dll.)
+     * @param string|null $color
+     * @return bool
+     */
+    public static function isPlaceholderColor($color)
+    {
+        if ($color === null) {
+            return true;
+        }
+        $c = trim((string)$color);
+        if ($c === '' || $c === '-' || $c === '0' || strtolower($c) === 'null') {
+            return true;
+        }
+        // Format placeholder nomor warna tanpa nama: e.g. "-/1", "- / 1", "-/10", "-/", "/1", "/ 2"
+        if (preg_match('/^-\s*\/\s*\d*$/', $c) || preg_match('/^\/\s*\d+$/', $c)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Mengambil warna dari referensi dokumen source_ref (seperti nomor inspecting 8568/FR/22, terima makloon, dll.)
+     * @param string|null $sourceRef
+     * @return string|null
+     */
+    public static function getColorFromSourceRef($sourceRef)
+    {
+        if (empty($sourceRef) || trim($sourceRef) === '-') {
+            return null;
+        }
+
+        $sourceRef = trim($sourceRef);
+
+        // 1. Cek di Inspecting Makloon & Barang Jadi (InspectingMklBj)
+        $mkl = InspectingMklBj::findOne(['no' => $sourceRef]);
+        if ($mkl) {
+            if (!empty($mkl->colorName) && !self::isPlaceholderColor($mkl->colorName)) {
+                return $mkl->colorName;
+            }
+            if ($mkl->woColor && $mkl->woColor->moColor && !empty($mkl->woColor->moColor->color) && !self::isPlaceholderColor($mkl->woColor->moColor->color)) {
+                return $mkl->woColor->moColor->color;
+            }
+            if ($mkl->moColor && !empty($mkl->moColor->color) && !self::isPlaceholderColor($mkl->moColor->color)) {
+                return $mkl->moColor->color;
+            }
+            $lotColor = self::extractColorFromLot($mkl->no_lot);
+            if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
+                return $lotColor;
+            }
+        }
+
+        // 2. Cek di TrnInspecting
+        $ins = TrnInspecting::findOne(['no' => $sourceRef]);
+        if ($ins) {
+            if (!empty($ins->kombinasi) && !self::isPlaceholderColor($ins->kombinasi)) {
+                return $ins->kombinasi;
+            }
+            if ($ins->woColor && $ins->woColor->moColor && !empty($ins->woColor->moColor->color) && !self::isPlaceholderColor($ins->woColor->moColor->color)) {
+                return $ins->woColor->moColor->color;
+            }
+            $lotColor = self::extractColorFromLot($ins->no_lot);
+            if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
+                return $lotColor;
+            }
+        }
+
+        // 3. Cek di Terima Makloon Process
+        $mklP = TrnTerimaMakloonProcess::findOne(['no' => $sourceRef]);
+        if ($mklP && $mklP->woColor && $mklP->woColor->moColor && !empty($mklP->woColor->moColor->color) && !self::isPlaceholderColor($mklP->woColor->moColor->color)) {
+            return $mklP->woColor->moColor->color;
+        }
+
+        // 4. Cek di Terima Makloon Finish
+        $mklF = TrnTerimaMakloonFinish::findOne(['no' => $sourceRef]);
+        if ($mklF && $mklF->woColor && $mklF->woColor->moColor && !empty($mklF->woColor->moColor->color) && !self::isPlaceholderColor($mklF->woColor->moColor->color)) {
+            return $mklF->woColor->moColor->color;
+        }
+
+        // 5. Cek di Beli Kain Jadi
+        $beli = TrnBeliKainJadi::findOne(['no' => $sourceRef]);
+        if ($beli && $beli->woColor && $beli->woColor->moColor && !empty($beli->woColor->moColor->color) && !self::isPlaceholderColor($beli->woColor->moColor->color)) {
+            return $beli->woColor->moColor->color;
+        }
+
+        return null;
+    }
+
+    /**
      * Ekstrak nama warna dari string No. Lot jika warna diisi di lot (contoh: ET 04 / COKLAT TUA -> COKLAT TUA)
      * @param string|null $lot
      * @return string|null
@@ -386,12 +474,17 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
                 }
             }
             $last = end($parts);
-            if (!empty($last)) {
+            if (!empty($last) && !is_numeric($last) && $last !== '-') {
                 return $last;
             }
+            return null;
         }
 
-        return $lot;
+        if (preg_match('/[a-zA-Z]{3,}/', $lot)) {
+            return $lot;
+        }
+
+        return null;
     }
 
     /**
@@ -399,23 +492,72 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
      */
     public function getColor()
     {
-        if ($this->gudangJadi && !empty($this->gudangJadi->color) && trim($this->gudangJadi->color) !== '-') {
+        // 1. Jika Gudang Jadi sudah memiliki color yang valid (bukan placeholder -/1, dll)
+        if ($this->gudangJadi && !empty($this->gudangJadi->color) && !self::isPlaceholderColor($this->gudangJadi->color)) {
             return $this->gudangJadi->color;
         }
+
+        // 2. Ambil dari source_ref master Gudang Jadi (misal 8568/FR/22 -> CREAM)
+        if ($this->gudangJadi && !empty($this->gudangJadi->source_ref)) {
+            $srcColor = self::getColorFromSourceRef($this->gudangJadi->source_ref);
+            if (!empty($srcColor) && !self::isPlaceholderColor($srcColor)) {
+                return $srcColor;
+            }
+        }
+
+        // 3. Ambil dari parsed QR string jika ada field color
         $parsed = $this->getParsedQrData();
-        if (!empty($parsed['color']) && trim($parsed['color']) !== '-') {
+        if (!empty($parsed['color']) && !self::isPlaceholderColor($parsed['color'])) {
             return $parsed['color'];
         }
+
+        // 4. Ambil dari header inspecting berdasarkan parsed ins_id (contoh: INS2-51257-955595 -> ins_id 51257)
+        if (!empty($parsed['ins_id'])) {
+            if ($parsed['ins_type'] === 'MKL' || $parsed['ins_type'] === 'INS2') {
+                $mkl = InspectingMklBj::findOne($parsed['ins_id']);
+                if ($mkl) {
+                    if (!empty($mkl->colorName) && !self::isPlaceholderColor($mkl->colorName)) {
+                        return $mkl->colorName;
+                    }
+                    if ($mkl->woColor && $mkl->woColor->moColor && !empty($mkl->woColor->moColor->color) && !self::isPlaceholderColor($mkl->woColor->moColor->color)) {
+                        return $mkl->woColor->moColor->color;
+                    }
+                    $lotColor = self::extractColorFromLot($mkl->no_lot);
+                    if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
+                        return $lotColor;
+                    }
+                }
+            } else {
+                $ins = TrnInspecting::findOne($parsed['ins_id']);
+                if ($ins) {
+                    if (!empty($ins->kombinasi) && !self::isPlaceholderColor($ins->kombinasi)) {
+                        return $ins->kombinasi;
+                    }
+                    if ($ins->woColor && $ins->woColor->moColor && !empty($ins->woColor->moColor->color) && !self::isPlaceholderColor($ins->woColor->moColor->color)) {
+                        return $ins->woColor->moColor->color;
+                    }
+                    $lotColor = self::extractColorFromLot($ins->no_lot);
+                    if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
+                        return $lotColor;
+                    }
+                }
+            }
+        }
+
+        // 5. Ambil dari inspecting item berdasarkan parsed item_id
         if (!empty($parsed['item_id'])) {
             if ($parsed['ins_type'] === 'MKL' || $parsed['ins_type'] === 'INS2') {
                 $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
                 if ($mklItem && $mklItem->inspecting) {
-                    if (!empty($mklItem->inspecting->colorName) && trim($mklItem->inspecting->colorName) !== '-') {
+                    if (!empty($mklItem->inspecting->colorName) && !self::isPlaceholderColor($mklItem->inspecting->colorName)) {
                         return $mklItem->inspecting->colorName;
+                    }
+                    if ($mklItem->inspecting->woColor && $mklItem->inspecting->woColor->moColor && !empty($mklItem->inspecting->woColor->moColor->color) && !self::isPlaceholderColor($mklItem->inspecting->woColor->moColor->color)) {
+                        return $mklItem->inspecting->woColor->moColor->color;
                     }
                     if (!empty($mklItem->inspecting->no_lot)) {
                         $lotColor = self::extractColorFromLot($mklItem->inspecting->no_lot);
-                        if (!empty($lotColor)) {
+                        if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
                             return $lotColor;
                         }
                     }
@@ -423,41 +565,69 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             } else {
                 $insItem = InspectingItem::findOne($parsed['item_id']);
                 if ($insItem && $insItem->inspecting) {
-                    if (!empty($insItem->inspecting->kombinasi) && trim($insItem->inspecting->kombinasi) !== '-') {
+                    if (!empty($insItem->inspecting->kombinasi) && !self::isPlaceholderColor($insItem->inspecting->kombinasi)) {
                         return $insItem->inspecting->kombinasi;
+                    }
+                    if ($insItem->inspecting->woColor && $insItem->inspecting->woColor->moColor && !empty($insItem->inspecting->woColor->moColor->color) && !self::isPlaceholderColor($insItem->inspecting->woColor->moColor->color)) {
+                        return $insItem->inspecting->woColor->moColor->color;
                     }
                     if (!empty($insItem->inspecting->no_lot)) {
                         $lotColor = self::extractColorFromLot($insItem->inspecting->no_lot);
-                        if (!empty($lotColor)) {
+                        if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
                             return $lotColor;
                         }
                     }
                 }
             }
         }
+
+        // 6. Ambil dari Gudang Jadi id_from & trans_from
+        if ($this->gudangJadi && !empty($this->gudangJadi->id_from)) {
+            if ($this->gudangJadi->trans_from === 'MKL' || $this->gudangJadi->trans_from === 'INS2') {
+                $mklItem = InspectingMklBjItems::findOne($this->gudangJadi->id_from);
+                if ($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->colorName) && !self::isPlaceholderColor($mklItem->inspecting->colorName)) {
+                    return $mklItem->inspecting->colorName;
+                }
+            } else {
+                $insItem = InspectingItem::findOne($this->gudangJadi->id_from);
+                if ($insItem && $insItem->inspecting && !empty($insItem->inspecting->kombinasi) && !self::isPlaceholderColor($insItem->inspecting->kombinasi)) {
+                    return $insItem->inspecting->kombinasi;
+                }
+            }
+        }
+
+        // 7. Ambil dari No Lot
         if ($this->gudangJadi) {
             $gjLot = $this->gudangJadi->getNoLot();
             if (!empty($gjLot) && $gjLot !== '-') {
                 $lotColor = self::extractColorFromLot($gjLot);
-                if (!empty($lotColor)) {
+                if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
                     return $lotColor;
                 }
             }
         }
         if (!empty($parsed['lot'])) {
             $lotColor = self::extractColorFromLot($parsed['lot']);
-            if (!empty($lotColor)) {
+            if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
                 return $lotColor;
             }
         }
+
+        // 8. Ambil dari WO Colors
         $wo = $this->getWo();
         if ($wo && !empty($wo->trnWoColors)) {
             foreach ($wo->trnWoColors as $wc) {
-                if ($wc->moColor && !empty($wc->moColor->color)) {
+                if ($wc->moColor && !empty($wc->moColor->color) && !self::isPlaceholderColor($wc->moColor->color)) {
                     return $wc->moColor->color;
                 }
             }
         }
+
+        // 9. Fallback jika gudang jadi color ada (meskipun placeholder seperti -/1)
+        if ($this->gudangJadi && !empty($this->gudangJadi->color) && trim($this->gudangJadi->color) !== '-') {
+            return $this->gudangJadi->color;
+        }
+
         return '-';
     }
 
@@ -467,6 +637,11 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
      */
     public function getResolvedColor()
     {
+        $color = $this->getColor();
+        if (!self::isPlaceholderColor($color)) {
+            return $color;
+        }
+
         $no_wo = $this->getWoNo();
         $woPrefix = strtoupper(trim(explode('/', (string)$no_wo)[0]));
 
@@ -478,58 +653,11 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             }
         }
 
-        // Ambil warna dari QR code data
-        $parsed = $this->getParsedQrData();
-        if (!empty($parsed['color']) && trim($parsed['color']) !== '-') {
-            return $parsed['color'];
-        }
-
-        // Ambil dari inspecting item
-        if (!empty($parsed['item_id'])) {
-            if ($parsed['ins_type'] === 'MKL' || $parsed['ins_type'] === 'INS2') {
-                $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
-                if ($mklItem && $mklItem->inspecting) {
-                    if (!empty($mklItem->inspecting->colorName) && trim($mklItem->inspecting->colorName) !== '-') {
-                        return $mklItem->inspecting->colorName;
-                    }
-                    if (!empty($mklItem->inspecting->no_lot)) {
-                        $lotColor = self::extractColorFromLot($mklItem->inspecting->no_lot);
-                        if (!empty($lotColor)) {
-                            return $lotColor;
-                        }
-                    }
-                }
-            } else {
-                $insItem = InspectingItem::findOne($parsed['item_id']);
-                if ($insItem && $insItem->inspecting) {
-                    if (!empty($insItem->inspecting->kombinasi) && trim($insItem->inspecting->kombinasi) !== '-') {
-                        return $insItem->inspecting->kombinasi;
-                    }
-                    if (!empty($insItem->inspecting->no_lot)) {
-                        $lotColor = self::extractColorFromLot($insItem->inspecting->no_lot);
-                        if (!empty($lotColor)) {
-                            return $lotColor;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Ambil dari MO/WO Colors
-        $wo = $this->getWo();
-        if ($wo && !empty($wo->trnWoColors)) {
-            foreach ($wo->trnWoColors as $wc) {
-                if ($wc->moColor && !empty($wc->moColor->color)) {
-                    return $wc->moColor->color;
-                }
-            }
-        }
-
         // Fallback dari no_lot
         $lot = $this->getNoLot();
         if (!empty($lot) && trim($lot) !== '-') {
             $lotColor = self::extractColorFromLot($lot);
-            if (!empty($lotColor)) {
+            if (!empty($lotColor) && !self::isPlaceholderColor($lotColor)) {
                 return $lotColor;
             }
             return $lot;
