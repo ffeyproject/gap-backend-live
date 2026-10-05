@@ -7,6 +7,7 @@ use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use common\models\ar\WmsMoveLocationMstr;
 use common\models\ar\WmsMoveLocationDtl;
+use common\models\ar\MstSubLocation;
 use backend\models\TrnGudangJadiOpnamePcsSearch;
 use backend\models\StokOpnameGudangJadiRekapSearch;
 use yii\web\Controller;
@@ -472,17 +473,62 @@ class StokOpnameGudangJadiController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $id = Yii::$app->request->post('id');
-        $location = Yii::$app->request->post('location');
+        $location = trim((string)Yii::$app->request->post('location'));
 
         if (empty($id) || empty($location)) {
             return ['success' => false, 'message' => 'ID Stok Opname dan Lokasi harus diisi.'];
         }
 
-        $model = $this->findModel($id);
-        $model->locs_code = $location;
+        $targetLocModel = MstSubLocation::findOne(['locs_code' => $location]);
+        if (!$targetLocModel) {
+            return ['success' => false, 'message' => "Lokasi '{$location}' tidak valid atau tidak terdaftar di master lokasi."];
+        }
 
-        if ($model->save(false, ['locs_code', 'updated_at', 'updated_by'])) {
-            return ['success' => true, 'message' => 'Lokasi berhasil diperbarui.', 'location' => $model->locs_code];
+        $model = $this->findModel($id);
+        $userId = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+        $now = time();
+
+        $model->locs_code = $targetLocModel->locs_code;
+        $model->updated_at = $now;
+        $model->updated_by = $userId;
+
+        // Cari atau sinkronkan data TrnGudangJadi yang sesuai
+        $gudangJadi = null;
+        if (!empty($model->id_trn_gudang_jadi)) {
+            $gudangJadi = TrnGudangJadi::findOne($model->id_trn_gudang_jadi);
+        }
+
+        if (!$gudangJadi) {
+            $parsed = $model->getParsedQrData();
+            if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
+                $gudangJadi = TrnGudangJadi::findOne(['id_from' => $parsed['item_id'], 'trans_from' => $parsed['ins_type']]);
+            }
+        }
+
+        if (!$gudangJadi && !empty($model->qr_code)) {
+            $parsed = $model->getParsedQrData();
+            $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
+                ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
+                : substr($model->qr_code, 0, 25);
+            $gudangJadi = TrnGudangJadi::findOne(['qr_code' => $cleanQr]);
+            if (!$gudangJadi) {
+                $gudangJadi = TrnGudangJadi::find()->where(['qr_code' => $model->qr_code])->one();
+            }
+        }
+
+        if ($gudangJadi !== null) {
+            $gudangJadi->locs_code = $targetLocModel->locs_code;
+            $gudangJadi->updated_at = $now;
+            $gudangJadi->updated_by = $userId;
+            $gudangJadi->save(false, ['locs_code', 'updated_at', 'updated_by']);
+
+            if (empty($model->id_trn_gudang_jadi)) {
+                $model->id_trn_gudang_jadi = $gudangJadi->id;
+            }
+        }
+
+        if ($model->save(false, ['locs_code', 'id_trn_gudang_jadi', 'updated_at', 'updated_by'])) {
+            return ['success' => true, 'message' => 'Lokasi berhasil diperbarui dan disinkronkan ke Gudang Jadi.', 'location' => $model->locs_code];
         }
 
         return ['success' => false, 'message' => 'Gagal memperbarui lokasi.'];
@@ -503,6 +549,11 @@ class StokOpnameGudangJadiController extends Controller
             return ['success' => false, 'message' => 'Pilih data yang akan dipindahkan dan tentukan lokasi tujuan.'];
         }
 
+        $targetLocModel = MstSubLocation::findOne(['locs_code' => $targetLocsCode]);
+        if (!$targetLocModel) {
+            return ['success' => false, 'message' => "Lokasi tujuan '{$targetLocsCode}' tidak valid atau tidak terdaftar di master lokasi."];
+        }
+
         $models = TrnGudangJadiOpnamePcs::find()->where(['id' => $ids])->all();
         if (empty($models)) {
             return ['success' => false, 'message' => 'Data tidak ditemukan.'];
@@ -513,58 +564,96 @@ class StokOpnameGudangJadiController extends Controller
             $moveCode = WmsMoveLocationMstr::generateMoveCode();
             $fromLocations = [];
             foreach ($models as $model) {
-                if (!empty($model->locs_code)) {
-                    $fromLocations[] = $model->locs_code;
+                $c = trim((string)$model->locs_code);
+                if (!empty($c) && $c !== '-') {
+                    $fromLocations[] = $c;
                 }
             }
             $fromLocations = array_values(array_unique($fromLocations));
-            $fromLocStr = !empty($fromLocations) ? implode(', ', $fromLocations) : '-';
+            
+            // Validasi foreign key: kolom move_locs_code_from merujuk ke wms_locs_sub.locs_code
+            $fromLocCode = null;
+            if (count($fromLocations) === 1) {
+                $checkLoc = MstSubLocation::findOne(['locs_code' => $fromLocations[0]]);
+                if ($checkLoc) {
+                    $fromLocCode = $checkLoc->locs_code;
+                }
+            }
 
             // Insert Master
             $moveMstr = new WmsMoveLocationMstr();
             $moveMstr->move_code = $moveCode;
             $moveMstr->move_date = date('Y-m-d');
             $moveMstr->move_create_at = date('Y-m-d H:i:s');
-            $moveMstr->move_create_by = Yii::$app->user->id;
+            $moveMstr->move_create_by = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
             $moveMstr->move_count = count($models);
-            $moveMstr->move_locs_code_from = $fromLocStr;
-            $moveMstr->move_locs_code_to = $targetLocsCode;
+            $moveMstr->move_locs_code_from = $fromLocCode;
+            $moveMstr->move_locs_code_to = $targetLocModel->locs_code;
 
             if (!$moveMstr->save(false)) {
                 throw new \Exception('Gagal menyimpan master perpindahan lokasi.');
             }
 
+            $userId = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+            $now = time();
+
             foreach ($models as $m) {
+                // Cari atau sinkronkan data TrnGudangJadi yang sesuai
+                $gudangJadi = null;
+                if (!empty($m->id_trn_gudang_jadi)) {
+                    $gudangJadi = TrnGudangJadi::findOne($m->id_trn_gudang_jadi);
+                }
+
+                if (!$gudangJadi) {
+                    $parsed = $m->getParsedQrData();
+                    if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
+                        $gudangJadi = TrnGudangJadi::findOne(['id_from' => $parsed['item_id'], 'trans_from' => $parsed['ins_type']]);
+                    }
+                }
+
+                if (!$gudangJadi && !empty($m->qr_code)) {
+                    $parsed = $m->getParsedQrData();
+                    $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
+                        ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
+                        : substr($m->qr_code, 0, 25);
+                    $gudangJadi = TrnGudangJadi::findOne(['qr_code' => $cleanQr]);
+                    if (!$gudangJadi) {
+                        $gudangJadi = TrnGudangJadi::find()->where(['qr_code' => $m->qr_code])->one();
+                    }
+                }
+
+                // Update locs_code in trn_gudang_jadi
+                if ($gudangJadi !== null) {
+                    $gudangJadi->locs_code = $targetLocModel->locs_code;
+                    $gudangJadi->updated_at = $now;
+                    $gudangJadi->updated_by = $userId;
+                    $gudangJadi->save(false, ['locs_code', 'updated_at', 'updated_by']);
+
+                    if (empty($m->id_trn_gudang_jadi)) {
+                        $m->id_trn_gudang_jadi = $gudangJadi->id;
+                    }
+                }
+
                 // Insert Detail
                 $moveDtl = new WmsMoveLocationDtl();
                 $moveDtl->moved_move_code = $moveCode;
-                $moveDtl->moved_id_stok = $m->id_trn_gudang_jadi ?: $m->id;
+                $moveDtl->moved_id_stok = $gudangJadi ? $gudangJadi->id : ($m->id_trn_gudang_jadi ?: $m->id);
                 if (!$moveDtl->save(false)) {
                     throw new \Exception('Gagal menyimpan detail perpindahan lokasi.');
                 }
 
                 // Update locs_code in opname pcs
-                $m->locs_code = $targetLocsCode;
-                $m->save(false, ['locs_code', 'updated_at', 'updated_by']);
-
-                // If linked to trn_gudang_jadi, update trn_gudang_jadi.locs_code too
-                if (!empty($m->id_trn_gudang_jadi)) {
-                    TrnGudangJadi::updateAll(
-                        [
-                            'locs_code' => $targetLocsCode,
-                            'updated_at' => time(),
-                            'updated_by' => Yii::$app->user->id,
-                        ],
-                        ['id' => $m->id_trn_gudang_jadi]
-                    );
-                }
+                $m->locs_code = $targetLocModel->locs_code;
+                $m->updated_at = $now;
+                $m->updated_by = $userId;
+                $m->save(false, ['locs_code', 'id_trn_gudang_jadi', 'updated_at', 'updated_by']);
             }
 
             $transaction->commit();
 
             return [
                 'success' => true,
-                'message' => 'Berhasil memindahkan ' . count($models) . " item ke lokasi {$targetLocsCode} (No. Move: {$moveCode})."
+                'message' => 'Berhasil memindahkan ' . count($models) . " item ke lokasi {$targetLocModel->locs_code} dan menyinkronkan data Gudang Jadi (No. Move: {$moveCode})."
             ];
         } catch (\Exception $e) {
             $transaction->rollBack();
