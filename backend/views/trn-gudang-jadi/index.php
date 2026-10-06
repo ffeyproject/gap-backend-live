@@ -12,6 +12,8 @@ use yii\web\JsExpression;
 use yii\web\View;
 use yii\web\JqueryAsset;
 
+use mdm\admin\components\Helper;
+
 /* @var $this yii\web\View */
 /* @var $searchModel common\models\ar\TrnGudangJadiSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
@@ -21,10 +23,69 @@ use yii\web\JqueryAsset;
 $this->title = 'Gudang Jadi';
 $this->params['breadcrumbs'][] = $this->title;
 
+$canSyncRak = Helper::checkRoute('sync-rak-opname');
+$canMoveLocation = Helper::checkRoute('move-location');
+
 $greigeNameFilter = '';
 if(!empty($searchModel->greige_id)){
     $greigeNameFilter = MstGreige::findOne($searchModel['greige_id'])->nama_kain;
 }
+
+// Ambil daftar rak yang memiliki data di Gudang Jadi (status Stock) atau Stok Opname (hanya jika punya akses sync rak)
+$rakOptions = [];
+if ($canSyncRak) {
+    $gjRaks = TrnGudangJadi::find()
+        ->select(['locs_code', 'count(*) as total_count'])
+        ->where(['status' => TrnGudangJadi::STATUS_STOCK])
+        ->andWhere(['is not', 'locs_code', null])
+        ->andWhere(['!=', 'locs_code', ''])
+        ->groupBy('locs_code')
+        ->asArray()
+        ->all();
+
+    $opnameRaks = \common\models\ar\TrnGudangJadiOpnamePcs::find()
+        ->select(['locs_code', 'count(*) as total_count'])
+        ->where(['!=', 'status', \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT])
+        ->andWhere(['is not', 'locs_code', null])
+        ->andWhere(['!=', 'locs_code', ''])
+        ->groupBy('locs_code')
+        ->asArray()
+        ->all();
+
+    $gjRakMap = \yii\helpers\ArrayHelper::map($gjRaks, 'locs_code', 'total_count');
+    $opRakMap = \yii\helpers\ArrayHelper::map($opnameRaks, 'locs_code', 'total_count');
+    $allActiveRaks = array_unique(array_merge(array_keys($gjRakMap), array_keys($opRakMap)));
+    sort($allActiveRaks, SORT_NATURAL);
+
+    foreach ($allActiveRaks as $r) {
+        $gjCount = isset($gjRakMap[$r]) ? (int)$gjRakMap[$r] : 0;
+        $opCount = isset($opRakMap[$r]) ? (int)$opRakMap[$r] : 0;
+        $rakOptions[$r] = "{$r} (Gudang Jadi: {$gjCount} roll | Opname: {$opCount} roll)";
+    }
+}
+
+$beforeButtons = Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']);
+if ($canSyncRak) {
+    $beforeButtons .= ' ' . Html::button('<i class="fa fa-refresh"></i> Sync Rak vs Opname', [
+        'class' => 'btn btn-primary',
+        'id' => 'btn-sync-rak-opname',
+        'data-toggle' => 'modal',
+        'data-target' => '#modal-sync-rak',
+        'title' => 'Sinkronkan status stock pada rak tertentu dengan hasil Stok Opname'
+    ]);
+}
+if ($canMoveLocation) {
+    $beforeButtons .= ' ' . Html::button('<i class="fa fa-arrows"></i> Move Location <span class="badge bg-green" id="badge-move-count" style="display: none; margin-left: 5px;">0</span>', [
+        'class' => 'btn btn-warning',
+        'id' => 'btn-move-location',
+        'onclick' => 'openModalMoveLocation(event);',
+        'title' => 'Pindahkan lokasi untuk item yang dipilih'
+    ]);
+}
+$beforeButtons .= ' ' . Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> Add All Items', 'javascript:void(0)', [
+    'class' => 'btn btn-success',
+    'onclick' => 'choseAllItems(); return false;'
+]) . ' <span class="label label-info" style="margin-left: 10px; padding: 6px 10px; font-size: 11px;"><i class="fa fa-info-circle"></i> Baris Biru = Sudah Masuk Stok Opname</span>';
 ?>
 <!-- <div class="trn-gudang-jadi-index" style="overflow-x: auto; width: 100%;"> -->
 <div class="trn-gudang-jadi-index">
@@ -47,18 +108,7 @@ if(!empty($searchModel->greige_id)){
         },
         'panel' => [
             'type' => 'default',
-            'before'=>
-                    Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']).' '.
-                    Html::button('<i class="fa fa-arrows"></i> Move Location <span class="badge bg-green" id="badge-move-count" style="display: none; margin-left: 5px;">0</span>', [
-                        'class' => 'btn btn-warning',
-                        'id' => 'btn-move-location',
-                        'onclick' => 'openModalMoveLocation(event);',
-                        'title' => 'Pindahkan lokasi untuk item yang dipilih'
-                    ]).' '.
-                    Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> Add All Items', 'javascript:void(0)', [
-                        'class' => 'btn btn-success',
-                        'onclick' => 'choseAllItems(); return false;'
-                    ]) . ' <span class="label label-info" style="margin-left: 10px; padding: 6px 10px; font-size: 11px;"><i class="fa fa-info-circle"></i> Baris Biru = Sudah Masuk Stok Opname</span>',
+            'before' => $beforeButtons,
             'after'=>false,
         ],
         'columns' => [
@@ -464,6 +514,7 @@ if(!empty($searchModel->greige_id)){
     </div>
 </div>
 
+<?php if ($canMoveLocation): ?>
 <!-- Modal Move Location Gudang Jadi -->
 <div class="modal fade" id="modal-move-location" tabindex="-1" role="dialog" aria-labelledby="modalMoveLocationLabel">
     <div class="modal-dialog" role="document">
@@ -493,19 +544,354 @@ if(!empty($searchModel->greige_id)){
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<?php if ($canSyncRak): ?>
+<!-- Modal Sync Rak vs Opname -->
+<div class="modal fade" id="modal-sync-rak" tabindex="-1" role="dialog" aria-labelledby="modalSyncRakLabel">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalSyncRakLabel" style="color: #fff;"><i class="fa fa-refresh"></i> Sinkronisasi Stok Rak dengan Stok Opname</h4>
+            </div>
+            <div class="modal-body">
+                <div class="callout callout-info" style="margin-bottom: 15px;">
+                    <h4><i class="fa fa-info-circle"></i> Cara Kerja:</h4>
+                    <p>Pilih rak yang ingin disinkronkan. Sistem akan membandingkan data fisik <strong>Gudang Jadi</strong> (status Stock) dengan data <strong>Stok Opname Pcs</strong> pada rak tersebut. Roll yang <strong>TIDAK DITEMUKAN</strong> di data Stok Opname akan otomatis diubah statusnya menjadi <strong>OUT</strong>.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label class="control-label" for="sync-locs-code">Pilih Rak / Lokasi (Bisa Pilih Banyak): <span class="text-danger">*</span></label>
+                            <div style="margin-bottom: 6px;">
+                                <button type="button" class="btn btn-xs btn-default" id="btn-select-all-raks"><i class="fa fa-check-square-o"></i> Pilih Semua Rak</button>
+                                <button type="button" class="btn btn-xs btn-default" id="btn-deselect-all-raks" style="margin-left: 5px;"><i class="fa fa-square-o"></i> Kosongkan Pilihan</button>
+                                <span class="badge bg-blue" id="badge-sync-rak-count" style="margin-left: 10px; display: none;">0 rak</span>
+                            </div>
+                            <select id="sync-locs-code" name="sync_locs_code[]" class="form-control" multiple="multiple" style="width: 100%;">
+                                <?php foreach ($rakOptions as $rCode => $rLabel): ?>
+                                    <option value="<?= Html::encode($rCode) ?>"><?= Html::encode($rLabel) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4" style="margin-top: 28px;">
+                        <button type="button" class="btn btn-info btn-block" id="btn-check-sync-rak" onclick="checkSyncRakPreview(event);">
+                            <i class="fa fa-search"></i> Cek & Bandingkan Data
+                        </button>
+                    </div>
+                </div>
+
+                <div id="sync-rak-loading" style="display: none; text-align: center; padding: 20px;">
+                    <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
+                    <p style="margin-top: 10px; font-weight: bold;">Sedang membandingkan data rak...</p>
+                </div>
+
+                <!-- Preview Area -->
+                <div id="sync-rak-preview-area" style="display: none; margin-top: 15px;">
+                    <div id="sync-rak-alert-container"></div>
+                    <div class="box box-solid box-default" style="border: 1px solid #d2d6de;">
+                        <div class="box-header with-border bg-gray-light">
+                            <h3 class="box-title" style="font-size: 15px; font-weight: bold;"><i class="fa fa-bar-chart"></i> Ringkasan Perbandingan: <span id="preview-rak-title" class="text-primary"></span></h3>
+                        </div>
+                        <div class="box-body" style="padding: 0;">
+                            <table class="table table-bordered table-striped" style="margin-bottom: 0;">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 55%; font-size: 13px;">Total Stok Aktif di Master Gudang Jadi</th>
+                                        <td class="text-right"><strong id="val-total-gj" style="font-size: 14px;">0</strong> roll (<span id="val-total-gj-qty">0</span> Y/M)</td>
+                                    </tr>
+                                    <tr>
+                                        <th style="font-size: 13px;">Total Roll di Stok Opname (Fisik)</th>
+                                        <td class="text-right text-info"><strong id="val-total-opname" style="font-size: 14px;">0</strong> roll (<span id="val-total-opname-qty">0</span> Y/M)</td>
+                                    </tr>
+                                    <tr class="success">
+                                        <th style="font-size: 13px;"><i class="fa fa-check text-success"></i> Roll Cocok (Tetap Berstatus Stock)</th>
+                                        <td class="text-right text-success"><strong id="val-matched" style="font-size: 14px;">0</strong> roll (<span id="val-matched-qty">0</span> Y/M)</td>
+                                    </tr>
+                                    <tr class="danger">
+                                        <th style="font-size: 13px;"><i class="fa fa-times text-danger"></i> Roll Tidak Ada di Opname (Akan di-OUT-kan)</th>
+                                        <td class="text-right text-danger"><strong id="val-unmatched" style="font-size: 16px;">0</strong> roll (<span id="val-unmatched-qty">0</span> Y/M)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Area for Multiple Raks -->
+                    <div id="sync-rak-breakdown-area" style="display: none; margin-top: 10px;">
+                        <button type="button" class="btn btn-xs btn-default btn-block" id="btn-toggle-breakdown" style="text-align: left; padding: 6px 10px; font-weight: bold;">
+                            <i class="fa fa-list"></i> Lihat Rincian Per-Rak (<span id="count-breakdown-raks">0</span> rak) <i class="fa fa-caret-down pull-right"></i>
+                        </button>
+                        <div id="table-breakdown-wrapper" style="display: none; max-height: 220px; overflow-y: auto; border: 1px solid #ddd; margin-top: 5px;">
+                            <table class="table table-bordered table-condensed table-striped" style="margin-bottom: 0; font-size: 12px;">
+                                <thead>
+                                    <tr class="bg-gray">
+                                        <th>Kode Rak</th>
+                                        <th class="text-center">GJ (Stock)</th>
+                                        <th class="text-center">Opname (Fisik)</th>
+                                        <th class="text-center">Cocok</th>
+                                        <th class="text-center">Akan OUT</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-sync-breakdown"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="group-sync-note" style="margin-top: 15px;">
+                        <label for="sync-rak-note">Catatan Alasan Keluar (Opsional):</label>
+                        <input type="text" id="sync-rak-note" class="form-control" placeholder="Contoh: Tidak ditemukan saat Stok Opname..." />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-danger" id="btn-submit-sync-rak" style="display: none;" onclick="submitSyncRak(event);">
+                    <i class="fa fa-check-circle"></i> Eksekusi & Ubah Status OUT
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.getSelectedSyncRaks = function() {
+    var selectEl = document.getElementById('sync-locs-code');
+    if (!selectEl) return [];
+    var result = [];
+    var options = selectEl.options;
+    for (var i = 0; i < options.length; i++) {
+        if (options[i].selected && options[i].value) {
+            result.push(options[i].value);
+        }
+    }
+    return result;
+};
+
+window.checkSyncRakPreview = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var locsCodes = window.getSelectedSyncRaks();
+    
+    if (locsCodes.length === 0) {
+        alert('Pilih minimal 1 rak / lokasi terlebih dahulu!');
+        return false;
+    }
+
+    var btnCheck = document.getElementById('btn-check-sync-rak');
+    var previewArea = document.getElementById('sync-rak-preview-area');
+    var btnSubmit = document.getElementById('btn-submit-sync-rak');
+    var loadingEl = document.getElementById('sync-rak-loading');
+
+    if (previewArea) previewArea.style.display = 'none';
+    if (btnSubmit) btnSubmit.style.display = 'none';
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (btnCheck) {
+        btnCheck.disabled = true;
+        btnCheck.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memeriksa...';
+    }
+
+    var checkUrl = '<?= Url::to(['trn-gudang-jadi/check-sync-rak']) ?>';
+
+    $.ajax({
+        url: checkUrl,
+        type: 'POST',
+        data: { locs_codes: locsCodes },
+        dataType: 'json',
+        cache: false,
+        success: function(res) {
+            if (btnCheck) {
+                btnCheck.disabled = false;
+                btnCheck.innerHTML = '<i class="fa fa-search"></i> Cek & Bandingkan Data';
+            }
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            if (res && res.success) {
+                document.getElementById('preview-rak-title').innerText = res.locs_title;
+                document.getElementById('val-total-gj').innerText = res.total_gj;
+                document.getElementById('val-total-gj-qty').innerText = res.total_gj_qty;
+                document.getElementById('val-total-opname').innerText = res.total_opname;
+                document.getElementById('val-total-opname-qty').innerText = res.total_opname_qty;
+                document.getElementById('val-matched').innerText = res.matched_count;
+                document.getElementById('val-matched-qty').innerText = res.matched_qty;
+                document.getElementById('val-unmatched').innerText = res.unmatched_count;
+                document.getElementById('val-unmatched-qty').innerText = res.unmatched_qty;
+
+                var noteInput = document.getElementById('sync-rak-note');
+                var noteGroup = document.getElementById('group-sync-note');
+                var alertContainer = document.getElementById('sync-rak-alert-container');
+
+                if (noteInput) {
+                    var rakLabel = res.total_rak === 1 ? ('rak ' + res.locs_codes[0]) : (res.total_rak + ' rak');
+                    noteInput.value = 'Tidak ditemukan saat Stok Opname di ' + rakLabel;
+                }
+
+                if (alertContainer) {
+                    if (res.unmatched_count > 0) {
+                        alertContainer.innerHTML = '<div class="alert alert-warning" style="margin-bottom: 10px;">' +
+                            '<i class="fa fa-exclamation-triangle"></i> Ditemukan <strong>' + res.unmatched_count + ' roll</strong> di master Gudang Jadi yang <strong>TIDAK ADA</strong> di hasil Stok Opname fisik pada ' + res.total_rak + ' rak terpilih. Klik tombol merah di bawah untuk mengubah statusnya menjadi <strong>OUT</strong>.' +
+                            '</div>';
+                        if (noteGroup) noteGroup.style.display = 'block';
+                    } else {
+                        alertContainer.innerHTML = '<div class="alert alert-success" style="margin-bottom: 10px;">' +
+                            '<i class="fa fa-check-circle"></i> <strong>Semua data pada ' + res.total_rak + ' rak terpilih sudah cocok & lengkap!</strong> Sebanyak <strong>' + res.matched_count + ' roll</strong> di master Gudang Jadi sudah terverifikasi ada di Stok Opname fisik. Tidak ada roll yang perlu diubah statusnya menjadi OUT.' +
+                            '</div>';
+                        if (noteGroup) noteGroup.style.display = 'none';
+                    }
+                }
+
+                // Render breakdown if multiple raks
+                var breakdownArea = document.getElementById('sync-rak-breakdown-area');
+                var tbodyBreakdown = document.getElementById('tbody-sync-breakdown');
+                if (breakdownArea && tbodyBreakdown) {
+                    if (res.breakdown && res.breakdown.length > 1) {
+                        document.getElementById('count-breakdown-raks').innerText = res.breakdown.length;
+                        var rowsHtml = '';
+                        for (var b = 0; b < res.breakdown.length; b++) {
+                            var item = res.breakdown[b];
+                            var outStyle = item.unmatched_count > 0 ? 'class="text-danger font-weight-bold"' : 'class="text-muted"';
+                            rowsHtml += '<tr>' +
+                                '<td><strong>' + item.locs_code + '</strong></td>' +
+                                '<td class="text-center">' + item.gj_count + '</td>' +
+                                '<td class="text-center">' + item.op_count + '</td>' +
+                                '<td class="text-center text-success">' + item.matched_count + '</td>' +
+                                '<td class="text-center ' + (item.unmatched_count > 0 ? 'danger text-danger' : '') + '"><strong>' + item.unmatched_count + '</strong></td>' +
+                                '</tr>';
+                        }
+                        tbodyBreakdown.innerHTML = rowsHtml;
+                        breakdownArea.style.display = 'block';
+                    } else {
+                        breakdownArea.style.display = 'none';
+                    }
+                }
+
+                if (previewArea) previewArea.style.display = 'block';
+
+                if (btnSubmit) {
+                    btnSubmit.style.display = 'inline-block';
+                    if (res.unmatched_count > 0) {
+                        btnSubmit.className = 'btn btn-danger';
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="fa fa-check-circle"></i> Eksekusi & Ubah Status OUT (' + res.unmatched_count + ' roll)';
+                    } else {
+                        btnSubmit.className = 'btn btn-success disabled';
+                        btnSubmit.disabled = true;
+                        btnSubmit.innerHTML = '<i class="fa fa-check"></i> Semua Data Cocok (0 Roll OUT)';
+                    }
+                }
+            } else {
+                alert((res && res.message) ? res.message : 'Gagal memeriksa data rak.');
+            }
+        },
+        error: function(xhr, status, err) {
+            if (btnCheck) {
+                btnCheck.disabled = false;
+                btnCheck.innerHTML = '<i class="fa fa-search"></i> Cek & Bandingkan Data';
+            }
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            var errMsg = 'Terjadi kesalahan sistem (' + xhr.status + ')';
+            if (xhr.responseText) {
+                try {
+                    var parsed = JSON.parse(xhr.responseText);
+                    if (parsed.message) errMsg += ': ' + parsed.message;
+                } catch(errJson) {
+                    errMsg += ': ' + xhr.responseText.substring(0, 150);
+                }
+            }
+            alert(errMsg);
+        }
+    });
+    return false;
+};
+
+window.submitSyncRak = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var locsCodes = window.getSelectedSyncRaks();
+    var unmatchedEl = document.getElementById('val-unmatched');
+    var unmatchedCount = unmatchedEl ? unmatchedEl.innerText : '0';
+    var noteEl = document.getElementById('sync-rak-note');
+    var note = noteEl ? noteEl.value.trim() : '';
+
+    if (locsCodes.length === 0) {
+        alert('Pilih minimal 1 rak / lokasi terlebih dahulu!');
+        return false;
+    }
+
+    var rakText = locsCodes.length === 1 ? ('rak ' + locsCodes[0]) : (locsCodes.length + ' rak terpilih');
+    var confirmMsg = 'PERINGATAN SINKRONISASI ' + rakText.toUpperCase() + ':\n\n' +
+        'Sebanyak ' + unmatchedCount + ' roll pada master Gudang Jadi yang TIDAK ADA di Stok Opname akan diubah statusnya menjadi OUT.\n\n' +
+        'Apakah Anda yakin ingin melanjutkan proses ini?';
+
+    if (!confirm(confirmMsg)) {
+        return false;
+    }
+
+    var btnSubmit = document.getElementById('btn-submit-sync-rak');
+    var oldText = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+    }
+
+    var syncUrl = '<?= Url::to(['trn-gudang-jadi/sync-rak-opname']) ?>';
+
+    $.ajax({
+        url: syncUrl,
+        type: 'POST',
+        data: {
+            locs_codes: locsCodes,
+            note: note
+        },
+        dataType: 'json',
+        success: function(res) {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = oldText;
+            }
+            if (res && res.success) {
+                $('#modal-sync-rak').modal('hide');
+                alert(res.message);
+                window.location.reload();
+            } else {
+                alert((res && res.message) ? res.message : 'Gagal memproses sinkronisasi rak.');
+            }
+        },
+        error: function(xhr, status, err) {
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = oldText;
+            }
+            alert('Terjadi kesalahan saat memproses data: ' + (xhr.responseText || err));
+        }
+    });
+    return false;
+};
+</script>
+<?php endif; ?>
 
 <?php
 $this->registerJsVar('selectedItems', []);
 $this->registerJsVar('wmsLocationsUrl', Url::to(['ajax/wms-locations']));
 $this->registerJsVar('saveLocationUrl', Url::to(['trn-gudang-jadi/save-location']));
 $this->registerJsVar('setStockKeluarUrl', Url::to(['trn-gudang-jadi/set-stock-keluar']));
-$this->registerJsVar('moveLocationUrl', Url::to(['trn-gudang-jadi/move-location']));
+if ($canMoveLocation) {
+    $this->registerJsVar('moveLocationUrl', Url::to(['trn-gudang-jadi/move-location']));
+}
+if ($canSyncRak) {
+    $this->registerJsVar('checkSyncRakUrl', Url::to(['trn-gudang-jadi/check-sync-rak']));
+    $this->registerJsVar('syncRakOpnameUrl', Url::to(['trn-gudang-jadi/sync-rak-opname']));
+}
 
 $this->registerJs($this->renderFile(__DIR__.'/js/index.js'), View::POS_END);
 // Define a global JavaScript variable with the base URL
 $this->registerJs('var baseUrl = ' . json_encode(Yii::$app->urlManager->createUrl(['/'])), View::POS_HEAD);
 
-$jsMoveLocation = <<<JS
+if ($canMoveLocation) {
+    $jsMoveLocation = <<<JS
 window.getSelectedGudangJadiIds = function() {
     var ids = [];
     $('#GdJadiGrid input[name="selection[]"]:checked').each(function() {
@@ -620,7 +1006,8 @@ $(document).on('click', '#btn-move-location', function(e) {
 
 window.syncMoveButtonBadge();
 JS;
-$this->registerJs($jsMoveLocation, View::POS_END);
+    $this->registerJs($jsMoveLocation, View::POS_END);
+}
 
 $jsStockKeluar = <<<JS
 function openModalStockKeluar(e, id) {
@@ -690,4 +1077,77 @@ function submitStockKeluar() {
 }
 JS;
 $this->registerJs($jsStockKeluar, View::POS_END);
+
+if ($canSyncRak) {
+    $jsSyncRak = <<<JS
+$('#modal-sync-rak').on('show.bs.modal', function() {
+    $('#sync-rak-preview-area').hide();
+    $('#btn-submit-sync-rak').hide();
+    $('#sync-rak-loading').hide();
+});
+
+$('#modal-sync-rak').on('shown.bs.modal', function() {
+    if ($.fn.select2) {
+        if (!$('#sync-locs-code').hasClass("select2-hidden-accessible")) {
+            $('#sync-locs-code').select2({
+                placeholder: 'Pilih satu atau beberapa rak...',
+                dropdownParent: $('#modal-sync-rak'),
+                width: '100%',
+                closeOnSelect: false
+            });
+        }
+    }
+});
+
+$(document).on('click', '#btn-select-all-raks', function(e) {
+    if (e) e.preventDefault();
+    var allVals = [];
+    $('#sync-locs-code option').each(function() {
+        var v = $(this).val();
+        if (v) allVals.push(v);
+    });
+    $('#sync-locs-code').val(allVals).trigger('change');
+});
+
+$(document).on('click', '#btn-deselect-all-raks', function(e) {
+    if (e) e.preventDefault();
+    $('#sync-locs-code').val([]).trigger('change');
+});
+
+$(document).on('change', '#sync-locs-code', function(e) {
+    var val = $(this).val() || [];
+    var count = Array.isArray(val) ? val.length : (val ? 1 : 0);
+    var \$badge = $('#badge-sync-rak-count');
+    if (count > 0) {
+        \$badge.text(count + ' rak dipilih').show();
+    } else {
+        \$badge.hide();
+        $('#sync-rak-preview-area').hide();
+        $('#btn-submit-sync-rak').hide();
+    }
+});
+
+$(document).on('click', '#btn-toggle-breakdown', function(e) {
+    if (e) e.preventDefault();
+    var \$wrapper = $('#table-breakdown-wrapper');
+    var \$icon = $(this).find('.pull-right');
+    if (\$wrapper.is(':visible')) {
+        \$wrapper.slideUp();
+        \$icon.removeClass('fa-caret-up').addClass('fa-caret-down');
+    } else {
+        \$wrapper.slideDown();
+        \$icon.removeClass('fa-caret-down').addClass('fa-caret-up');
+    }
+});
+
+$(document).on('click', '#btn-check-sync-rak', function(e) {
+    window.checkSyncRakPreview(e);
+});
+
+$(document).on('click', '#btn-submit-sync-rak', function(e) {
+    window.submitSyncRak(e);
+});
+JS;
+    $this->registerJs($jsSyncRak, View::POS_END);
+}
 ?>

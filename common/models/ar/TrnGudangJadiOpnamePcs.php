@@ -815,96 +815,14 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
             ];
         }
 
-        // 2. Jika belum ada, buat record baru di TrnGudangJadi
-        $wo = $this->getWo();
-        $insItem = null;
-        $mklItem = null;
-
-        if (!empty($parsed['item_id'])) {
-            if ($parsed['ins_type'] === 'MKL') {
-                $mklItem = InspectingMklBjItems::findOne($parsed['item_id']);
-            } else {
-                $insItem = InspectingItem::findOne($parsed['item_id']);
-            }
-        }
-
-        if (!$wo) {
-            return [
-                'success' => false,
-                'action' => 'failed',
-                'gj_id' => null,
-                'message' => "Gagal: Nomor WO tidak dapat diidentifikasi dari QR Code ({$this->qr_code})."
-            ];
-        }
-
-        $color = !empty($parsed['color']) ? $parsed['color'] : ($insItem && $insItem->inspecting ? $insItem->inspecting->kombinasi : ($mklItem && $mklItem->inspecting ? $mklItem->inspecting->colorName : '-'));
-        $sourceRef = ($insItem && $insItem->inspecting && !empty($insItem->inspecting->no)) ? $insItem->inspecting->no : (($mklItem && $mklItem->inspecting && !empty($mklItem->inspecting->no)) ? $mklItem->inspecting->no : ('Opname ' . $this->opname_code));
-        $source = ($parsed['ins_type'] === 'MKL') ? TrnGudangJadi::SOURCE_MAKLOON_FINISH : TrnGudangJadi::SOURCE_PACKING;
-        $grade = (int)$this->grade ?: TrnStockGreige::GRADE_A;
-        $jenisGudang = ($grade == TrnStockGreige::GRADE_B) ? TrnGudangJadi::JENIS_GUDANG_GRADE_B : TrnGudangJadi::JENIS_GUDANG_LOKAL;
-
-        $cleanQr = (!empty($parsed['ins_type']) && !empty($parsed['ins_id']) && !empty($parsed['item_id']))
-            ? ($parsed['ins_type'] . '-' . $parsed['ins_id'] . '-' . $parsed['item_id'])
-            : substr('OPN-' . $this->id . '-' . $this->opname_code, 0, 25);
-
-        $unitVal = 1;
-        if (is_numeric($this->unit)) {
-            $unitVal = (int)$this->unit;
-        } elseif ($insItem && $insItem->inspecting) {
-            $unitVal = (int)$insItem->inspecting->unit;
-        } elseif ($mklItem && $mklItem->inspecting) {
-            $unitVal = (int)($mklItem->inspecting->satuan ?: $mklItem->inspecting->unit);
-        }
-
-        $qrDesc = !empty($this->qr_code_desc) ? substr($this->qr_code_desc, 0, 255) : substr($this->qr_code, 0, 255);
-
-        $newGj = new TrnGudangJadi([
-            'jenis_gudang' => $jenisGudang,
-            'wo_id' => $wo->id,
-            'source' => $source,
-            'source_ref' => substr($sourceRef, 0, 255),
-            'unit' => $unitVal,
-            'qty' => (float)$this->qty,
-            'date' => date('Y-m-d'),
-            'status' => TrnGudangJadi::STATUS_STOCK,
-            'note' => 'Dibuat otomatis dari Stok Opname ' . $this->opname_code,
-            'color' => substr($color, 0, 255),
-            'grade' => $grade,
-            'locs_code' => substr($this->locs_code ?: 'TRANSIT', 0, 25),
-            'trans_from' => $parsed['ins_type'] ?: 'INS',
-            'id_from' => $parsed['item_id'] ?: null,
-            'qr_code' => $cleanQr,
-            'qr_code_desc' => $qrDesc,
-            'created_by' => $userId,
-            'updated_by' => $userId,
-        ]);
-
-        $newGj->detachBehaviors();
-        $newGj->created_at = time();
-        $newGj->updated_at = time();
-        $newGj->created_by = $userId;
-        $newGj->updated_by = $userId;
-
-        if (!$newGj->save(false)) {
-            return [
-                'success' => false,
-                'action' => 'failed',
-                'gj_id' => null,
-                'message' => "Gagal menyimpan record baru di Gudang Jadi untuk Opname #{$this->id}."
-            ];
-        }
-
-        $this->id_trn_gudang_jadi = $newGj->id;
-        $this->updated_at = time();
-        $this->updated_by = $userId;
-        $this->save(false);
-
+        // 2. Jika belum ada di master Gudang Jadi, jangan buat record baru otomatis (dinonaktifkan)
         return [
-            'success' => true,
-            'action' => 'created',
-            'gj_id' => $newGj->id,
-            'message' => "Stock Gudang Jadi #{$newGj->id} berhasil dibuat & dihubungkan ke Opname #{$this->id}."
+            'success' => false,
+            'action' => 'failed',
+            'gj_id' => null,
+            'message' => "Gagal: Data Stock Gudang Jadi asal tidak ditemukan untuk Opname #{$this->id} ({$this->qr_code}). Pembuatan stock otomatis dinonaktifkan."
         ];
     }
 }
+
 

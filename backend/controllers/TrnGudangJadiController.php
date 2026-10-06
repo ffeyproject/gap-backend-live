@@ -38,6 +38,7 @@ class TrnGudangJadiController extends Controller
                     'set-stock-keluar' => ['POST'],
                     'save-location' => ['POST'],
                     'move-location' => ['POST'],
+                    'sync-rak-opname' => ['POST'],
                 ],
             ],
         ];
@@ -976,4 +977,320 @@ class TrnGudangJadiController extends Controller
         }
     }
 
+    /**
+     * Preview / Cek perbandingan data fisik Gudang Jadi vs Stok Opname per Rak (bisa satu atau banyak rak).
+     * @return array
+     */
+    public function actionCheckSyncRak($locs_codes = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        if (empty($locs_codes)) {
+            $locs_codes = Yii::$app->request->get('locs_codes', Yii::$app->request->post('locs_codes'));
+        }
+        if (empty($locs_codes)) {
+            $locs_codes = Yii::$app->request->get('locs_code', Yii::$app->request->post('locs_code'));
+        }
+
+        if (empty($locs_codes)) {
+            return ['success' => false, 'message' => 'Pilih minimal 1 rak terlebih dahulu.'];
+        }
+
+        if (!is_array($locs_codes)) {
+            $locs_codes = array_map('trim', explode(',', (string)$locs_codes));
+        }
+        $locs_codes = array_values(array_filter(array_map('trim', $locs_codes)));
+
+        if (empty($locs_codes)) {
+            return ['success' => false, 'message' => 'Pilih minimal 1 rak terlebih dahulu.'];
+        }
+
+        // 1. Ambil data TrnGudangJadi aktif di semua rak terpilih
+        $gjRows = TrnGudangJadi::find()
+            ->select(['id', 'locs_code', 'qty', 'qr_code', 'trans_from', 'id_from'])
+            ->where(['in', 'locs_code', $locs_codes])
+            ->andWhere(['status' => TrnGudangJadi::STATUS_STOCK])
+            ->asArray()
+            ->all();
+
+        $totalGjCount = count($gjRows);
+        $totalGjQty = 0;
+        foreach ($gjRows as $gj) {
+            $totalGjQty += (float)$gj['qty'];
+        }
+
+        // 2. Ambil data Stok Opname Pcs di semua rak terpilih (status bukan OUT)
+        $opnameRows = TrnGudangJadiOpnamePcs::find()
+            ->select(['id', 'locs_code', 'id_trn_gudang_jadi', 'qr_code', 'qr_code_desc', 'qty'])
+            ->where(['in', 'locs_code', $locs_codes])
+            ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->asArray()
+            ->all();
+
+        $totalOpnameCount = count($opnameRows);
+        $totalOpnameQty = 0;
+
+        // Bangun lookup set dari data opname
+        $opGjIds = [];
+        $opQrCodes = [];
+        $opFromKeys = [];
+
+        foreach ($opnameRows as $op) {
+            $totalOpnameQty += (float)$op['qty'];
+
+            if (!empty($op['id_trn_gudang_jadi'])) {
+                $opGjIds[(int)$op['id_trn_gudang_jadi']] = true;
+            }
+            if (!empty($op['qr_code'])) {
+                $opQrCodes[strtoupper(trim($op['qr_code']))] = true;
+            }
+
+            $parsed = TrnGudangJadiOpnamePcs::parseQrData($op['qr_code'], $op['qr_code_desc']);
+            if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
+                $opFromKeys[$parsed['ins_type'] . '_' . $parsed['item_id']] = true;
+            }
+        }
+
+        // 3. Bandingkan data Gudang Jadi dengan Opname
+        $matchedCount = 0;
+        $matchedQty = 0;
+        $unmatchedCount = 0;
+        $unmatchedQty = 0;
+
+        // Breakdown per rak
+        $rakBreakdown = [];
+        foreach ($locs_codes as $rc) {
+            $rakBreakdown[$rc] = [
+                'locs_code' => $rc,
+                'gj_count' => 0,
+                'gj_qty' => 0,
+                'op_count' => 0,
+                'op_qty' => 0,
+                'matched_count' => 0,
+                'unmatched_count' => 0,
+            ];
+        }
+
+        foreach ($opnameRows as $op) {
+            $rc = $op['locs_code'];
+            if (isset($rakBreakdown[$rc])) {
+                $rakBreakdown[$rc]['op_count']++;
+                $rakBreakdown[$rc]['op_qty'] += (float)$op['qty'];
+            }
+        }
+
+        foreach ($gjRows as $gj) {
+            $rc = $gj['locs_code'];
+            if (isset($rakBreakdown[$rc])) {
+                $rakBreakdown[$rc]['gj_count']++;
+                $rakBreakdown[$rc]['gj_qty'] += (float)$gj['qty'];
+            }
+
+            $isMatched = false;
+            if (isset($opGjIds[(int)$gj['id']])) {
+                $isMatched = true;
+            } elseif (!empty($gj['qr_code']) && isset($opQrCodes[strtoupper(trim($gj['qr_code']))])) {
+                $isMatched = true;
+            } elseif (!empty($gj['trans_from']) && !empty($gj['id_from']) && isset($opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']])) {
+                $isMatched = true;
+            }
+
+            if ($isMatched) {
+                $matchedCount++;
+                $matchedQty += (float)$gj['qty'];
+                if (isset($rakBreakdown[$rc])) {
+                    $rakBreakdown[$rc]['matched_count']++;
+                }
+            } else {
+                $unmatchedCount++;
+                $unmatchedQty += (float)$gj['qty'];
+                if (isset($rakBreakdown[$rc])) {
+                    $rakBreakdown[$rc]['unmatched_count']++;
+                }
+            }
+        }
+
+        $locsTitle = count($locs_codes) === 1 
+            ? 'Rak ' . $locs_codes[0] 
+            : count($locs_codes) . ' Rak Terpilih (' . implode(', ', array_slice($locs_codes, 0, 5)) . (count($locs_codes) > 5 ? ', ...' : '') . ')';
+
+        return [
+            'success' => true,
+            'locs_codes' => $locs_codes,
+            'locs_title' => $locsTitle,
+            'total_rak' => count($locs_codes),
+            'total_gj' => $totalGjCount,
+            'total_gj_qty' => Yii::$app->formatter->asDecimal($totalGjQty),
+            'total_opname' => $totalOpnameCount,
+            'total_opname_qty' => Yii::$app->formatter->asDecimal($totalOpnameQty),
+            'matched_count' => $matchedCount,
+            'matched_qty' => Yii::$app->formatter->asDecimal($matchedQty),
+            'unmatched_count' => $unmatchedCount,
+            'unmatched_qty' => Yii::$app->formatter->asDecimal($unmatchedQty),
+            'breakdown' => array_values($rakBreakdown),
+        ];
+    }
+
+    /**
+     * Eksekusi sinkronisasi status rak: mengubah status item Gudang Jadi yang tidak ditemukan di Opname menjadi OUT.
+     * @return array
+     */
+    public function actionSyncRakOpname()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $locs_codes = Yii::$app->request->post('locs_codes', Yii::$app->request->post('locs_code'));
+        $customNote = trim((string)Yii::$app->request->post('note'));
+
+        if (empty($locs_codes)) {
+            return ['success' => false, 'message' => 'Pilih minimal 1 kode rak terlebih dahulu.'];
+        }
+
+        if (!is_array($locs_codes)) {
+            $locs_codes = array_map('trim', explode(',', (string)$locs_codes));
+        }
+        $locs_codes = array_values(array_filter(array_map('trim', $locs_codes)));
+
+        if (empty($locs_codes)) {
+            return ['success' => false, 'message' => 'Pilih minimal 1 kode rak terlebih dahulu.'];
+        }
+
+        // 1. Ambil data TrnGudangJadi aktif di semua rak ini
+        $gjRows = TrnGudangJadi::find()
+            ->select(['id', 'locs_code', 'qty', 'qr_code', 'trans_from', 'id_from'])
+            ->where(['in', 'locs_code', $locs_codes])
+            ->andWhere(['status' => TrnGudangJadi::STATUS_STOCK])
+            ->asArray()
+            ->all();
+
+        if (empty($gjRows)) {
+            return ['success' => false, 'message' => "Tidak ada data stock aktif di rak terpilih."];
+        }
+
+        // 2. Ambil data Stok Opname Pcs di rak ini (status bukan OUT)
+        $opnameRows = TrnGudangJadiOpnamePcs::find()
+            ->select(['id', 'id_trn_gudang_jadi', 'qr_code', 'qr_code_desc'])
+            ->where(['in', 'locs_code', $locs_codes])
+            ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
+            ->asArray()
+            ->all();
+
+        // Bangun lookup set dari data opname
+        $opGjIds = [];
+        $opQrCodes = [];
+        $opFromKeys = [];
+
+        foreach ($opnameRows as $op) {
+            if (!empty($op['id_trn_gudang_jadi'])) {
+                $opGjIds[(int)$op['id_trn_gudang_jadi']] = (int)$op['id'];
+            }
+            if (!empty($op['qr_code'])) {
+                $qrKey = strtoupper(trim($op['qr_code']));
+                $opQrCodes[$qrKey] = (int)$op['id'];
+            }
+
+            $parsed = TrnGudangJadiOpnamePcs::parseQrData($op['qr_code'], $op['qr_code_desc']);
+            if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
+                $opFromKeys[$parsed['ins_type'] . '_' . $parsed['item_id']] = (int)$op['id'];
+            }
+        }
+
+        // 3. Pisahkan item yang match vs yang tidak ada di opname
+        $matchedPairs = []; // [op_id => gj_id]
+        $unmatchedGjIds = [];
+        $unmatchedQty = 0;
+
+        foreach ($gjRows as $gj) {
+            $matchedOpId = null;
+            $gjId = (int)$gj['id'];
+
+            if (isset($opGjIds[$gjId])) {
+                $matchedOpId = $opGjIds[$gjId];
+            } elseif (!empty($gj['qr_code']) && isset($opQrCodes[strtoupper(trim($gj['qr_code']))])) {
+                $matchedOpId = $opQrCodes[strtoupper(trim($gj['qr_code']))];
+            } elseif (!empty($gj['trans_from']) && !empty($gj['id_from']) && isset($opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']])) {
+                $matchedOpId = $opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']];
+            }
+
+            if ($matchedOpId !== null) {
+                $matchedPairs[$matchedOpId] = $gjId;
+            } else {
+                $unmatchedGjIds[] = $gjId;
+                $unmatchedQty += (float)$gj['qty'];
+            }
+        }
+
+        if (empty($unmatchedGjIds)) {
+            return [
+                'success' => true,
+                'message' => "Semua data stock (" . count($matchedPairs) . " roll) pada rak terpilih sudah sesuai dan terdaftar di Stok Opname. Tidak ada roll yang diubah statusnya menjadi OUT."
+            ];
+        }
+
+        $userId = (Yii::$app->user && !Yii::$app->user->isGuest) ? Yii::$app->user->id : 1;
+        $now = time();
+        $dateStr = date('d/m/Y');
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            $rakSummaryStr = count($locs_codes) === 1 ? "rak {$locs_codes[0]}" : count($locs_codes) . " rak";
+            $reason = !empty($customNote) 
+                ? $customNote 
+                : "Tidak ditemukan saat Stok Opname di {$rakSummaryStr}";
+
+            $formattedNote = "BARANG KELUAR: {$reason} (TGL {$dateStr})";
+
+            // Update in chunks of 500
+            $chunkSize = 500;
+            $chunks = array_chunk($unmatchedGjIds, $chunkSize);
+            foreach ($chunks as $chunk) {
+                Yii::$app->db->createCommand(
+                    "UPDATE trn_gudang_jadi 
+                     SET status = :status, 
+                         note = CASE WHEN note IS NULL OR note = '' THEN :note ELSE note || ' | ' || :note END, 
+                         updated_at = :updated_at, 
+                         updated_by = :updated_by 
+                     WHERE id IN (" . implode(',', array_map('intval', $chunk)) . ")"
+                )->bindValues([
+                    ':status' => TrnGudangJadi::STATUS_OUT,
+                    ':note' => $formattedNote,
+                    ':updated_at' => $now,
+                    ':updated_by' => $userId,
+                ])->execute();
+            }
+
+            // Link opname pcs that matched but had empty id_trn_gudang_jadi
+            foreach ($matchedPairs as $opId => $gjId) {
+                Yii::$app->db->createCommand(
+                    "UPDATE trn_gudang_jadi_opname_pcs 
+                     SET id_trn_gudang_jadi = :gj_id, updated_at = :updated_at, updated_by = :updated_by 
+                     WHERE id = :op_id AND (id_trn_gudang_jadi IS NULL OR id_trn_gudang_jadi = 0)"
+                )->bindValues([
+                    ':gj_id' => $gjId,
+                    ':updated_at' => $now,
+                    ':updated_by' => $userId,
+                    ':op_id' => $opId,
+                ])->execute();
+            }
+
+            $transaction->commit();
+
+            $qtyFormatted = Yii::$app->formatter->asDecimal($unmatchedQty);
+            $outCount = count($unmatchedGjIds);
+            $stayCount = count($matchedPairs);
+
+            return [
+                'success' => true,
+                'message' => "Berhasil menyinkronkan {$rakSummaryStr}: {$outCount} roll ({$qtyFormatted} Y/M) berhasil diubah statusnya menjadi OUT karena tidak ada di Stok Opname, dan {$stayCount} roll tetap aktif sebagai Stock.",
+                'out_count' => $outCount,
+                'stay_count' => $stayCount,
+            ];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat proses sinkronisasi rak: ' . $e->getMessage()
+            ];
+        }
+    }
 }

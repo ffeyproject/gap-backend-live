@@ -209,9 +209,9 @@ class StokOpnameGudangJadiController extends Controller
             }
         }
 
-        $msg = "Sinkronisasi Stock Gudang Jadi selesai: {$createdCount} stock baru dibuat di Gudang Jadi, {$linkedCount} dihubungkan ke stock yang sudah ada.";
+        $msg = "Sinkronisasi Stock Gudang Jadi selesai: {$linkedCount} data berhasil dihubungkan ke stock Gudang Jadi yang sudah ada.";
         if ($failedCount > 0) {
-            $msg .= " ({$failedCount} data gagal diproses: " . implode(', ', $failedMessages) . ")";
+            $msg .= " ({$failedCount} data tidak ditemukan di master Gudang Jadi dan dilewati).";
             Yii::$app->session->setFlash('warning', $msg);
         } else {
             Yii::$app->session->setFlash('success', $msg);
