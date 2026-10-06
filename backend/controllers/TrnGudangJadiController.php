@@ -983,7 +983,9 @@ class TrnGudangJadiController extends Controller
      */
     public function actionCheckSyncRak($locs_codes = null)
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
+        if (Yii::$app->response instanceof Response) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+        }
 
         if (empty($locs_codes)) {
             $locs_codes = Yii::$app->request->get('locs_codes', Yii::$app->request->post('locs_codes'));
@@ -1030,28 +1032,85 @@ class TrnGudangJadiController extends Controller
         $totalOpnameCount = count($opnameRows);
         $totalOpnameQty = 0;
 
-        // Bangun lookup set dari data opname
-        $opGjIds = [];
-        $opQrCodes = [];
-        $opFromKeys = [];
+        // Bangun lookup index dari data opname (1 Opname hanya boleh di-match ke 1 Gudang Jadi)
+        $opByGjId = [];
+        $opByQr = [];
+        $opByFrom = [];
 
         foreach ($opnameRows as $op) {
+            $opId = (int)$op['id'];
             $totalOpnameQty += (float)$op['qty'];
 
             if (!empty($op['id_trn_gudang_jadi'])) {
-                $opGjIds[(int)$op['id_trn_gudang_jadi']] = true;
+                $opByGjId[(int)$op['id_trn_gudang_jadi']][] = $opId;
             }
             if (!empty($op['qr_code'])) {
-                $opQrCodes[strtoupper(trim($op['qr_code']))] = true;
+                $opByQr[strtoupper(trim($op['qr_code']))][] = $opId;
             }
 
             $parsed = TrnGudangJadiOpnamePcs::parseQrData($op['qr_code'], $op['qr_code_desc']);
             if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
-                $opFromKeys[$parsed['ins_type'] . '_' . $parsed['item_id']] = true;
+                $opByFrom[$parsed['ins_type'] . '_' . $parsed['item_id']][] = $opId;
             }
         }
 
-        // 3. Bandingkan data Gudang Jadi dengan Opname
+        // 3. Pencocokan 1-to-1 (Strict 1-to-1 matching)
+        $usedOpIds = [];
+        $matchedGjPairs = [];
+
+        // Pass 1: Match by exact id_trn_gudang_jadi
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($opByGjId[$gjId])) {
+                foreach ($opByGjId[$gjId] as $opId) {
+                    if (!isset($usedOpIds[$opId])) {
+                        $usedOpIds[$opId] = $gjId;
+                        $matchedGjPairs[$gjId] = $opId;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Pass 2: Match by qr_code for remaining unlinked GJ
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($matchedGjPairs[$gjId])) continue;
+
+            if (!empty($gj['qr_code'])) {
+                $qrKey = strtoupper(trim($gj['qr_code']));
+                if (isset($opByQr[$qrKey])) {
+                    foreach ($opByQr[$qrKey] as $opId) {
+                        if (!isset($usedOpIds[$opId])) {
+                            $usedOpIds[$opId] = $gjId;
+                            $matchedGjPairs[$gjId] = $opId;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pass 3: Match by trans_from & id_from for remaining unlinked GJ
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($matchedGjPairs[$gjId])) continue;
+
+            if (!empty($gj['trans_from']) && !empty($gj['id_from'])) {
+                $fromKey = $gj['trans_from'] . '_' . $gj['id_from'];
+                if (isset($opByFrom[$fromKey])) {
+                    foreach ($opByFrom[$fromKey] as $opId) {
+                        if (!isset($usedOpIds[$opId])) {
+                            $usedOpIds[$opId] = $gjId;
+                            $matchedGjPairs[$gjId] = $opId;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Hitung Cocok vs Tidak Cocok
         $matchedCount = 0;
         $matchedQty = 0;
         $unmatchedCount = 0;
@@ -1081,21 +1140,14 @@ class TrnGudangJadiController extends Controller
 
         foreach ($gjRows as $gj) {
             $rc = $gj['locs_code'];
+            $gjId = (int)$gj['id'];
+
             if (isset($rakBreakdown[$rc])) {
                 $rakBreakdown[$rc]['gj_count']++;
                 $rakBreakdown[$rc]['gj_qty'] += (float)$gj['qty'];
             }
 
-            $isMatched = false;
-            if (isset($opGjIds[(int)$gj['id']])) {
-                $isMatched = true;
-            } elseif (!empty($gj['qr_code']) && isset($opQrCodes[strtoupper(trim($gj['qr_code']))])) {
-                $isMatched = true;
-            } elseif (!empty($gj['trans_from']) && !empty($gj['id_from']) && isset($opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']])) {
-                $isMatched = true;
-            }
-
-            if ($isMatched) {
+            if (isset($matchedGjPairs[$gjId])) {
                 $matchedCount++;
                 $matchedQty += (float)$gj['qty'];
                 if (isset($rakBreakdown[$rc])) {
@@ -1137,7 +1189,9 @@ class TrnGudangJadiController extends Controller
      */
     public function actionSyncRakOpname()
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
+        if (Yii::$app->response instanceof Response) {
+            Yii::$app->response->format = Response::FORMAT_JSON;
+        }
 
         $locs_codes = Yii::$app->request->post('locs_codes', Yii::$app->request->post('locs_code'));
         $customNote = trim((string)Yii::$app->request->post('note'));
@@ -1169,52 +1223,100 @@ class TrnGudangJadiController extends Controller
 
         // 2. Ambil data Stok Opname Pcs di rak ini (status bukan OUT)
         $opnameRows = TrnGudangJadiOpnamePcs::find()
-            ->select(['id', 'id_trn_gudang_jadi', 'qr_code', 'qr_code_desc'])
+            ->select(['id', 'locs_code', 'id_trn_gudang_jadi', 'qr_code', 'qr_code_desc'])
             ->where(['in', 'locs_code', $locs_codes])
             ->andWhere(['!=', 'status', TrnGudangJadiOpnamePcs::STATUS_OUT])
             ->asArray()
             ->all();
 
-        // Bangun lookup set dari data opname
-        $opGjIds = [];
-        $opQrCodes = [];
-        $opFromKeys = [];
+        // Bangun lookup index dari data opname
+        $opByGjId = [];
+        $opByQr = [];
+        $opByFrom = [];
 
         foreach ($opnameRows as $op) {
+            $opId = (int)$op['id'];
+
             if (!empty($op['id_trn_gudang_jadi'])) {
-                $opGjIds[(int)$op['id_trn_gudang_jadi']] = (int)$op['id'];
+                $opByGjId[(int)$op['id_trn_gudang_jadi']][] = $opId;
             }
             if (!empty($op['qr_code'])) {
-                $qrKey = strtoupper(trim($op['qr_code']));
-                $opQrCodes[$qrKey] = (int)$op['id'];
+                $opByQr[strtoupper(trim($op['qr_code']))][] = $opId;
             }
 
             $parsed = TrnGudangJadiOpnamePcs::parseQrData($op['qr_code'], $op['qr_code_desc']);
             if (!empty($parsed['item_id']) && !empty($parsed['ins_type'])) {
-                $opFromKeys[$parsed['ins_type'] . '_' . $parsed['item_id']] = (int)$op['id'];
+                $opByFrom[$parsed['ins_type'] . '_' . $parsed['item_id']][] = $opId;
             }
         }
 
-        // 3. Pisahkan item yang match vs yang tidak ada di opname
-        $matchedPairs = []; // [op_id => gj_id]
+        // 3. Pencocokan 1-to-1 (Strict 1-to-1 matching)
+        $usedOpIds = [];
+        $matchedGjPairs = []; // [gjId => opId]
+        $matchedOpPairs = []; // [opId => gjId]
+
+        // Pass 1: Match by exact id_trn_gudang_jadi
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($opByGjId[$gjId])) {
+                foreach ($opByGjId[$gjId] as $opId) {
+                    if (!isset($usedOpIds[$opId])) {
+                        $usedOpIds[$opId] = $gjId;
+                        $matchedGjPairs[$gjId] = $opId;
+                        $matchedOpPairs[$opId] = $gjId;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Pass 2: Match by qr_code for remaining unlinked GJ
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($matchedGjPairs[$gjId])) continue;
+
+            if (!empty($gj['qr_code'])) {
+                $qrKey = strtoupper(trim($gj['qr_code']));
+                if (isset($opByQr[$qrKey])) {
+                    foreach ($opByQr[$qrKey] as $opId) {
+                        if (!isset($usedOpIds[$opId])) {
+                            $usedOpIds[$opId] = $gjId;
+                            $matchedGjPairs[$gjId] = $opId;
+                            $matchedOpPairs[$opId] = $gjId;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Pass 3: Match by trans_from & id_from for remaining unlinked GJ
+        foreach ($gjRows as $gj) {
+            $gjId = (int)$gj['id'];
+            if (isset($matchedGjPairs[$gjId])) continue;
+
+            if (!empty($gj['trans_from']) && !empty($gj['id_from'])) {
+                $fromKey = $gj['trans_from'] . '_' . $gj['id_from'];
+                if (isset($opByFrom[$fromKey])) {
+                    foreach ($opByFrom[$fromKey] as $opId) {
+                        if (!isset($usedOpIds[$opId])) {
+                            $usedOpIds[$opId] = $gjId;
+                            $matchedGjPairs[$gjId] = $opId;
+                            $matchedOpPairs[$opId] = $gjId;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Pisahkan roll yang tidak cocok (unmatched)
         $unmatchedGjIds = [];
         $unmatchedQty = 0;
 
         foreach ($gjRows as $gj) {
-            $matchedOpId = null;
             $gjId = (int)$gj['id'];
-
-            if (isset($opGjIds[$gjId])) {
-                $matchedOpId = $opGjIds[$gjId];
-            } elseif (!empty($gj['qr_code']) && isset($opQrCodes[strtoupper(trim($gj['qr_code']))])) {
-                $matchedOpId = $opQrCodes[strtoupper(trim($gj['qr_code']))];
-            } elseif (!empty($gj['trans_from']) && !empty($gj['id_from']) && isset($opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']])) {
-                $matchedOpId = $opFromKeys[$gj['trans_from'] . '_' . $gj['id_from']];
-            }
-
-            if ($matchedOpId !== null) {
-                $matchedPairs[$matchedOpId] = $gjId;
-            } else {
+            if (!isset($matchedGjPairs[$gjId])) {
                 $unmatchedGjIds[] = $gjId;
                 $unmatchedQty += (float)$gj['qty'];
             }
@@ -1223,7 +1325,7 @@ class TrnGudangJadiController extends Controller
         if (empty($unmatchedGjIds)) {
             return [
                 'success' => true,
-                'message' => "Semua data stock (" . count($matchedPairs) . " roll) pada rak terpilih sudah sesuai dan terdaftar di Stok Opname. Tidak ada roll yang diubah statusnya menjadi OUT."
+                'message' => "Semua data stock (" . count($matchedGjPairs) . " roll) pada rak terpilih sudah sesuai dan terdaftar di Stok Opname. Tidak ada roll yang diubah statusnya menjadi OUT."
             ];
         }
 
@@ -1260,7 +1362,7 @@ class TrnGudangJadiController extends Controller
             }
 
             // Link opname pcs that matched but had empty id_trn_gudang_jadi
-            foreach ($matchedPairs as $opId => $gjId) {
+            foreach ($matchedOpPairs as $opId => $gjId) {
                 Yii::$app->db->createCommand(
                     "UPDATE trn_gudang_jadi_opname_pcs 
                      SET id_trn_gudang_jadi = :gj_id, updated_at = :updated_at, updated_by = :updated_by 
@@ -1277,7 +1379,7 @@ class TrnGudangJadiController extends Controller
 
             $qtyFormatted = Yii::$app->formatter->asDecimal($unmatchedQty);
             $outCount = count($unmatchedGjIds);
-            $stayCount = count($matchedPairs);
+            $stayCount = count($matchedGjPairs);
 
             return [
                 'success' => true,
