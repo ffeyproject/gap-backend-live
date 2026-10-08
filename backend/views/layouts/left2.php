@@ -1164,6 +1164,10 @@ $moduleId = $controller->module->id;
                                 'label' => 'Stock', 'icon' => 'circle', 'url' => ['/rawdata/trn-gudang-jadi/index'],
                                 'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi' && $actionId == 'index'
                             ],
+                            [
+                                'label' => 'Stok Opname', 'icon' => 'circle', 'url' => ['/rawdata/trn-gudang-jadi-opname-pcs/index'],
+                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi-opname-pcs'
+                            ],
                         ],
                     ],
                 ],

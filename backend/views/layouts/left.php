@@ -1458,6 +1458,10 @@ $moduleId = $controller->module->id;
                                 'label' => 'Kirim Item Bal', 'icon' => 'circle', 'url' => ['/rawdata/trn-kirim-buyer-item/index'],
                                 'active' => $moduleId=='rawdata' && $controllerId == 'trn-kirim-buyer-item'
                             ],
+                            [
+                                'label' => 'Stok Opname', 'icon' => 'circle', 'url' => ['/rawdata/trn-gudang-jadi-opname-pcs/index'],
+                                'active' => $moduleId=='rawdata' && $controllerId == 'trn-gudang-jadi-opname-pcs'
+                            ],
                         ],
                     ],
                 ],

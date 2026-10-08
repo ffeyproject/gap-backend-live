@@ -101,6 +101,31 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        if (!empty($this->id_trn_gudang_jadi)) {
+            if ($insert || array_key_exists('status', $changedAttributes) || array_key_exists('id_trn_gudang_jadi', $changedAttributes)) {
+                $gjStatus = ($this->status == self::STATUS_OUT) ? TrnGudangJadi::STATUS_OUT : TrnGudangJadi::STATUS_STOCK;
+                $updateData = [
+                    'status' => $gjStatus,
+                    'updated_at' => time(),
+                ];
+                if (Yii::$app instanceof \yii\web\Application && !Yii::$app->user->isGuest) {
+                    $updateData['updated_by'] = Yii::$app->user->id;
+                }
+                if (!empty($this->locs_code)) {
+                    $updateData['locs_code'] = $this->locs_code;
+                }
+                TrnGudangJadi::updateAll($updateData, ['id' => $this->id_trn_gudang_jadi]);
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function attributeLabels()
     {
         return [
