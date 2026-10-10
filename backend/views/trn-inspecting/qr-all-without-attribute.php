@@ -14,87 +14,90 @@ $formatter = Yii::$app->formatter;
 <table style="width: 100%; border-collapse: collapse;">
     <tbody>
         <?php 
-        // Direktori QR absolute (Windows & Linux kompatibel)
-        $qrDir = Yii::getAlias('@webroot') . '/qrcode/';
-        if (!is_dir($qrDir)) {
-            mkdir($qrDir, 0777, true);
+      $completeQrCode = '['.$m['qr_code'].']'.$m['qr_code_desc'];
+      QRcode::png($completeQrCode,'qrcode/'.$m['qr_code'].'.png', 'L', 4, 0);
+
+      $sentence = $m['is_design_or_artikel'];
+      $img_style = $m['param1'] == 1 ? "height: 125px; width: 125px; margin: 0px;" : "height: 135px; width: 135px; margin: 0px;";
+
+      $words = explode(' ', $sentence);
+      $line1 = ''; $line2 = '';
+      foreach ($words as $word) {
+        $lengthWithWord = strlen($line1 . $word . ' ');
+        if ($lengthWithWord <= 21) {
+          $line1 .= $word . ' ';
+        } else {
+          $line2 .= $word . ' ';
         }
+      }
 
-        // File PNG absolute path
-        $qrFile = $qrDir . $m['qr_code'] . '.png';
-
-        // Data QR
-        $completeQrCode = '['.$m['qr_code'].']'.$m['qr_code_desc'];
-
-        // ✅ Generate QR ke path absolut
-        if (!file_exists($qrFile)) {
-            QRcode::png($completeQrCode, $qrFile, 'L', 4, 0);
+      $sentence2 = $m['color'];
+      $words2 = explode(' ', $sentence2);
+      $line12 = ''; $line22 = '';
+      foreach ($words2 as $word2) {
+        $lengthWithWord2 = strlen($line12 . $word2 . ' ');
+        if ($lengthWithWord2 <= 21) {
+          $line12 .= $word2 . ' ';
+        } else {
+          $line22 .= $word2 . ' ';
         }
-
-        // Gunakan path absolut untuk <img>
-        $imgSrc = $qrFile;
-
-        // Pisah artikel jadi 2 baris
-        $sentence = $m['is_design_or_artikel'];
-        $words = explode(' ', $sentence);
-        $line1 = ''; $line2 = '';
-        foreach ($words as $word) {
-            $lengthWithWord = strlen($line1 . $word . ' ');
-            if ($lengthWithWord <= 21) {
-                $line1 .= $word . ' ';
-            } else {
-                $line2 .= $word . ' ';
-            }
-        }
-
-        // Pisah warna jadi 2 baris
-        $sentence2 = $m['color'];
-        $words2 = explode(' ', $sentence2);
-        $line12 = ''; $line22 = '';
-        foreach ($words2 as $word2) {
-            $lengthWithWord2 = strlen($line12 . $word2 . ' ');
-            if ($lengthWithWord2 <= 21) {
-                $line12 .= $word2 . ' ';
-            } else {
-                $line22 .= $word2 . ' ';
-            }
-        }
-        ?>
+      }
+    ?>
         <tr style="width: 100%;">
-            <td style="width: 50%; height: 100%; padding: 1rem 0.5rem 1rem 1rem; text-align: center;">
-                <img style="height: 150px; width: 150px; margin: 0px;" src="<?= $imgSrc ?>" alt="QR Code">
-                <p style="font-family: Calibri; font-size: 11px;"><b>NO CLAIM AFTER CUTTING</b></p>
-                <p style="font-family: Calibri; font-size: 10px;"><b><?= $m['qr_code'] ?></b></p>
+            <td style="width: 38%; height: 100%; padding: 0.2rem 0.1rem 0.2rem 0.4rem; text-align: center; vertical-align: middle;"
+                id="<?= mt_rand() ?>">
+                <img src="<?= Yii::getAlias('@webroot') . '/images/logo/logo-halal-gap.jpeg' ?>" style="<?= $m['param1'] == 1 ? 'width: 125px;' : 'width: 135px;' ?> height: auto; margin-bottom: 2px;" alt="Logo Halal">
+                <br>
+                <img class="img-fluid" style="<?= $img_style ?>" src="<?='qrcode/'.$m['qr_code'].'.png'?>" alt=""
+                    id="<?= mt_rand() ?>">
+                <?php
+                if ($m['param1'] == 1) {
+                  echo '<p style="font-family: Calibri; font-size: 10px; margin: 2px 0 0 0;"><b>MADE IN INDONESIA</b></p>';
+                }
+                ?>
             </td>
-            <td style="width: 50%; height: 100%; padding: 1rem 1rem 1rem 0.5rem;">
-                <p style="font-family: Calibri; font-size: 3px; color: #fff;">
-                    <b>REGISTRASI K3L</b>
-                    <span style="color: #fff; font-family: Calibri; font-size: 6px;">
-                        Lorem ipsum dolor sit amet consectetur adipisicin.
-                    </span>
+            <td style="width: 4%; height: 100%; text-align: center; vertical-align: middle; padding: 0; text-rotate: 90;" text-rotate="90">
+                <p style="font-family: Calibri; font-size: 7px; margin: 0; line-height: 1; white-space: nowrap;">
+                    <b>NO CLAIM AFTER CUTTING &nbsp;&nbsp; <?= $m['qr_code'] ?></b>
                 </p>
-                <p style="font-family: Calibri; font-size: 18px;"><b><?= $m['no_wo'] ?></b></p>
-                <p style="font-family: Calibri; font-size: 12px;">
+            </td>
+            <td style="width: 58%; height: 100%; padding: 0.2rem 0.4rem 0.2rem 0.1rem; vertical-align: top;" id="<?= mt_rand() ?>">
+                <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+                    <tr>
+                        <td style="width: 55%; padding: 0; vertical-align: top;">
+                            <?php 
+                            if ($m['param2'] == 1) {
+                              echo '
+                                <p style="font-family: Calibri; font-size: 10px; color: #000; margin: 0; line-height: 1.15;"><b>REGISTRASI K3L</b></p>
+                                <p style="font-family: Calibri; font-size: 10px; color: #000; margin: 0; line-height: 1.15;"><b>'.$m['k3l_code'].'</b></p>
+                              ';
+                            }
+                            ?>
+                        </td>
+                        <td style="width: 45%; padding: 0; text-align: right; vertical-align: top;">
+                            <img src="<?= Yii::getAlias('@webroot') . '/images/logo/logo-tkdn.jpg' ?>" style="height: 20px; width: auto; vertical-align: top; margin-right: 2px;" alt="Logo TKDN"><img src="<?= Yii::getAlias('@webroot') . '/images/logo/logo-sni.jpeg' ?>" style="height: 20px; width: auto; vertical-align: top;" alt="Logo SNI">
+                        </td>
+                    </tr>
+                </table>
+                <p style="font-family: Calibri; font-size: 18px; margin: 2px 0 0 0;" id="<?= mt_rand() ?>"><b><?= $m['no_wo'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 12px; margin: 0;" id="<?= mt_rand() ?>">
                     <b><?= str_replace(' ', '&nbsp;', rtrim($line1, ' ')) ?></b>
                 </p>
-                <p style="font-family: Calibri; font-size: 12px;">
+                <p style="font-family: Calibri; font-size: 12px; margin: 0;" id="<?= mt_rand() ?>">
                     <b><?= strlen($line2) > 0 ? str_replace(' ', '&nbsp;', rtrim($line2, ' ')) : '&nbsp;' ?></b>
                 </p>
 
-                <p style="font-family: Calibri; font-size: 12px;" id="<?= mt_rand() ?>">
-                    <b><?= $m['no_lot'] ?></b>
-                </p>
+                <p style="font-family: Calibri; font-size: 12px; margin: 0;" id="<?= mt_rand() ?>"><b><?= $m['no_lot'] ?></b></p>
 
-                <p style="font-family: Calibri; font-size: 18px;">
+                <p style="font-family: Calibri; font-size: 18px; margin: 0;" id="<?= mt_rand() ?>">
                     <b><?= str_replace(' ', '&nbsp;', rtrim($line12, ' ')) ?></b>
                 </p>
-                <p style="font-family: Calibri; font-size: 18px;">
+                <p style="font-family: Calibri; font-size: 18px; margin: 0;" id="<?= mt_rand() ?>">
                     <b><?= strlen($line22) > 0 ? str_replace(' ', '&nbsp;', rtrim($line22, ' ')) : '&nbsp;' ?></b>
                 </p>
 
-                <p style="font-family: Calibri; font-size: 18px;"><b><?= $m['length'] ?></b></p>
-                <p style="font-family: Calibri; font-size: 13px;"><b><?= $m['grade'] ?></b></p>
-
+                <p style="font-family: Calibri; font-size: 18px; margin: 0;" id="<?= mt_rand() ?>"><b><?= $m['length'] ?></b></p>
+                <p style="font-family: Calibri; font-size: 13px; margin: 0;" id="<?= mt_rand() ?>"><b><?= $m['grade'] ?></b></p>
             </td>
         </tr>
     </tbody>
