@@ -26,6 +26,7 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $approval_time
  * @property string|null $reject_note
  * @property bool $is_hasil_setting
+ * @property int|null $lokasi_setting 1=Di GAP, 2=Di Luar
  *
  * @property MstGreige $greige
  * @property MstGreigeGroup $greigeGroup
@@ -35,6 +36,7 @@ use yii\behaviors\TimestampBehavior;
  * @property string $greigeGroupName
  * @property string $statusName
  * @property string $jenisBeliName
+ * @property string $lokasiSettingName
  */
 class TrnBuyGreige extends \yii\db\ActiveRecord
 {
@@ -52,6 +54,14 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
      */
     public static function statusOptions(){
         return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_APPROVED => 'Approved'];
+    }
+
+    const LOKASI_SETTING_GAP = 1;const LOKASI_SETTING_LUAR = 2;
+    /**
+     * @return array
+     */
+    public static function lokasiSettingOptions(){
+        return [self::LOKASI_SETTING_GAP => 'Di GAP', self::LOKASI_SETTING_LUAR => 'Di Luar'];
     }
 
     /**
@@ -78,6 +88,17 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
         }
     }
 
+    public function beforeValidate()
+    {
+        if (parent::beforeValidate()) {
+            if (!$this->is_hasil_setting) {
+                $this->lokasi_setting = null;
+            }
+            return true;
+        }
+        return false;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -85,8 +106,14 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
     {
         return [
             [['greige_id', 'no_document', 'vendor', 'date'], 'required'],
-            [['greige_group_id', 'greige_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'default', 'value' => null],
-            [['greige_group_id', 'greige_id', 'jenis_beli', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'integer'],
+            [['greige_group_id', 'greige_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time', 'lokasi_setting'], 'default', 'value' => null],
+            [['greige_group_id', 'greige_id', 'jenis_beli', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time', 'lokasi_setting'], 'integer'],
+            ['lokasi_setting', 'in', 'range' => [self::LOKASI_SETTING_GAP, self::LOKASI_SETTING_LUAR]],
+            ['lokasi_setting', 'required', 'when' => function($model) {
+                return (int)$model->is_hasil_setting === 1;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('input[name=\"TrnBuyGreige[is_hasil_setting]\"]:checked').val() == '1';
+            }"],
             [['is_hasil_setting'], 'boolean'],
             ['is_hasil_setting', 'default', 'value' => false],
             [['note', 'reject_note'], 'string'],
@@ -115,6 +142,7 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
             'note' => 'Note',
             'jenis_beli' => 'Jenis Beli',
             'is_hasil_setting' => 'Hasil Setting',
+            'lokasi_setting' => 'Lokasi Setting',
             'status' => 'Status',
             'date' => 'Date',
             'created_at' => 'Created At',
@@ -187,5 +215,13 @@ class TrnBuyGreige extends \yii\db\ActiveRecord
     public function getJenisBeliName()
     {
         return self::jenisBeliOptions()[$this->jenis_beli];
+    }
+
+    /**
+     * @return string
+     */
+    public function getLokasiSettingName()
+    {
+        return ($this->lokasi_setting !== null && isset(self::lokasiSettingOptions()[$this->lokasi_setting])) ? self::lokasiSettingOptions()[$this->lokasi_setting] : '-';
     }
 }

@@ -122,6 +122,10 @@ use backend\models\form\StockGreigeForm;
                         1 => 'Ya',
                     ]) ?>
 
+                    <div id="wrapper-lokasi-setting" style="<?= (int)$model->is_hasil_setting === 1 ? '' : 'display: none;' ?>">
+                        <?= $form->field($model, 'lokasi_setting')->radioList(\common\models\ar\TrnStockGreige::lokasiSettingOptions()) ?>
+                    </div>
+
                     <?= $form->field($model, 'note')->textInput() ?>
                 </div>
             </div>

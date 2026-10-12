@@ -23,7 +23,7 @@ class TrnBuyGreigeSearch extends TrnBuyGreige
     public function rules()
     {
         return [
-            [['id', 'greige_group_id', 'greige_id', 'jenis_beli', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'integer'],
+            [['id', 'greige_group_id', 'greige_id', 'jenis_beli', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time', 'lokasi_setting'], 'integer'],
             [['is_hasil_setting'], 'boolean'],
             [['no_document', 'vendor', 'note', 'date', 'reject_note', 'greigeGroupNamaKain', 'greigeNamaKain', 'dateRange'], 'safe'],
         ];
@@ -109,6 +109,7 @@ class TrnBuyGreigeSearch extends TrnBuyGreige
             'trn_buy_greige.approval_id' => $this->approval_id,
             'trn_buy_greige.approval_time' => $this->approval_time,
             'trn_buy_greige.is_hasil_setting' => $this->is_hasil_setting,
+            'trn_buy_greige.lokasi_setting' => $this->lokasi_setting,
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_buy_greige.no_document', $this->no_document])

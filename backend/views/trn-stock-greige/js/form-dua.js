@@ -58,4 +58,13 @@ jQuery(document).on("input keyup change", ".dynamicform_wrapper .panjang_unit, .
 });
 
 calculateTotalPanjang();
+
+$('input[name="StockGreigeForm[is_hasil_setting]"]').on('change', function() {
+    if ($(this).val() == '1') {
+        $('#wrapper-lokasi-setting').slideDown();
+    } else {
+        $('#wrapper-lokasi-setting').slideUp();
+        $('input[name="StockGreigeForm[lokasi_setting]"]').prop('checked', false);
+    }
+});
 

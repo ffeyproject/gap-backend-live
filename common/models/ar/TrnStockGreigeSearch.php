@@ -22,7 +22,7 @@ class TrnStockGreigeSearch extends TrnStockGreige
     public function rules()
     {
         return [
-            [['id', 'greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang'], 'integer'],
+            [['id', 'greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang', 'lokasi_setting'], 'integer'],
             [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'boolean'],
             ['panjang_m', 'number'],
             [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_set_lusi', 'no_document', 'pengirim', 'mengetahui', 'note', 'date', 'nomor_wo', 'color', 'greigeNamaKain', 'dateRange'], 'safe'],
@@ -110,6 +110,7 @@ class TrnStockGreigeSearch extends TrnStockGreige
             'is_pemotongan' => $this->is_pemotongan,
             'is_hasil_mix' => $this->is_hasil_mix,
             'is_hasil_setting' => $this->is_hasil_setting,
+            'trn_stock_greige.lokasi_setting' => $this->lokasi_setting,
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_stock_greige.no_lapak', $this->no_lapak])

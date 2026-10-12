@@ -309,6 +309,19 @@ echo AjaxModal::widget([
                     'pluginOptions' => ['allowClear' => true],
                 ],
             ],
+            [
+                'attribute' => 'lokasi_setting',
+                'value' => function($model){
+                    /* @var $model \common\models\ar\TrnStockGreige */
+                    return $model->lokasiSettingName;
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => \common\models\ar\TrnStockGreige::lokasiSettingOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => ['allowClear' => true],
+                ],
+            ],
             //'is_hasil_mix:boolean',
             //'pengirim',
             //'mengetahui',

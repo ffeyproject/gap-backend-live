@@ -291,6 +291,7 @@ class TrnBuyGreigeController extends Controller
                     'grade' => TrnStockGreige::GRADE_NG,
                     'panjang_m' => $item->qty,
                     'is_hasil_setting' => $model->is_hasil_setting ? true : false,
+                    'lokasi_setting' => $model->is_hasil_setting ? $model->lokasi_setting : null,
                     'created_at' => $ts,
                     'created_by' => $uid,
                     'updated_at' => $ts,

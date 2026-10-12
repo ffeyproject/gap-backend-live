@@ -31,6 +31,18 @@ class StockGreigeForm extends Model
     public $mengetahui;
     public $note;
     public $is_hasil_setting;
+    public $lokasi_setting;
+
+    public function beforeValidate()
+    {
+        if (parent::beforeValidate()) {
+            if (!$this->is_hasil_setting) {
+                $this->lokasi_setting = null;
+            }
+            return true;
+        }
+        return false;
+    }
 
     /**
      * {@inheritdoc}
@@ -39,8 +51,14 @@ class StockGreigeForm extends Model
     {
         return [
             [['greige_id', 'asal_greige', 'lot_lusi', 'lot_pakan', 'status_tsd', 'no_document', 'pengirim', 'mengetahui'], 'required'],
-            [['greige_id', 'status_tsd'], 'default', 'value' => null],
-            [['greige_id', 'status_tsd'], 'integer'],
+            [['greige_id', 'status_tsd', 'lokasi_setting'], 'default', 'value' => null],
+            [['greige_id', 'status_tsd', 'lokasi_setting'], 'integer'],
+            ['lokasi_setting', 'in', 'range' => [\common\models\ar\TrnStockGreige::LOKASI_SETTING_GAP, \common\models\ar\TrnStockGreige::LOKASI_SETTING_LUAR]],
+            ['lokasi_setting', 'required', 'when' => function($model) {
+                return (int)$model->is_hasil_setting === 1;
+            }, 'whenClient' => "function (attribute, value) {
+                return $('input[name=\"StockGreigeForm[is_hasil_setting]\"]:checked').val() == '1';
+            }"],
             [['is_hasil_setting'], 'boolean'],
             ['is_hasil_setting', 'default', 'value' => false],
             [['note'], 'string'],
@@ -67,6 +85,7 @@ class StockGreigeForm extends Model
             'mengetahui' => 'Mengetahui',
             'note' => 'Note',
             'is_hasil_setting' => 'Hasil Setting',
+            'lokasi_setting' => 'Lokasi Setting',
         ];
     }
 }

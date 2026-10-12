@@ -202,6 +202,7 @@ class TrnStockGreigeController extends Controller
                         $modelStock->mengetahui = $model->mengetahui;
                         $modelStock->note = $model->note;
                         $modelStock->is_hasil_setting = $model->is_hasil_setting ? true : false;
+                        $modelStock->lokasi_setting = $model->is_hasil_setting ? $model->lokasi_setting : null;
                         $modelStock->date = $date;
                         $modelStock->status = $modelStock::STATUS_PENDING;
                         $modelStock->jenis_gudang = $modelStock::JG_FRESH;
@@ -301,6 +302,7 @@ class TrnStockGreigeController extends Controller
         $model->mengetahui = $firstItem->mengetahui;
         $model->note = $firstItem->note;
         $model->is_hasil_setting = $firstItem->is_hasil_setting ? 1 : 0;
+        $model->lokasi_setting = $firstItem->lokasi_setting;
 
         $modelsStock = [];
         foreach ($items as $item) {
@@ -341,6 +343,7 @@ class TrnStockGreigeController extends Controller
                         $modelStock->mengetahui = $model->mengetahui;
                         $modelStock->note = $model->note;
                         $modelStock->is_hasil_setting = $model->is_hasil_setting ? true : false;
+                        $modelStock->lokasi_setting = $model->is_hasil_setting ? $model->lokasi_setting : null;
                         $modelStock->date = $date;
                         $modelStock->status = $modelStock::STATUS_PENDING;
                         $modelStock->jenis_gudang = $modelStock::JG_FRESH;

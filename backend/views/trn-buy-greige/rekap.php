@@ -100,6 +100,21 @@ $this->params['breadcrumbs'][] = $this->title;
                 ],
             ],
             'is_hasil_setting:boolean',
+            [
+                'attribute' => 'lokasi_setting',
+                'value' => function($data){
+                    /* @var $data TrnBuyGreige */
+                    return $data->lokasiSettingName;
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => TrnBuyGreige::lokasiSettingOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
             'note:ntext',
         ],
     ]); ?>

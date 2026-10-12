@@ -80,3 +80,12 @@ function updateRowNumbers() {
         $(this).find('.panel-title-address').text(index + 1); // Perbarui nomor baris
     });
 }
+
+$('input[name="TrnBuyGreige[is_hasil_setting]"]').on('change', function() {
+    if ($(this).val() == '1') {
+        $('#wrapper-lokasi-setting').slideDown();
+    } else {
+        $('#wrapper-lokasi-setting').slideUp();
+        $('input[name="TrnBuyGreige[lokasi_setting]"]').prop('checked', false);
+    }
+});

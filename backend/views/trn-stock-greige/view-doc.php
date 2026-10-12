@@ -87,6 +87,12 @@ $isPending = ($header->status == TrnStockGreige::STATUS_PENDING);
                                     : '<span class="label label-default">Tidak</span>' ?>
                             </td>
                         </tr>
+                        <?php if ($header->is_hasil_setting): ?>
+                        <tr>
+                            <th>Lokasi Setting</th>
+                            <td><span class="label label-info"><?= Html::encode($header->lokasiSettingName) ?></span></td>
+                        </tr>
+                        <?php endif; ?>
                     </table>
                 </div>
 

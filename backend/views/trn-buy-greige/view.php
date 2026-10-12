@@ -63,6 +63,11 @@ $unit = $model->greigeGroup->unitName;
                             ],
                             'is_hasil_setting:boolean',
                             [
+                                'attribute' => 'lokasiSettingName',
+                                'label' => 'Lokasi Setting',
+                                'visible' => (bool)$model->is_hasil_setting,
+                            ],
+                            [
                                 'attribute'=>'statusName',
                                 'label'=>'Status'
                             ],

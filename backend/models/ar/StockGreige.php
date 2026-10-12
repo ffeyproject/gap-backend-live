@@ -15,8 +15,9 @@ class StockGreige extends TrnStockGreige
         return [
             [['panjang_m', 'grade'], 'required'],
             ['no_set_lusi', 'default', 'value'=>'-'],
-            [['greige_group_id', 'greige_id', 'asal_greige', 'grade', 'panjang_m', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'default', 'value' => null],
-            [['greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['greige_group_id', 'greige_id', 'asal_greige', 'grade', 'panjang_m', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'lokasi_setting'], 'default', 'value' => null],
+            [['greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'lokasi_setting'], 'integer'],
+            ['lokasi_setting', 'in', 'range' => [self::LOKASI_SETTING_GAP, self::LOKASI_SETTING_LUAR]],
             ['panjang_m', 'number'],
             [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'boolean'],
             [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'default', 'value'=>false],

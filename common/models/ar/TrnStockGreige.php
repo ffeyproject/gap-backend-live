@@ -38,9 +38,11 @@ use yii\behaviors\TimestampBehavior;
  * @property boolean $is_pemotongan
  * @property boolean $is_hasil_mix
  * @property boolean $is_hasil_setting
+ * @property int|null $lokasi_setting 1=Di GAP, 2=Di Luar
  *
  * @property string $jenisGudangName
  * @property string $pfpJenisGudangName
+ * @property string $lokasiSettingName
  *
  * @property TrnKartuProsesDyeingItem[] $trnKartuProsesDyeingItems
  * @property TrnKartuProsesPrintingItem[] $trnKartuProsesPrintingItems
@@ -154,6 +156,14 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         return [self::PFP_JG_ONE => 'Gudang 1', self::PFP_JG_TWO => 'Gudang 2'];
     }
 
+    const LOKASI_SETTING_GAP = 1;const LOKASI_SETTING_LUAR = 2;
+    /**
+     * @return array
+     */
+    public static function lokasiSettingOptions(){
+        return [self::LOKASI_SETTING_GAP => 'Di GAP', self::LOKASI_SETTING_LUAR => 'Di Luar'];
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -177,8 +187,9 @@ class TrnStockGreige extends \yii\db\ActiveRecord
     {
         return [
             [['greige_id', 'grade', 'lot_lusi', 'lot_pakan', 'no_set_lusi', 'panjang_m', 'status_tsd', 'no_document', 'pengirim', 'mengetahui'], 'required'],
-            [['greige_group_id', 'greige_id', 'asal_greige', 'panjang_m', 'created_at', 'created_by', 'updated_at', 'updated_by', 'keputusan_qc'], 'default', 'value' => null],
-            [['greige_group_id', 'greige_id', 'asal_greige', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['greige_group_id', 'greige_id', 'asal_greige', 'panjang_m', 'created_at', 'created_by', 'updated_at', 'updated_by', 'keputusan_qc', 'lokasi_setting'], 'default', 'value' => null],
+            [['greige_group_id', 'greige_id', 'asal_greige', 'created_at', 'created_by', 'updated_at', 'updated_by', 'lokasi_setting'], 'integer'],
+            ['lokasi_setting', 'in', 'range' => [self::LOKASI_SETTING_GAP, self::LOKASI_SETTING_LUAR]],
             ['panjang_m', 'number'],
             [['note'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
@@ -248,6 +259,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             'is_pemotongan' => 'Hasil Pemotongan',
             'is_hasil_mix' => 'Mix Quality',
             'is_hasil_setting' => 'Hasil Setting',
+            'lokasi_setting' => 'Lokasi Setting',
             'greigeNamaKain' => 'Motif',
             'gradeName' => 'Grade',
             'kondisiGreige' => 'Kondisi Greige',
@@ -386,6 +398,14 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         }
 
         return null;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLokasiSettingName()
+    {
+        return ($this->lokasi_setting !== null && isset(self::lokasiSettingOptions()[$this->lokasi_setting])) ? self::lokasiSettingOptions()[$this->lokasi_setting] : '-';
     }
 
 }

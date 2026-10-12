@@ -95,6 +95,10 @@ use yii\web\View;
                         1 => 'Ya',
                     ]) ?>
 
+                    <div id="wrapper-lokasi-setting" style="<?= (int)$model->is_hasil_setting === 1 ? '' : 'display: none;' ?>">
+                        <?= $form->field($model, 'lokasi_setting')->radioList($model::lokasiSettingOptions()) ?>
+                    </div>
+
                     <?= $form->field($model, 'note')->textarea(['rows' => 6]) ?>
 
                     <div class="form-group">

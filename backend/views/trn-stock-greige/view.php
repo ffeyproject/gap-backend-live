@@ -54,6 +54,11 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                             'no_document',
                             'is_pemotongan:boolean',
                             'is_hasil_setting:boolean',
+                            [
+                                'attribute' => 'lokasiSettingName',
+                                'label' => 'Lokasi Setting',
+                                'visible' => (bool)$model->is_hasil_setting,
+                            ],
                         ],
                     ]) ?>
                 </div>
