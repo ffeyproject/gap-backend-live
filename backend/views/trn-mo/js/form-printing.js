@@ -57,7 +57,15 @@ $moForm.on("afterInit", function (e) {
           $("#trnmoprintingform-block_size").val(data["block_size"]);
           $("#trnmoprintingform-border_size").val(data["border_size"]);
           $("#trnmoprintingform-design").val(data["design"]);
+          if (typeof tinymce !== "undefined" && tinymce.get("trnmoprintingform-face_stamping")) {
+            tinymce.get("trnmoprintingform-face_stamping").setContent(data["face_stamping"] || "");
+          }
           $("#trnmoprintingform-face_stamping").val(data["face_stamping"]);
+          if (typeof tinymce !== "undefined" && tinymce.get("trnmoprintingform-note")) {
+            tinymce.get("trnmoprintingform-note").setContent(data["note"] || "");
+          }
+          $("#trnmoprintingform-note").val(data["note"]);
+          $("#trnmoprintingform-persen_grading").val(data["persen_grading"]).trigger("change");
           $("#trnmoprintingform-foil").val(data["foil"]);
           $("#trnmoprintingform-folder").val(data["folder"]);
           $("#trnmoprintingform-hanger").val(data["hanger"]);

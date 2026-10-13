@@ -53,7 +53,15 @@ $moForm.on('afterInit', function (e) {
                     $("#trnmodyeingform-block_size").val(data["block_size"]);
                     $("#trnmodyeingform-border_size").val(data["border_size"]);
                     $("#trnmodyeingform-design").val(data["design"]);
+                    if (typeof tinymce !== "undefined" && tinymce.get("trnmodyeingform-face_stamping")) {
+                        tinymce.get("trnmodyeingform-face_stamping").setContent(data["face_stamping"] || "");
+                    }
                     $("#trnmodyeingform-face_stamping").val(data["face_stamping"]);
+                    if (typeof tinymce !== "undefined" && tinymce.get("trnmodyeingform-note")) {
+                        tinymce.get("trnmodyeingform-note").setContent(data["note"] || "");
+                    }
+                    $("#trnmodyeingform-note").val(data["note"]);
+                    $("#trnmodyeingform-persen_grading").val(data["persen_grading"]).trigger("change");
                     $("#trnmodyeingform-folder").val(data["folder"]);
                     $("#trnmodyeingform-hanger").val(data["hanger"]);
                     $("#trnmodyeingform-heat_cut").val(data["heat_cut"] ? 1 : 0);
