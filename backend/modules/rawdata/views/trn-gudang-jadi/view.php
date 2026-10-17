@@ -65,6 +65,26 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                             ],
                             'no_memo_repair',
                             'no_memo_ganti_greige',
+                            [
+                                'label' => 'Stock Opname Pcs Terkait',
+                                'format' => 'raw',
+                                'value' => function($model) {
+                                    $ops = \common\models\ar\TrnGudangJadiOpnamePcs::find()->where(['id_trn_gudang_jadi' => $model->id])->all();
+                                    if (empty($ops)) {
+                                        return '<span class="text-muted">(Tidak ada data opname pcs)</span>';
+                                    }
+                                    $html = '<ul style="padding-left: 20px; margin-bottom: 0;">';
+                                    foreach ($ops as $op) {
+                                        $html .= '<li>' . Html::encode($op->opname_code . ' (#' . $op->id . ')') 
+                                            . ' &mdash; Qty: <strong class="text-primary">' . Yii::$app->formatter->asDecimal($op->qty, 2) . ' ' . Html::encode($op->unit) . '</strong>'
+                                            . ' | Lokasi: <code>' . Html::encode($op->locs_code) . '</code>'
+                                            . ' | Status: <span class="label ' . ($op->status == \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT ? 'label-danger' : 'label-success') . '">' . $op->getStatusName() . '</span>'
+                                            . '</li>';
+                                    }
+                                    $html .= '</ul>';
+                                    return $html;
+                                }
+                            ],
                         ],
                     ]) ?>
                 </div>

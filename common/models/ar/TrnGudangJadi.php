@@ -142,11 +142,16 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
         }
 
         if (array_key_exists('qty', $changedAttributes)) {
+            $userId = (Yii::$app instanceof \yii\web\Application && !Yii::$app->user->isGuest) ? Yii::$app->user->id : null;
+            $updateData = [
+                'qty' => $this->qty,
+                'updated_at' => time(),
+            ];
+            if ($userId !== null) {
+                $updateData['updated_by'] = $userId;
+            }
             TrnGudangJadiOpnamePcs::updateAll(
-                [
-                    'qty' => $this->qty,
-                    'updated_at' => time(),
-                ],
+                $updateData,
                 ['id_trn_gudang_jadi' => $this->id]
             );
         }

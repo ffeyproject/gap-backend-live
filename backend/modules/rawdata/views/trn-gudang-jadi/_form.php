@@ -12,6 +12,29 @@ use kartik\widgets\ActiveForm;
 
 <div class="trn-gudang-jadi-form">
 
+    <?php if (!$model->isNewRecord): ?>
+        <?php
+        $opnamePcsList = \common\models\ar\TrnGudangJadiOpnamePcs::find()->where(['id_trn_gudang_jadi' => $model->id])->all();
+        ?>
+        <?php if (!empty($opnamePcsList)): ?>
+            <div class="alert alert-info" style="border-left: 5px solid #0097bc;">
+                <h4><i class="icon fa fa-info-circle"></i> Terhubung dengan Stock Opname Pcs</h4>
+                <p>Item ini terhubung dengan <strong><?= count($opnamePcsList) ?></strong> record Stock Opname Pcs:</p>
+                <ul style="margin-bottom: 5px;">
+                    <?php foreach ($opnamePcsList as $op): ?>
+                        <li>
+                            <strong><?= Html::encode($op->opname_code) ?></strong> (ID #<?= $op->id ?>) &mdash; 
+                            Qty saat ini: <span class="badge bg-yellow" style="font-size: 13px;"><?= Yii::$app->formatter->asDecimal($op->qty, 2) ?> <?= Html::encode($op->unit) ?></span>, 
+                            Lokasi: <code><?= Html::encode($op->locs_code) ?></code>, 
+                            Status: <span class="label <?= $op->status == \common\models\ar\TrnGudangJadiOpnamePcs::STATUS_OUT ? 'label-danger' : 'label-success' ?>"><?= $op->getStatusName() ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <small>* Mengubah <strong>Qty</strong> di bawah akan otomatis memperbarui nilai Qty pada data Stock Opname Pcs terkait saat disimpan.</small>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
     <?php $form = ActiveForm::begin(); ?>
 
     <div class="row">

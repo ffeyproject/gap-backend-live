@@ -5,9 +5,11 @@ namespace backend\modules\rawdata\controllers;
 use Yii;
 use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiSearch;
+use common\models\ar\TrnGudangJadiOpnamePcs;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\helpers\Html;
 
 /**
  * TrnGudangJadiController implements the CRUD actions for TrnGudangJadi model.
@@ -84,47 +86,49 @@ class TrnGudangJadiController extends Controller
      */
     public function actionUpdate($id)
     {
-
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        if ($model->load(Yii::$app->request->post())) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                if ($model->save()) {
+                    // Sinkronkan Qty ke trn_gudang_jadi_opname_pcs sesuai relasi id_trn_gudang_jadi
+                    $userId = (!Yii::$app->user->isGuest) ? Yii::$app->user->id : null;
+                    $updateAttributes = [
+                        'qty' => $model->qty,
+                        'updated_at' => time(),
+                    ];
+                    if ($userId !== null) {
+                        $updateAttributes['updated_by'] = $userId;
+                    }
+
+                    $syncedCount = TrnGudangJadiOpnamePcs::updateAll(
+                        $updateAttributes,
+                        ['id_trn_gudang_jadi' => $model->id]
+                    );
+
+                    $transaction->commit();
+
+                    $msg = 'Data Gudang Jadi berhasil diperbarui.';
+                    if ($syncedCount > 0) {
+                        $msg .= " Qty pada {$syncedCount} record Stock Opname Pcs terkait juga telah disinkronkan ke {$model->qty}.";
+                    }
+                    Yii::$app->session->setFlash('success', $msg);
+
+                    return $this->redirect(['view', 'id' => $model->id]);
+                } else {
+                    $transaction->rollBack();
+                    Yii::$app->session->setFlash('error', 'Gagal menyimpan: ' . Html::errorSummary($model));
+                }
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                Yii::$app->session->setFlash('error', 'Terjadi kesalahan saat menyimpan: ' . $e->getMessage());
+            }
         }
 
         return $this->render('update', [
             'model' => $model,
         ]);
-        
-        //$model = $this->findModel($id);
-        // if ($model->load(Yii::$app->request->post()) && $model->save()) {
-        //     try {
-        //         $model->load(Yii::$app->request->post());
-        //         $model->save();
-        //         //var_dump(Yii::$app->request->post());
-        //         //var_dump($model);
-        //         //die;
-        //         return $this->redirect(['view', 'id' => $model->id]);
-        //       } catch (\Throwable $th) {
-        //         var_dump($th);
-        //         die;
-        //       }
-        // }
-
-        // if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            
-        //     // var_dump($model); 
-        //     // var_dump(Yii::$app->request->post());
-        //     // die; 
-
-        //     // $model->load(Yii::$app->request->post());
-        //     // $model->save();
-
-        //     return $this->redirect(['view', 'id' => $model->id]);
-        // }
-
-        // return $this->render('update', [
-        //     'model' => $model,
-        // ]);
     }
 
     /**
