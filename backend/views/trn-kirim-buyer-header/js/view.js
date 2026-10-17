@@ -274,27 +274,48 @@ function changeNote(event){
 }
 
 function printDiv(div) {
-    var fontSize = document.getElementById("SizeText").value;
-
+    var fontSize = document.getElementById("SizeText") ? document.getElementById("SizeText").value : 12;
     var divContents = document.getElementById(div).innerHTML;
-    //var a = window.open('', '', 'height=500, width=500');
-    var a = window.open('', '');
-    a.document.write('<html>');
-    a.document.write('<head>');
-    a.document.write('<style type="text/css">');
-    a.document.write('body{font-family: "Calibri"; font-size:' + fontSize + 'px; letter-spacing: 2px;} table {font-size:' + fontSize + 'px; border-spacing: 0; letter-spacing: 2px;} th, td {padding: 0.5em 1em;}');
-    //a.document.write('@media print {html, body {width: 5.5in; /* was 8.5in */ height: 8.5in; /* was 5.5in */ display: block; font-family: "Calibri"; /*font-size: auto; NOT A VALID PROPERTY */} @page {size: 5.5in 8.5in /* . Random dot? */;}}');
-    a.document.write('</style>');
-    a.document.write('</head>');
-    a.document.write('<body>');
-    a.document.write(divContents);
-    a.document.write('</body></html>');
-    a.document.close();
-    a.print();
+
+    var iframeId = 'print_iframe';
+    var iframe = document.getElementById(iframeId);
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = iframeId;
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
+
+    var doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><title>Print Surat Jalan</title>');
+    doc.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    doc.write('<style type="text/css">');
+    doc.write('@page { size: portrait; margin: 6mm 8mm; }');
+    doc.write('@media print { html, body { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; } tr { page-break-inside: avoid; } }');
+    doc.write('html, body { width: 100%; max-width: 780px; margin: 0 auto; padding: 5px; box-sizing: border-box; font-family: "Calibri", Arial, sans-serif; font-size:' + fontSize + 'px; letter-spacing: 0.5px; }');
+    doc.write('table { width: 100%; font-size:' + fontSize + 'px; border-spacing: 0; border-collapse: collapse; letter-spacing: 0.5px; box-sizing: border-box; }');
+    doc.write('th, td { padding: 4px 6px; box-sizing: border-box; }');
+    doc.write('</style>');
+    doc.write('</head><body>');
+    doc.write(divContents);
+    doc.write('</body></html>');
+    doc.close();
+
+    setTimeout(function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 250);
 }
 
 function printDivPL(div) {
-    var fontSize = document.getElementById("SizeText").value;
+    var fontSize = document.getElementById("SizeText") ? document.getElementById("SizeText").value : 12;
+    var pieceFontSize = document.getElementById("SizePieceText") ? document.getElementById("SizePieceText").value : 18;
 
     // Capture input values
     var balInputs = document.getElementsByClassName("balInput");
@@ -303,10 +324,7 @@ function printDivPL(div) {
         balValues.push(balInputs[i].value);
     }
 
-    // console.log(balValues);
-
     var divContents = document.getElementById(div).innerHTML;
-    // console.log(divContents);
 
     // Create a temporary div element
     var tempDiv = document.createElement("div");
@@ -314,7 +332,6 @@ function printDivPL(div) {
 
     // Select all elements with class 'balInput' within the temporary div
     var tempBalInputs = tempDiv.querySelectorAll('.balInput');
-    // console.log(tempBalInputs);
 
     // Iterate through the balInputs and replace them with span elements
     tempBalInputs.forEach(function(tempBalInput, index) {
@@ -325,20 +342,56 @@ function printDivPL(div) {
 
     var divContentFinals = tempDiv.innerHTML;
 
-    // console.log(divContentFinals);
+    var iframeId = 'print_iframe';
+    var iframe = document.getElementById(iframeId);
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = iframeId;
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+    }
 
-    //var a = window.open('', '', 'height=500, width=500');
-    var a = window.open('', '');
-    a.document.write('<html>');
-    a.document.write('<head>');
-    a.document.write('<style type="text/css">');
-    a.document.write('body{font-family: "Calibri"; font-size:' + fontSize + 'px; letter-spacing: 2px;} table {font-size:' + fontSize + 'px; border-spacing: 0; letter-spacing: 2px;} th, td {padding: 0.5em 1em;}');
-    //a.document.write('@media print {html, body {width: 5.5in; /* was 8.5in */ height: 8.5in; /* was 5.5in */ display: block; font-family: "Calibri"; /*font-size: auto; NOT A VALID PROPERTY */} @page {size: 5.5in 8.5in /* . Random dot? */;}}');
-    a.document.write('</style>');
-    a.document.write('</head>');
-    a.document.write('<body>');
-    a.document.write(divContentFinals);
-    a.document.write('</body></html>');
-    a.document.close();
-    a.print();
+    var doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html><head><title>Print Packing List</title>');
+    doc.write('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    doc.write('<style type="text/css">');
+    doc.write('@page { size: portrait; margin: 6mm 6mm; }');
+    doc.write('@media print {');
+    doc.write('  html, body { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }');
+    doc.write('  .hidden-print { display: none !important; }');
+    doc.write('  table { width: 100% !important; page-break-inside: auto; }');
+    doc.write('  tr { page-break-inside: avoid; page-break-after: auto; }');
+    doc.write('}');
+    doc.write('html, body { width: 100%; max-width: 780px; margin: 0 auto; padding: 5px; box-sizing: border-box; font-family: "Calibri", Arial, sans-serif; font-size:' + fontSize + 'px; letter-spacing: 0px; color: #000; }');
+    doc.write('table { width: 100%; border-spacing: 0; border-collapse: collapse; box-sizing: border-box; }');
+    doc.write('th, td { padding: 3px 4px; font-size:' + fontSize + 'px; vertical-align: middle; box-sizing: border-box; }');
+    doc.write('th { text-align: center; }');
+    doc.write('.piece-cell { font-size: ' + pieceFontSize + 'px !important; font-weight: bold !important; text-align: center !important; padding: 3px 1px !important; line-height: 1.2 !important; white-space: nowrap !important; }');
+    doc.write('.piece-cell.empty { background-color: transparent !important; }');
+    doc.write('</style>');
+    doc.write('</head><body>');
+    doc.write(divContentFinals);
+    doc.write('</body></html>');
+    doc.close();
+
+    setTimeout(function() {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 250);
 }
+
+$(document).on('input change', '#SizeText', function() {
+    var val = $(this).val();
+    $('#packingList th, #packingList td').not('.piece-cell').css('font-size', val + 'px');
+});
+
+$(document).on('input change', '#SizePieceText', function() {
+    var val = $(this).val();
+    $('#packingList .piece-cell').css('font-size', val + 'px');
+});

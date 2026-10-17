@@ -123,7 +123,7 @@ $formatter = Yii::$app->formatter;
                     'footer'=>false
                 ],
                 'columns' => [
-                    //['class' => 'kartik\grid\SerialColumn'],
+                    ['class' => 'kartik\grid\SerialColumn'],
                     [
                         'class' => 'kartik\grid\ActionColumn', 'template' => '{view}',
                         'buttons'=>[
@@ -291,7 +291,10 @@ $formatter = Yii::$app->formatter;
 
     <?php
     if(!empty($dataProviderKirimBuyer->models)){
-        echo '<div class="text-right"><p>Ukuran Font: <input type="number" id="SizeText" min="1" max="99" step="1" value="11"></p></div>';
+        echo '<div class="text-right" style="margin-bottom: 10px;">
+            <span style="margin-right: 15px;">Ukuran Font Teks: <input type="number" id="SizeText" min="8" max="24" step="1" value="12" style="width: 55px; display: inline-block;"> px</span>
+            <span>Ukuran Font Qty Piece: <input type="number" id="SizePieceText" min="10" max="40" step="1" value="18" style="width: 55px; display: inline-block;"> px</span>
+        </div>';
 
         if($model->is_export){
             echo $this->render('child/_sj_export', ['model' => $model, 'dataProviderKirimBuyer'=>$dataProviderKirimBuyer, 'formatter'=>$formatter]);

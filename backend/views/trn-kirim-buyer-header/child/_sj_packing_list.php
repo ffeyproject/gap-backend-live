@@ -9,6 +9,14 @@ use yii\helpers\Html;
 
 ?>
 
+<style type="text/css">
+#packingList .piece-cell {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+}
+</style>
+
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">PACKING LIST</h3>
@@ -20,7 +28,7 @@ use yii\helpers\Html;
         <table width="100%">
             <tr>
                 <td width="40%">
-                    <?= Html::img('/gap/backend/web/images/logo/logo-gap.png', ['style'=>'height:100px;'])?><br>
+                    <?php //= Html::img(Yii::getAlias('@web/images/logo/logo-gap.png'), ['style'=>'height:65px;', 'onerror'=>"this.src='/gap/backend/web/images/logo/logo-gap.png';"])?><!-- <br> -->
                 </td>
                 <td width="20%"><strong>PACKING LIST</strong></td>
                 <td width="40%" style="text-align: right;"><strong>GAP-FRM-GDJ-02</strong></td>
@@ -42,16 +50,16 @@ use yii\helpers\Html;
             </tr>
         </table>
 
-        <p>&nbsp;</p>
+        <p style="margin: 4px 0;"></p>
 
-        <table width="100%" border="1">
+        <table width="100%" border="1" style="border-collapse: collapse;">
             <thead>
                 <tr>
                     <th width="3%" rowspan="2" style="text-align: center;">BAL</th>
                     <th rowspan="2" style="text-align: center;">NO WO</th>
                     <th rowspan="2" style="text-align: center;">DESIGN</th>
                     <th colspan="3" style="text-align: center;">JUMLAH</th>
-                    <th rowspan="2" colspan="10" style="text-align: center;">PIECE LENGTH</th>
+                    <th rowspan="2" style="text-align: center;">PIECE LENGTH</th>
                 </tr>
                 <tr>
                     <th style="text-align: center;">COLOR</th>
@@ -300,40 +308,38 @@ use yii\helpers\Html;
                         <?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
 
                     <!-- Batch Table -->
-                    <td>
+                    <td style="padding: 0;">
                         <table style="width: 100%; border-collapse: collapse;" border="">
                             <tr>
-                                <td style="text-align: center; padding:0 5px; white-space: nowrap;"><?= $noLot?></td>
-                                <td>
+                                <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000;"><?= $noLot?></td>
+                                <td style="padding: 0;">
                                     <?php $sample = 0;?>
                                     <?php foreach ($grades['grade'] as $gradeID => $qtys): ?>
                                     <table style="width: 100%; border-collapse: collapse;" border="">
                                         <tr>
                                             <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
-                                            <td style="text-align: center; padding:0 5px; white-space: nowrap;">
+                                            <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 28px; border-right: 1px solid #000;">
                                                 <?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
-                                            <td>
-                                                <table style="width: 100%; border-collapse: collapse;" border="1">
-                                                    <tr>
-                                                        <?php
-                                                                        $count = count($qtys);
-                                                                        $itemsPerRow = 10;
-                                                                        $totalRows = ceil($count / $itemsPerRow);
-                                                                            for ($row = 0; $row < $totalRows; $row++) {
-
-                                                                                echo '<tr>';
-                                                                                for ($col = 0; $col < $itemsPerRow; $col++) {
-                                                                                    $index = $row * $itemsPerRow + $col;
-                                                                                    if ($index < $count) {
-                                                                                        echo '<td style="text-align: center; width: 50px;">' . $qtys[$index]['qty'] .'</td>';
-                                                                                    } else {
-                                                                                        echo '<td style="width: 50px;"></td>';
-                                                                                    }
-                                                                                }
-                                                                                echo '</tr>';
-                                                                            }
-                                                                    ?>
-                                                    </tr>
+                                            <td style="padding: 0;">
+                                                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;" border="1">
+                                                    <?php
+                                                    $count = count($qtys);
+                                                    $itemsPerRow = 10;
+                                                    $totalRows = ceil($count / $itemsPerRow);
+                                                    for ($row = 0; $row < $totalRows; $row++) {
+                                                        echo '<tr>';
+                                                        for ($col = 0; $col < $itemsPerRow; $col++) {
+                                                            $index = $row * $itemsPerRow + $col;
+                                                            if ($index < $count) {
+                                                                $valQty = (float)$qtys[$index]['qty'];
+                                                                echo '<td class="piece-cell" style="text-align: center; width: 10%;">' . $valQty .'</td>';
+                                                            } else {
+                                                                echo '<td class="piece-cell empty" style="width: 10%;">&nbsp;</td>';
+                                                            }
+                                                        }
+                                                        echo '</tr>';
+                                                    }
+                                                    ?>
                                                 </table>
                                             </td>
                                             <?php }else{ 
@@ -389,7 +395,6 @@ use yii\helpers\Html;
                 </tr>
             </tbody>
         </table>
-        <h4 style="text-align: right; margin-right: 10em;">Admin : </h4>
-        <p></p>
+        <div style="text-align: right; margin-right: 10em; margin-top: 10px; font-weight: bold;">Admin : </div>
     </div>
 </div>
