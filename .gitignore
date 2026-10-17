@@ -47,4 +47,5 @@ phpunit.phar
 # tambahan
 /backup
 /backend/web/qrcode
-/backend/web/assets
+/backend/web/assets/*
+!/backend/web/assets/.gitignore
