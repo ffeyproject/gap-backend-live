@@ -107,7 +107,11 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
              }
          }
 
-         return true;
+         if ($this->status !== null) {
+            $this->status = (int)$this->status;
+        }
+
+        return true;
      }
 
      /**
@@ -117,8 +121,8 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
      {
          parent::afterSave($insert, $changedAttributes);
 
-        if (array_key_exists('status', $changedAttributes)) {
-            if ($this->status !== self::STATUS_STOCK) {
+        if (array_key_exists('status', $changedAttributes) && (int)$changedAttributes['status'] !== (int)$this->status) {
+            if ((int)$this->status === self::STATUS_OUT) {
                 TrnGudangJadiOpnamePcs::updateAll(
                     [
                         'status' => TrnGudangJadiOpnamePcs::STATUS_OUT,
@@ -126,10 +130,10 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
                     ],
                     ['id_trn_gudang_jadi' => $this->id]
                 );
-            } else {
+            } elseif ((int)$this->status === self::STATUS_STOCK) {
                 TrnGudangJadiOpnamePcs::updateAll(
                     [
-                        'status' => TrnGudangJadiOpnamePcs::STATUS_VERIFIED,
+                        'status' => TrnGudangJadiOpnamePcs::STATUS_STOCK,
                         'updated_at' => time(),
                     ],
                     [

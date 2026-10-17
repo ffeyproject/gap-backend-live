@@ -89,10 +89,14 @@ class TrnGudangJadiController extends Controller
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
+            if ($model->status !== null) {
+                $model->status = (int)$model->status;
+            }
             $transaction = Yii::$app->db->beginTransaction();
             try {
                 if ($model->save()) {
                     // Sinkronkan Qty ke trn_gudang_jadi_opname_pcs sesuai relasi id_trn_gudang_jadi
+                    // Status opname pcs tetap dipertahankan sesuai kondisi awalnya (tidak diubah menjadi OUT)
                     $userId = (!Yii::$app->user->isGuest) ? Yii::$app->user->id : null;
                     $updateAttributes = [
                         'qty' => $model->qty,
@@ -100,6 +104,18 @@ class TrnGudangJadiController extends Controller
                     ];
                     if ($userId !== null) {
                         $updateAttributes['updated_by'] = $userId;
+                    }
+
+                    // Jika status gudang jadi Stock, pastikan status opname pcs tidak berstatus OUT
+                    if ((int)$model->status === TrnGudangJadi::STATUS_STOCK) {
+                        TrnGudangJadiOpnamePcs::updateAll(
+                            ['status' => TrnGudangJadiOpnamePcs::STATUS_STOCK],
+                            [
+                                'and',
+                                ['id_trn_gudang_jadi' => $model->id],
+                                ['status' => TrnGudangJadiOpnamePcs::STATUS_OUT]
+                            ]
+                        );
                     }
 
                     $syncedCount = TrnGudangJadiOpnamePcs::updateAll(
