@@ -265,6 +265,7 @@ class AjaxController extends Controller
                 'qty_finish' => (float)$model->qtyFinish,
                 'qty_finish_to_yard' => (float)$model->qtyFinishToYard,
                 'qty_finish_to_meter' => (float)$model->qtyFinishToMeter,
+                'lebar_kain' => (float)$model->lebar_kain,
             ];
         }
         return null;

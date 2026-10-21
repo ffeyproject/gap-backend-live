@@ -96,7 +96,7 @@ class TrnScGreige extends \yii\db\ActiveRecord
             self::LEBAR_KAIN_58 => '58',
             self::LEBAR_KAIN_60 => '60',
             self::LEBAR_KAIN_64 => '64',
-            self::LEBAR_KAIN_64 => '65',
+            self::LEBAR_KAIN_65 => '65',
             self::LEBAR_KAIN_66 => '66',
             self::LEBAR_KAIN_68 => '68',
             self::LEBAR_KAIN_69 => '69',
