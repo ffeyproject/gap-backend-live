@@ -19,17 +19,37 @@
                 type: 'GET',
                 dataType: 'json',
                 data: { id: greigeGroupId },
-                success: function(data) {
+                success: function(response) {
+                    var data = response.data ? response.data : response;
+
                     if (data) {
                         currentGreigeGroup = data;
                         updateGreigeGroupInfo();
                         recalculateBatchQty();
+
+                        // Tampilkan info lebar kain berdasarkan data yang diteruskan langsung dari model PHP
+                        if (data.lebar_kain) {
+                            // Mengambil label teks langsung dari mapping yang bersumber dari model PHP
+                            var namaLebarKain = lebarKainMap[data.lebar_kain] || data.lebar_kain;
+                            console.log(lebarKainMap);
+                            
+
+                            $('#greige-lebar-info').html(
+                                '<i class="fa fa-info-circle text-info"></i> Standar lebar kain: <strong>' + namaLebarKain +  '</strong>'
+                            );
+                        } else {
+                            $('#greige-lebar-info').html('');
+                        }
                     }
+                },
+                error: function() {
+                    console.log('Gagal mengambil data greige group.');
                 }
             });
         } else {
             currentGreigeGroup = null;
             $('#greige-group-info').html('<span class="text-muted"><i class="fa fa-info-circle"></i> Pilih Greige Group terlebih dahulu untuk kalkulasi otomatis.</span>');
+            $('#greige-lebar-info').html('');
         }
     }
 
@@ -62,7 +82,6 @@
             var oneBatchFinish = (finishType === 'meter') ? currentGreigeGroup.qty_finish_to_meter : currentGreigeGroup.qty_finish_to_yard;
             if (oneBatchFinish > 0) {
                 var batchQty = finishVal / oneBatchFinish;
-                // Round to 4 decimal places for precision
                 var formattedBatch = Math.round(batchQty * 10000) / 10000;
                 $('#trnscgreige-qty').val(formattedBatch);
                 
@@ -100,6 +119,7 @@
     }
 })();
 
+// Form Submission AJAX (Yii2 ActiveForm)
 $('#scGreigeForm').on('beforeSubmit', function () {
     var $yiiform = $(this);
     $.ajax({
@@ -118,9 +138,7 @@ $('#scGreigeForm').on('beforeSubmit', function () {
                 $("#trnScModal").modal("hide");
                 $.pjax.reload({container:'#ScGreigeItems-pjax'});
             } else if (data.validation) {
-                $yiiform.yiiActiveForm('updateMessages', data.validation, true); // renders validation messages at appropriate places
-            } else {
-                // incorrect server response
+                $yiiform.yiiActiveForm('updateMessages', data.validation, true);
             }
         },
         error: function(jqXHR, textStatus, errorThrown){
@@ -135,6 +153,5 @@ $('#scGreigeForm').on('beforeSubmit', function () {
             });
         },
     });
-
-    return false; // prevent default form submission
+    return false;
 });

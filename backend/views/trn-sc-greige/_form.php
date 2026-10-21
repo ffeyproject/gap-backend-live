@@ -1,6 +1,7 @@
 <?php
 
 use common\models\ar\TrnScGreige;
+use common\models\ar\MstGreigeGroup;
 use dosamigos\tinymce\TinyMce;
 use kartik\widgets\Select2;
 use yii\helpers\Html;
@@ -60,6 +61,7 @@ use yii\widgets\ActiveForm;
                 ],
                 'data' => $model::lebarKainOptions(),
             ]) ?>
+            <div id="greige-lebar-info" style="font-size: 11px; margin-top: -10px; margin-bottom: 10px; color: #666;"></div>
         </div>
 
         <div class="col-md-2">
@@ -145,5 +147,6 @@ use yii\widgets\ActiveForm;
 <?php
 $ajaxGetGreigeGroupUrl = Url::to(['/ajax/get-greige-group']);
 $processPrintingVal = TrnScGreige::PROCESS_PRINTING;
-$this->registerJs("var ajaxGetGreigeGroupUrl = '{$ajaxGetGreigeGroupUrl}'; var processPrintingVal = {$processPrintingVal};", \yii\web\View::POS_HEAD);
+$lebarKainOptionsJson = json_encode(MstGreigeGroup::lebarKainOptions());
+$this->registerJs("var ajaxGetGreigeGroupUrl = '{$ajaxGetGreigeGroupUrl}'; var processPrintingVal = {$processPrintingVal}; var lebarKainMap = {$lebarKainOptionsJson};", \yii\web\View::POS_HEAD);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), \yii\web\View::POS_END, 'scGreigeFormJs');
