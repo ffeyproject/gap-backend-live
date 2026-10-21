@@ -27,6 +27,7 @@ use common\models\ar\TrnOrderCelup;
 use common\models\ar\TrnOrderPfp;
 use common\models\ar\TrnPfpKeluar;
 use common\models\ar\TrnReturBuyer;
+use common\models\ar\TrnReturBuyerItem;
 use common\models\ar\TrnSc;
 use common\models\ar\TrnScGreige;
 use common\models\ar\TrnStockGreige;
@@ -1590,5 +1591,49 @@ class AjaxController extends Controller
         }
 
         return ['results' => $results];
+    }
+
+    /**
+     * Daftar surat jalan (sudah posting) untuk WO, dipakai pada form retur buyer.
+     * @param int $wo_id
+     * @return array
+     */
+    public function actionReturKirimBuyerOptions($wo_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $results = [];
+        foreach (TrnReturBuyerItem::kirimBuyerOptions($wo_id) as $id => $text) {
+            $results[] = ['id' => $id, 'text' => $text];
+        }
+        return ['results' => $results];
+    }
+
+    /**
+     * Daftar roll pada satu surat jalan, dipakai pada form retur buyer.
+     * @param int $kirim_buyer_id
+     * @param int|null $retur_id
+     * @return array
+     */
+    public function actionReturRollList($kirim_buyer_id, $retur_id = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        return ['results' => TrnReturBuyerItem::rollList($kirim_buyer_id, $retur_id)];
+    }
+
+    /**
+     * Cari roll yang sudah dikirim berdasarkan hasil scan QR / ID stock.
+     * @param string $code
+     * @param int|null $wo_id kosong = cari di semua WO
+     * @return array
+     * @throws NotFoundHttpException
+     */
+    public function actionReturScanRoll($code, $wo_id = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $roll = TrnReturBuyerItem::findSentRoll($wo_id ?: null, $code);
+        if ($roll === null) {
+            throw new NotFoundHttpException("Roll \"{$code}\" tidak ditemukan pada pengiriman" . ($wo_id ? ' WO ini.' : '.'));
+        }
+        return $roll;
     }
 }

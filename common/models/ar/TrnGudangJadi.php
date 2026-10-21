@@ -32,8 +32,10 @@ use yii\behaviors\TimestampBehavior;
  * @property bool $hasil_pemotongan
  * @property bool $dipotong
  * @property string|null $locs_code
+ * @property int|null $retur_from_id ID stok asal yang dikirim ke buyer (khusus stok hasil retur buyer)
  *
  * @property TrnWo $wo
+ * @property TrnGudangJadi|null $returFrom
  * @property string $gradeName
  */
 class TrnGudangJadi extends \yii\db\ActiveRecord
@@ -169,8 +171,8 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
          return [
              [['wo_id', 'source', 'qty', 'date', 'created_at', 'created_by'], 'required'],
 
-             [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair', 'id_from', 'trans_from', 'qr_code', 'qr_code_desc'], 'default', 'value' => null],
-             [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'id_from'], 'integer'],
+             [['wo_id', 'unit', 'qty', 'no_urut', 'created_at', 'created_by', 'updated_at', 'updated_by', 'no_memo_ganti_greige', 'no_memo_repair', 'id_from', 'trans_from', 'qr_code', 'qr_code_desc', 'retur_from_id'], 'default', 'value' => null],
+             [['wo_id', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'id_from', 'retur_from_id'], 'integer'],
 
              ['qty', 'number'],
 
@@ -231,6 +233,7 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
             'trans_from' => 'Tipe Inspecting (trans_from)',
             'qr_code' => 'QR Code',
             'qr_code_desc' => 'QR Code Desc',
+            'retur_from_id' => 'Stok Asal Retur',
         ];
     }
 
@@ -242,6 +245,15 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
     public function getWo()
     {
         return $this->hasOne(TrnWo::className(), ['id' => 'wo_id']);
+    }
+
+    /**
+     * Roll asal yang dikirim ke buyer (hanya untuk stok hasil retur buyer)
+     * @return \yii\db\ActiveQuery
+     */
+    public function getReturFrom()
+    {
+        return $this->hasOne(self::className(), ['id' => 'retur_from_id']);
     }
 
     public function getInspecting()

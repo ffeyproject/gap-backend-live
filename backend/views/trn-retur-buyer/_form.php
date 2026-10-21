@@ -4,8 +4,6 @@ use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnReturBuyerItem;
 use kartik\widgets\Select2;
 use yii\helpers\Html;
-use yii\helpers\Url;
-use yii\web\JsExpression;
 use kartik\widgets\ActiveForm;
 
 /* @var $this yii\web\View */
@@ -28,31 +26,8 @@ use kartik\widgets\ActiveForm;
                         <div class="col-md-6">
                             <?php
                             if($model->isNewRecord){
-                                $ajaxUrl = Url::to(['ajax/lookup-wo']);
-                                $wo = empty($model->wo_id) ? '' : $model->wo->no;
-                                echo $form->field($model, 'wo_id')->widget(Select2::class, [
-                                    'initValueText' => $wo, // set the initial display text
-                                    'options' => ['placeholder' => 'Cari WO...'],
-                                    'pluginOptions' => [
-                                        'allowClear' => true,
-                                        'minimumInputLength' => 3,
-                                        'language' => [
-                                            'errorLoading' => new JsExpression("function () { return 'Waiting for results...'; }"),
-                                        ],
-                                        'ajax' => [
-                                            'url' => $ajaxUrl,
-                                            'dataType' => 'json',
-                                            'data' => new JsExpression('function(params) { return {q:params.term}; }')
-                                        ],
-                                        'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
-                                        'templateResult' => new JsExpression('function(wo) { return wo.text; }'),
-                                        'templateSelection' => new JsExpression('function (wo) { return wo.text; }'),
-                                    ],
-                                    /*'pluginEvents' => [
-                                        'select2:select' => 'function(e){let lookupWoColorUrl = "'.$lookupWoColorUrl.'"; '.$this->renderFile(Yii::$app->controller->viewPath.'/js/wo-on-select.js').'}',
-                                        'select2:unselect' => 'function(e){$("#trnkartuprosesprinting-wo_color_id").val(null).trigger("change"); $("#trnkartuprosesmaklon-wo_color_id").empty();}'
-                                    ]*/
-                                ])->label('Nomor Working Order');
+                                // WO dipilih per item, satu dokumen retur dibuat untuk setiap WO
+                                echo '<div class="form-group"><label class="control-label">Nomor WO</label><p class="form-control-static text-muted">Dipilih per item (bisa lebih dari satu WO)</p></div>';
                             }else{
                                 echo '<div class="form-group"><label class="control-label" for="nomorWo">Nomor WO</label><input value="'.$model->wo->no.'" type="text" id="nomorWo" class="form-control" disabled></div>';
                             }
@@ -126,9 +101,23 @@ use kartik\widgets\ActiveForm;
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-6">
+    <div class="row">
+        <div class="col-md-12">
             <div class="box">
+                <div class="box-header with-border">
+                    <h3 class="box-title">Item Retur</h3>
+                    <p class="help-block" style="margin-bottom: 0">
+                        <?php if($model->isNewRecord):?>
+                        Bisa berisi banyak WO dari customer yang sama, saat disimpan dibuat 1 dokumen retur per WO dengan nomor dokumen yang sama.
+                        Scan tanpa memilih WO akan mengisi WO otomatis.<br>
+                        <?php endif;?>
+                        Jika label roll masih ada, scan QR / ketik ID roll lalu tekan Enter.
+                        Jika label hilang, pilih surat jalan lalu roll yang cocok (lihat qty &amp; grade).
+                        Surat jalan dan roll boleh dibiarkan "Tidak diketahui", qty tetap dibatasi total kiriman WO.
+                    </p>
+                </div>
                 <div class="box-body">
                     <?=$this->render('child/_form_items', ['form'=>$form, 'model'=>$model, 'modelsItem'=>$modelsItem])?>
                 </div>

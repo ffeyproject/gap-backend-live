@@ -73,7 +73,9 @@ foreach ( TrnReturBuyer::keputusanQcOptions() as $key=>$keputusanQcOption) {
     $strOpt[] = '<option value="'.$key.'">'.$keputusanQcOption.'</option>';
 }
 $JGForm[] = implode(' ', $strOpt);
-$JGForm[] = '</select><div class="err-block text-danger"></div></div></form>';
+$JGForm[] = '</select><div class="err-block text-danger"></div>';
+$JGForm[] = '<p class="help-block">Barang bagus / dapat diperbaiki: masuk stok gudang jadi sebagai stok baru (source Retur). Tidak dapat diperbaiki: masuk stok greige Ex Finish.</p>';
+$JGForm[] = '</div></form>';
 $kpOptions = implode(' ', $JGForm);
 
 $js = <<<JS

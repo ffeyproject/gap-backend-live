@@ -84,6 +84,7 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             //'no_urut',
             'no',
+            'no_document',
             [
                 'attribute' => 'status',
                 'value' => function($data){

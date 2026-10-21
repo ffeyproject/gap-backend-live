@@ -2,6 +2,7 @@
 
 namespace common\models\ar;
 
+use backend\components\Converter;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -207,6 +208,160 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
     public function getTrnReturBuyerItems()
     {
         return $this->hasMany(TrnReturBuyerItem::className(), ['retur_buyer_id' => 'id']);
+    }
+
+    /**
+     * Validasi item retur terhadap data pengiriman:
+     * - surat jalan harus milik WO yang sama,
+     * - satu roll tidak boleh muncul dua kali,
+     * - qty per roll tidak boleh melebihi qty kirim roll tersebut,
+     * - total retur per surat jalan (termasuk dokumen retur lain) tidak boleh melebihi total kirim,
+     * - total retur per WO (termasuk item tanpa surat jalan) tidak boleh melebihi total kirim WO.
+     * Error ditambahkan ke masing-masing item.
+     *
+     * @param TrnReturBuyerItem[] $modelsItem
+     * @return bool
+     */
+    public function validateItems($modelsItem)
+    {
+        $valid = true;
+        $stockIds = [];
+        $qtyPerKirim = [];
+
+        foreach ($modelsItem as $item) {
+            if (empty($item->kirim_buyer_id) || $item->hasErrors()) {
+                continue;
+            }
+
+            $kirimBuyer = TrnKirimBuyer::findOne($item->kirim_buyer_id);
+            if ($kirimBuyer === null || $kirimBuyer->wo_id != $this->wo_id) {
+                $item->addError('kirim_buyer_id', 'Surat jalan bukan untuk WO ini.');
+                $valid = false;
+                continue;
+            }
+
+            $qtyKirimUnit = self::convertQty($item->qty, $this->unit, $kirimBuyer->unit);
+            if ($qtyKirimUnit === null) {
+                $item->addError('qty', 'Unit retur tidak bisa dikonversi ke unit surat jalan.');
+                $valid = false;
+                continue;
+            }
+
+            if (!empty($item->stock_id)) {
+                if (in_array($item->stock_id, $stockIds)) {
+                    $item->addError('stock_id', 'Roll yang sama dipilih lebih dari sekali.');
+                    $valid = false;
+                    continue;
+                }
+                $stockIds[] = $item->stock_id;
+
+                $kirimItem = TrnKirimBuyerItem::findOne(['kirim_buyer_id' => $item->kirim_buyer_id, 'stock_id' => $item->stock_id]);
+                if ($kirimItem !== null && $qtyKirimUnit > $kirimItem->qty) {
+                    $item->addError('qty', 'Qty retur melebihi qty kirim roll ini (' . Yii::$app->formatter->asDecimal($kirimItem->qty) . ').');
+                    $valid = false;
+                    continue;
+                }
+            }
+
+            $qtyPerKirim[$item->kirim_buyer_id] = ($qtyPerKirim[$item->kirim_buyer_id] ?? 0) + $qtyKirimUnit;
+        }
+
+        foreach ($qtyPerKirim as $kirimBuyerId => $qtyRetur) {
+            $kirimBuyer = TrnKirimBuyer::findOne($kirimBuyerId);
+
+            $others = TrnReturBuyerItem::find()
+                ->alias('i')
+                ->innerJoin(self::tableName() . ' r', 'r.id = i.retur_buyer_id')
+                ->select(['i.qty', 'r.unit'])
+                ->where(['i.kirim_buyer_id' => $kirimBuyerId])
+                ->andFilterWhere(['<>', 'r.id', $this->id])
+                ->asArray()
+                ->all();
+            foreach ($others as $other) {
+                $qtyRetur += (float)self::convertQty($other['qty'], $other['unit'], $kirimBuyer->unit);
+            }
+
+            if ($qtyRetur > $kirimBuyer->qtyKirim) {
+                foreach ($modelsItem as $item) {
+                    if ($item->kirim_buyer_id == $kirimBuyerId) {
+                        $item->addError('qty', 'Total retur untuk surat jalan ini (' . Yii::$app->formatter->asDecimal($qtyRetur) . ') melebihi qty kirim (' . Yii::$app->formatter->asDecimal($kirimBuyer->qtyKirim) . ').');
+                    }
+                }
+                $valid = false;
+            }
+        }
+
+        return $this->validateTotalWo($modelsItem) && $valid;
+    }
+
+    /**
+     * Total retur WO (dokumen ini + dokumen retur lain), dalam unit dokumen ini,
+     * tidak boleh melebihi total kirim WO pada surat jalan yang sudah diposting.
+     * @param TrnReturBuyerItem[] $modelsItem
+     * @return bool
+     */
+    private function validateTotalWo($modelsItem)
+    {
+        $qtyKirim = 0;
+        $kirimRows = TrnKirimBuyerItem::find()
+            ->alias('kbi')
+            ->innerJoin(TrnKirimBuyer::tableName() . ' kb', 'kb.id = kbi.kirim_buyer_id')
+            ->innerJoin(TrnKirimBuyerHeader::tableName() . ' h', 'h.id = kb.header_id')
+            ->select(['qty' => 'SUM(kbi.qty)', 'kb.unit'])
+            ->where(['kb.wo_id' => $this->wo_id, 'h.status' => TrnKirimBuyerHeader::STATUS_POSTED])
+            ->groupBy('kb.unit')
+            ->asArray()
+            ->all();
+        foreach ($kirimRows as $row) {
+            $qtyKirim += (float)self::convertQty($row['qty'], $row['unit'], $this->unit);
+        }
+
+        $qtyRetur = 0;
+        foreach ($modelsItem as $item) {
+            $qtyRetur += (float)$item->qty;
+        }
+        $others = TrnReturBuyerItem::find()
+            ->alias('i')
+            ->innerJoin(self::tableName() . ' r', 'r.id = i.retur_buyer_id')
+            ->select(['i.qty', 'r.unit'])
+            ->where(['r.wo_id' => $this->wo_id])
+            ->andFilterWhere(['<>', 'r.id', $this->id])
+            ->asArray()
+            ->all();
+        foreach ($others as $other) {
+            $qtyRetur += (float)self::convertQty($other['qty'], $other['unit'], $this->unit);
+        }
+
+        if ($qtyRetur > $qtyKirim) {
+            $msg = 'Total retur WO ini (' . Yii::$app->formatter->asDecimal($qtyRetur) . ') melebihi total kirim WO (' . Yii::$app->formatter->asDecimal($qtyKirim) . ').';
+            foreach ($modelsItem as $item) {
+                if (!$item->hasErrors('qty')) {
+                    $item->addError('qty', $msg);
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @param float $qty
+     * @param int $fromUnit
+     * @param int $toUnit
+     * @return float|null null jika unit tidak bisa dikonversi
+     */
+    public static function convertQty($qty, $fromUnit, $toUnit)
+    {
+        if ($fromUnit == $toUnit) {
+            return $qty;
+        }
+        if ($fromUnit == MstGreigeGroup::UNIT_YARD && $toUnit == MstGreigeGroup::UNIT_METER) {
+            return Converter::yardToMeter($qty);
+        }
+        if ($fromUnit == MstGreigeGroup::UNIT_METER && $toUnit == MstGreigeGroup::UNIT_YARD) {
+            return Converter::meterToYard($qty);
+        }
+        return null;
     }
 
     public function setNomor(){

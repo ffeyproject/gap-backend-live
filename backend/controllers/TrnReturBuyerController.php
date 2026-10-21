@@ -5,7 +5,6 @@ namespace backend\controllers;
 use backend\components\Converter;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnGudangJadi;
-use common\models\ar\TrnKirimBuyerItem;
 use common\models\ar\TrnReturBuyerItem;
 use common\models\ar\TrnScGreige;
 use common\models\ar\TrnStockGreige;
@@ -88,60 +87,83 @@ class TrnReturBuyerController extends Controller
         $model = new TrnReturBuyer(['date'=>date('Y-m-d')]);
 
         /* @var $modelsItem TrnReturBuyerItem[]*/
-        $modelsItem = [new TrnReturBuyerItem()];
+        $modelsItem = [new TrnReturBuyerItem(['scenario'=>TrnReturBuyerItem::SCENARIO_MULTI_WO])];
 
-        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+        if ($model->load(Yii::$app->request->post())) {
             $modelsItem = Model::createMultiple(TrnReturBuyerItem::classname());
+            foreach ($modelsItem as $modelItem) {
+                $modelItem->scenario = TrnReturBuyerItem::SCENARIO_MULTI_WO;
+            }
             Model::loadMultiple($modelsItem, Yii::$app->request->post());
 
+            // WO diisi per item, data header dipakai bersama oleh setiap dokumen retur yang terbentuk
+            $headerAttributes = array_diff($model->activeAttributes(), ['wo_id']);
+
             // validate all models
-            $valid = $model->validate();
+            $valid = $model->validate($headerAttributes);
             $valid = Model::validateMultiple($modelsItem) && $valid;
 
+            /* @var $returs array[] [TrnReturBuyer, TrnReturBuyerItem[]] per WO */
+            $returs = [];
             if ($valid) {
-                $model->mo_id = $model->wo->mo_id;
-                $model->sc_greige_id = $model->mo->sc_greige_id;
-                $model->sc_id = $model->scGreige->sc_id;
-                $model->customer_id = $model->sc->cust_id;
+                $itemsPerWo = [];
+                foreach ($modelsItem as $modelItem) {
+                    $itemsPerWo[$modelItem->wo_id][] = $modelItem;
+                }
 
+                $customerIds = [];
+                foreach ($itemsPerWo as $woId => $items) {
+                    $retur = new TrnReturBuyer($model->getAttributes($headerAttributes));
+                    $retur->wo_id = $woId;
+                    $retur->mo_id = $retur->wo->mo_id;
+                    $retur->sc_greige_id = $retur->mo->sc_greige_id;
+                    $retur->sc_id = $retur->scGreige->sc_id;
+                    $retur->customer_id = $retur->sc->cust_id;
+                    $customerIds[$retur->customer_id] = $retur->customer_id;
+
+                    $valid = $retur->validateItems($items) && $valid;
+                    $returs[] = [$retur, $items];
+                }
+
+                if (count($customerIds) > 1) {
+                    $model->addError('wo_id', 'Semua WO dalam satu input retur harus dari customer yang sama.');
+                    $valid = false;
+                }
+            }
+
+            if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
                 try{
-                    if(!$flag = $model->save(false)){
-                        $transaction->rollBack();
-                        Yii::$app->session->setFlash('error', 'Gagal memproses, coba lagi. (1)');
-                        return $this->render('create', [
-                            'model' => $model,
-                            'modelsItem' => (empty($modelsItem)) ? [new TrnReturBuyerItem] : $modelsItem
-                        ]);
-                    }
+                    foreach ($returs as list($retur, $items)) {
+                        if(!$retur->save(false)){
+                            throw new HttpException(500, 'Gagal memproses, coba lagi. (1)');
+                        }
 
-                    foreach ($modelsItem as $modelItem) {
-                        $modelItem->retur_buyer_id = $model->id;
-
-                        if(!$flag = $modelItem->save(false)){
-                            $transaction->rollBack();
-                            Yii::$app->session->setFlash('error', 'Gagal memproses, coba lagi. (2)');
-                            return $this->render('create', [
-                                'model' => $model,
-                                'modelsItem' => (empty($modelsItem)) ? [new TrnReturBuyerItem] : $modelsItem
-                            ]);
+                        foreach ($items as $modelItem) {
+                            $modelItem->retur_buyer_id = $retur->id;
+                            if(!$modelItem->save(false)){
+                                throw new HttpException(500, 'Gagal memproses, coba lagi. (2)');
+                            }
                         }
                     }
 
-                    if($flag){
-                        $transaction->commit();
-                        return $this->redirect(['view', 'id' => $model->id]);
+                    $transaction->commit();
+
+                    if (count($returs) === 1) {
+                        return $this->redirect(['view', 'id' => $returs[0][0]->id]);
                     }
+                    Yii::$app->session->setFlash('success', count($returs).' dokumen retur berhasil dibuat (1 dokumen per WO) dengan nomor dokumen '.$model->no_document.'.');
+                    return $this->redirect(['index', 'TrnReturBuyerSearch' => ['no_document' => $model->no_document]]);
                 }catch (\Throwable $t){
                     $transaction->rollBack();
-                    Yii::$app->session->setFlash('error', $t->getMessage().'---');
+                    Yii::$app->session->setFlash('error', $t->getMessage());
                 }
             }
         }
 
         return $this->render('create', [
             'model' => $model,
-            'modelsItem' => (empty($modelsItem)) ? [new TrnReturBuyerItem] : $modelsItem
+            'modelsItem' => (empty($modelsItem)) ? [new TrnReturBuyerItem(['scenario'=>TrnReturBuyerItem::SCENARIO_MULTI_WO])] : $modelsItem
         ]);
     }
 
@@ -177,9 +199,15 @@ class TrnReturBuyerController extends Controller
                 'post'=>Yii::$app->request->post()
             ], 10, true);Yii::$app->end();*/
 
+            // agar validasi "roll sudah diretur" tidak bentrok dengan item milik dokumen ini sendiri
+            foreach ($modelsItem as $modelItem) {
+                $modelItem->retur_buyer_id = $model->id;
+            }
+
             // validate all models
             $valid = $model->validate();
             $valid = Model::validateMultiple($modelsItem) && $valid;
+            $valid = $valid && $model->validateItems($modelsItem);
 
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
@@ -273,12 +301,14 @@ class TrnReturBuyerController extends Controller
                 throw new ForbiddenHttpException('Pilihan keputusan QC tidak valid, tidak bisa diposting.');
             }
 
-            $woSudahKirim = TrnKirimBuyerItem::find()->joinWith('kirimBuyer')->where(['trn_kirim_buyer.wo_id'=>$model->wo_id])->sum('qty');
-            $woSudahKirim = $woSudahKirim > 0 ? $woSudahKirim : 0;
-            $woDiretur = $model->getTrnReturBuyerItems()->sum('qty');
-            $woDiretur = $woDiretur > 0 ? $woDiretur : 0;
-            if($woSudahKirim < $woDiretur){
-                throw new HttpException(500, 'Item melebihi jumlah pengiriman, tidak bisa diposting.');
+            // validateItems() juga memastikan total retur tidak melebihi total kirim WO
+            $modelsItem = $model->trnReturBuyerItems;
+            if(!Model::validateMultiple($modelsItem) || !$model->validateItems($modelsItem)){
+                $errors = [];
+                foreach ($modelsItem as $trnReturBuyerItem) {
+                    $errors = array_merge($errors, $trnReturBuyerItem->getErrorSummary(false));
+                }
+                throw new ForbiddenHttpException('Item tidak valid: '.implode(' ', array_unique($errors)));
             }
 
             $model->keputusan_qc = $qc;
@@ -292,7 +322,45 @@ class TrnReturBuyerController extends Controller
                     throw new HttpException(500, 'Posting gagal, coba lagi. (1).');
                 }
 
-                foreach ($model->trnReturBuyerItems as $trnReturBuyerItem) {
+                foreach ($modelsItem as $trnReturBuyerItem) {
+                    /**
+                     * Barang yang diterima kembali (bagus / masih bisa diperbaiki) masuk lagi ke gudang jadi
+                     * sebagai stok baru. Roll asal tetap berstatus OUT agar riwayat surat jalan tidak berubah,
+                     * keterkaitannya disimpan di retur_from_id (boleh kosong jika roll asal tidak diketahui).
+                     */
+                    if(in_array($model->keputusan_qc, [TrnReturBuyer::QC_GOOD, TrnReturBuyer::QC_REPAIR])){
+                        $stockAsal = $trnReturBuyerItem->stock;
+                        $noSj = $trnReturBuyerItem->kirimBuyer !== null ? $trnReturBuyerItem->kirimBuyer->header->no : 'tidak diketahui';
+                        $modelGudangJadi = new TrnGudangJadi([
+                            'jenis_gudang' => $model->jenis_gudang,
+                            'wo_id' => $model->wo_id,
+                            'source' => TrnGudangJadi::SOURCE_RETUR,
+                            'source_ref' => $model->no,
+                            'unit' => $model->unit,
+                            'qty' => $trnReturBuyerItem->qty,
+                            'date' => date('Y-m-d'),
+                            'status' => TrnGudangJadi::STATUS_STOCK,
+                            'grade' => $trnReturBuyerItem->grade,
+                            'color' => $stockAsal !== null ? $stockAsal->color : null,
+                            'retur_from_id' => $trnReturBuyerItem->stock_id,
+                            'note' => 'Dari retur buyer: '.$model->no.($stockAsal === null ? ' (roll asal tidak diketahui, SJ: '.$noSj.')' : ''),
+                        ]);
+                        if(! ($flag = $modelGudangJadi->save(false))){
+                            $transaction->rollBack();
+                            throw new HttpException(500, 'Gagal menyimpan stock gudang jadi, coba lagi.');
+                        }
+
+                        $trnReturBuyerItem->gudang_jadi_id = $modelGudangJadi->id;
+                        if(! ($flag = $trnReturBuyerItem->save(false, ['gudang_jadi_id']))){
+                            $transaction->rollBack();
+                            throw new HttpException(500, 'Gagal menyimpan item retur, coba lagi.');
+                        }
+                    }
+
+                    if($model->keputusan_qc != TrnReturBuyer::QC_REJECT){
+                        continue;
+                    }
+
                     $greigeUnit = $model->scGreige->greigeGroup->unit;
                     if($greigeUnit == $model->unit){
                         $qty = $trnReturBuyerItem->qty;
@@ -406,6 +474,20 @@ class TrnReturBuyerController extends Controller
                 }
 
                 foreach ($model->trnReturBuyerItems as $trnReturBuyerItem) {
+                    // barang dikembalikan ke greige untuk diredyeing, stok hasil retur di gudang jadi dikeluarkan
+                    $stockRetur = $trnReturBuyerItem->gudangJadi;
+                    if($stockRetur !== null){
+                        if($stockRetur->status != TrnGudangJadi::STATUS_STOCK){
+                            $transaction->rollBack();
+                            throw new ForbiddenHttpException('Stok hasil retur (ID '.$stockRetur->id.') sudah tidak berstatus stock, tidak bisa diredyeing.');
+                        }
+                        $stockRetur->status = TrnGudangJadi::STATUS_OUT;
+                        if(! ($flag = $stockRetur->save(false, ['status']))){
+                            $transaction->rollBack();
+                            throw new HttpException(500, 'Gagal mengeluarkan stok hasil retur, coba lagi.');
+                        }
+                    }
+
                     $greigeUnit = $model->scGreige->greigeGroup->unit;
                     if($greigeUnit == $model->unit){
                         $qty = $trnReturBuyerItem->qty;

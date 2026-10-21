@@ -27,7 +27,7 @@ class TrnReturBuyerSearch extends TrnReturBuyer
     {
         return [
             [['id', 'jenis_gudang', 'customer_id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'unit', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'keputusan_qc'], 'integer'],
-            [['date', 'no', 'note', 'pengirim', 'dateRange', 'scNo', 'moNo', 'woNo', 'custName'], 'safe'],
+            [['date', 'no', 'note', 'pengirim', 'dateRange', 'scNo', 'moNo', 'woNo', 'custName', 'no_document'], 'safe'],
         ];
     }
 
@@ -130,6 +130,7 @@ class TrnReturBuyerSearch extends TrnReturBuyer
         $query->andFilterWhere(['ilike', 'trn_retur_buyer.no', $this->no])
             ->andFilterWhere(['ilike', 'trn_retur_buyer.note', $this->note])
             ->andFilterWhere(['ilike', 'trn_retur_buyer.pengirim', $this->pengirim])
+            ->andFilterWhere(['ilike', 'trn_retur_buyer.no_document', $this->no_document])
             ->andFilterWhere(['ilike', 'trn_mo.no', $this->moNo])
             ->andFilterWhere(['ilike', 'trn_sc.no', $this->scNo])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
