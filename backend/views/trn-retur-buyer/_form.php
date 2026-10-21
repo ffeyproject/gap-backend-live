@@ -35,13 +35,19 @@ use kartik\widgets\ActiveForm;
                         </div>
 
                         <div class="col-md-6">
-                            <?= $form->field($model, 'unit')->widget(Select2::classname(), [
+                            <?php
+                            $unitField = $form->field($model, 'unit')->widget(Select2::classname(), [
                                 'data' => MstGreigeGroup::unitOptions(),
-                                'options' => ['placeholder' => 'Pilih ...'],
+                                'options' => ['placeholder' => $model->isNewRecord ? 'Ikuti unit pengiriman WO' : 'Pilih ...'],
                                 'pluginOptions' => [
                                     'allowClear' => true
                                 ],
-                            ]) ?>
+                            ]);
+                            if($model->isNewRecord){
+                                $unitField->hint('Kosongkan agar mengikuti unit surat jalan (mis. Yard). Qty diisi panjang per roll sesuai unit ini.');
+                            }
+                            echo $unitField;
+                            ?>
                         </div>
                     </div>
 

@@ -25,19 +25,12 @@ function posting(event){
 
     $.confirm({
         title: 'Konfirmasi!',
-        content:kpOptions,
+        content: 'Posting retur ini? Semua item akan masuk ke stok gudang jadi sebagai stok baru (source Retur).',
         buttons: {
             submit: {
-                text: 'Submit',
+                text: 'Posting',
                 btnClass : 'btn-blue',
                 action: function(){
-                    var ctn = this.$content.find('.QCOpt').val();
-                    if(!ctn){
-                        this.$content.find('.err-block').html("Harap masukan Piihan!!");
-                        //$.alert('Harap masukan Piihan Jenis Gudang!!');
-                        return false;
-                    }
-
                     $.ajax({
                         method: 'POST',
                         beforeSend: function (jqXHR, settings) {
@@ -46,7 +39,6 @@ function posting(event){
                                 css: { border: '3px solid #a00' }
                             });
                         },
-                        data:{formData:ctn},
                         url: href,
                         error: function(jqXHR, textStatus, errorThrown ){
                             var errorObj;
@@ -84,15 +76,6 @@ function posting(event){
                 }
             },
             batal: function () {}
-        },
-        onContentReady: function(){
-            // bind to events
-            var jc = this;
-            this.$content.find('form').on('submit', function (e) {
-                // if the user submits the form by pressing enter in the field.
-                e.preventDefault();
-                jc.formSubmit.trigger('click'); // reference the button and click it
-            });
         }
     });
 }

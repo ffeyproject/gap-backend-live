@@ -949,9 +949,20 @@ $moduleId = $controller->module->id;
                                     ],
                                 ]
                             ],
+                        ]
+                    ],
+                    [
+                        'label' => 'Retur',
+                        'icon' => 'th-list',
+                        'url' => '#',
+                        'items' => [
                             [
-                                'label' => 'Retur', 'icon' => 'circle-o', 'url' => ['/trn-retur-buyer/index'],
+                                'label' => 'Retur Buyer', 'icon' => 'circle-o', 'url' => ['/trn-retur-buyer/index'],
                                 'active' => $moduleId=='app-backend' && $controllerId == 'trn-retur-buyer'
+                            ],
+                            [
+                                'label' => 'Surat Pengantar Retur', 'icon' => 'circle-o', 'url' => ['/trn-retur-pengantar/index'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'trn-retur-pengantar'
                             ],
                         ]
                     ],

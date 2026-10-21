@@ -32,20 +32,19 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
             ]) ?>
         <?php else:?>
             <?php
-                if($model->keputusan_qc == $model::QC_REPAIR){
-                    if($model->status == $model::STATUS_POSTED){
-                        echo Html::a('Re Dyeing', ['re-dyeing', 'id' => $model->id], [
-                            'class' => 'btn btn-warning',
-                            'onclick' => 'setReDyeing(event);',
-                            'title' => 'Lanjutkan Perbaikan Redyeing'
-                        ]);
-                        echo ' ';
-                        echo Html::a('Repair', ['repair', 'id' => $model->id], [
-                            'class' => 'btn btn-warning',
-                            'onclick' => 'setRepair(event);',
-                            'title' => 'Lanjutkan Perbaikan repair'
-                        ]);
-                    }
+                // keputusan QC tidak lagi dipilih saat posting, proses lanjutan tersedia untuk semua retur yang sudah posting
+                if($model->status == $model::STATUS_POSTED){
+                    echo Html::a('Re Dyeing', ['re-dyeing', 'id' => $model->id], [
+                        'class' => 'btn btn-warning',
+                        'onclick' => 'setReDyeing(event);',
+                        'title' => 'Lanjutkan Perbaikan Redyeing'
+                    ]);
+                    echo ' ';
+                    echo Html::a('Repair', ['repair', 'id' => $model->id], [
+                        'class' => 'btn btn-warning',
+                        'onclick' => 'setRepair(event);',
+                        'title' => 'Lanjutkan Perbaikan repair'
+                    ]);
                 }
             ?>
         <?php endif;?>
@@ -61,25 +60,4 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
 </div>
 
 <?php
-$JGForm = [
-    '<form action="" class="formName">',
-    '<div class="form-group">',
-    '<label>Tentukan Keputusan QC:</label>',
-    '<select class="QCOpt form-control">',
-];
-
-$strOpt = ['<option value="">--Pilih--</option>'];
-foreach ( TrnReturBuyer::keputusanQcOptions() as $key=>$keputusanQcOption) {
-    $strOpt[] = '<option value="'.$key.'">'.$keputusanQcOption.'</option>';
-}
-$JGForm[] = implode(' ', $strOpt);
-$JGForm[] = '</select><div class="err-block text-danger"></div>';
-$JGForm[] = '<p class="help-block">Barang bagus / dapat diperbaiki: masuk stok gudang jadi sebagai stok baru (source Retur). Tidak dapat diperbaiki: masuk stok greige Ex Finish.</p>';
-$JGForm[] = '</div></form>';
-$kpOptions = implode(' ', $JGForm);
-
-$js = <<<JS
-var kpOptions = '{$kpOptions}';
-JS;
-
-$this->registerJs($js.$this->renderFile(__DIR__.'/js/view.js'), View::POS_END);
+$this->registerJs($this->renderFile(__DIR__.'/js/view.js'), View::POS_END);

@@ -242,7 +242,8 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
 
             $qtyKirimUnit = self::convertQty($item->qty, $this->unit, $kirimBuyer->unit);
             if ($qtyKirimUnit === null) {
-                $item->addError('qty', 'Unit retur tidak bisa dikonversi ke unit surat jalan.');
+                $units = MstGreigeGroup::unitOptions();
+                $item->addError('qty', 'Unit retur (' . ($units[$this->unit] ?? '-') . ') tidak bisa dikonversi ke unit surat jalan (' . ($units[$kirimBuyer->unit] ?? '-') . ').');
                 $valid = false;
                 continue;
             }
@@ -302,18 +303,20 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
      */
     private function validateTotalWo($modelsItem)
     {
+        $units = MstGreigeGroup::unitOptions();
         $qtyKirim = 0;
-        $kirimRows = TrnKirimBuyerItem::find()
-            ->alias('kbi')
-            ->innerJoin(TrnKirimBuyer::tableName() . ' kb', 'kb.id = kbi.kirim_buyer_id')
-            ->innerJoin(TrnKirimBuyerHeader::tableName() . ' h', 'h.id = kb.header_id')
-            ->select(['qty' => 'SUM(kbi.qty)', 'kb.unit'])
-            ->where(['kb.wo_id' => $this->wo_id, 'h.status' => TrnKirimBuyerHeader::STATUS_POSTED])
-            ->groupBy('kb.unit')
-            ->asArray()
-            ->all();
-        foreach ($kirimRows as $row) {
-            $qtyKirim += (float)self::convertQty($row['qty'], $row['unit'], $this->unit);
+        foreach (self::kirimQtyPerUnit($this->wo_id) as $unit => $qty) {
+            $converted = self::convertQty($qty, $unit, $this->unit);
+            if ($converted === null) {
+                $msg = 'Unit retur (' . ($units[$this->unit] ?? '-') . ') tidak bisa dibandingkan dengan unit pengiriman WO ini (' . ($units[$unit] ?? '-') . '). Ubah Unit retur menjadi ' . ($units[$unit] ?? '-') . '.';
+                foreach ($modelsItem as $item) {
+                    if (!$item->hasErrors('qty')) {
+                        $item->addError('qty', $msg);
+                    }
+                }
+                return false;
+            }
+            $qtyKirim += $converted;
         }
 
         $qtyRetur = 0;
@@ -342,6 +345,25 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
             return false;
         }
         return true;
+    }
+
+    /**
+     * Total qty kirim WO (surat jalan sudah posting) dikelompokkan per unit.
+     * @param int $woId
+     * @return array [unit => qty]
+     */
+    public static function kirimQtyPerUnit($woId)
+    {
+        $rows = TrnKirimBuyerItem::find()
+            ->alias('kbi')
+            ->innerJoin(TrnKirimBuyer::tableName() . ' kb', 'kb.id = kbi.kirim_buyer_id')
+            ->innerJoin(TrnKirimBuyerHeader::tableName() . ' h', 'h.id = kb.header_id')
+            ->select(['qty' => 'SUM(kbi.qty)', 'unit' => 'kb.unit'])
+            ->where(['kb.wo_id' => $woId, 'h.status' => TrnKirimBuyerHeader::STATUS_POSTED])
+            ->groupBy('kb.unit')
+            ->asArray()
+            ->all();
+        return array_map('floatval', \yii\helpers\ArrayHelper::map($rows, 'unit', 'qty'));
     }
 
     /**

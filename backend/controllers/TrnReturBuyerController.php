@@ -90,11 +90,16 @@ class TrnReturBuyerController extends Controller
         $modelsItem = [new TrnReturBuyerItem(['scenario'=>TrnReturBuyerItem::SCENARIO_MULTI_WO])];
 
         if ($model->load(Yii::$app->request->post())) {
-            $modelsItem = Model::createMultiple(TrnReturBuyerItem::classname());
-            foreach ($modelsItem as $modelItem) {
-                $modelItem->scenario = TrnReturBuyerItem::SCENARIO_MULTI_WO;
+            // dibaca berurutan apa adanya, index baris dari dynamic form bisa tidak urut setelah baris ditambah/dihapus
+            $modelsItem = [];
+            foreach (array_values((array)Yii::$app->request->post((new TrnReturBuyerItem())->formName(), [])) as $itemData) {
+                $modelItem = new TrnReturBuyerItem(['scenario' => TrnReturBuyerItem::SCENARIO_MULTI_WO]);
+                $modelItem->load($itemData, '');
+                $modelsItem[] = $modelItem;
             }
-            Model::loadMultiple($modelsItem, Yii::$app->request->post());
+
+            // unit kosong -> mengikuti unit pengiriman masing-masing WO
+            $unitKosong = empty($model->unit);
 
             // WO diisi per item, data header dipakai bersama oleh setiap dokumen retur yang terbentuk
             $headerAttributes = array_diff($model->activeAttributes(), ['wo_id']);
@@ -115,6 +120,12 @@ class TrnReturBuyerController extends Controller
                 foreach ($itemsPerWo as $woId => $items) {
                     $retur = new TrnReturBuyer($model->getAttributes($headerAttributes));
                     $retur->wo_id = $woId;
+                    if ($unitKosong) {
+                        $kirimUnits = array_keys(TrnReturBuyer::kirimQtyPerUnit($woId));
+                        if (!empty($kirimUnits)) {
+                            $retur->unit = $kirimUnits[0];
+                        }
+                    }
                     $retur->mo_id = $retur->wo->mo_id;
                     $retur->sc_greige_id = $retur->mo->sc_greige_id;
                     $retur->sc_id = $retur->scGreige->sc_id;
@@ -296,11 +307,6 @@ class TrnReturBuyerController extends Controller
                 throw new ForbiddenHttpException('Item belum diinput, tidak bisa diposting.');
             }
 
-            $qc = Yii::$app->request->post('formData');
-            if(!in_array($qc, array_keys($model::keputusanQcOptions()))){
-                throw new ForbiddenHttpException('Pilihan keputusan QC tidak valid, tidak bisa diposting.');
-            }
-
             // validateItems() juga memastikan total retur tidak melebihi total kirim WO
             $modelsItem = $model->trnReturBuyerItems;
             if(!Model::validateMultiple($modelsItem) || !$model->validateItems($modelsItem)){
@@ -311,121 +317,48 @@ class TrnReturBuyerController extends Controller
                 throw new ForbiddenHttpException('Item tidak valid: '.implode(' ', array_unique($errors)));
             }
 
-            $model->keputusan_qc = $qc;
             $model->setNomor();
             $model->status = $model::STATUS_POSTED;
 
             $transaction = Yii::$app->db->beginTransaction();
             try{
-                if(! ($flag = $model->save(false, ['status', 'no_urut', 'no', 'keputusan_qc']))){
+                if(! ($flag = $model->save(false, ['status', 'no_urut', 'no']))){
                     $transaction->rollBack();
                     throw new HttpException(500, 'Posting gagal, coba lagi. (1).');
                 }
 
+                /**
+                 * Semua barang retur masuk lagi ke gudang jadi sebagai stok baru (tanpa keputusan QC).
+                 * Roll asal tetap berstatus OUT agar riwayat surat jalan tidak berubah,
+                 * keterkaitannya disimpan di retur_from_id (boleh kosong jika roll asal tidak diketahui).
+                 * Proses lanjutan (Re Dyeing / Repair) dilakukan dari halaman view setelah posting.
+                 */
                 foreach ($modelsItem as $trnReturBuyerItem) {
-                    /**
-                     * Barang yang diterima kembali (bagus / masih bisa diperbaiki) masuk lagi ke gudang jadi
-                     * sebagai stok baru. Roll asal tetap berstatus OUT agar riwayat surat jalan tidak berubah,
-                     * keterkaitannya disimpan di retur_from_id (boleh kosong jika roll asal tidak diketahui).
-                     */
-                    if(in_array($model->keputusan_qc, [TrnReturBuyer::QC_GOOD, TrnReturBuyer::QC_REPAIR])){
-                        $stockAsal = $trnReturBuyerItem->stock;
-                        $noSj = $trnReturBuyerItem->kirimBuyer !== null ? $trnReturBuyerItem->kirimBuyer->header->no : 'tidak diketahui';
-                        $modelGudangJadi = new TrnGudangJadi([
-                            'jenis_gudang' => $model->jenis_gudang,
-                            'wo_id' => $model->wo_id,
-                            'source' => TrnGudangJadi::SOURCE_RETUR,
-                            'source_ref' => $model->no,
-                            'unit' => $model->unit,
-                            'qty' => $trnReturBuyerItem->qty,
-                            'date' => date('Y-m-d'),
-                            'status' => TrnGudangJadi::STATUS_STOCK,
-                            'grade' => $trnReturBuyerItem->grade,
-                            'color' => $stockAsal !== null ? $stockAsal->color : null,
-                            'retur_from_id' => $trnReturBuyerItem->stock_id,
-                            'note' => 'Dari retur buyer: '.$model->no.($stockAsal === null ? ' (roll asal tidak diketahui, SJ: '.$noSj.')' : ''),
-                        ]);
-                        if(! ($flag = $modelGudangJadi->save(false))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal menyimpan stock gudang jadi, coba lagi.');
-                        }
-
-                        $trnReturBuyerItem->gudang_jadi_id = $modelGudangJadi->id;
-                        if(! ($flag = $trnReturBuyerItem->save(false, ['gudang_jadi_id']))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal menyimpan item retur, coba lagi.');
-                        }
+                    $stockAsal = $trnReturBuyerItem->stock;
+                    $noSj = $trnReturBuyerItem->kirimBuyer !== null ? $trnReturBuyerItem->kirimBuyer->header->no : 'tidak diketahui';
+                    $modelGudangJadi = new TrnGudangJadi([
+                        'jenis_gudang' => $model->jenis_gudang,
+                        'wo_id' => $model->wo_id,
+                        'source' => TrnGudangJadi::SOURCE_RETUR,
+                        'source_ref' => $model->no,
+                        'unit' => $model->unit,
+                        'qty' => $trnReturBuyerItem->qty,
+                        'date' => date('Y-m-d'),
+                        'status' => TrnGudangJadi::STATUS_STOCK,
+                        'grade' => $trnReturBuyerItem->grade,
+                        'color' => $stockAsal !== null ? $stockAsal->color : null,
+                        'retur_from_id' => $trnReturBuyerItem->stock_id,
+                        'note' => 'Dari retur buyer: '.$model->no.($stockAsal === null ? ' (roll asal tidak diketahui, SJ: '.$noSj.')' : ''),
+                    ]);
+                    if(! ($flag = $modelGudangJadi->save(false))){
+                        $transaction->rollBack();
+                        throw new HttpException(500, 'Gagal menyimpan stock gudang jadi, coba lagi.');
                     }
 
-                    if($model->keputusan_qc != TrnReturBuyer::QC_REJECT){
-                        continue;
-                    }
-
-                    $greigeUnit = $model->scGreige->greigeGroup->unit;
-                    if($greigeUnit == $model->unit){
-                        $qty = $trnReturBuyerItem->qty;
-                    }else{
-                        switch ($greigeUnit){
-                            case MstGreigeGroup::UNIT_YARD:
-                                if($model->unit == MstGreigeGroup::UNIT_METER){
-                                    $qty = Converter::yardToMeter($trnReturBuyerItem->qty);
-                                }else{
-                                    $transaction->rollBack();
-                                    throw new NotAcceptableHttpException('Posting gagal, unit tidak bisa dikonversi. Periksa kembali kecocokan unit dengan unit pada greige group. (1)');
-                                }
-                                break;
-                            case MstGreigeGroup::UNIT_METER:
-                                if($model->unit == MstGreigeGroup::UNIT_YARD){
-                                    $qty = Converter::meterToYard($trnReturBuyerItem->qty);
-                                }else{
-                                    $transaction->rollBack();
-                                    throw new NotAcceptableHttpException('Posting gagal, unit tidak bisa dikonversi. Periksa kembali kecocokan unit dengan unit pada greige group. (2)');
-                                }
-                                break;
-                            default:
-                                $transaction->rollBack();
-                                throw new NotAcceptableHttpException('Posting gagal, unit tidak bisa dikonversi. Periksa kembali kecocokan unit dengan unit pada greige group. (3)');
-                        }
-                    }
-
-                    /**
-                     * Jika keputusan qc tidak bisa diperbaiki, maka langsung masuk ke stock greige
-                     * jika masih bisa diperbaiki, ada dua kemungkinan proses lanjutan, di repair atau redyeing
-                    */
-                    if($model->keputusan_qc == TrnReturBuyer::QC_REJECT){
-                        $modelStock = new TrnStockGreige([
-                            'greige_group_id' => $model->wo->greige->group_id,
-                            'greige_id' => $model->wo->greige_id,
-                            'asal_greige' => TrnStockGreige::ASAL_GREIGE_RETUR,
-                            'no_lapak' => '-',
-                            'grade' => $trnReturBuyerItem->grade,
-                            'lot_lusi' => '-',
-                            'lot_pakan' => '-',
-                            'no_set_lusi' => '-',
-                            'panjang_m' => $qty,
-                            'status_tsd' => TrnStockGreige::STATUS_TSD_LAIN_LAIN,
-                            'no_document' => $model->no,
-                            'pengirim' => '-',
-                            'mengetahui' => '-',
-                            'note' => 'Dari retur buyer: '.$model->no,
-                            'status' => TrnStockGreige::STATUS_VALID,
-                            'date' => date('Y-m-d'),
-                            'jenis_gudang' => TrnStockGreige::JG_EX_FINISH,
-                            'nomor_wo' => $model->wo->no,
-                            'keputusan_qc' => $model->keputusan_qc
-                        ]);
-                        if(! ($flag = $modelStock->save(false))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal menyimpan stock, coba lagi.');
-                        }
-
-                        //menambah jumlah stock ex finish
-                        $command = Yii::$app->db->createCommand("UPDATE mst_greige SET stock_ef = stock_ef + {$qty} WHERE id= {$modelStock->greige_id}");
-                        if(!$flag = $command->execute() > 0){
-                            $transaction->rollBack();
-                            Yii::$app->session->setFlash('error', 'Gagal, coba lagi.');
-                            return $this->redirect(['view', 'id' => $model->id]);
-                        }
+                    $trnReturBuyerItem->gudang_jadi_id = $modelGudangJadi->id;
+                    if(! ($flag = $trnReturBuyerItem->save(false, ['gudang_jadi_id']))){
+                        $transaction->rollBack();
+                        throw new HttpException(500, 'Gagal menyimpan item retur, coba lagi.');
                     }
                 }
 
@@ -456,7 +389,7 @@ class TrnReturBuyerController extends Controller
 
             $model = $this->findModel($id);
 
-            if ($model->status != $model::STATUS_POSTED && $model->keputusan_qc != $model::QC_REPAIR) {
+            if ($model->status != $model::STATUS_POSTED) {
                 throw new ForbiddenHttpException('Status tidak valid, tidak bisa diproses.');
             }
 
@@ -569,7 +502,7 @@ class TrnReturBuyerController extends Controller
 
             $model = $this->findModel($id);
 
-            if ($model->status != $model::STATUS_POSTED && $model->keputusan_qc != $model::QC_REPAIR) {
+            if ($model->status != $model::STATUS_POSTED) {
                 throw new ForbiddenHttpException('Status tidak valid, tidak bisa diproses.');
             }
 

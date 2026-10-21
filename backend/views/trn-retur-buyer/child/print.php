@@ -82,19 +82,8 @@ use yii\helpers\Html;
             <tbody>
             <tr>
                 <td width="50%"></td>
-                <td>
-                    <ol>
-                        <?php
-                        foreach (\common\models\ar\TrnReturBuyer::keputusanQcOptions() as $key=>$keputusanQcOption){
-                            $style = 'style="text-decoration: line-through;"';
-                            if($key == $model->keputusan_qc){
-                                $style = '';
-                            }
-                            echo '<li '.$style.'>'.$keputusanQcOption.'</li>';
-                        }
-                        ?>
-                    </ol>
-                </td>
+                <?php // keputusan QC tidak lagi dipilih di sistem, kolom dibiarkan kosong untuk diisi manual ?>
+                <td style="height: 80px"></td>
             </tr>
             </tbody>
         </table>
