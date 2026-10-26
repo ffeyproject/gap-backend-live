@@ -51,6 +51,7 @@ class TrnInspectingController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'set-diterima-gudang-jadi' => ['POST'],
                 ],
             ],
         ];
@@ -2191,6 +2192,76 @@ class TrnInspectingController extends Controller
         $log->save(false);
     }
 
+
+    /**
+     * Mengubah status inspecting menjadi "Diterima Gudang Jadi" untuk seluruh data
+     * hasil filter pada grid Data Inspecting (wajib memfilter Tanggal Kirim).
+     * Hanya data berstatus Selesai Verpacking / Selesai Verpacking Partial yang diproses.
+     */
+    public function actionSetDiterimaGudangJadi()
+    {
+        if (!Yii::$app->request->isPost) {
+            throw new MethodNotAllowedHttpException('Method not allowed.');
+        }
+
+        $params = Yii::$app->request->queryParams;
+        $searchModel = new TrnInspectingSearch();
+        $dataProvider = $searchModel->search($params);
+
+        if (empty($searchModel->dateRange)) {
+            Yii::$app->session->setFlash('error', 'Filter Tanggal Kirim wajib diisi terlebih dahulu.');
+            return $this->redirect(['index']);
+        }
+
+        $query = clone $dataProvider->query;
+        $query->orderBy(null)->andWhere(['in', 'trn_inspecting.status', [
+            TrnInspecting::STATUS_APPROVED,
+            TrnInspecting::STATUS_APPROVED_PARTIAL,
+        ]]);
+
+        $ids = array_unique($query->select('trn_inspecting.id')->column());
+        $count = 0;
+
+        if (!empty($ids)) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach (TrnInspecting::find()->where(['id' => $ids])->each(100) as $model) {
+                    /* @var $model TrnInspecting */
+                    $model->status = TrnInspecting::STATUS_DELIVERED;
+                    if (!$model->delivered_at) {
+                        $model->delivered_at = time();
+                    }
+                    if (!$model->delivered_by) {
+                        $model->delivered_by = Yii::$app->user->id;
+                    }
+                    if (!$model->save(false, ['status', 'delivered_at', 'delivered_by'])) {
+                        throw new HttpException(500, 'Gagal mengubah status inspecting ID ' . $model->id);
+                    }
+
+                    if (!empty($model->kartu_process_dyeing_id)) {
+                        $kp = $model->kartuProcessDyeing;
+                        if ($kp !== null && $kp->status != TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI) {
+                            $kp->status = TrnKartuProsesDyeing::STATUS_TERIMA_GUDANG_JADI;
+                            $kp->updated_at = time();
+                            $kp->updated_by = Yii::$app->user->id;
+                            $kp->save(false, ['status', 'updated_at', 'updated_by']);
+                        }
+                    }
+                    $count++;
+                }
+                $transaction->commit();
+            } catch (\Throwable $t) {
+                $transaction->rollBack();
+                throw $t;
+            }
+        }
+
+        Yii::$app->session->setFlash('success',
+            "Berhasil mengubah {$count} data menjadi 'Diterima Gudang Jadi' (Tanggal Kirim: {$searchModel->dateRange})."
+        );
+
+        return $this->redirect(array_merge(['index'], $params));
+    }
 
     public function actionSetStatusGudangJadiAll($tahun = null)
     {

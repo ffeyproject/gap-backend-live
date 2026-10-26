@@ -4,6 +4,7 @@ use common\models\ar\TrnInspectingSearch;
 use common\models\ar\TrnScGreige;
 use yii\helpers\Html;
 use kartik\grid\GridView;
+use mdm\admin\components\Helper;
 
 /* @var $this yii\web\View */
 /* @var $searchModel TrnInspectingSearch */
@@ -26,6 +27,20 @@ $this->params['breadcrumbs'][] = $this->title;
             //'footer'=>false
         ],
         'toolbar' => [
+            [
+                'content' => !Helper::checkRoute('set-diterima-gudang-jadi') ? '' : Html::a(
+                    '<i class="glyphicon glyphicon-ok"></i> Set Diterima Gudang Jadi',
+                    array_merge(['set-diterima-gudang-jadi'], Yii::$app->request->queryParams),
+                    [
+                        'class' => 'btn btn-warning',
+                        'data-method' => 'post',
+                        'data-confirm' => empty($searchModel->dateRange)
+                            ? 'Filter Tanggal Kirim wajib diisi terlebih dahulu.'
+                            : 'Ubah status data berstatus Selesai Verpacking / Selesai Verpacking Partial pada hasil filter Tanggal Kirim ' . $searchModel->dateRange . ' menjadi Diterima Gudang Jadi?',
+                    ]
+                ),
+                'options' => ['class' => 'btn-group']
+            ],
             [
                 'content'=> Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']),
                 'options' => ['class' => 'btn-group']

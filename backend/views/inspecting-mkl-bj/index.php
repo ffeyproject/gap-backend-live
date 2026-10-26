@@ -2,6 +2,7 @@
 
 use common\models\ar\InspectingMklBj;
 use kartik\grid\GridView;
+use mdm\admin\components\Helper;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\web\JsExpression;
@@ -32,6 +33,20 @@ if(!empty($searchModel->wo_id)){
             //'footer'=>false
         ],
         'toolbar' => [
+            [
+                'content' => !Helper::checkRoute('set-diterima-gudang-jadi') ? '' : Html::a(
+                    '<i class="glyphicon glyphicon-ok"></i> Set Diterima Gudang Jadi',
+                    array_merge(['set-diterima-gudang-jadi'], Yii::$app->request->queryParams),
+                    [
+                        'class' => 'btn btn-warning',
+                        'data-method' => 'post',
+                        'data-confirm' => empty($searchModel->tglKirimRange)
+                            ? 'Filter Tanggal Kirim wajib diisi terlebih dahulu.'
+                            : 'Ubah status data berstatus Posted / Posted Partial pada hasil filter Tanggal Kirim ' . $searchModel->tglKirimRange . ' menjadi Diterima Gudang Jadi?',
+                    ]
+                ),
+                'options' => ['class' => 'btn-group']
+            ],
             [
                 'content'=> Html::a('<i class="glyphicon glyphicon-plus"></i>', ['create'], ['class' => 'btn btn-success']),
                 'options' => ['class' => 'btn-group']

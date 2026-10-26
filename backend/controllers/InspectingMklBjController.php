@@ -42,9 +42,66 @@ class InspectingMklBjController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'set-diterima-gudang-jadi' => ['POST'],
                 ],
             ],
         ];
+    }
+
+    /**
+     * Mengubah status inspecting makloon/barang jadi menjadi "Diterima Gudang Jadi" untuk
+     * seluruh data hasil filter pada grid (wajib memfilter Tanggal Kirim).
+     * Hanya data berstatus Posted / Posted Partial yang diproses.
+     */
+    public function actionSetDiterimaGudangJadi()
+    {
+        $params = Yii::$app->request->queryParams;
+        $searchModel = new InspectingMklBjSearch();
+        $dataProvider = $searchModel->search($params);
+
+        if (empty($searchModel->tglKirimRange)) {
+            Yii::$app->session->setFlash('error', 'Filter Tanggal Kirim wajib diisi terlebih dahulu.');
+            return $this->redirect(['index']);
+        }
+
+        $query = clone $dataProvider->query;
+        $query->orderBy(null)->andWhere(['in', 'inspecting_mkl_bj.status', [
+            InspectingMklBj::STATUS_POSTED,
+            InspectingMklBj::STATUS_POSTED_PARTIAL,
+        ]]);
+
+        $ids = array_unique($query->select('inspecting_mkl_bj.id')->column());
+        $count = 0;
+
+        if (!empty($ids)) {
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach (InspectingMklBj::find()->where(['id' => $ids])->each(100) as $model) {
+                    /* @var $model InspectingMklBj */
+                    $model->status = InspectingMklBj::STATUS_DELIVERED;
+                    if (!$model->delivered_at) {
+                        $model->delivered_at = time();
+                    }
+                    if (!$model->delivered_by) {
+                        $model->delivered_by = Yii::$app->user->id;
+                    }
+                    if (!$model->save(false, ['status', 'delivered_at', 'delivered_by'])) {
+                        throw new HttpException(500, 'Gagal mengubah status inspecting ID ' . $model->id);
+                    }
+                    $count++;
+                }
+                $transaction->commit();
+            } catch (\Throwable $t) {
+                $transaction->rollBack();
+                throw $t;
+            }
+        }
+
+        Yii::$app->session->setFlash('success',
+            "Berhasil mengubah {$count} data menjadi 'Diterima Gudang Jadi' (Tanggal Kirim: {$searchModel->tglKirimRange})."
+        );
+
+        return $this->redirect(array_merge(['index'], $params));
     }
 
     /**
