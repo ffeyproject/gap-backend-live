@@ -42,8 +42,15 @@ return [
             'host' => 'smtp.gmail.com',
             'username' => 'pgajahangkasa@gmail.com',
             'password' => 'jvcaacorchdzqyyp',
-            'port' => '587',
-            'encryption' => 'tls',
+            'port' => '465',
+            'encryption' => 'ssl',
+            'streamOptions' => [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                ],
+            ],
             ],
         ],
 
