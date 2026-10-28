@@ -41,6 +41,7 @@ class TrnKirimBuyerItemSearch extends TrnKirimBuyerItem
             'stock.wo.mo.scGreige.sc.cust',
             'stock.wo.mo.scGreige.sc.marketing',
             'kirimBuyer',
+            'bal',
         ]);
 
         $dataProvider = new ActiveDataProvider([

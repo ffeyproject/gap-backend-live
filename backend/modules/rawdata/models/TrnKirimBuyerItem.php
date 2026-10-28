@@ -86,6 +86,16 @@ class TrnKirimBuyerItem extends \yii\db\ActiveRecord
         return $this->hasOne(TrnKirimBuyer::className(), ['id' => 'kirim_buyer_id']);
     }
 
+    /**
+     * Gets query for [[Bal]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBal()
+    {
+        return $this->hasOne(TrnKirimBuyerBal::className(), ['id' => 'bal_id']);
+    }
+
     public function getNoLot()
 {
     if (!$this->stock || !$this->stock->source_ref) {

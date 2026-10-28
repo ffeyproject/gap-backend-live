@@ -61,4 +61,34 @@ class TrnKirimBuyerBal extends \yii\db\ActiveRecord
     {
         return $this->hasOne(TrnKirimBuyer::className(), ['id' => 'trn_kirim_buyer_id']);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        // Jika nomor bal diubah, sinkronkan otomatis ke seluruh item yang memiliki bal_id ini
+        if (!$insert && array_key_exists('no_bal', $changedAttributes)) {
+            TrnKirimBuyerItem::updateAll(
+                ['no_bal' => $this->no_bal],
+                ['bal_id' => $this->id]
+            );
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+
+        // Jika data bal dihapus, kosongkan relasi bal_id pada item terkait
+        TrnKirimBuyerItem::updateAll(
+            ['bal_id' => null],
+            ['bal_id' => $this->id]
+        );
+    }
 }
