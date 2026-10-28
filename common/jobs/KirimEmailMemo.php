@@ -80,7 +80,7 @@ class KirimEmailMemo extends BaseObject implements JobInterface
         $pdf->render();
 
         Yii::$app->mailer->compose()
-            ->setFrom('infogajahapp@gmail.com')
+            ->setFrom('pgajahangkasa@gmail.com')
             ->setTo($this->emails)
             ->setSubject('Memo Working Order No. ' . $model->no)
             ->setTextBody('Silahkan lihat lampiran Memo Working Order dalam bentuk PDF dan bisa untuk di Download.')

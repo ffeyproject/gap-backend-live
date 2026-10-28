@@ -40,8 +40,8 @@ return [
         'transport' => [
             'class' => 'Swift_SmtpTransport',
             'host' => 'smtp.gmail.com',
-            'username' => 'infogajahapp@gmail.com',
-            'password' => 'antoiweirmindnhm',
+            'username' => 'pgajahangkasa@gmail.com',
+            'password' => 'jvcaacorchdzqyyp',
             'port' => '587',
             'encryption' => 'tls',
             ],
@@ -56,7 +56,7 @@ return [
         // 'transport' => [
         //     'class' => 'Swift_SmtpTransport',
         //     'host' => '142.251.10.109',
-        //     'username' => 'infogajahapp@gmail.com',
+        //     'username' => 'pgajahangkasa@gmail.com',
         //     'password' => 'xqrruhqtucxioqxl',
         //     'port' => '587',
         //     'encryption' => 'tls',

@@ -43,7 +43,7 @@ class KirimEmailJob extends BaseObject implements JobInterface
         $pdf->render();
 
         Yii::$app->mailer->compose()
-            ->setFrom('infogajahapp@gmail.com')
+            ->setFrom('pgajahangkasa@gmail.com')
             ->setTo($this->emails)
             ->setSubject('Working Order No. ' . $model->no)
             ->setTextBody('Silahkan lihat lampiran Working Order dalam bentuk PDF dan bisa untuk di Download.')
