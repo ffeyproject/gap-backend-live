@@ -101,11 +101,11 @@ return [
         'useFileTransport' => false,
         'transport' => [
             'class' => 'Swift_SmtpTransport',
-            'host' => 'smtp.gmail.com',
+            'host' => '142.251.10.109',
             'username' => 'pgajahangkasa@gmail.com',
             'password' => 'jvcaacorchdzqyyp',
-            'port' => '465',
-            'encryption' => 'ssl',
+            'port' => '587',
+            'encryption' => 'tls',
             'streamOptions' => [
                 'ssl' => [
                     'verify_peer' => false,
