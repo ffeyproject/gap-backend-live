@@ -3,6 +3,7 @@
 namespace backend\modules\rawdata\models;
 
 use Yii;
+use common\models\ar\InspectingItem;
 
 /**
  * This is the model class for table "trn_inspecting".
