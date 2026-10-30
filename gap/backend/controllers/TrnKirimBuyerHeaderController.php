@@ -48,12 +48,21 @@ class TrnKirimBuyerHeaderController extends Controller
      */
     public function actionIndex()
     {
+        $tab = Yii::$app->request->get('tab', 'lokal');
         $searchModel = new TrnKirimBuyerHeaderSearch();
+        $searchModel->is_export = ($tab === 'export');
+
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        $countLokal = TrnKirimBuyerHeader::find()->where(['or', ['is_export' => false], ['is_export' => null]])->count();
+        $countExport = TrnKirimBuyerHeader::find()->where(['is_export' => true])->count();
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'tab' => $tab,
+            'countLokal' => $countLokal,
+            'countExport' => $countExport,
         ]);
     }
 
@@ -106,9 +115,40 @@ class TrnKirimBuyerHeaderController extends Controller
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
-    public function actionCreate()
+    public function actionCreate($is_export = 0)
     {
-        $model = new TrnKirimBuyerHeader();
+        $model = new TrnKirimBuyerHeader([
+            'is_export' => (bool)$is_export,
+        ]);
+
+        $lastRecord = TrnKirimBuyerHeader::find()
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
+
+        if ($lastRecord !== null) {
+            $model->pengirim = !empty($lastRecord->pengirim) ? trim($lastRecord->pengirim) : null;
+            $model->kepala_gudang = !empty($lastRecord->kepala_gudang) ? trim($lastRecord->kepala_gudang) : null;
+        }
+
+        if (empty($model->pengirim)) {
+            $lastPengirim = TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['pengirim' => null]], ['!=', 'pengirim', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastPengirim) {
+                $model->pengirim = trim($lastPengirim->pengirim);
+            }
+        }
+
+        if (empty($model->kepala_gudang)) {
+            $lastKg = TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['kepala_gudang' => null]], ['!=', 'kepala_gudang', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastKg) {
+                $model->kepala_gudang = trim($lastKg->kepala_gudang);
+            }
+        }
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
@@ -385,8 +425,9 @@ class TrnKirimBuyerHeaderController extends Controller
                 return $this->redirect(['view', 'id' => $model->id]);
             }
 
+            $tab = $model->is_export ? 'export' : 'lokal';
             $transaction->commit();
-            return $this->redirect(['index']);
+            return $this->redirect(['index', 'tab' => $tab]);
         }catch (\Throwable $t){
             $transaction->rollBack();
             throw $t;

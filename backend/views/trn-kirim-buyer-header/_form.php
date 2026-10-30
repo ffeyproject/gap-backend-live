@@ -11,6 +11,20 @@ use yii\web\JsExpression;
 /* @var $form ActiveForm */
 
 $readonly = (!$model->isNewRecord && $model->status == 2) ? true : false; // status posted
+
+if ($model->isNewRecord) {
+    if (empty($model->pengirim) || empty($model->kepala_gudang)) {
+        $lastRecord = \common\models\ar\TrnKirimBuyerHeader::find()->orderBy(['id' => SORT_DESC])->one();
+        if ($lastRecord !== null) {
+            if (empty($model->pengirim) && !empty($lastRecord->pengirim)) {
+                $model->pengirim = trim($lastRecord->pengirim);
+            }
+            if (empty($model->kepala_gudang) && !empty($lastRecord->kepala_gudang)) {
+                $model->kepala_gudang = trim($lastRecord->kepala_gudang);
+            }
+        }
+    }
+}
 ?>
 
 <div class="trn-kirim-buyer-header-form">

@@ -9,6 +9,20 @@ use yii\web\JsExpression;
 /* @var $this yii\web\View */
 /* @var $model common\models\ar\TrnKirimBuyerHeader */
 /* @var $form ActiveForm */
+
+if ($model->isNewRecord) {
+    if (empty($model->pengirim) || empty($model->kepala_gudang)) {
+        $lastRecord = \common\models\ar\TrnKirimBuyerHeader::find()->orderBy(['id' => SORT_DESC])->one();
+        if ($lastRecord !== null) {
+            if (empty($model->pengirim) && !empty($lastRecord->pengirim)) {
+                $model->pengirim = trim($lastRecord->pengirim);
+            }
+            if (empty($model->kepala_gudang) && !empty($lastRecord->kepala_gudang)) {
+                $model->kepala_gudang = trim($lastRecord->kepala_gudang);
+            }
+        }
+    }
+}
 ?>
 
 <div class="trn-kirim-buyer-header-form">

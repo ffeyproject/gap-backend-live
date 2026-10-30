@@ -23,7 +23,8 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
     {
         return [
             [['id', 'customer_id', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
-            [['pengirim', 'penerima', 'note', 'dateRange', 'custName','nama_buyer'], 'safe'],
+            [['pengirim', 'penerima', 'note', 'dateRange', 'custName', 'nama_buyer', 'no'], 'safe'],
+            [['is_export', 'is_resmi'], 'boolean'],
         ];
     }
 
@@ -55,6 +56,7 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
             'sort' => [
                 'defaultOrder' => [
                     'dateRange' => SORT_DESC,
+                    'id' => SORT_DESC,
                 ]
             ],
         ]);
@@ -62,6 +64,11 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
         $dataProvider->sort->attributes['custName'] = [
             'asc' => ['mst_customer.name' => SORT_ASC],
             'desc' => ['mst_customer.name' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['no'] = [
+            'asc' => ['trn_kirim_buyer_header.no' => SORT_ASC],
+            'desc' => ['trn_kirim_buyer_header.no' => SORT_DESC],
         ];
 
         $dataProvider->sort->attributes['dateRange'] = [
@@ -109,7 +116,20 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
             ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.note', $this->note])
             ->andFilterWhere(['ilike', 'mst_customer.name', $this->custName])
             ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.nama_buyer', $this->nama_buyer])
+            ->andFilterWhere(['ilike', 'trn_kirim_buyer_header.no', $this->no])
         ;
+
+        if ($this->is_resmi !== null && $this->is_resmi !== '') {
+            $query->andFilterWhere(['trn_kirim_buyer_header.is_resmi' => (bool)$this->is_resmi]);
+        }
+
+        if ($this->is_export !== null && $this->is_export !== '') {
+            if ($this->is_export) {
+                $query->andWhere(['trn_kirim_buyer_header.is_export' => true]);
+            } else {
+                $query->andWhere(['or', ['trn_kirim_buyer_header.is_export' => false], ['trn_kirim_buyer_header.is_export' => null]]);
+            }
+        }
 
         return $dataProvider;
     }

@@ -18,7 +18,8 @@ use yii\widgets\DetailView;
 /* @var $dataProviderKirimBuyer \yii\data\ActiveDataProvider*/
 
 $this->title = $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Pengiriman Ke Buyer', 'url' => ['index']];
+$tab = $model->is_export ? 'export' : 'lokal';
+$this->params['breadcrumbs'][] = ['label' => 'Pengiriman Ke Buyer', 'url' => ['index', 'tab' => $tab]];
 $this->params['breadcrumbs'][] = $this->title;
 
 echo Dialog::widget(['overrideYiiConfirm' => true]);
