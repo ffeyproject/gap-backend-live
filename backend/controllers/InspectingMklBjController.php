@@ -6,6 +6,7 @@ use backend\models\form\InspectingMklBjHeaderForm;
 use backend\models\form\InspectingMklBjItemsForm;
 use common\models\ar\DefectInspectingItem;
 use kartik\mpdf\Pdf;
+use backend\components\SinglePagePdf;
 use Yii;
 use common\models\ar\TrnGudangJadi;
 use common\models\ar\InspectingMklBjItems;
@@ -915,7 +916,30 @@ class InspectingMklBjController extends Controller
     public function actionPrint($id)
     {
         $model = $this->findModel($id);
-        $content = $this->renderPartial('print', ['model' => $model]);
+
+        // Packing list harus selalu 1 lembar (hemat kertas)
+        $output = SinglePagePdf::render(function ($columns, $fontSize) use ($model) {
+            return $this->createPrintPdf($model, $columns, $fontSize);
+        }, 10);
+
+        $response = Yii::$app->response;
+        $response->format = Response::FORMAT_RAW;
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set('Content-Disposition', 'inline; filename="packing-list-'.$model->id.'.pdf"');
+        $response->headers->set('Cache-Control', 'public, must-revalidate, max-age=0');
+        return $output;
+    }
+
+    /**
+     * @param InspectingMklBj $model
+     * @param int $columns
+     * @param float $fontSize
+     * @return Pdf
+     */
+    private function createPrintPdf($model, $columns, $fontSize)
+    {
+        $content = $this->renderPartial('print', ['model' => $model, 'columns' => $columns]);
+        $padding = $fontSize >= 7.5 ? '0.1em' : '0';
 
         // setup kartik\mpdf\Pdf component
         $pdf = new Pdf([
@@ -933,9 +957,9 @@ class InspectingMklBjController extends Controller
             'cssFile' => '@vendor/kartik-v/yii2-mpdf/src/assets/kv-mpdf-bootstrap.min.css',
             // any css to be embedded if required
             'cssInline' => '
-                body{font-family: sans-serif; font-size:10px; letter-spacing: 0px;}
-                table {font-family: sans-serif; width: 100%; font-size:10px; border-spacing: 0; letter-spacing: 0px;} th, td {padding: 0.1em 0em; vertical-align: top;}
-                table.bordered th, table.bordered td, td.bordered, th.bordered {border: 0.1px solid black; padding: 0.1em 0.1em; vertical-align: middle;}
+                body{font-family: sans-serif; font-size:'.$fontSize.'px; letter-spacing: 0px;}
+                table {font-family: sans-serif; width: 100%; font-size:'.$fontSize.'px; border-spacing: 0; letter-spacing: 0px;} th, td {padding: '.$padding.' 0em; vertical-align: top;}
+                table.bordered th, table.bordered td, td.bordered, th.bordered {border: 0.1px solid black; padding: '.$padding.' 0.1em; vertical-align: middle;}
              ',
             // set mPDF properties on the fly
             //'options' => ['title' => 'Sales Contract - '.$model->id],
@@ -944,8 +968,15 @@ class InspectingMklBjController extends Controller
                 //'SetHTMLHeader'=>$this->renderPartial('print/header', ['model' => $model, 'config'=>$config]),
                 'SetTitle'=>'Inspecting',
             ],
+            'marginHeader' => 4,
+            'marginFooter' => 0,
+            'marginTop' => 4,
+            'marginRight' => 4,
+            'marginBottom' => 3,
+            'marginLeft' => 4,
             'options' => [
-                'setAutoTopMargin' => 'stretch'
+                'setAutoTopMargin' => 'stretch',
+                'autoMarginPadding' => 1,
             ],
             // your html content input
             'content' => $content,
@@ -959,11 +990,10 @@ class InspectingMklBjController extends Controller
         //    }else $pdf->methods['SetHeader'] = 'Inspecting Makloon & Barang Jadi - | ID:'.$model->id.' | MENUNGGU PERSETUJUAN';
         //}
 	
-	$pdf->methods['SetHeader'] = '| PACKING LIST |';
-        $pdf->methods['SetFooter'] = 'Page {PAGENO}';
+        // tanpa footer nomor halaman (selalu 1 lembar), agar ruang tabel maksimal
+        $pdf->methods['SetHeader'] = '| PACKING LIST |';
 
-        // return the pdf output as per the destination setting
-        return $pdf->render();
+        return $pdf;
     }
 
     // bagussona

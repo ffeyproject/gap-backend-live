@@ -1,9 +1,12 @@
 <?php
 /* @var $model common\models\ar\TrnInspecting */
+/* @var $columns int jumlah kolom tabel packing list (diatur controller agar muat 1 lembar) */
 
 use backend\components\Converter;
 use common\models\ar\InspectingItem;
 use common\models\ar\MstGreigeGroup;
+
+$columns = isset($columns) ? max(1, (int)$columns) : 2;
 
 $formatter = Yii::$app->formatter;
 $kombinasi = '';
@@ -35,6 +38,18 @@ if($model->kartu_process_dyeing_id !== null){
 $greige = $model->wo->greige;
 $unitName = MstGreigeGroup::unitOptions()[$model->unit];
 $perBatch = $greige->group->qty_per_batch;
+
+// urutan kolom grade pada tabel packing list
+$gradeColumns = [
+    InspectingItem::GRADE_A => 'A',
+    InspectingItem::GRADE_A_PLUS => 'A+',
+    InspectingItem::GRADE_A_ASTERISK => 'A*',
+    InspectingItem::GRADE_B => 'B',
+    InspectingItem::GRADE_C => 'C',
+    InspectingItem::GRADE_PK => 'P/K',
+    InspectingItem::GRADE_SAMPLE => 'CTH',
+    InspectingItem::GRADE_PUTIH => 'Putih',
+];
 
 $totalQtyGrade = [
     InspectingItem::GRADE_A => 0,
@@ -118,7 +133,39 @@ $postedDates = array_unique(array_filter(array_column($inspectingItems, 'posted_
 sort($postedDates);
 $tglKirimHeader = empty($postedDates) ? $model->date : implode(', ', $postedDates);
 
-$indexLimit = round(count($inspectingItems) / 2);
+// siapkan baris + akumulasi total
+$rows = [];
+foreach ($inspectingItems as $index => $item) {
+    $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
+    $item['qty'] = $isReceived ? 0 : $item['qty'];
+    $grade = $item['grade_up'] <> NULL ? $item['grade_up'] : $item['grade'];
+
+    if($item['qty'] > 0){
+        // akumulasi hanya berlaku jika qty > 0
+        $totalQtyGrade[$grade] += $item['qty'];
+        $totalPiecesGrade[$grade]++;
+        if(empty($item['join_piece'])){
+            $totalRollGrade[$grade]++;
+        }else{
+            if(!in_array($item['join_piece'], $joinPieces[$grade])){
+                $totalRollGrade[$grade]++;
+                $joinPieces[$grade][] = $item['join_piece'];
+            }
+        }
+    }
+
+    $rows[] = [
+        'no' => ($item['no_urut'] ?? ($index + 1)).$item['join_piece'].($isReceived ? ' (V)' : ''),
+        'grade' => $grade,
+        'qty' => $item['qty'],
+        'posted_at' => $item['posted_at'],
+        'note' => $item['note'],
+    ];
+}
+
+$rowsPerColumn = max(1, (int)ceil(count($rows) / $columns));
+$rowChunks = array_chunk($rows, $rowsPerColumn);
+$rowChunks = array_pad($rowChunks, $columns, []);
 ?>
 
 <table>
@@ -194,433 +241,47 @@ $indexLimit = round(count($inspectingItems) / 2);
         <!-- Item Packing List -->
         <tr>
             <td colspan="11">
-                <!-- <p><strong>Packing List</strong></p> -->
                 <table>
-                    <thead>
-                        <tr>
-                            <td>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th class="bordered" style="width: 40px; text-align: center;" rowspan="2">
-                                                No.</th>
-                                            <th class="bordered" style="text-align: center;" colspan="8">Grade</th>
-                                            <th class="bordered" style="text-align: center;" rowspan="2">Tgl. Kirim</th>
-                                            <th class="bordered" style="text-align: center;" rowspan="2">Keterangan</th>
-                                        </tr>
-                                        <tr>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A+</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A*</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">B</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">C</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">P/K</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">CTH</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">Putih</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($inspectingItems as $index=>$item):?>
-                                        <?php
-                                        if ($index == $indexLimit) {
-                                            break;
-                                        }
-                                    ?>
-                                        <?php
-                                        $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
-                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
-                                        
-                                        if($item['qty'] > 0){
-                                            // akumulasi hanya berlaku jika qty > 0
-                                            if ($item['grade_up'] <> NULL) {
-                                                $totalQtyGrade[$item['grade_up']] += $item['qty'];
-                                                $totalPiecesGrade[$item['grade_up']]++;
-                                                if(empty($item['join_piece'])){
-                                                    $totalRollGrade[$item['grade_up']]++;
-                                                }else{
-                                                    if(!in_array($item['join_piece'], $joinPieces[$item['grade_up']])){
-                                                        $totalRollGrade[$item['grade_up']]++;
-                                                        $joinPieces[$item['grade_up']][] = $item['join_piece'];
-                                                    }
-                                                }
-                                            } else {
-                                                $totalQtyGrade[$item['grade']] += $item['qty'];
-                                                $totalPiecesGrade[$item['grade']]++;
-                                                if(empty($item['join_piece'])){
-                                                    $totalRollGrade[$item['grade']]++;
-                                                }else{
-                                                    if(!in_array($item['join_piece'], $joinPieces[$item['grade']])){
-                                                        $totalRollGrade[$item['grade']]++;
-                                                        $joinPieces[$item['grade']][] = $item['join_piece'];
-                                                    }
-                                                }
-                                            }
-
-                                        }
-                                    ?>
-                                        <tr>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?=($item['no_urut'] ?? ($index + 1)).$item['join_piece']?><?=$isReceived ? ' (V)' : ''?></td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A_PLUS){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A_PLUS){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A_ASTERISK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A_ASTERISK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_B){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_B){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_C){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_C){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_PK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_PK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_SAMPLE){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_SAMPLE){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_PUTIH){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_PUTIH){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-
-                                            <td class="bordered" style="text-align: center;"><?=$item['posted_at']?></td>
-                                            <td class="bordered" style="text-align: center;"><?=$item['note']?></td>
-                                        </tr>
+                    <tr>
+                        <?php foreach ($rowChunks as $chunk):?>
+                        <td style="width: <?=round(100 / $columns, 2)?>%;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="bordered" style="text-align: center;" rowspan="2">No.</th>
+                                        <th class="bordered" style="text-align: center;" colspan="<?=count($gradeColumns)?>">Grade</th>
+                                        <th class="bordered" style="text-align: center;" rowspan="2">Tgl. Kirim</th>
+                                        <th class="bordered" style="text-align: center;" rowspan="2">Keterangan</th>
+                                    </tr>
+                                    <tr>
+                                        <?php foreach ($gradeColumns as $gradeLabel):?>
+                                        <th class="bordered" style="text-align: center;"><?=$gradeLabel?></th>
                                         <?php endforeach;?>
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th class="bordered" style="width: 40px; text-align: center;" rowspan="2">
-                                                No.</th>
-                                            <th class="bordered" style="text-align: center;" colspan="8">Grade</th>
-                                            <th class="bordered" style="text-align: center;" rowspan="2">Tgl. Kirim</th>
-                                            <th class="bordered" style="text-align: center;" rowspan="2">Keterangan</th>
-                                        </tr>
-                                        <tr>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A+</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">A*</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">B</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">C</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">P/K</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">CTH</th>
-                                            <th class="bordered" style="width: 30px; text-align: center;">Putih</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($inspectingItems as $index=>$item):?>
-                                        <?php
-                                        if ($index < $indexLimit) {
-                                            continue;
-                                        } elseif($index > (count($inspectingItems))) {
-                                            break;
-                                        }
-                                    ?>
-                                        <?php
-                                        $isReceived = ($item['gj_id'] !== null) || (!empty($item['join_piece']) && isset($receivedJoinPieces[$item['join_piece']]));
-                                        $item['qty'] = $isReceived ? 0 : $item['qty'];
-
-                                        if($item['qty'] > 0){
-                                            // akumulasi hanya berlaku jika qty > 0
-                                            if ($item['grade_up'] <> NULL) {
-                                                $totalQtyGrade[$item['grade_up']] += $item['qty'];
-                                                $totalPiecesGrade[$item['grade_up']]++;
-                                                if(empty($item['join_piece'])){
-                                                    $totalRollGrade[$item['grade_up']]++;
-                                                }else{
-                                                    if(!in_array($item['join_piece'], $joinPieces[$item['grade_up']])){
-                                                        $totalRollGrade[$item['grade_up']]++;
-                                                        $joinPieces[$item['grade_up']][] = $item['join_piece'];
-                                                    }
-                                                }
-                                            } else {
-                                                $totalQtyGrade[$item['grade']] += $item['qty'];
-                                                $totalPiecesGrade[$item['grade']]++;
-                                                if(empty($item['join_piece'])){
-                                                    $totalRollGrade[$item['grade']]++;
-                                                }else{
-                                                    if(!in_array($item['join_piece'], $joinPieces[$item['grade']])){
-                                                        $totalRollGrade[$item['grade']]++;
-                                                        $joinPieces[$item['grade']][] = $item['join_piece'];
-                                                    }
-                                                }
-                                            }
-
-                                        }
-                                    ?>
-                                        <tr>
-                                            <td class="bordered" style="text-align: center;">
-                                                <?=($item['no_urut'] ?? ($index + 1)).$item['join_piece']?><?=$isReceived ? ' (V)' : ''?></td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A_PLUS){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A_PLUS){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_A_ASTERISK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_A_ASTERISK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_B){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_B){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_C){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_C){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_PK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_PK){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_SAMPLE){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_SAMPLE){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td class="bordered" style="text-align: center">
-                                                <?php
-                                                    if ($item['grade_up'] <> NULL) {
-                                                        if($item['grade_up'] === InspectingItem::GRADE_PUTIH){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    } else {
-                                                        if($item['grade'] === InspectingItem::GRADE_PUTIH){
-                                                            echo $formatter->asDecimal($item['qty']);
-                                                        }else{
-                                                            echo '0';
-                                                        }
-                                                    }
-                                                ?>
-                                            </td>
-
-                                            <td class="bordered" style="text-align: center"><?=$item['posted_at']?></td>
-                                            <td class="bordered" style="text-align: center"><?=$item['note']?></td>
-                                        </tr>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($chunk as $row):?>
+                                    <tr>
+                                        <td class="bordered" style="text-align: center;"><?=$row['no']?></td>
+                                        <?php foreach ($gradeColumns as $gradeKey => $gradeLabel):?>
+                                        <td class="bordered" style="text-align: center;"><?=$row['grade'] === $gradeKey ? $formatter->asDecimal($row['qty']) : '0'?></td>
                                         <?php endforeach;?>
-                                        <?php
-                                            if (count($inspectingItems) % 2 !== 0) {
-                                                echo '<tr><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td><td class="bordered" style="text-align: center">&nbsp;</td></tr>';
-                                            }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </thead>
+                                        <td class="bordered" style="text-align: center;"><?=$row['posted_at']?></td>
+                                        <td class="bordered" style="text-align: center;"><?=$row['note']?></td>
+                                    </tr>
+                                    <?php endforeach;?>
+                                    <?php for ($i = count($chunk); $i < $rowsPerColumn; $i++):?>
+                                    <tr>
+                                        <?php for ($c = 0; $c < count($gradeColumns) + 3; $c++):?>
+                                        <td class="bordered">&nbsp;</td>
+                                        <?php endfor;?>
+                                    </tr>
+                                    <?php endfor;?>
+                                </tbody>
+                            </table>
+                        </td>
+                        <?php endforeach;?>
+                    </tr>
                 </table>
             </td>
         </tr>
@@ -640,6 +301,17 @@ if($model->unit == MstGreigeGroup::UNIT_YARD){
 }
 $susutM = $perBatch - $totalM;
 $susutPcnt = (($perBatch-$totalM) / $perBatch) * 100;
+
+$totalLabels = [
+    InspectingItem::GRADE_A => 'Total Grade A (1)',
+    InspectingItem::GRADE_A_PLUS => 'Total Grade A+ (2)',
+    InspectingItem::GRADE_A_ASTERISK => 'Total Grade A* (3)',
+    InspectingItem::GRADE_B => 'Total Grade B (4)',
+    InspectingItem::GRADE_C => 'Total Grade C',
+    InspectingItem::GRADE_PK => 'Total Piece Kecil',
+    InspectingItem::GRADE_SAMPLE => 'Total Contoh',
+    InspectingItem::GRADE_PUTIH => 'Total Grade Putih',
+];
 ?>
 
 <br>
@@ -658,154 +330,20 @@ $susutPcnt = (($perBatch-$totalM) / $perBatch) * 100;
         </tr>
     </thead>
     <tbody>
+        <?php $first = true; foreach ($totalLabels as $gradeKey => $label):?>
         <tr>
-            <th class="bordered">Total Grade A (1)</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A]);
-            ?>
-            </td>
+            <th class="bordered"><?=$label?></th>
+            <td class="bordered"><?=$formatter->asDecimal($totalPiecesGrade[$gradeKey])?></td>
+            <td class="bordered"><?=$formatter->asDecimal($totalRollGrade[$gradeKey])?></td>
+            <td class="bordered"><?=$formatter->asDecimal($totalQtyGrade[$gradeKey])?></td>
+            <?php if ($first): $first = false;?>
             <td rowspan="9">&nbsp;</td>
             <td rowspan="8">&nbsp;</td>
             <td rowspan="9">&nbsp;</td>
             <td rowspan="8">&nbsp;</td>
+            <?php endif;?>
         </tr>
-        <tr>
-            <th class="bordered">Total Grade A+ (2)</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A_PLUS]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A_PLUS]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A_PLUS]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Grade A* (3)</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_A_ASTERISK]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_A_ASTERISK]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_A_ASTERISK]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Grade B (4)</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_B]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_B]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_B]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Grade C</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_C]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_C]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_C]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Piece Kecil</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_PK]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_PK]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_PK]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Contoh</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_SAMPLE]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_SAMPLE]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_SAMPLE]);
-            ?>
-            </td>
-        </tr>
-        <tr>
-            <th class="bordered">Total Grade Putih</th>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalPiecesGrade[InspectingItem::GRADE_PUTIH]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalRollGrade[InspectingItem::GRADE_PUTIH]);
-            ?>
-            </td>
-            <td class="bordered">
-                <?php
-            echo $formatter->asDecimal($totalQtyGrade[InspectingItem::GRADE_PUTIH]);
-            ?>
-            </td>
-        </tr>
+        <?php endforeach;?>
 
         <tr>
             <th class="bordered">Grand Total</th>
