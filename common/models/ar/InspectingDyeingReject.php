@@ -29,6 +29,12 @@ use yii\db\Expression;
 class InspectingDyeingReject extends \yii\db\ActiveRecord
 {
     /**
+     * ID item kartu proses (roll) yang dikembalikan ke processing
+     * @var array
+     */
+    public $selected_items = [];
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()
@@ -60,7 +66,26 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
                     ]
                 ]
             ],
+            ['selected_items', 'required', 'message' => 'Pilih minimal satu roll yang akan dikembalikan.'],
+            ['selected_items', 'each', 'rule' => ['integer']],
+            ['selected_items', 'validateSelectedItems', 'skipOnError' => true],
         ];
+    }
+
+    /**
+     * Memastikan roll yang dipilih memang milik kartu proses ini
+     * @param string $attribute
+     */
+    public function validateSelectedItems($attribute)
+    {
+        $validIds = TrnKartuProsesDyeingItem::find()
+            ->select('id')
+            ->where(['kartu_process_id' => $this->kartu_proses_id])
+            ->column();
+
+        if (array_diff($this->$attribute, $validIds)) {
+            $this->addError($attribute, 'Roll yang dipilih tidak valid untuk kartu proses ini.');
+        }
     }
 
     /**
@@ -84,6 +109,7 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
             'created_by' => 'Created By',
             'total_qty' => 'Total Qty',
             'kartuProsesNo' => 'Nomor Kartu Proses',
+            'selected_items' => 'Roll Yang Dikembalikan',
         ];
     }
 
@@ -103,6 +129,24 @@ class InspectingDyeingReject extends \yii\db\ActiveRecord
     public function getKartuProsesNo()
     {
         return $this->kartuProses->no;
+    }
+
+    /**
+     * Nomor kartu berikutnya untuk roll yang dikembalikan (misal "1/26" -> "1R1/26")
+     * @param string $nomorKartu
+     * @return string
+     */
+    public static function nextNomorKartuReject($nomorKartu)
+    {
+        $parts = explode('/', $nomorKartu, 2);
+        $part2 = isset($parts[1]) ? '/' . $parts[1] : '';
+        $seq = 1;
+        do {
+            $nomor = $parts[0] . 'R' . $seq . $part2;
+            $seq++;
+        } while (TrnKartuProsesDyeing::find()->where(['nomor_kartu' => $nomor])->exists());
+
+        return $nomor;
     }
 
     public function setNomor(){

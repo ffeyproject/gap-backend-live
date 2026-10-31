@@ -1201,11 +1201,15 @@ class TrnInspectingController extends Controller
         $searchModel = new TrnKartuProsesDyeingSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $dataProvider->query->andWhere(['IN', 'trn_kartu_proses_dyeing.status', [
+        $statuses = [
             TrnKartuProsesDyeing::STATUS_APPROVED,
             TrnKartuProsesDyeing::STATUS_INSPECTED,
-        ]]);
-        
+        ];
+
+        $dataProvider->query
+            ->andWhere(['IN', 'trn_kartu_proses_dyeing.status', $statuses])
+            ->with(['trnKartuProsesDyeingItems.stock']);
+
         return $this->render('kartu-proses-dyeing', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,

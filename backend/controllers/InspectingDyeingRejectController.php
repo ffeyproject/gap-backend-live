@@ -6,6 +6,8 @@ use kartik\mpdf\Pdf;
 use Yii;
 use common\models\ar\InspectingDyeingReject;
 use common\models\ar\InspectingDyeingRejectSearch;
+use common\models\ar\TrnKartuProsesDyeing;
+use common\models\ar\TrnKartuProsesDyeingItem;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\web\Controller;
@@ -90,20 +92,30 @@ class InspectingDyeingRejectController extends Controller
                     $model->setNomor();
 
                     $kartuProses = $model->kartuProses;
-                    $kartuProses->status = $kartuProses::STATUS_DELIVERED;
-                    $kartuProses->approved_at = null;
-                    $kartuProses->approved_by = null;
+                    $allItemIds = $kartuProses->getTrnKartuProsesDyeingItems()->select('id')->column();
+                    $selectedItemIds = array_values(array_intersect($allItemIds, $model->selected_items));
+                    $isPartial = count($selectedItemIds) < count($allItemIds);
 
                     $transaction = Yii::$app->db->beginTransaction();
                     try {
+                        if($isPartial){
+                            // Hanya sebagian roll yang ditolak: roll yang ditolak dipindah ke kartu baru (kembali ke processing),
+                            // sisanya tetap di kartu ini agar tetap bisa diinspect.
+                            $kartuReject = $this->createKartuReject($kartuProses, $selectedItemIds);
+                            $model->kartu_proses_id = $kartuReject->id;
+                        }else{
+                            $kartuProses->status = $kartuProses::STATUS_DELIVERED;
+                            $kartuProses->approved_at = null;
+                            $kartuProses->approved_by = null;
+                            if(! $kartuProses->save(false, ['status', 'approved_at', 'approved_by'])){
+                                $transaction->rollBack();
+                                throw new HttpException(500, 'Gagal menyimpan, coba lagi. (2)');
+                            }
+                        }
+
                         if(! ($flag = $model->save(false))){
                             $transaction->rollBack();
                             throw new HttpException(500, 'Gagal menyimpan, coba lagi. (1)');
-                        }
-
-                        if(! ($flag = $kartuProses->save(false, ['status', 'approved_at', 'approved_by']))){
-                            $transaction->rollBack();
-                            throw new HttpException(500, 'Gagal menyimpan, coba lagi. (2)');
                         }
 
                         if($flag){
@@ -126,12 +138,75 @@ class InspectingDyeingRejectController extends Controller
                 return ['validation' => $result];
             }
 
+            $items = $model->kartuProses !== null ? $model->kartuProses->trnKartuProsesDyeingItems : [];
+            $model->selected_items = array_map(function ($item) { return $item->id; }, $items);
+
             return $this->renderAjax('create', [
                 'model' => $model,
+                'items' => $items,
             ]);
         }
 
         throw new ForbiddenHttpException('Not allowed');
+    }
+
+    /**
+     * Membuat kartu proses baru (status delivered) berisi roll yang ditolak, dipisah dari kartu asal.
+     * Riwayat proses tidak disalin (agar tidak terhitung dua kali di rekap), proses yang diinput di kartu ini
+     * akan digabung ke kartu asal saat disetujui (lihat ProcessingDyeingController::gabungProsesKartuReject).
+     * @param TrnKartuProsesDyeing $kartuProses
+     * @param array $itemIds
+     * @return TrnKartuProsesDyeing
+     * @throws HttpException
+     */
+    protected function createKartuReject($kartuProses, $itemIds)
+    {
+        $nomorKartu = InspectingDyeingReject::nextNomorKartuReject($kartuProses->nomor_kartu);
+
+        $attributes = $kartuProses->attributes;
+        unset($attributes['id'], $attributes['created_at'], $attributes['created_by'], $attributes['updated_at'], $attributes['updated_by']);
+
+        $kartuReject = new TrnKartuProsesDyeing();
+        $kartuReject->attributes = $attributes;
+        $kartuReject->nomor_kartu = $nomorKartu;
+        $kartuReject->kartu_proses_id = $kartuProses->id;
+        $kartuReject->status = TrnKartuProsesDyeing::STATUS_DELIVERED;
+        $kartuReject->approved_at = null;
+        $kartuReject->approved_by = null;
+        $kartuReject->setNomor();
+        if (!$kartuReject->save(false)) {
+            throw new HttpException(500, 'Gagal membuat kartu proses untuk roll yang dikembalikan.');
+        }
+
+        TrnKartuProsesDyeingItem::updateAll(
+            ['kartu_process_id' => $kartuReject->id],
+            ['id' => $itemIds, 'kartu_process_id' => $kartuProses->id]
+        );
+
+        $this->logKartuDyeing('reject_inspecting', $kartuProses->id, count($itemIds) . " roll dikembalikan ke processing melalui kartu '{$nomorKartu}'.");
+        $this->logKartuDyeing('reject_inspecting_child', $kartuReject->id, "Kartu terbentuk dari roll yang dikembalikan inspecting, induk '{$kartuProses->nomor_kartu}'.");
+
+        return $kartuReject;
+    }
+
+    /**
+     * @param string $actionName
+     * @param int $kartuProsesId
+     * @param string|null $description
+     * @throws \yii\db\Exception
+     */
+    protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
+    {
+        Yii::$app->db->createCommand()->insert('action_log_kartu_dyeing', [
+            'user_id'       => Yii::$app->user->id,
+            'username'      => Yii::$app->user->identity->username ?? null,
+            'kartu_proses_id' => $kartuProsesId,
+            'action_name'   => $actionName,
+            'description'   => $description,
+            'ip'            => Yii::$app->request->userIP,
+            'user_agent'    => Yii::$app->request->userAgent,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ])->execute();
     }
 
     /**

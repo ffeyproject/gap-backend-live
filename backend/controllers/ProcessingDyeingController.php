@@ -3,6 +3,7 @@ namespace backend\controllers;
 
 use backend\models\form\CatatanProsesForm;
 use backend\models\form\HasilTesGosokForm;
+use common\models\ar\InspectingDyeingReject;
 use common\models\ar\KartuProcessDyeingProcess;
 use common\models\ar\KartuProcessDyeingProcessSearch;
 use common\models\ar\MstGreige;
@@ -1545,6 +1546,71 @@ class ProcessingDyeingController extends Controller
         throw new MethodNotAllowedHttpException('Method not allowed.');
     }
 
+    /**
+     * Memindahkan data proses kartu reject inspecting (kartu baru berisi roll yang dikembalikan) ke kartu induk.
+     * Jika proses yang sama sudah ada di induk, data induk dicatat sebagai pengulangan dan data kartu reject menjadi data terkini.
+     * Kartu split biasa tidak diproses di sini.
+     * @param TrnKartuProsesDyeing $child
+     * @param TrnKartuProsesDyeing $parent
+     * @return bool true jika $child adalah kartu reject inspecting
+     * @throws \Exception
+     */
+    protected function gabungProsesKartuReject($child, $parent)
+    {
+        if (!InspectingDyeingReject::find()->where(['kartu_proses_id' => $child->id])->exists()) {
+            return false;
+        }
+
+        foreach ($child->getKartuProcessDyeingProcesses()->all() as $childProcess) {
+            $parentProcess = KartuProcessDyeingProcess::findOne(['kartu_process_id' => $parent->id, 'process_id' => $childProcess->process_id]);
+
+            if ($parentProcess !== null && $parentProcess->value !== $childProcess->value) {
+                $parentData = Json::decode($parentProcess->value) ?: [];
+                $childData = Json::decode($childProcess->value) ?: [];
+
+                $pengulangans = isset($parentData['pengulangan']) ? $parentData['pengulangan'] : [];
+                unset($parentData['pengulangan']);
+                if (!empty($parentData)) {
+                    $pengulangans[] = [
+                        'memo' => "Diproses ulang melalui kartu {$child->nomor_kartu} (roll dikembalikan inspecting)",
+                        'time' => time(),
+                        'by' => Yii::$app->user->id,
+                        'data' => $parentData,
+                    ];
+                }
+                if (isset($childData['pengulangan'])) {
+                    $pengulangans = array_merge($pengulangans, $childData['pengulangan']);
+                    unset($childData['pengulangan']);
+                }
+
+                $parentProcess->value = Json::encode(array_merge(['pengulangan' => $pengulangans], $childData));
+                if (!empty($childProcess->note)) {
+                    $parentProcess->note = $childProcess->note;
+                }
+                if (!$parentProcess->save(false)) {
+                    throw new \Exception("Gagal menggabungkan data proses kartu {$child->nomor_kartu} ke kartu induk.");
+                }
+            } elseif ($parentProcess === null) {
+                $newProcess = new KartuProcessDyeingProcess([
+                    'kartu_process_id' => $parent->id,
+                    'process_id' => $childProcess->process_id,
+                    'value' => $childProcess->value,
+                    'note' => $childProcess->note,
+                ]);
+                if (!$newProcess->save(false)) {
+                    throw new \Exception("Gagal memindahkan data proses kartu {$child->nomor_kartu} ke kartu induk.");
+                }
+            }
+        }
+
+        // Dihapus dari kartu reject agar tidak terhitung dua kali di rekap proses/mesin
+        KartuProcessDyeingProcess::deleteAll(['kartu_process_id' => $child->id]);
+
+        $this->logKartuDyeing('gabung_proses_reject', $parent->id, "Data proses kartu {$child->nomor_kartu} digabungkan ke kartu ini.");
+
+        return true;
+    }
+
     protected function logKartuDyeing($actionName, $kartuProsesId, $description = null)
     {
         if (empty($kartuProsesId)) {
@@ -1637,6 +1703,11 @@ class ProcessingDyeingController extends Controller
                             }
                         }
 
+                        if ($this->gabungProsesKartuReject($model, $parentCard)) {
+                            // Kartu reject sudah menyatu ke induk, tidak ikut masuk verpacking/inspecting
+                            $model->status = $model::STATUS_DIGABUNG;
+                        }
+
                         $this->logKartuDyeing(
                             'masuk_verpacking',
                             $parentCard->id,
@@ -1665,8 +1736,10 @@ class ProcessingDyeingController extends Controller
                             }
                         }
 
+                        $isKartuReject = $this->gabungProsesKartuReject($child, $model);
+
                         // 2. Set the split child card status to STATUS_APPROVED and record approved details
-                        $child->status = TrnKartuProsesDyeing::STATUS_APPROVED;
+                        $child->status = $isKartuReject ? TrnKartuProsesDyeing::STATUS_DIGABUNG : TrnKartuProsesDyeing::STATUS_APPROVED;
                         $child->approved_at = time();
                         $child->approved_by = Yii::$app->user->id;
                         

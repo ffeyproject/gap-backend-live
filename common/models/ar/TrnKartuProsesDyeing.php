@@ -81,12 +81,12 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
     public $gabungan_tanggal_sort;
     public $tipe_laporan;
 
-    const STATUS_DRAFT = 1;const STATUS_POSTED = 2;const STATUS_DELIVERED = 3;const STATUS_APPROVED = 4;const STATUS_INSPECTED = 5;const STATUS_GANTI_GREIGE = 6;const STATUS_GANTI_GREIGE_LINKED = 7;const STATUS_BATAL = 8;const STATUS_ROLLING_PACKING = 10; const STATUS_MAKE_UP_PACKING = 11; const STATUS_FOLDED_PACKING = 12; const STATUS_TERIMA_GUDANG_JADI = 13; const STATUS_PERIKSA_PENGIRIMAN = 14; const STATUS_CLOSE = 15; const STATUS_SELVEDGE_PACKING = 16;
+    const STATUS_DRAFT = 1;const STATUS_POSTED = 2;const STATUS_DELIVERED = 3;const STATUS_APPROVED = 4;const STATUS_INSPECTED = 5;const STATUS_GANTI_GREIGE = 6;const STATUS_GANTI_GREIGE_LINKED = 7;const STATUS_BATAL = 8;const STATUS_ROLLING_PACKING = 10; const STATUS_MAKE_UP_PACKING = 11; const STATUS_FOLDED_PACKING = 12; const STATUS_TERIMA_GUDANG_JADI = 13; const STATUS_PERIKSA_PENGIRIMAN = 14; const STATUS_CLOSE = 15; const STATUS_SELVEDGE_PACKING = 16; const STATUS_DIGABUNG = 17;
     /**
      * @return array
      */
     public static function statusOptions(){
-        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_DELIVERED => 'Delivered', self::STATUS_APPROVED => 'Masuk Verpacking', self::STATUS_INSPECTED => 'Selesai Diinspect', self::STATUS_GANTI_GREIGE=> 'Ganti Greige', self::STATUS_GANTI_GREIGE_LINKED=> 'Ganti Greige Linked', self::STATUS_BATAL=> 'Batal', self::STATUS_ROLLING_PACKING=>'Rolling Packing', self::STATUS_MAKE_UP_PACKING=>'Make Up Packing', self::STATUS_FOLDED_PACKING=>'Folded Packing', self::STATUS_TERIMA_GUDANG_JADI=>'Terima Gudang Jadi', self::STATUS_PERIKSA_PENGIRIMAN=>'Selesai Periksa Pengiriman', self::STATUS_CLOSE=>'Close', self::STATUS_SELVEDGE_PACKING=>'Selvedge Packing'];
+        return [self::STATUS_DRAFT => 'Draft', self::STATUS_POSTED => 'Posted', self::STATUS_DELIVERED => 'Delivered', self::STATUS_APPROVED => 'Masuk Verpacking', self::STATUS_INSPECTED => 'Selesai Diinspect', self::STATUS_GANTI_GREIGE=> 'Ganti Greige', self::STATUS_GANTI_GREIGE_LINKED=> 'Ganti Greige Linked', self::STATUS_BATAL=> 'Batal', self::STATUS_ROLLING_PACKING=>'Rolling Packing', self::STATUS_MAKE_UP_PACKING=>'Make Up Packing', self::STATUS_FOLDED_PACKING=>'Folded Packing', self::STATUS_TERIMA_GUDANG_JADI=>'Terima Gudang Jadi', self::STATUS_PERIKSA_PENGIRIMAN=>'Selesai Periksa Pengiriman', self::STATUS_CLOSE=>'Close', self::STATUS_SELVEDGE_PACKING=>'Selvedge Packing', self::STATUS_DIGABUNG=>'Digabung Ke Kartu Induk'];
     }
 
     public static function statusOptionsFiltered()
@@ -163,7 +163,7 @@ class TrnKartuProsesDyeing extends \yii\db\ActiveRecord
 
             [['asal_greige', 'date', 'wo_color_id', 'lebar', 'lusi', 'pakan', 'k_density_lusi', 'k_density_pakan', 'nomor_kartu'], 'required'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
-            ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED, self::STATUS_APPROVED, self::STATUS_INSPECTED, self::STATUS_GANTI_GREIGE, self::STATUS_GANTI_GREIGE_LINKED, self::STATUS_BATAL, self::STATUS_ROLLING_PACKING, self::STATUS_MAKE_UP_PACKING, self::STATUS_FOLDED_PACKING, self::STATUS_TERIMA_GUDANG_JADI, self::STATUS_PERIKSA_PENGIRIMAN, self::STATUS_CLOSE, self::STATUS_SELVEDGE_PACKING]],
+            ['status', 'in', 'range'=>[self::STATUS_DRAFT, self::STATUS_POSTED, self::STATUS_DELIVERED, self::STATUS_APPROVED, self::STATUS_INSPECTED, self::STATUS_GANTI_GREIGE, self::STATUS_GANTI_GREIGE_LINKED, self::STATUS_BATAL, self::STATUS_ROLLING_PACKING, self::STATUS_MAKE_UP_PACKING, self::STATUS_FOLDED_PACKING, self::STATUS_TERIMA_GUDANG_JADI, self::STATUS_PERIKSA_PENGIRIMAN, self::STATUS_CLOSE, self::STATUS_SELVEDGE_PACKING, self::STATUS_DIGABUNG]],
             [['date'], 'date', 'format'=>'php:Y-m-d'],
             [['tunggu_marketing', 'toping_matching','is_redyeing'], 'boolean'],
         ];
