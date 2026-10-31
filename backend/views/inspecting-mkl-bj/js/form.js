@@ -264,6 +264,52 @@ $("#InspectingFormItem").on("afterInit", function () {
   });
 });
 
+// === Cek duplikat Fresh Order (WO, No Lot & Warna sama) ===
+var lastFreshOrderCheckKey = null;
+
+function checkFreshOrderDuplicate() {
+  let jenisInspek = $("#inspectingmklbj-jenis_inspek").val();
+  let woId = $("#inspectingmklbj-wo_id").val();
+  let woColorId = $("#inspectingmklbj-wo_color_id").val();
+  let noLot = ($("#inspectingmklbj-no_lot").val() || "").trim();
+
+  if (String(jenisInspek) !== String(freshOrderSelectId) || !woId || !woColorId || noLot === "") {
+    lastFreshOrderCheckKey = null;
+    return;
+  }
+
+  // Hindari popup berulang untuk kombinasi yang sama
+  let key = [woId, woColorId, noLot.toLowerCase()].join("|");
+  if (key === lastFreshOrderCheckKey) return;
+  lastFreshOrderCheckKey = key;
+
+  $.get(checkFreshOrderUrl, { wo_id: woId, wo_color_id: woColorId, no_lot: noLot })
+    .done(function (res) {
+      if (!res || !res.exists) return;
+      showFreshOrderModal({
+        subtitle: "WO, No. Lot dan Warna ini sudah memiliki inputan inspecting Fresh Order",
+        infos: [
+          { label: "No. WO", value: res.wo_no },
+          { label: "No. Lot", value: res.no_lot },
+          { label: "Warna", value: res.warna },
+        ],
+        inspectings: res.inspectings,
+        viewUrl: inspectingViewUrl,
+      });
+    })
+    .fail(function (jqXHR, textStatus, errorThrown) {
+      lastFreshOrderCheckKey = null;
+      let msg = jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus;
+      $.alert({ title: errorThrown, content: msg });
+    });
+}
+
+$(document).on(
+  "change",
+  "#inspectingmklbj-jenis_inspek, #inspectingmklbj-wo_id, #inspectingmklbj-wo_color_id, #inspectingmklbj-no_lot",
+  checkFreshOrderDuplicate
+);
+
 // === Tombol Simpan ===
 $("#BtnSubmitForm").click(function () {
   $("#InspectingFormHeader").submit();

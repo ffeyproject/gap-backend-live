@@ -958,6 +958,112 @@ class AjaxController extends Controller
     }
 
     /**
+     * Cek apakah kartu proses sudah pernah diinput inspecting dengan jenis inspeksi Fresh Order.
+     * @param null $jenis_order dyeing|printing
+     * @param null $kartu_proses_id
+     * @return array
+     */
+    public function actionCheckInspectingFreshOrder($jenis_order = null, $kartu_proses_id = null){
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['exists' => false];
+
+        if (empty($jenis_order) || empty($kartu_proses_id)) {
+            return $out;
+        }
+
+        switch ($jenis_order){
+            case 'dyeing':
+                $kp = TrnKartuProsesDyeing::find()->with(['wo', 'woColor.moColor'])->where(['id'=>$kartu_proses_id])->one();
+                $kpColumn = 'kartu_process_dyeing_id';
+                break;
+            case 'printing':
+                $kp = TrnKartuProsesPrinting::find()->with(['wo', 'woColor.moColor'])->where(['id'=>$kartu_proses_id])->one();
+                $kpColumn = 'kartu_process_printing_id';
+                break;
+            default:
+                return $out;
+        }
+
+        if ($kp === null) {
+            return $out;
+        }
+
+        $inspectings = \common\models\ar\TrnInspecting::find()
+            ->select(['id', 'no', 'tanggal_inspeksi', 'status'])
+            ->where([$kpColumn => $kp->id, 'jenis_inspek' => \common\models\ar\TrnInspecting::FRESH_INSPEKSI])
+            ->orderBy(['id' => SORT_ASC])
+            ->asArray()
+            ->all();
+
+        $statusOptions = \common\models\ar\TrnInspecting::statusOptions();
+        foreach ($inspectings as &$inspecting) {
+            $inspecting['status_label'] = isset($statusOptions[$inspecting['status']]) ? $statusOptions[$inspecting['status']] : '-';
+        }
+        unset($inspecting);
+
+        if (!empty($inspectings)) {
+            $out = [
+                'exists' => true,
+                'nomor_kartu' => $kp->nomor_kartu,
+                'wo_no' => $kp->wo ? $kp->wo->no : null,
+                'warna' => ($kp->woColor && $kp->woColor->moColor) ? $kp->woColor->moColor->color : null,
+                'inspectings' => $inspectings,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Cek apakah inspecting makloon/barang jadi Fresh Order dengan WO, No Lot dan Warna yang sama sudah ada.
+     * @param null $wo_id
+     * @param null $wo_color_id
+     * @param null $no_lot
+     * @return array
+     */
+    public function actionCheckInspectingMklBjFreshOrder($wo_id = null, $wo_color_id = null, $no_lot = null){
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $out = ['exists' => false];
+
+        $noLot = trim((string)$no_lot);
+        if (empty($wo_id) || empty($wo_color_id) || $noLot === '') {
+            return $out;
+        }
+
+        $inspectings = \common\models\ar\InspectingMklBj::find()
+            ->select(['id', 'no', 'tgl_inspeksi AS tanggal_inspeksi', 'status'])
+            ->where([
+                'wo_id' => $wo_id,
+                'wo_color_id' => $wo_color_id,
+                'jenis_inspek' => \common\models\ar\InspectingMklBj::FRESH_INSPEKSI,
+            ])
+            ->andWhere(new Expression('LOWER(TRIM(no_lot)) = LOWER(:noLot)', [':noLot' => $noLot]))
+            ->orderBy(['id' => SORT_ASC])
+            ->asArray()
+            ->all();
+
+        if (empty($inspectings)) {
+            return $out;
+        }
+
+        $statusOptions = \common\models\ar\InspectingMklBj::statusOptions();
+        foreach ($inspectings as &$inspecting) {
+            $inspecting['status_label'] = isset($statusOptions[$inspecting['status']]) ? $statusOptions[$inspecting['status']] : '-';
+        }
+        unset($inspecting);
+
+        $woColor = TrnWoColor::find()->with(['wo', 'moColor'])->where(['id' => $wo_color_id])->one();
+
+        return [
+            'exists' => true,
+            'wo_no' => ($woColor && $woColor->wo) ? $woColor->wo->no : null,
+            'no_lot' => $noLot,
+            'warna' => ($woColor && $woColor->moColor) ? $woColor->moColor->color : null,
+            'inspectings' => $inspectings,
+        ];
+    }
+
+    /**
      * @param null $q
      * @param null $jenis_order
      * @return array

@@ -230,6 +230,7 @@ $("#InspectingFormHeader").on("afterInit", function () {
       .done(function (data) {
         kpModel = data;
         implementData();
+        checkFreshOrderDuplicate();
       })
       .fail(function (jqXHR, textStatus, errorThrown) {
         let msg = jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus;
@@ -296,6 +297,38 @@ function implementData() {
   $("#Kombinasi").html(kpModel.woColor.moColor.color);
   $("#Stamping").html(kpModel.wo.mo.face_stamping);
   $("#Design").html(kpModel.wo.mo.design || "-");
+}
+
+// ========================
+//  Cek duplikat Fresh Order
+// ========================
+function checkFreshOrderDuplicate() {
+  let jenisInspek = $("#inspectingheaderform-jenis_inspek").val();
+  let jenisOrder = $("#inspectingheaderform-jenis_order").val();
+  let kartuProsesId = $("#inspectingheaderform-kartu_proses_id").val();
+
+  if (String(jenisInspek) !== String(freshOrderSelectId) || !jenisOrder || !kartuProsesId) {
+    return;
+  }
+
+  $.get(checkFreshOrderUrl, { jenis_order: jenisOrder, kartu_proses_id: kartuProsesId })
+    .done(function (res) {
+      if (!res || !res.exists) return;
+      showFreshOrderModal({
+        subtitle: "Kartu ini sudah memiliki inputan inspecting Fresh Order",
+        infos: [
+          { label: "No. NK", value: res.nomor_kartu },
+          { label: "No. WO", value: res.wo_no },
+          { label: "Warna", value: res.warna },
+        ],
+        inspectings: res.inspectings,
+        viewUrl: inspectingViewUrl,
+      });
+    })
+    .fail(function (jqXHR, textStatus, errorThrown) {
+      let msg = jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus;
+      $.alert({ title: errorThrown, content: msg });
+    });
 }
 
 function resetData() {

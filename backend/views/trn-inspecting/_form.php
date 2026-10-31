@@ -234,6 +234,9 @@ use yii\helpers\Url;
                                     'pluginOptions' => [
                                         'allowClear' => true
                                     ],
+                                    'pluginEvents' => [
+                                        'select2:select' => 'function(e){ checkFreshOrderDuplicate(); }',
+                                    ],
                                 ])->label(false) ?>
                             </td>
                         </tr>
@@ -357,8 +360,13 @@ $this->registerJsVar('kartuProsesIdOnUnSelect', null);
 $this->registerJsVar('kpModel', null);
 $this->registerJsVar('jenisProses', null);
 $this->registerJsVar('kpUrl', Url::to(['/ajax/lookup-kp-by-id']));
+$this->registerJsVar('freshOrderSelectId', TrnInspecting::FRESH_INSPEKSI);
+$this->registerJsVar('checkFreshOrderUrl', Url::to(['/ajax/check-inspecting-fresh-order']));
+$this->registerJsVar('inspectingViewUrl', Url::to(['/trn-inspecting/view']));
+$this->registerCss($this->renderFile(__DIR__.'/css/fresh-order-modal.css'));
 $this->registerJsVar('defectOptions', ArrayHelper::map(MstKodeDefect::find()->orderBy('no_urut')->all(), 'no_urut', function($model){
     return $model->no_urut . ' - ' . $model->nama_defect;
 }));
 $this->registerJsVar('inspectingItems', []);
+$this->registerJs($this->renderFile(__DIR__.'/js/fresh-order-modal.js'), $this::POS_END);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), $this::POS_END);

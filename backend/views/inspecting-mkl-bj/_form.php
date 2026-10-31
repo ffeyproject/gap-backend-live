@@ -268,5 +268,10 @@ use yii\helpers\ArrayHelper;
 
 <?php
 $this->registerJsVar('inspectingItems', $items);
+$this->registerJsVar('freshOrderSelectId', $model::FRESH_INSPEKSI);
+$this->registerJsVar('checkFreshOrderUrl', Url::to(['/ajax/check-inspecting-mkl-bj-fresh-order']));
+$this->registerJsVar('inspectingViewUrl', Url::to(['/inspecting-mkl-bj/view']));
+$this->registerCss($this->renderFile('@backend/views/trn-inspecting/css/fresh-order-modal.css'));
+$this->registerJs($this->renderFile('@backend/views/trn-inspecting/js/fresh-order-modal.js'), $this::POS_END);
 $this->registerJs($this->renderFile(__DIR__.'/js/form.js'), $this::POS_END);
 ?>
