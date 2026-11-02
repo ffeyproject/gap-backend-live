@@ -131,6 +131,7 @@ class TrnKirimBuyerHeaderController extends Controller
 
         if ($lastRecord !== null) {
             $model->pengirim = !empty($lastRecord->pengirim) ? trim($lastRecord->pengirim) : null;
+            $model->penerima = !empty($lastRecord->penerima) ? trim($lastRecord->penerima) : null;
             $model->kepala_gudang = !empty($lastRecord->kepala_gudang) ? trim($lastRecord->kepala_gudang) : null;
         }
 
@@ -141,6 +142,16 @@ class TrnKirimBuyerHeaderController extends Controller
                 ->one();
             if ($lastPengirim) {
                 $model->pengirim = trim($lastPengirim->pengirim);
+            }
+        }
+
+        if (empty($model->penerima)) {
+            $lastPenerima = TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['penerima' => null]], ['!=', 'penerima', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastPenerima) {
+                $model->penerima = trim($lastPenerima->penerima);
             }
         }
 

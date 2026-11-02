@@ -13,14 +13,47 @@ use yii\web\JsExpression;
 $readonly = (!$model->isNewRecord && $model->status == 2) ? true : false; // status posted
 
 if ($model->isNewRecord) {
-    if (empty($model->pengirim) || empty($model->kepala_gudang)) {
+    if (empty($model->pengirim) || empty($model->penerima) || empty($model->kepala_gudang)) {
         $lastRecord = \common\models\ar\TrnKirimBuyerHeader::find()->orderBy(['id' => SORT_DESC])->one();
         if ($lastRecord !== null) {
             if (empty($model->pengirim) && !empty($lastRecord->pengirim)) {
                 $model->pengirim = trim($lastRecord->pengirim);
             }
+            if (empty($model->penerima) && !empty($lastRecord->penerima)) {
+                $model->penerima = trim($lastRecord->penerima);
+            }
             if (empty($model->kepala_gudang) && !empty($lastRecord->kepala_gudang)) {
                 $model->kepala_gudang = trim($lastRecord->kepala_gudang);
+            }
+        }
+
+        if (empty($model->pengirim)) {
+            $lastPengirim = \common\models\ar\TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['pengirim' => null]], ['!=', 'pengirim', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastPengirim) {
+                $model->pengirim = trim($lastPengirim->pengirim);
+            }
+        }
+
+        if (empty($model->penerima)) {
+            $lastPenerima = \common\models\ar\TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['penerima' => null]], ['!=', 'penerima', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastPenerima) {
+                $model->penerima = trim($lastPenerima->penerima);
+            }
+        }
+
+        if (empty($model->kepala_gudang)) {
+            $lastKg = \common\models\ar\TrnKirimBuyerHeader::find()
+                ->where(['and', ['not', ['kepala_gudang' => null]], ['!=', 'kepala_gudang', '']])
+                ->orderBy(['id' => SORT_DESC])
+                ->one();
+            if ($lastKg) {
+                $model->kepala_gudang = trim($lastKg->kepala_gudang);
             }
         }
     }

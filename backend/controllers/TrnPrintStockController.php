@@ -338,7 +338,7 @@ class TrnPrintStockController extends Controller
 
             // 2. Ambil catatan barang keluar dari trn_gudang_jadi
             $outGudangJadi = (new Query())
-                ->select(['id', 'note', 'status', 'hasil_pemotongan', 'dipotong', 'qty', 'date', 'updated_at'])
+                ->select(['id', 'note', 'status', 'hasil_pemotongan', 'dipotong', 'qty', 'unit', 'date', 'updated_at'])
                 ->from('trn_gudang_jadi')
                 ->where(['locs_code' => $subLocParam])
                 ->andWhere(['!=', 'note', ''])
@@ -412,6 +412,11 @@ class TrnPrintStockController extends Controller
                         $cleanText = preg_replace('/\(TGL\s*\d{2}\/\d{2}\/\d{4}\)/i', '', $pNote);
                         $cleanText = trim($cleanText);
 
+                        // Sesuaikan satuan barang keluar dengan satuan stock
+                        $unitOpts = \common\models\ar\MstGreigeGroup::unitOptions();
+                        $stockUnit = (!empty($oG['unit']) && isset($unitOpts[$oG['unit']])) ? strtoupper($unitOpts[$oG['unit']]) : 'YARD';
+                        $cleanText = preg_replace('/\b(BARANG KELUAR\s+\d+(?:\.\d+)?)\s*(?:YARD|METER|YD|MTR|M)?\s*:/i', '$1 ' . $stockUnit . ':', $cleanText);
+
                         $historyEntries[] = [
                             'date' => $tglRaw,
                             'text' => $tglFormatted . ' - ' . $cleanText
@@ -457,6 +462,7 @@ class TrnPrintStockController extends Controller
                         'nama_buyer' => !empty($kbItem['nama_buyer']) ? trim($kbItem['nama_buyer']) : '',
                         'items' => [],
                         'total_qty' => 0,
+                        'unit' => $kbItem['unit'],
                     ];
                 }
                 $qty = (float)$kbItem['qty'];
@@ -470,10 +476,13 @@ class TrnPrintStockController extends Controller
                 $buyerPart = !empty($sjData['nama_buyer']) ? ' BUYER: ' . $sjData['nama_buyer'] : '';
                 $pcsCount = count($sjData['items']);
                 $pcsListStr = implode(', ', $sjData['items']);
+                $unitOpts = \common\models\ar\MstGreigeGroup::unitOptions();
+                $uLabel = (!empty($sjData['unit']) && isset($unitOpts[$sjData['unit']])) ? strtoupper($unitOpts[$sjData['unit']]) : 'YD';
+                if ($uLabel === 'YARD') $uLabel = 'YD';
 
                 $historyEntries[] = [
                     'date' => $tglRaw,
-                    'text' => $tglFormatted . ' - STOCK KELUAR (PENGIRIMAN BUYER): NO SJ ' . $sjData['no_sj'] . $buyerPart . ' - Total ' . $sjData['total_qty'] . ' YD (' . $pcsCount . ' Pcs: ' . $pcsListStr . ' YD)'
+                    'text' => $tglFormatted . ' - STOCK KELUAR (PENGIRIMAN BUYER): NO SJ ' . $sjData['no_sj'] . $buyerPart . ' - Total ' . $sjData['total_qty'] . ' ' . $uLabel . ' (' . $pcsCount . ' Pcs: ' . $pcsListStr . ' ' . $uLabel . ')'
                 ];
             }
 
@@ -501,6 +510,7 @@ class TrnPrintStockController extends Controller
                         'tgl_doc' => !empty($kmItem['tgl_doc']) ? $kmItem['tgl_doc'] : date('Y-m-d'),
                         'items' => [],
                         'total_qty' => 0,
+                        'unit' => $kmItem['unit'],
                     ];
                 }
                 $qty = (float)$kmItem['qty'];
@@ -513,10 +523,13 @@ class TrnPrintStockController extends Controller
                 $tglFormatted = date('d/m/Y', strtotime($tglRaw));
                 $pcsCount = count($mGroup['items']);
                 $pcsListStr = implode(', ', $mGroup['items']);
+                $unitOpts = \common\models\ar\MstGreigeGroup::unitOptions();
+                $uLabel = (!empty($mGroup['unit']) && isset($unitOpts[$mGroup['unit']])) ? strtoupper($unitOpts[$mGroup['unit']]) : 'YD';
+                if ($uLabel === 'YARD') $uLabel = 'YD';
 
                 $historyEntries[] = [
                     'date' => $tglRaw,
-                    'text' => $tglFormatted . ' - STOCK KELUAR (KIRIM MAKLOON): NO ' . $mGroup['no_doc'] . ' - Total ' . $mGroup['total_qty'] . ' YD (' . $pcsCount . ' Pcs: ' . $pcsListStr . ' YD)'
+                    'text' => $tglFormatted . ' - STOCK KELUAR (KIRIM MAKLOON): NO ' . $mGroup['no_doc'] . ' - Total ' . $mGroup['total_qty'] . ' ' . $uLabel . ' (' . $pcsCount . ' Pcs: ' . $pcsListStr . ' ' . $uLabel . ')'
                 ];
             }
 

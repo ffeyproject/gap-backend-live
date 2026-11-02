@@ -114,7 +114,9 @@ class TrnGudangJadiController extends Controller
                     $model = TrnGudangJadi::findOne($stockId);
                     if ($model !== null && ($model->status === TrnGudangJadi::STATUS_STOCK || $model->status === TrnGudangJadi::STATUS_SIAP_KIRIM)) {
                         $qtyYard = (float)$model->qty;
-                        $formattedNote = 'BARANG KELUAR ' . $qtyYard . ' YARD: ' . $note . ' (TGL ' . date('d/m/Y') . ')';
+                        $unitOpts = \common\models\ar\MstGreigeGroup::unitOptions();
+                        $unitName = (!empty($model->unit) && isset($unitOpts[$model->unit])) ? strtoupper($unitOpts[$model->unit]) : 'YARD';
+                        $formattedNote = 'BARANG KELUAR ' . $qtyYard . ' ' . $unitName . ': ' . $note . ' (TGL ' . date('d/m/Y') . ')';
 
                         if (!empty($model->note)) {
                             $model->note = $model->note . ' | ' . $formattedNote;
