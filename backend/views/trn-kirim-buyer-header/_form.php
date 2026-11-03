@@ -83,7 +83,11 @@ if ($model->isNewRecord) {
                 <div class="col-md-6">
                     <?php
                     if($model->isNewRecord){
-                        $ajaxUrl = Url::to(['ajax/customer-search']);
+                        $ajaxUrl = Url::to(['/ajax/customer-search']);
+                        $getLastKirimUrl = Url::to(['/ajax/get-customer-last-kirim']);
+                        $namaBuyerId = Html::getInputId($model, 'nama_buyer');
+                        $alamatBuyerId = Html::getInputId($model, 'alamat_buyer');
+                        $isExportId = Html::getInputId($model, 'is_export');
                         $customer = empty($model->customer_id) ? '' : $model->customer->name.' ('.$model->customer->cust_no.')';
                         echo $form->field($model, "customer_id")->widget(Select2::class, [
                             'initValueText' => $customer, // set the initial display text
@@ -102,6 +106,33 @@ if ($model->isNewRecord) {
                                 'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
                                 'templateResult' => new JsExpression('function(greige) { return greige.text; }'),
                                 'templateSelection' => new JsExpression('function (greige) { return greige.text; }'),
+                            ],
+                            'pluginEvents' => [
+                                'select2:select' => new JsExpression('function(e) {
+                                    var customerId = e.params.data.id;
+                                    if (customerId) {
+                                        var isExport = $("#' . $isExportId . '").is(":checked") ? 1 : 0;
+                                        $.ajax({
+                                            url: "' . $getLastKirimUrl . '",
+                                            type: "GET",
+                                            dataType: "json",
+                                            data: {
+                                                customerId: customerId,
+                                                isExport: isExport
+                                            },
+                                            success: function(res) {
+                                                if (res && res.success) {
+                                                    $("#' . $namaBuyerId . '").val(res.nama_buyer);
+                                                    $("#' . $alamatBuyerId . '").val(res.alamat_buyer);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }'),
+                                'select2:unselect' => new JsExpression('function(e) {
+                                    $("#' . $namaBuyerId . '").val("");
+                                    $("#' . $alamatBuyerId . '").val("");
+                                }'),
                             ],
                         ]);
                     }else{

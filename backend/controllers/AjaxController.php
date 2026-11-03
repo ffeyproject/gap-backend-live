@@ -9,6 +9,7 @@
 namespace backend\controllers;
 
 use common\models\ar\JualExFinish;
+use common\models\ar\MstCustomer;
 use common\models\ar\MstGreige;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\MstHandling;
@@ -20,6 +21,7 @@ use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnKartuProsesPfpItem;
 use common\models\ar\TrnKartuProsesPrinting;
 use common\models\ar\TrnKartuProsesPrintingItem;
+use common\models\ar\TrnKirimBuyerHeader;
 use common\models\ar\TrnKirimMakloon;
 use common\models\ar\TrnMo;
 use common\models\ar\TrnNotif;
@@ -1742,5 +1744,76 @@ class AjaxController extends Controller
             throw new NotFoundHttpException("Roll \"{$code}\" tidak ditemukan pada pengiriman" . ($wo_id ? ' WO ini.' : '.'));
         }
         return $roll;
+    }
+
+    /**
+     * Mendapatkan data pengiriman terakhir (nama_buyer dan alamat_buyer) berdasarkan customer_id
+     * @param int|null $customerId
+     * @param int|null $id
+     * @param int|null $isExport
+     * @return array
+     */
+    public function actionGetCustomerLastKirim($customerId = null, $id = null, $isExport = null)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $cid = !empty($customerId) ? $customerId : $id;
+
+        if (empty($cid)) {
+            return [
+                'success' => false,
+                'nama_buyer' => '',
+                'alamat_buyer' => '',
+            ];
+        }
+
+        $lastKirim = null;
+        if ($isExport !== null && $isExport !== '') {
+            $lastKirim = TrnKirimBuyerHeader::find()
+                ->where(['customer_id' => $cid, 'is_export' => (bool)$isExport])
+                ->andWhere(['and', ['not', ['nama_buyer' => null]], ['!=', 'nama_buyer', '']])
+                ->orderBy(['date' => SORT_DESC, 'id' => SORT_DESC])
+                ->one();
+        }
+
+        if ($lastKirim === null) {
+            $lastKirim = TrnKirimBuyerHeader::find()
+                ->where(['customer_id' => $cid])
+                ->andWhere(['and', ['not', ['nama_buyer' => null]], ['!=', 'nama_buyer', '']])
+                ->orderBy(['date' => SORT_DESC, 'id' => SORT_DESC])
+                ->one();
+        }
+
+        if ($lastKirim === null) {
+            $lastKirim = TrnKirimBuyerHeader::find()
+                ->where(['customer_id' => $cid])
+                ->orderBy(['date' => SORT_DESC, 'id' => SORT_DESC])
+                ->one();
+        }
+
+        $namaBuyer = '';
+        $alamatBuyer = '';
+
+        if ($lastKirim !== null) {
+            $namaBuyer = (string)$lastKirim->nama_buyer;
+            $alamatBuyer = (string)$lastKirim->alamat_buyer;
+        }
+
+        if (trim($namaBuyer) === '' || trim($alamatBuyer) === '') {
+            $customer = MstCustomer::findOne($cid);
+            if ($customer !== null) {
+                if (trim($namaBuyer) === '') {
+                    $namaBuyer = (string)$customer->name;
+                }
+                if (trim($alamatBuyer) === '') {
+                    $alamatBuyer = (string)$customer->address;
+                }
+            }
+        }
+
+        return [
+            'success' => true,
+            'nama_buyer' => $namaBuyer,
+            'alamat_buyer' => $alamatBuyer,
+        ];
     }
 }

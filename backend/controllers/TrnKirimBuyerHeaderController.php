@@ -165,6 +165,29 @@ class TrnKirimBuyerHeaderController extends Controller
             }
         }
 
+        if (!empty($model->customer_id) && (empty($model->nama_buyer) || empty($model->alamat_buyer))) {
+            $lastKirim = TrnKirimBuyerHeader::find()
+                ->where(['customer_id' => $model->customer_id])
+                ->andWhere(['and', ['not', ['nama_buyer' => null]], ['!=', 'nama_buyer', '']])
+                ->orderBy(['date' => SORT_DESC, 'id' => SORT_DESC])
+                ->one();
+            if ($lastKirim !== null) {
+                if (empty($model->nama_buyer)) {
+                    $model->nama_buyer = $lastKirim->nama_buyer;
+                }
+                if (empty($model->alamat_buyer)) {
+                    $model->alamat_buyer = $lastKirim->alamat_buyer;
+                }
+            } elseif ($model->customer !== null) {
+                if (empty($model->nama_buyer)) {
+                    $model->nama_buyer = $model->customer->name;
+                }
+                if (empty($model->alamat_buyer)) {
+                    $model->alamat_buyer = $model->customer->address;
+                }
+            }
+        }
+
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
         }
