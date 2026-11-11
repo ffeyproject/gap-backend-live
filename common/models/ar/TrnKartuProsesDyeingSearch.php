@@ -32,6 +32,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
     public $woYear;
     public $processDates = [];
     public $terakhir_proses;
+    public $noLabDip;
     public $dynamicFilters = [];
 
     /**
@@ -42,7 +43,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'no_urut', 'asal_greige', 'posted_at', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'kartu_proses_id', 'memo_pg_at', 'memo_pg_by'], 'integer'],
             [['no', 'dikerjakan_oleh', 'lusi', 'pakan', 'note', 'date', 'reject_notes', 'memo_pg', 'memo_pg_no', 'panjang', 'qty', 'berat', 'lebar', 'k_density_lusi', 'k_density_pakan', 'lebar_preset', 'lebar_finish', 'berat_finish', 't_density_lusi', 't_density_pakan', 'handling', 'hasil_tes_gosok', 'motif', 'no_do', 'warna', 'nama_warna', 'tgl_order', 'buyer', 'tgl_delivery', 'nomor_kartu', 'shift', 'processDates'], 'safe'],
-            [['woNo', 'dateRange', 'motif','woDateRange','woTglKirimRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth', 'woYear', 'terakhir_proses'], 'safe'],
+            [['woNo', 'dateRange', 'motif','woDateRange','woTglKirimRange','openDateRange','marketingName', 'dateRangeMasukPacking','customerName','dateRangeReadyColour','dateReangeTopingMatching','status', 'woMonth', 'woYear', 'terakhir_proses', 'noLabDip'], 'safe'],
             [['toping_matching','ready_colour'], 'boolean'],
         ];
     }
@@ -216,6 +217,16 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             'desc' => ['LENGTH(trn_wo.no)' => SORT_DESC, 'trn_wo.no' => SORT_DESC, 'moColor.color' => SORT_ASC],
         ];
 
+        $dataProvider->sort->attributes['dateRangeReadyColour'] = [
+            'asc' => [new Expression('trn_wo_color.date_ready_colour ASC NULLS LAST')],
+            'desc' => [new Expression('trn_wo_color.date_ready_colour DESC NULLS LAST')],
+        ];
+
+        $dataProvider->sort->attributes['noLabDip'] = [
+            'asc' => ['trn_mo.no_lab_dip' => SORT_ASC],
+            'desc' => ['trn_mo.no_lab_dip' => SORT_DESC],
+        ];
+
 
 
         if (!$this->validate()) {
@@ -311,13 +322,17 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
         }
 
         if (!empty($this->dateRangeReadyColour)) {
-            // Explode the date range into start and end dates
-            list($start_date, $end_date) = explode(' to ', $this->dateRangeReadyColour);
-    
+            if (strpos($this->dateRangeReadyColour, ' to ') !== false) {
+                list($start_date, $end_date) = explode(' to ', $this->dateRangeReadyColour);
+            } else {
+                $start_date = $this->dateRangeReadyColour;
+                $end_date = $this->dateRangeReadyColour;
+            }
+
             // Convert the dates to UNIX timestamp
-            $start_timestamp = strtotime($start_date);
-            $end_timestamp = strtotime($end_date . ' 23:59:59'); // end of the day
-    
+            $start_timestamp = strtotime(trim($start_date) . ' 00:00:00');
+            $end_timestamp = strtotime(trim($end_date) . ' 23:59:59'); // end of the day
+
             // Apply the filter between the two timestamps
             $query->andFilterWhere(['between', 'trn_wo_color.date_ready_colour', $start_timestamp, $end_timestamp]);
         }
@@ -384,6 +399,7 @@ class TrnKartuProsesDyeingSearch extends TrnKartuProsesDyeing
             ->andFilterWhere(['ilike', 'cust.cust_no', $this->customerName])
             ->andFilterWhere(['ilike', 'moColor.color', $this->warna])
             ->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.nama_warna', $this->nama_warna])
+            ->andFilterWhere(['ilike', 'trn_mo.no_lab_dip', $this->noLabDip])
         ;
 
        if ($isFiltering) {

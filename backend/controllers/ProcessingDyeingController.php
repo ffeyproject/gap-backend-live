@@ -13,6 +13,8 @@ use common\models\ar\TrnKartuProsesPfpItem;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnWo;
 use common\models\ar\TrnWoColor;
+use common\models\ar\TrnWoColorSearch;
+use common\models\ar\TrnScGreige;
 use common\models\ar\TrnOrderPfp;
 use Yii;
 use common\models\ar\TrnKartuProsesDyeing;
@@ -4723,5 +4725,71 @@ class ProcessingDyeingController extends Controller
             }
         }
         return ['success' => false];
+    }
+
+    /**
+     * Menampilkan daftar data Ready Color untuk Lab Dyeing (WO dan Kartu Proses Dyeing).
+     * @param string $tab
+     * @return mixed
+     */
+    public function actionLabDyeing($tab = 'wo')
+    {
+        if (!in_array($tab, ['wo', 'kartu-proses'], true)) {
+            $tab = 'wo';
+        }
+
+        $woBaseCondition = [
+            'trn_wo_color.ready_colour' => true,
+            'trn_sc_greige.process' => TrnScGreige::PROCESS_DYEING,
+        ];
+        $woExcludedStatus = ['not in', 'trn_wo.status', [TrnWo::STATUS_BATAL, TrnWo::STATUS_REJECTED]];
+
+        $kpBaseCondition = [
+            'trn_wo_color.ready_colour' => true,
+        ];
+        $kpExcludedStatus = ['!=', 'trn_kartu_proses_dyeing.status', TrnKartuProsesDyeing::STATUS_BATAL];
+
+        $woCount = (int) TrnWoColor::find()
+            ->joinWith(['wo', 'scGreige'], false)
+            ->where($woBaseCondition)
+            ->andWhere($woExcludedStatus)
+            ->count();
+
+        $kartuProsesCount = (int) TrnKartuProsesDyeing::find()
+            ->joinWith(['woColor'], false)
+            ->where($kpBaseCondition)
+            ->andWhere($kpExcludedStatus)
+            ->count();
+
+        $searchModelWo = new TrnWoColorSearch();
+        $dataProviderWo = null;
+        $searchModelKp = new TrnKartuProsesDyeingSearch();
+        $dataProviderKp = null;
+
+        if ($tab === 'wo') {
+            $dataProviderWo = $searchModelWo->search(Yii::$app->request->queryParams);
+            $dataProviderWo->query
+                ->andWhere($woBaseCondition)
+                ->andWhere($woExcludedStatus)
+                ->with(['kartuProsesDyeings', 'mo', 'wo.sc.marketing', 'wo.sc.cust', 'greige', 'moColor']);
+            $dataProviderWo->sort->defaultOrder = ['dateRangeReadyColour' => SORT_DESC];
+        } else {
+            $dataProviderKp = $searchModelKp->search(Yii::$app->request->queryParams);
+            $dataProviderKp->query
+                ->andWhere($kpBaseCondition)
+                ->andWhere($kpExcludedStatus)
+                ->with(['trnKartuProsesDyeingItems', 'mo', 'sc.cust', 'wo.greige', 'woColor.moColor']);
+            $dataProviderKp->sort->defaultOrder = ['dateRangeReadyColour' => SORT_DESC];
+        }
+
+        return $this->render('lab-dyeing', [
+            'tab' => $tab,
+            'woCount' => $woCount,
+            'kartuProsesCount' => $kartuProsesCount,
+            'searchModelWo' => $searchModelWo,
+            'dataProviderWo' => $dataProviderWo,
+            'searchModelKp' => $searchModelKp,
+            'dataProviderKp' => $dataProviderKp,
+        ]);
     }
 }

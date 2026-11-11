@@ -641,7 +641,11 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Dyeing', 'icon' => 'circle-o', 'url' => ['/processing-dyeing/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && !in_array($actionId, ['synchron-verpacking', 'rekap-proses-mesin', 'laporan-rekap-mesin'])
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && !in_array($actionId, ['synchron-verpacking', 'rekap-proses-mesin', 'laporan-rekap-mesin', 'lab-dyeing'])
+                    ],
+                    [
+                        'label' => 'Lab Dyeing', 'icon' => 'circle-o', 'url' => ['/processing-dyeing/lab-dyeing'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-dyeing' && $actionId == 'lab-dyeing'
                     ],
                     [
                         'label' => 'Printing', 'icon' => 'circle-o', 'url' => ['/processing-printing/index'],

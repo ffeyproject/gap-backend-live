@@ -43,19 +43,25 @@ class TrnWoColorSearch extends TrnWoColor
     public $woNo;
     public $woYear;
     public $woMonth;
+    public $colorName;
+    public $noLabDip;
+    public $woStatus;
+    public $ready_colour;
+    public $hasKartuProses;
     /**
      * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'mo_color_id'], 'integer'],
+            [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'mo_color_id', 'woStatus'], 'integer'],
             [['qty'], 'number'],
+            [['ready_colour'], 'boolean'],
             [['note','dateRangeReadyColour'], 'safe'],
             [
                 [
                     'scNo', 'moNo', 'woNo', 'woYear', 'woMonth', 'greigeName', 'marketingName', 'mengetahuiName', 'dateRangeWo', 'dateRangeSc', 'dateRangeMo', 'creatorName',
-                    'scGreigeNamaKain', 'proccess', 'papperTubeName', 'customerName', 'tipeKontrak'
+                    'scGreigeNamaKain', 'proccess', 'papperTubeName', 'customerName', 'tipeKontrak', 'colorName', 'noLabDip', 'hasKartuProses'
                 ],
                 'safe'
             ]
@@ -86,6 +92,7 @@ class TrnWoColorSearch extends TrnWoColor
             'wo.mo.scGreige.sc.cust',
             'greige',
             'wo.mo.scGreige.greigeGroup',
+            'moColor as moColor',
         ]);
 
         // add conditions that should always apply here
@@ -162,6 +169,31 @@ class TrnWoColorSearch extends TrnWoColor
         $dataProvider->sort->attributes['tipeKontrak'] = [
             'asc' => ['trn_sc.tipe_kontrak' => SORT_ASC],
             'desc' => ['trn_sc.tipe_kontrak' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['woNo'] = [
+            'asc' => ['trn_wo.no' => SORT_ASC],
+            'desc' => ['trn_wo.no' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['woStatus'] = [
+            'asc' => ['trn_wo.status' => SORT_ASC],
+            'desc' => ['trn_wo.status' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['colorName'] = [
+            'asc' => ['moColor.color' => SORT_ASC],
+            'desc' => ['moColor.color' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['noLabDip'] = [
+            'asc' => ['trn_mo.no_lab_dip' => SORT_ASC],
+            'desc' => ['trn_mo.no_lab_dip' => SORT_DESC],
+        ];
+
+        $dataProvider->sort->attributes['dateRangeReadyColour'] = [
+            'asc' => [new Expression('trn_wo_color.date_ready_colour ASC NULLS LAST')],
+            'desc' => [new Expression('trn_wo_color.date_ready_colour DESC NULLS LAST')],
         ];
 
         $this->load($params);
@@ -250,18 +282,45 @@ class TrnWoColorSearch extends TrnWoColor
             'trn_wo_color.qty' => $this->qty,
             'trn_sc_greige.process' => $this->proccess,
             'trn_sc.tipe_kontrak' => $this->tipeKontrak,
+            'trn_wo.status' => $this->woStatus,
         ]);
+
+        if ($this->ready_colour !== null && $this->ready_colour !== '') {
+            $query->andFilterWhere(['trn_wo_color.ready_colour' => $this->ready_colour]);
+        }
+
+        if ($this->hasKartuProses === '1') {
+            $query->andWhere([
+                'exists',
+                (new \yii\db\Query())
+                    ->select('kp.id')
+                    ->from('trn_kartu_proses_dyeing kp')
+                    ->where('kp.wo_color_id = trn_wo_color.id')
+                    ->andWhere(['!=', 'kp.status', TrnKartuProsesDyeing::STATUS_BATAL])
+            ]);
+        } elseif ($this->hasKartuProses === '0') {
+            $query->andWhere([
+                'not exists',
+                (new \yii\db\Query())
+                    ->select('kp.id')
+                    ->from('trn_kartu_proses_dyeing kp')
+                    ->where('kp.wo_color_id = trn_wo_color.id')
+                    ->andWhere(['!=', 'kp.status', TrnKartuProsesDyeing::STATUS_BATAL])
+            ]);
+        }
 
         $query->andFilterWhere(['ilike', 'trn_wo_color.note', $this->note])
             ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->greigeName])
             ->andFilterWhere(['ilike', 'crt.full_name', $this->creatorName])
             ->andFilterWhere(['ilike', 'mkt.full_name', $this->marketingName])
             ->andFilterWhere(['ilike', 'trn_mo.no', $this->moNo])
+            ->andFilterWhere(['ilike', 'trn_mo.no_lab_dip', $this->noLabDip])
             ->andFilterWhere(['ilike', 'trn_sc.no', $this->scNo])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo])
             ->andFilterWhere(['ilike', 'mst_greige_group.nama_kain', $this->scGreigeNamaKain])
             ->andFilterWhere(['ilike', 'mst_papper_tube.name', $this->papperTubeName])
             ->andFilterWhere(['ilike', 'mst_customer.name', $this->customerName])
+            ->andFilterWhere(['ilike', 'moColor.color', $this->colorName])
         ;
 
         return $dataProvider;
