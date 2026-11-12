@@ -83,6 +83,13 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
             <?= Html::checkbox('param3', $defaultCheck, ['label' => 'Made In Indonesia', 'id' => 'param3Checkbox']); ?>
             <?= Html::checkbox('param4', $defaultCheck, ['label' => 'Registrasi K3L', 'id' => 'param4Checkbox']); ?>
             <?= Html::checkbox('param5', true, ['label' => 'Aktifkan Pembulatan Decimal', 'id' => 'param5Checkbox']); ?>
+            <div style="margin-top: 6px;">
+                <?= Html::button('<i class="fa fa-save"></i> Simpan No Lot', [
+                    'id' => 'btn-save-all-lot-no',
+                    'class' => 'btn btn-primary btn-xs',
+                ]) ?>
+                <span id="lot-no-save-status" class="text-muted" style="margin-left: 6px; font-size: 12px;"></span>
+            </div>
 
         </div>
 
@@ -346,7 +353,26 @@ $defaultCheck = ($no_wo == 'L' ? true : false);
                             }
                         ?>
                     </td>
-                    <td><?=$item['lot_no']?></td>
+                    <td>
+                        <?php if ($item['is_head'] == 1): ?>
+                            <div class="input-group input-group-sm" style="min-width: 140px;">
+                                <?= Html::textInput("lot_no[{$item['id']}]", $item['lot_no'], [
+                                    'class' => 'form-control lot-no-input',
+                                    'data-id' => $item['id'],
+                                    'data-original' => (string)$item['lot_no'],
+                                    'placeholder' => 'No Lot...',
+                                    'autocomplete' => 'off',
+                                ]) ?>
+                                <span class="input-group-btn">
+                                    <button type="button" class="btn btn-default btn-save-lot-no" data-id="<?= $item['id'] ?>" title="Simpan No Lot">
+                                        <i class="fa fa-save"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        <?php else: ?>
+                            <?= Html::encode($item['lot_no']) ?>
+                        <?php endif; ?>
+                    </td>
                     <td><?=$item['defect']?></td>
                     <td>
                         <?php

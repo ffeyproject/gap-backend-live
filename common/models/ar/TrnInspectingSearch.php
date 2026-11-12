@@ -16,6 +16,7 @@ class TrnInspectingSearch extends TrnInspecting
     public $tanggalInspeksiRange;
     public $deliveredAtRange;
     public $color;
+    public $custNo;
     public $woNo;
     public $kpdNo;
     public $kppNo;
@@ -26,7 +27,7 @@ class TrnInspectingSearch extends TrnInspecting
     {
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_dyeing_id', 'memo_repair_id', 'jenis_process', 'no_urut', 'status', 'jenis_inspek', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'unit'], 'integer'],
-            [['no', 'date', 'tanggal_inspeksi', 'no_lot', 'kombinasi', 'note', 'kpdNo', 'kppNo', 'memoRepairNo', 'woNo', 'dateRange', 'tanggalInspeksiRange', 'deliveredAtRange', 'color', 'no_memo'], 'safe'],
+            [['no', 'date', 'tanggal_inspeksi', 'no_lot', 'kombinasi', 'note', 'kpdNo', 'kppNo', 'memoRepairNo', 'custNo', 'woNo', 'dateRange', 'tanggalInspeksiRange', 'deliveredAtRange', 'color', 'no_memo'], 'safe'],
         ];
     }
 
@@ -38,7 +39,7 @@ class TrnInspectingSearch extends TrnInspecting
     public function search($params)
     {
         $query = TrnInspecting::find();
-        $query->with(['kartuProcessDyeing', 'kartuProcessPrinting', 'memoRepair', 'wo']);
+        $query->with(['kartuProcessDyeing', 'kartuProcessPrinting', 'memoRepair', 'wo', 'sc.cust']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -50,6 +51,10 @@ class TrnInspectingSearch extends TrnInspecting
         ]);
 
         // Sorting tambahan
+        $dataProvider->sort->attributes['custNo'] = [
+            'asc' => ['mst_customer.cust_no' => SORT_ASC],
+            'desc' => ['mst_customer.cust_no' => SORT_DESC],
+        ];
         $dataProvider->sort->attributes['woNo'] = [
             'asc' => ['trn_wo.no' => SORT_ASC],
             'desc' => ['trn_wo.no' => SORT_DESC],
@@ -80,6 +85,9 @@ class TrnInspectingSearch extends TrnInspecting
         // Only join related tables when actively filtered or sorted to avoid unnecessary JOINs during COUNT(*).
         $sortOrders = $dataProvider->sort->getOrders();
         $joinRelations = [];
+        if (!empty($this->custNo) || isset($sortOrders['custNo'])) {
+            $joinRelations[] = 'sc.cust';
+        }
         if (!empty($this->woNo) || isset($sortOrders['woNo'])) {
             $joinRelations[] = 'wo';
         }
@@ -177,6 +185,7 @@ class TrnInspectingSearch extends TrnInspecting
             ->andFilterWhere(['ilike', 'trn_kartu_proses_dyeing.no', $this->kpdNo])
             ->andFilterWhere(['ilike', 'trn_kartu_proses_printing.no', $this->kppNo])
             ->andFilterWhere(['ilike', 'trn_memo_repaair.no', $this->memoRepairNo])
+            ->andFilterWhere(['ilike', 'mst_customer.cust_no', $this->custNo])
             ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo]);
 
         return $dataProvider;

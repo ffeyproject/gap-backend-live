@@ -15,6 +15,7 @@ class InspectingMklBjSearch extends InspectingMklBj
     public $colorName;
     public $designName;
     public $articleName;
+    public $custNo;
 
     // 🔹 tambahan untuk date range
     public $tglInspeksiRange;
@@ -43,6 +44,7 @@ class InspectingMklBjSearch extends InspectingMklBj
                     'designName',
                     'articleName',
                     'greigeName',
+                    'custNo',
                     'jenis_inspek',
                     'no_memo',
                     'tglInspeksiRange',
@@ -61,7 +63,7 @@ class InspectingMklBjSearch extends InspectingMklBj
 
     public function search($params)
     {
-        $query = InspectingMklBj::find()->with(['moColor.mo', 'wo.greige', 'woColor.moColor']);
+        $query = InspectingMklBj::find()->with(['moColor.mo', 'wo.greige', 'wo.sc.cust', 'woColor.moColor']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -71,6 +73,10 @@ class InspectingMklBjSearch extends InspectingMklBj
         ]);
 
         // sort tambahan
+        $dataProvider->sort->attributes['custNo'] = [
+            'asc' => ['mst_customer.cust_no' => SORT_ASC],
+            'desc' => ['mst_customer.cust_no' => SORT_DESC],
+        ];
         $dataProvider->sort->attributes['designName'] = [
             'asc' => ['trn_mo.design' => SORT_ASC],
             'desc' => ['trn_mo.design' => SORT_DESC],
@@ -108,6 +114,9 @@ class InspectingMklBjSearch extends InspectingMklBj
         }
         if (!empty($this->greigeName) || isset($sortOrders['greigeName'])) {
             $joinRelations[] = 'wo.greige';
+        }
+        if (!empty($this->custNo) || isset($sortOrders['custNo'])) {
+            $joinRelations[] = 'wo.sc.cust';
         }
         if (!empty($joinRelations)) {
             $query->joinWith($joinRelations, false);
@@ -187,7 +196,8 @@ class InspectingMklBjSearch extends InspectingMklBj
             ->andFilterWhere(['ilike', 'trn_mo_color.color', $this->colorName])
             ->andFilterWhere(['ilike', 'trn_mo.design', $this->designName])
             ->andFilterWhere(['ilike', 'trn_mo.article', $this->articleName])
-            ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->greigeName]);
+            ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->greigeName])
+            ->andFilterWhere(['ilike', 'mst_customer.cust_no', $this->custNo]);
 
         return $dataProvider;
     }

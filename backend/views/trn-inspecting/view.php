@@ -211,6 +211,7 @@ $indexUrl = \yii\helpers\Url::to(['index']);
 
 $this->registerJsVar('inspectionId', $model->id);
 $this->registerJsVar('indexUrl', $indexUrl);
+$this->registerJsVar('updateLotNoUrl', \yii\helpers\Url::to(['update-lot-no', 'id' => $model->id]));
 $this->registerJsVar('warnaList', $warnaList);
 $this->registerJs('
 window.postingItems = function() {

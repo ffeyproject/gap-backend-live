@@ -62,6 +62,11 @@ if(!empty($searchModel->wo_id)){
             'id',
             'no',
             [
+                'attribute'=>'custNo',
+                'label'=>'Cust No',
+                'value'=>'wo.sc.cust.cust_no'
+            ],
+            [
                 'attribute'=>'wo_id',
                 'label'=>'WO No.',
                 'value'=>'woNo',
@@ -170,7 +175,6 @@ if(!empty($searchModel->wo_id)){
                     ],
                 ],
             ],
-            'no_memo',
             //'created_at',
             //'created_by',
             //'updated_at',

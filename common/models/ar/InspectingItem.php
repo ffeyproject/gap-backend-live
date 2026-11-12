@@ -54,10 +54,11 @@ class InspectingItem extends \yii\db\ActiveRecord
             [['inspecting_id', 'grade', 'join_piece'], 'default', 'value' => null],
             [['inspecting_id', 'grade', 'no_urut'], 'integer'],
             [['posted_at'], 'safe'],
-            [['no_urut'], 'default', 'value' => null],
+            [['no_urut', 'lot_no'], 'default', 'value' => null],
             [['qty'], 'number'],
             [['note'], 'string'],
             [['join_piece'], 'string', 'max' => 10],
+            [['lot_no'], 'string', 'max' => 255],
             [['inspecting_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnInspecting::className(), 'targetAttribute' => ['inspecting_id' => 'id']],
         ];
     }
@@ -74,6 +75,7 @@ class InspectingItem extends \yii\db\ActiveRecord
             'join_piece' => 'Join Piece',
             'qty' => 'Qty',
             'note' => 'Note',
+            'lot_no' => 'Lot No',
             'posted_at' => 'Posted At',
         ];
     }

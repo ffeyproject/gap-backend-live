@@ -21,6 +21,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
     private $from_date;
     private $to_date;
     public $no_lot;
+    public $lot_no;
     public $id_asal;
 
     /**
@@ -31,7 +32,7 @@ class TrnGudangJadiSearch extends TrnGudangJadi
         return [
             [['id', 'jenis_gudang', 'wo_id', 'source', 'unit', 'no_urut', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'greige_id'], 'integer'],
             ['qty', 'number'],
-            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade','locs_code','no_lot', 'id_asal'], 'safe'],
+            [['source_ref', 'no', 'date', 'note', 'dipotong', 'hasil_pemotongan', 'woNo', 'dateRange', 'scNo', 'marketingName', 'customerName', 'color', 'grade','locs_code','no_lot', 'lot_no', 'id_asal'], 'safe'],
         ];
     }
 
@@ -110,6 +111,11 @@ class TrnGudangJadiSearch extends TrnGudangJadi
             'desc' => ['trn_gudang_jadi.qr_code' => SORT_DESC],
         ];
 
+        $dataProvider->sort->attributes['lot_no'] = [
+            'asc' => [new Expression("COALESCE(CASE WHEN trn_gudang_jadi.trans_from IN ('MKL', 'INS2') THEN inspecting_mkl_bj_items.lot_no ELSE inspecting_item.lot_no END, '') ASC")],
+            'desc' => [new Expression("COALESCE(CASE WHEN trn_gudang_jadi.trans_from IN ('MKL', 'INS2') THEN inspecting_mkl_bj_items.lot_no ELSE inspecting_item.lot_no END, '') DESC")],
+        ];
+
 
 
         $this->load($params);
@@ -183,6 +189,15 @@ class TrnGudangJadiSearch extends TrnGudangJadi
                 ['in', 'source_ref', (new \yii\db\Query())->from(\common\models\ar\InspectingMklBj::tableName())
                     ->select('no')
                     ->where(['like', 'no_lot', $this->no_lot])]
+            ]);
+        }
+
+        if (!empty($this->lot_no)) {
+            $lotTerm = trim($this->lot_no);
+            $query->andWhere([
+                'or',
+                ['and', ['or', ['trn_gudang_jadi.trans_from' => 'INS'], ['trn_gudang_jadi.trans_from' => null]], ['ilike', 'inspecting_item.lot_no', $lotTerm]],
+                ['and', ['in', 'trn_gudang_jadi.trans_from', ['MKL', 'INS2']], ['ilike', 'inspecting_mkl_bj_items.lot_no', $lotTerm]],
             ]);
         }
 

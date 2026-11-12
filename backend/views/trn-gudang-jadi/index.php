@@ -263,13 +263,22 @@ $beforeButtons .= ' ' . Html::a('<i class=" glyphicon glyphicon-plus-sign"></i> 
             // 'color',
             [
                 'contentOptions' => ['style' => 'white-space: nowrap;'],
-                'label' => 'No. Lot',
+                'label' => 'No. Batch',
                 'attribute' => 'no_lot',
                 // 'headerOptions' => ['style' => 'width:50px;'],
                 'value' => function($data) {
                     return $data->noLot;
                 },
 
+            ],
+            [
+                'contentOptions' => ['style' => 'white-space: nowrap;'],
+                'label' => 'No. Lot',
+                'attribute' => 'lot_no',
+                'value' => function($data) {
+                    /* @var $data TrnGudangJadi */
+                    return $data->itemLotNo;
+                },
             ],
             [
                 'attribute' => 'qty',

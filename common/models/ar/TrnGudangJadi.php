@@ -322,6 +322,21 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
     }
 
     /**
+     * Returns lot_no of related inspecting_item or inspecting_mkl_bj_items, or '-' if not set.
+     * @return string
+     */
+    public function getItemLotNo()
+    {
+        if ($this->trans_from === 'MKL' || $this->trans_from === 'INS2') {
+            return ($this->inspectingMklbj && !empty($this->inspectingMklbj->lot_no)) ? $this->inspectingMklbj->lot_no : '-';
+        }
+        if ($this->inspecting && !empty($this->inspecting->lot_no)) {
+            return $this->inspecting->lot_no;
+        }
+        return '-';
+    }
+
+    /**
      * Mendapatkan URL link untuk referensi source (Inspecting, Makloon, Retur, Beli Jadi, dll)
      * @return string|null
      */

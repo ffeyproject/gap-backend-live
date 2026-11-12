@@ -53,6 +53,7 @@ class TrnInspectingController extends Controller
                 'actions' => [
                     'delete' => ['POST'],
                     'set-diterima-gudang-jadi' => ['POST'],
+                    'update-lot-no' => ['POST'],
                 ],
             ],
         ];
@@ -1336,6 +1337,70 @@ class TrnInspectingController extends Controller
         }
 
         throw new MethodNotAllowedHttpException('Method not allowed.');
+    }
+
+    /**
+     * Update lot_no for one or more InspectingItem rows belonging to a TrnInspecting.
+     * @param int $id
+     * @return array
+     * @throws HttpException
+     * @throws MethodNotAllowedHttpException
+     * @throws NotFoundHttpException
+     */
+    public function actionUpdateLotNo($id)
+    {
+        if (!Yii::$app->request->isAjax) {
+            throw new MethodNotAllowedHttpException('Method not allowed.');
+        }
+
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $model = $this->findModel($id);
+
+        $itemsPayload = Yii::$app->request->post('items');
+        if (!is_array($itemsPayload) || empty($itemsPayload)) {
+            throw new \yii\web\BadRequestHttpException('Data No Lot tidak ditemukan.');
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $updated = [];
+            foreach ($itemsPayload as $entry) {
+                $itemId = isset($entry['id']) ? (int)$entry['id'] : 0;
+                if ($itemId <= 0) {
+                    continue;
+                }
+
+                $itemModel = InspectingItem::findOne([
+                    'id' => $itemId,
+                    'inspecting_id' => $model->id,
+                ]);
+                if ($itemModel === null) {
+                    throw new NotFoundHttpException("Item inspecting #{$itemId} tidak ditemukan.");
+                }
+                if ((int)$itemModel->is_head !== 1) {
+                    throw new ForbiddenHttpException("No Lot hanya dapat diubah pada item dengan is_head = 1.");
+                }
+
+                $lotNo = isset($entry['lot_no']) ? trim((string)$entry['lot_no']) : '';
+                $itemModel->lot_no = $lotNo === '' ? null : $lotNo;
+
+                if (!$itemModel->save(true, ['lot_no'])) {
+                    throw new HttpException(422, 'Gagal menyimpan No Lot: ' . Json::encode($itemModel->getErrors()));
+                }
+
+                $updated[$itemId] = $itemModel->lot_no ?? '';
+            }
+
+            $transaction->commit();
+            return [
+                'success' => true,
+                'count' => count($updated),
+                'items' => $updated,
+            ];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
     }
 
     // bagussona

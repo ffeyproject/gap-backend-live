@@ -239,3 +239,116 @@ function posting(href, ctn, message, reload=false) {
         }
     });
 }
+
+function saveLotNoItems(itemsPayload, $inputsToMark, $buttonsToMark) {
+    if (typeof updateLotNoUrl === 'undefined' || !itemsPayload.length) {
+        return;
+    }
+
+    var $statusEl = $('#lot-no-save-status');
+    $statusEl.removeClass('text-danger text-success').addClass('text-muted').text('Menyimpan...');
+    if ($buttonsToMark && $buttonsToMark.length) {
+        $buttonsToMark.prop('disabled', true);
+    }
+
+    $.ajax({
+        method: 'POST',
+        url: updateLotNoUrl,
+        data: { items: itemsPayload },
+        success: function(res) {
+            if (res && res.success && res.items) {
+                $.each(res.items, function(itemId, savedVal) {
+                    var $inp = $('.lot-no-input[data-id="' + itemId + '"]');
+                    $inp.val(savedVal).attr('data-original', savedVal).data('original', savedVal);
+                    $inp.css('border-color', '#00a65a');
+                    var $btn = $('.btn-save-lot-no[data-id="' + itemId + '"]');
+                    $btn.find('i').removeClass('fa-save').addClass('fa-check text-success');
+                    setTimeout(function() {
+                        $inp.css('border-color', '');
+                        $btn.find('i').removeClass('fa-check text-success').addClass('fa-save');
+                    }, 1500);
+                });
+                $statusEl.removeClass('text-muted text-danger').addClass('text-success').text('No Lot tersimpan (' + res.count + ' roll/pcs).');
+            }
+        },
+        error: function(jqXHR) {
+            var msg = 'Gagal menyimpan No Lot.';
+            try {
+                var err = jQuery.parseJSON(jqXHR.responseText);
+                if (err && err.message) {
+                    msg = err.message;
+                }
+            } catch (e) {}
+            if ($inputsToMark && $inputsToMark.length) {
+                $inputsToMark.css('border-color', '#dd4b39');
+            }
+            $statusEl.removeClass('text-muted text-success').addClass('text-danger').text(msg);
+        },
+        complete: function() {
+            if ($buttonsToMark && $buttonsToMark.length) {
+                $buttonsToMark.prop('disabled', false);
+            }
+        }
+    });
+}
+
+$(document).on('input', '.lot-no-input', function() {
+    var $inp = $(this);
+    var original = String($inp.attr('data-original') || '');
+    if ($inp.val().trim() !== original.trim()) {
+        $inp.css('border-color', '#f39c12');
+    } else {
+        $inp.css('border-color', '');
+    }
+});
+
+$(document).on('keydown', '.lot-no-input', function(e) {
+    if (e.key === 'Enter' || e.which === 13) {
+        e.preventDefault();
+        var $inputs = $('.lot-no-input');
+        var idx = $inputs.index(this);
+        $(this).trigger('change');
+        if (idx >= 0 && idx + 1 < $inputs.length) {
+            $inputs.eq(idx + 1).focus().select();
+        }
+    }
+});
+
+$(document).on('change', '.lot-no-input', function() {
+    var $inp = $(this);
+    var itemId = $inp.data('id');
+    var currentVal = $inp.val().trim();
+    var originalVal = String($inp.attr('data-original') || '').trim();
+    if (currentVal === originalVal) {
+        return;
+    }
+    var $btn = $('.btn-save-lot-no[data-id="' + itemId + '"]');
+    saveLotNoItems([{ id: itemId, lot_no: currentVal }], $inp, $btn);
+});
+
+$(document).on('click', '.btn-save-lot-no', function() {
+    var itemId = $(this).data('id');
+    var $inp = $('.lot-no-input[data-id="' + itemId + '"]');
+    saveLotNoItems([{ id: itemId, lot_no: $inp.val().trim() }], $inp, $(this));
+});
+
+$(document).on('click', '#btn-save-all-lot-no', function() {
+    var payload = [];
+    var $changedInputs = $();
+    $('.lot-no-input').each(function() {
+        var $inp = $(this);
+        var currentVal = $inp.val().trim();
+        var originalVal = String($inp.attr('data-original') || '').trim();
+        if (currentVal !== originalVal) {
+            payload.push({ id: $inp.data('id'), lot_no: currentVal });
+            $changedInputs = $changedInputs.add($inp);
+        }
+    });
+
+    if (!payload.length) {
+        $('#lot-no-save-status').removeClass('text-danger text-success').addClass('text-muted').text('Tidak ada perubahan No Lot.');
+        return;
+    }
+
+    saveLotNoItems(payload, $changedInputs, $(this));
+});

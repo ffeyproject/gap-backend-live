@@ -83,6 +83,11 @@ $this->params['breadcrumbs'][] = $this->title;
             //'process_printing_id',
             //'no_urut',
             [
+                'attribute'=>'custNo',
+                'label'=>'Cust No',
+                'value'=>'sc.cust.cust_no'
+            ],
+            [
                 'attribute'=>'woNo',
                 'label'=>'No WO',
                 'value'=>'wo.no'
@@ -168,7 +173,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ],
             ],
-            'no_memo',
             //'grade_a_pcs',
             //'grade_b_pcs',
             //'grade_c_pcs',
