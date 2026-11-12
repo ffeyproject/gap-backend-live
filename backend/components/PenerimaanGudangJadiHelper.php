@@ -8,6 +8,7 @@ use common\models\ar\InspectingMklBjItems;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnInspecting;
+use common\models\ar\TrnWo;
 use Yii;
 use yii\db\Expression;
 use yii\db\Query;
@@ -169,6 +170,19 @@ class PenerimaanGudangJadiHelper
 
         $query->andWhere(['in', "{$headerAlias}.status", $cfg['allowedStatuses']]);
 
+        if ($type === 'MKL_BJ') {
+            $excludedWoSubQuery = (new Query())
+                ->select(new Expression('1'))
+                ->from(['w_excl' => TrnWo::tableName()])
+                ->where("w_excl.id = {$headerAlias}.wo_id")
+                ->andWhere([
+                    'or',
+                    new Expression("w_excl.no ILIKE 'D0000/%'"),
+                    new Expression("w_excl.no ILIKE 'P0000/%'"),
+                ]);
+            $query->andWhere(['not exists', $excludedWoSubQuery]);
+        }
+
         $anyGjSubQuery = (new Query())
             ->select(new Expression('1'))
             ->from(['ii_chk' => $itemTable])
@@ -225,7 +239,11 @@ class PenerimaanGudangJadiHelper
      */
     public static function accumulateSummary($docSubQuery, $type, $fromDeliv, $toDeliv, &$summaryByUnit)
     {
-        $docRows = (clone $docSubQuery)->all();
+        $query = clone $docSubQuery;
+        if ($query instanceof \yii\db\ActiveQuery) {
+            $query->with([])->asArray();
+        }
+        $docRows = $query->all();
         if (empty($docRows)) {
             return;
         }
