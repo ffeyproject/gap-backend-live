@@ -19,6 +19,7 @@ class InspectingMklBjSearch extends InspectingMklBj
     // 🔹 tambahan untuk date range
     public $tglInspeksiRange;
     public $tglKirimRange;
+    public $deliveredAtRange;
     public $from_tgl_inspeksi;
     public $to_tgl_inspeksi;
     public $from_tgl_kirim;
@@ -45,7 +46,8 @@ class InspectingMklBjSearch extends InspectingMklBj
                     'jenis_inspek',
                     'no_memo',
                     'tglInspeksiRange',
-                    'tglKirimRange'
+                    'tglKirimRange',
+                    'deliveredAtRange'
                 ],
                 'safe'
             ],
@@ -59,7 +61,7 @@ class InspectingMklBjSearch extends InspectingMklBj
 
     public function search($params)
     {
-        $query = InspectingMklBj::find()->joinWith(['moColor.mo', 'wo.greige']);
+        $query = InspectingMklBj::find()->with(['moColor.mo', 'wo.greige', 'woColor.moColor']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -85,11 +87,30 @@ class InspectingMklBjSearch extends InspectingMklBj
             'asc' => ['mst_greige.nama_kain' => SORT_ASC],
             'desc' => ['mst_greige.nama_kain' => SORT_DESC],
         ];
+        $dataProvider->sort->attributes['deliveredAtRange'] = [
+            'asc' => ['inspecting_mkl_bj.delivered_at' => SORT_ASC],
+            'desc' => ['inspecting_mkl_bj.delivered_at' => SORT_DESC],
+        ];
 
         $this->load($params);
 
         if (!$this->validate()) {
             return $dataProvider;
+        }
+
+        // Only join related tables when actively filtered or sorted to avoid unnecessary JOINs during COUNT(*).
+        $sortOrders = $dataProvider->sort->getOrders();
+        $joinRelations = [];
+        if (!empty($this->colorName) || !empty($this->designName) || !empty($this->articleName)
+            || isset($sortOrders['colorName']) || isset($sortOrders['designName']) || isset($sortOrders['articleName'])
+        ) {
+            $joinRelations[] = 'moColor.mo';
+        }
+        if (!empty($this->greigeName) || isset($sortOrders['greigeName'])) {
+            $joinRelations[] = 'wo.greige';
+        }
+        if (!empty($joinRelations)) {
+            $query->joinWith($joinRelations, false);
         }
 
         /**
@@ -98,16 +119,21 @@ class InspectingMklBjSearch extends InspectingMklBj
          * ===============================
          */
         if (!empty($this->tglInspeksiRange)) {
-            $dates = explode(' - ', $this->tglInspeksiRange);
-            $this->from_tgl_inspeksi = $dates[0] ?? null;
-            $this->to_tgl_inspeksi = $dates[1] ?? null;
+            $separator = strpos($this->tglInspeksiRange, ' to ') !== false ? ' to ' : ' - ';
+            $dates = explode($separator, $this->tglInspeksiRange);
+            $this->from_tgl_inspeksi = isset($dates[0]) ? trim($dates[0]) : null;
+            $this->to_tgl_inspeksi = isset($dates[1]) ? trim($dates[1]) : null;
 
             if ($this->from_tgl_inspeksi && $this->to_tgl_inspeksi) {
-                $query->andFilterWhere(['between', 'DATE(inspecting_mkl_bj.tgl_inspeksi)', $this->from_tgl_inspeksi, $this->to_tgl_inspeksi]);
+                if ($this->from_tgl_inspeksi === $this->to_tgl_inspeksi) {
+                    $query->andFilterWhere(['inspecting_mkl_bj.tgl_inspeksi' => $this->from_tgl_inspeksi]);
+                } else {
+                    $query->andFilterWhere(['between', 'inspecting_mkl_bj.tgl_inspeksi', $this->from_tgl_inspeksi, $this->to_tgl_inspeksi]);
+                }
             } elseif ($this->from_tgl_inspeksi) {
-                $query->andFilterWhere(['>=', 'DATE(inspecting_mkl_bj.tgl_inspeksi)', $this->from_tgl_inspeksi]);
+                $query->andFilterWhere(['>=', 'inspecting_mkl_bj.tgl_inspeksi', $this->from_tgl_inspeksi]);
             } elseif ($this->to_tgl_inspeksi) {
-                $query->andFilterWhere(['<=', 'DATE(inspecting_mkl_bj.tgl_inspeksi)', $this->to_tgl_inspeksi]);
+                $query->andFilterWhere(['<=', 'inspecting_mkl_bj.tgl_inspeksi', $this->to_tgl_inspeksi]);
             }
         }
 
@@ -117,16 +143,21 @@ class InspectingMklBjSearch extends InspectingMklBj
          * ===============================
          */
         if (!empty($this->tglKirimRange)) {
-            $dates = explode(' - ', $this->tglKirimRange);
-            $this->from_tgl_kirim = $dates[0] ?? null;
-            $this->to_tgl_kirim = $dates[1] ?? null;
+            $separator = strpos($this->tglKirimRange, ' to ') !== false ? ' to ' : ' - ';
+            $dates = explode($separator, $this->tglKirimRange);
+            $this->from_tgl_kirim = isset($dates[0]) ? trim($dates[0]) : null;
+            $this->to_tgl_kirim = isset($dates[1]) ? trim($dates[1]) : null;
 
             if ($this->from_tgl_kirim && $this->to_tgl_kirim) {
-                $query->andFilterWhere(['between', 'DATE(inspecting_mkl_bj.tgl_kirim)', $this->from_tgl_kirim, $this->to_tgl_kirim]);
+                if ($this->from_tgl_kirim === $this->to_tgl_kirim) {
+                    $query->andFilterWhere(['inspecting_mkl_bj.tgl_kirim' => $this->from_tgl_kirim]);
+                } else {
+                    $query->andFilterWhere(['between', 'inspecting_mkl_bj.tgl_kirim', $this->from_tgl_kirim, $this->to_tgl_kirim]);
+                }
             } elseif ($this->from_tgl_kirim) {
-                $query->andFilterWhere(['>=', 'DATE(inspecting_mkl_bj.tgl_kirim)', $this->from_tgl_kirim]);
+                $query->andFilterWhere(['>=', 'inspecting_mkl_bj.tgl_kirim', $this->from_tgl_kirim]);
             } elseif ($this->to_tgl_kirim) {
-                $query->andFilterWhere(['<=', 'DATE(inspecting_mkl_bj.tgl_kirim)', $this->to_tgl_kirim]);
+                $query->andFilterWhere(['<=', 'inspecting_mkl_bj.tgl_kirim', $this->to_tgl_kirim]);
             }
         }
 

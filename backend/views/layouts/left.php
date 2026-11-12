@@ -919,7 +919,7 @@ $moduleId = $controller->module->id;
                                     ],
                                     [
                                         'label' => 'Riwayat Penerimaan', 'icon' => 'circle-o', 'url' => ['/gudang-jadi/index'],
-                                        'active' => $moduleId=='app-backend' && $controllerId == 'gudang-jadi'
+                                        'active' => $moduleId=='app-backend' && $controllerId == 'gudang-jadi' && $actionId !== 'riwayat-gabungan'
                                     ],
                                 ]
                             ],
@@ -937,6 +937,10 @@ $moduleId = $controller->module->id;
                                         'active' => $moduleId=='app-backend' && $controllerId == 'penerimaan-inspecting-mkl-bj' && $actionId === 'history'
                                     ],
                                 ]
+                            ],
+                            [
+                                'label' => 'Riwayat Penerimaan Gabungan', 'icon' => 'circle-o', 'url' => ['/gudang-jadi/riwayat-gabungan'],
+                                'active' => $moduleId=='app-backend' && $controllerId == 'gudang-jadi' && $actionId === 'riwayat-gabungan'
                             ],
                             [
                                 'label' => 'Makloon',

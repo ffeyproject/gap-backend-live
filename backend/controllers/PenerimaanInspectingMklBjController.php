@@ -1,6 +1,7 @@
 <?php
 namespace backend\controllers;
 
+use backend\components\PenerimaanGudangJadiHelper;
 use backend\models\form\PenerimaanPackingForm;
 use common\models\ar\InspectingMklBj;
 use common\models\ar\InspectingMklBjSearch;
@@ -8,6 +9,8 @@ use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnInspecting;
 use common\models\ar\TrnInspectingSearch;
 use Yii;
+use yii\db\Query;
+use yii\helpers\ArrayHelper;
 use yii\helpers\BaseVarDumper;
 use yii\helpers\Html;
 use yii\helpers\Json;
@@ -70,12 +73,72 @@ class PenerimaanInspectingMklBjController extends Controller
      */
     public function actionHistory()
     {
-        $searchModel = new InspectingMklBjSearch(['status'=>InspectingMklBj::STATUS_DELIVERED]);
+        $searchModel = new InspectingMklBjSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->pagination->defaultPageSize = 50;
+        $dataProvider->pagination->pageSizeLimit = [10, 200];
+
+        $validation = PenerimaanGudangJadiHelper::validateEitherDateRange($searchModel->tglKirimRange, $searchModel->deliveredAtRange);
+        $hasValidDateRange = $validation['hasValidDateRange'];
+        if ($validation['error'] !== null) {
+            Yii::$app->session->setFlash('error', $validation['error']);
+        }
+
+        $fromDeliv = $validation['penerimaan']['from'];
+        $toDeliv = $validation['penerimaan']['to'];
+
+        $pageDetails = [
+            'gradeTotals' => [],
+            'rowTotals' => [],
+            'inspectingTotals' => [],
+            'isPartialMap' => [],
+            'receiptDates' => [],
+        ];
+        $summaryByUnit = [];
+
+        if (!$hasValidDateRange) {
+            $dataProvider->query->where('0=1');
+        } else {
+            PenerimaanGudangJadiHelper::applyReceiptFilter($dataProvider->query, 'MKL_BJ', 'inspecting_mkl_bj', $fromDeliv, $toDeliv);
+            PenerimaanGudangJadiHelper::applyGradeSortAttributes($dataProvider->sort, 'MKL_BJ', 'inspecting_mkl_bj', $fromDeliv, $toDeliv);
+
+            $docSubQuery = (clone $dataProvider->query)
+                ->select([
+                    'inspecting_mkl_bj.id',
+                    'inspecting_mkl_bj.satuan AS unit',
+                    'inspecting_mkl_bj.status AS doc_status',
+                    'inspecting_mkl_bj.delivered_at',
+                ])
+                ->orderBy(null)
+                ->limit(null)
+                ->offset(null);
+
+            PenerimaanGudangJadiHelper::accumulateSummary($docSubQuery, 'MKL_BJ', $fromDeliv, $toDeliv, $summaryByUnit);
+            ksort($summaryByUnit);
+
+            $models = $dataProvider->getModels();
+            $ids = [];
+            $statusMap = [];
+            $deliveredAtMap = [];
+            foreach ($models as $m) {
+                $ids[] = $m->id;
+                $statusMap[$m->id] = $m->status;
+                $deliveredAtMap[$m->id] = $m->delivered_at;
+            }
+
+            $pageDetails = PenerimaanGudangJadiHelper::computePageDetails($ids, 'MKL_BJ', '', $fromDeliv, $toDeliv, $statusMap, $deliveredAtMap);
+        }
 
         return $this->render('history', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'gradeTotals' => $pageDetails['gradeTotals'],
+            'rowTotals' => $pageDetails['rowTotals'],
+            'inspectingTotals' => $pageDetails['inspectingTotals'],
+            'isPartialMap' => $pageDetails['isPartialMap'],
+            'receiptDates' => $pageDetails['receiptDates'],
+            'hasValidDateRange' => $hasValidDateRange,
+            'summaryByUnit' => $summaryByUnit,
         ]);
     }
 

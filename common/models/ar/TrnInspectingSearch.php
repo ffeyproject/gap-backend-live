@@ -14,6 +14,7 @@ class TrnInspectingSearch extends TrnInspecting
     public $from_tanggal_inspeksi;
     public $to_tanggal_inspeksi;
     public $tanggalInspeksiRange;
+    public $deliveredAtRange;
     public $color;
     public $woNo;
     public $kpdNo;
@@ -25,7 +26,7 @@ class TrnInspectingSearch extends TrnInspecting
     {
         return [
             [['id', 'sc_id', 'sc_greige_id', 'mo_id', 'wo_id', 'kartu_process_dyeing_id', 'memo_repair_id', 'jenis_process', 'no_urut', 'status', 'jenis_inspek', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approved_at', 'approved_by', 'delivered_at', 'delivered_by', 'unit'], 'integer'],
-            [['no', 'date', 'tanggal_inspeksi', 'no_lot', 'kombinasi', 'note', 'kpdNo', 'kppNo', 'memoRepairNo', 'woNo', 'dateRange', 'tanggalInspeksiRange', 'color', 'no_memo'], 'safe'],
+            [['no', 'date', 'tanggal_inspeksi', 'no_lot', 'kombinasi', 'note', 'kpdNo', 'kppNo', 'memoRepairNo', 'woNo', 'dateRange', 'tanggalInspeksiRange', 'deliveredAtRange', 'color', 'no_memo'], 'safe'],
         ];
     }
 
@@ -37,7 +38,7 @@ class TrnInspectingSearch extends TrnInspecting
     public function search($params)
     {
         $query = TrnInspecting::find();
-        $query->joinWith(['kartuProcessDyeing', 'kartuProcessPrinting', 'memoRepair', 'wo']);
+        $query->with(['kartuProcessDyeing', 'kartuProcessPrinting', 'memoRepair', 'wo']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -65,11 +66,34 @@ class TrnInspectingSearch extends TrnInspecting
             'asc' => ['trn_memo_repaair.no' => SORT_ASC],
             'desc' => ['trn_memo_repaair.no' => SORT_DESC],
         ];
+        $dataProvider->sort->attributes['deliveredAtRange'] = [
+            'asc' => ['trn_inspecting.delivered_at' => SORT_ASC],
+            'desc' => ['trn_inspecting.delivered_at' => SORT_DESC],
+        ];
 
         $this->load($params);
 
         if (!$this->validate()) {
             return $dataProvider;
+        }
+
+        // Only join related tables when actively filtered or sorted to avoid unnecessary JOINs during COUNT(*).
+        $sortOrders = $dataProvider->sort->getOrders();
+        $joinRelations = [];
+        if (!empty($this->woNo) || isset($sortOrders['woNo'])) {
+            $joinRelations[] = 'wo';
+        }
+        if (!empty($this->kpdNo) || isset($sortOrders['kpdNo'])) {
+            $joinRelations[] = 'kartuProcessDyeing';
+        }
+        if (!empty($this->kppNo) || isset($sortOrders['kppNo'])) {
+            $joinRelations[] = 'kartuProcessPrinting';
+        }
+        if (!empty($this->memoRepairNo) || isset($sortOrders['memoRepairNo'])) {
+            $joinRelations[] = 'memoRepair';
+        }
+        if (!empty($joinRelations)) {
+            $query->joinWith($joinRelations, false);
         }
 
         /**
@@ -78,16 +102,21 @@ class TrnInspectingSearch extends TrnInspecting
          * ==============================
          */
         if (!empty($this->dateRange)) {
-            $dates = explode(' - ', $this->dateRange);
-            $this->from_date = $dates[0] ?? null;
-            $this->to_date = $dates[1] ?? null;
+            $separator = strpos($this->dateRange, ' to ') !== false ? ' to ' : ' - ';
+            $dates = explode($separator, $this->dateRange);
+            $this->from_date = isset($dates[0]) ? trim($dates[0]) : null;
+            $this->to_date = isset($dates[1]) ? trim($dates[1]) : null;
 
             if ($this->from_date && $this->to_date) {
-                $query->andFilterWhere(['between', 'DATE(trn_inspecting.date)', $this->from_date, $this->to_date]);
+                if ($this->from_date === $this->to_date) {
+                    $query->andFilterWhere(['trn_inspecting.date' => $this->from_date]);
+                } else {
+                    $query->andFilterWhere(['between', 'trn_inspecting.date', $this->from_date, $this->to_date]);
+                }
             } elseif ($this->from_date) {
-                $query->andFilterWhere(['>=', 'DATE(trn_inspecting.date)', $this->from_date]);
+                $query->andFilterWhere(['>=', 'trn_inspecting.date', $this->from_date]);
             } elseif ($this->to_date) {
-                $query->andFilterWhere(['<=', 'DATE(trn_inspecting.date)', $this->to_date]);
+                $query->andFilterWhere(['<=', 'trn_inspecting.date', $this->to_date]);
             }
         }
 
@@ -97,16 +126,21 @@ class TrnInspectingSearch extends TrnInspecting
          * =======================================
          */
         if (!empty($this->tanggalInspeksiRange)) {
-            $dates = explode(' - ', $this->tanggalInspeksiRange);
-            $this->from_tanggal_inspeksi = $dates[0] ?? null;
-            $this->to_tanggal_inspeksi = $dates[1] ?? null;
+            $separator = strpos($this->tanggalInspeksiRange, ' to ') !== false ? ' to ' : ' - ';
+            $dates = explode($separator, $this->tanggalInspeksiRange);
+            $this->from_tanggal_inspeksi = isset($dates[0]) ? trim($dates[0]) : null;
+            $this->to_tanggal_inspeksi = isset($dates[1]) ? trim($dates[1]) : null;
 
             if ($this->from_tanggal_inspeksi && $this->to_tanggal_inspeksi) {
-                $query->andFilterWhere(['between', 'DATE(trn_inspecting.tanggal_inspeksi)', $this->from_tanggal_inspeksi, $this->to_tanggal_inspeksi]);
+                if ($this->from_tanggal_inspeksi === $this->to_tanggal_inspeksi) {
+                    $query->andFilterWhere(['trn_inspecting.tanggal_inspeksi' => $this->from_tanggal_inspeksi]);
+                } else {
+                    $query->andFilterWhere(['between', 'trn_inspecting.tanggal_inspeksi', $this->from_tanggal_inspeksi, $this->to_tanggal_inspeksi]);
+                }
             } elseif ($this->from_tanggal_inspeksi) {
-                $query->andFilterWhere(['>=', 'DATE(trn_inspecting.tanggal_inspeksi)', $this->from_tanggal_inspeksi]);
+                $query->andFilterWhere(['>=', 'trn_inspecting.tanggal_inspeksi', $this->from_tanggal_inspeksi]);
             } elseif ($this->to_tanggal_inspeksi) {
-                $query->andFilterWhere(['<=', 'DATE(trn_inspecting.tanggal_inspeksi)', $this->to_tanggal_inspeksi]);
+                $query->andFilterWhere(['<=', 'trn_inspecting.tanggal_inspeksi', $this->to_tanggal_inspeksi]);
             }
         }
 
