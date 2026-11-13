@@ -4,6 +4,7 @@ namespace backend\models;
 
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 
 /**
@@ -17,6 +18,7 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
     public $customerName;
     public $color;
     public $motif;
+    public $status_stock;
 
     public $dateRange;
     private $from_date;
@@ -28,7 +30,7 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
     public function rules()
     {
         return [
-            [['id', 'id_trn_gudang_jadi', 'grade', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
+            [['id', 'id_trn_gudang_jadi', 'grade', 'status', 'status_stock', 'created_at', 'created_by', 'updated_at', 'updated_by'], 'integer'],
             [['qty'], 'number'],
             [
                 [
@@ -39,6 +41,17 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
                 'safe'
             ],
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return array_merge(parent::attributeLabels(), [
+            'status' => 'Status Opname',
+            'status_stock' => 'Status Stock',
+        ]);
     }
 
     /**
@@ -60,6 +73,7 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
     {
         $query = TrnGudangJadiOpnamePcs::find()
             ->alias('t')
+            ->with(['gudangJadi'])
             ->leftJoin(['gj' => 'trn_gudang_jadi'], 't.id_trn_gudang_jadi = gj.id')
             ->leftJoin(['wo' => 'trn_wo'], 'gj.wo_id = wo.id')
             ->leftJoin(['g_mst' => 'mst_greige'], 'wo.greige_id = g_mst.id')
@@ -78,6 +92,35 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
                 ]
             ],
         ]);
+
+        $defaultSortAttributes = [];
+        foreach ($this->attributes() as $attr) {
+            $defaultSortAttributes[$attr] = [
+                'asc' => ['t.' . $attr => SORT_ASC],
+                'desc' => ['t.' . $attr => SORT_DESC],
+            ];
+        }
+        $defaultSortAttributes['status_stock'] = [
+            'asc' => ['gj.status' => SORT_ASC],
+            'desc' => ['gj.status' => SORT_DESC],
+        ];
+        $defaultSortAttributes['woNo'] = [
+            'asc' => ['wo.no' => SORT_ASC],
+            'desc' => ['wo.no' => SORT_DESC],
+        ];
+        $defaultSortAttributes['scNo'] = [
+            'asc' => ['sc.no' => SORT_ASC],
+            'desc' => ['sc.no' => SORT_DESC],
+        ];
+        $defaultSortAttributes['marketingName'] = [
+            'asc' => ['mkt.full_name' => SORT_ASC],
+            'desc' => ['mkt.full_name' => SORT_DESC],
+        ];
+        $defaultSortAttributes['customerName'] = [
+            'asc' => ['cust.name' => SORT_ASC],
+            'desc' => ['cust.name' => SORT_DESC],
+        ];
+        $dataProvider->sort->attributes = $defaultSortAttributes;
 
         $this->load($params);
 
@@ -103,6 +146,10 @@ class TrnGudangJadiOpnamePcsSearch extends TrnGudangJadiOpnamePcs
             't.created_at' => $this->created_at,
             't.created_by' => $this->created_by,
         ]);
+
+        if ($this->status_stock !== null && $this->status_stock !== '') {
+            $query->andWhere(['gj.status' => (int)$this->status_stock]);
+        }
 
         $query->andFilterWhere(['ilike', 't.opname_code', $this->opname_code])
             ->andFilterWhere(['ilike', 't.qr_code', $this->qr_code])

@@ -1,5 +1,6 @@
 <?php
 
+use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use yii\helpers\Html;
 use yii\widgets\DetailView;
@@ -60,6 +61,35 @@ $this->params['breadcrumbs'][] = $this->title;
                                     'data-confirm' => 'Buat dan sinkronkan stock gudang jadi untuk item ini?',
                                     'title' => 'Buat Stock Gudang Jadi',
                                 ]);
+                        }
+                    ],
+                    [
+                        'label' => 'Status Stock',
+                        'format' => 'raw',
+                        'value' => function($model) {
+                            if (!$model->id_trn_gudang_jadi || !$model->gudangJadi) {
+                                return '<span class="text-muted">-</span>';
+                            }
+                            $status = $model->gudangJadi->status;
+                            $statusOptions = TrnGudangJadi::statusOptions();
+                            $statusName = isset($statusOptions[$status]) ? $statusOptions[$status] : 'Unknown';
+
+                            switch ($status) {
+                                case TrnGudangJadi::STATUS_STOCK:
+                                    return '<span class="label label-success"><i class="fa fa-cubes"></i> ' . Html::encode($statusName) . '</span>';
+                                case TrnGudangJadi::STATUS_OUT:
+                                    return '<span class="label label-danger"><i class="fa fa-times-circle"></i> ' . Html::encode($statusName) . '</span>';
+                                case TrnGudangJadi::STATUS_SIAP_KIRIM:
+                                    return '<span class="label label-primary"><i class="fa fa-truck"></i> ' . Html::encode($statusName) . '</span>';
+                                case TrnGudangJadi::STATUS_SURAT_JALAN:
+                                    return '<span class="label label-info"><i class="fa fa-file-text-o"></i> ' . Html::encode($statusName) . '</span>';
+                                case TrnGudangJadi::STATUS_MUTASI_EF:
+                                case TrnGudangJadi::STATUS_PINDAH_GUDANG:
+                                case TrnGudangJadi::STATUS_MUTASI_PROCESSING:
+                                    return '<span class="label label-warning"><i class="fa fa-exchange"></i> ' . Html::encode($statusName) . '</span>';
+                                default:
+                                    return '<span class="label label-default">' . Html::encode($statusName) . '</span>';
+                            }
                         }
                     ],
                     [

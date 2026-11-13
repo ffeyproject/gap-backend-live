@@ -2,6 +2,7 @@
 
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\MstSubLocation;
+use common\models\ar\TrnGudangJadi;
 use common\models\ar\TrnGudangJadiOpnamePcs;
 use common\models\ar\TrnStockGreige;
 use kartik\grid\GridView;
@@ -334,6 +335,7 @@ $gridColumns[] = [
             'locs_code',
             [
                 'attribute' => 'status',
+                'label' => 'Status Opname',
                 'value' => function($model) {
                     if ($model->status === TrnGudangJadiOpnamePcs::STATUS_VERIFIED) {
                         return '<span class="label label-success"><i class="fa fa-check"></i> ' . Html::encode($model->statusName) . '</span>';
@@ -346,6 +348,46 @@ $gridColumns[] = [
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
                     'data' => TrnGudangJadiOpnamePcs::statusOptions(),
+                    'options' => ['placeholder' => '...'],
+                    'pluginOptions' => [
+                        'allowClear' => true
+                    ],
+                ],
+            ],
+            [
+                'contentOptions' => ['style' => 'white-space: nowrap;'],
+                'attribute' => 'status_stock',
+                'label' => 'Status Stock',
+                'format' => 'raw',
+                'value' => function($model) {
+                    /* @var $model TrnGudangJadiOpnamePcs */
+                    if (!$model->id_trn_gudang_jadi || !$model->gudangJadi) {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    $status = $model->gudangJadi->status;
+                    $statusOptions = TrnGudangJadi::statusOptions();
+                    $statusName = isset($statusOptions[$status]) ? $statusOptions[$status] : 'Unknown';
+
+                    switch ($status) {
+                        case TrnGudangJadi::STATUS_STOCK:
+                            return '<span class="label label-success"><i class="fa fa-cubes"></i> ' . Html::encode($statusName) . '</span>';
+                        case TrnGudangJadi::STATUS_OUT:
+                            return '<span class="label label-danger"><i class="fa fa-times-circle"></i> ' . Html::encode($statusName) . '</span>';
+                        case TrnGudangJadi::STATUS_SIAP_KIRIM:
+                            return '<span class="label label-primary"><i class="fa fa-truck"></i> ' . Html::encode($statusName) . '</span>';
+                        case TrnGudangJadi::STATUS_SURAT_JALAN:
+                            return '<span class="label label-info"><i class="fa fa-file-text-o"></i> ' . Html::encode($statusName) . '</span>';
+                        case TrnGudangJadi::STATUS_MUTASI_EF:
+                        case TrnGudangJadi::STATUS_PINDAH_GUDANG:
+                        case TrnGudangJadi::STATUS_MUTASI_PROCESSING:
+                            return '<span class="label label-warning"><i class="fa fa-exchange"></i> ' . Html::encode($statusName) . '</span>';
+                        default:
+                            return '<span class="label label-default">' . Html::encode($statusName) . '</span>';
+                    }
+                },
+                'filterType' => GridView::FILTER_SELECT2,
+                'filterWidgetOptions' => [
+                    'data' => TrnGudangJadi::statusOptions(),
                     'options' => ['placeholder' => '...'],
                     'pluginOptions' => [
                         'allowClear' => true

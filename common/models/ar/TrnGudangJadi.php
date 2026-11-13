@@ -65,6 +65,15 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return string
+     */
+    public function getStatusName()
+    {
+        $options = self::statusOptions();
+        return isset($options[$this->status]) ? $options[$this->status] : 'Unknown';
+    }
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()

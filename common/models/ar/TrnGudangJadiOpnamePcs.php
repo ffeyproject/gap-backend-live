@@ -57,6 +57,17 @@ class TrnGudangJadiOpnamePcs extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return string|null
+     */
+    public function getStatusStockGudangJadi()
+    {
+        if ($this->gudangJadi !== null && isset(TrnGudangJadi::statusOptions()[$this->gudangJadi->status])) {
+            return TrnGudangJadi::statusOptions()[$this->gudangJadi->status];
+        }
+        return null;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()
