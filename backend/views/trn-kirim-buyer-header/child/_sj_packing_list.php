@@ -30,36 +30,45 @@ use yii\helpers\Html;
         #packingList .piece-cell.empty, .piece-cell.empty {
             background-color: transparent;
         }
-        #packingList table.pl-table, table.pl-table {
+        table.pl-table {
             width: 100%;
             border-collapse: collapse;
         }
-        #packingList table.pl-table,
-        #packingList table.pl-table > thead > tr > th,
-        #packingList table.pl-table > tbody > tr > td,
         table.pl-table,
         table.pl-table > thead > tr > th,
         table.pl-table > tbody > tr > td {
             border: 1px solid #000;
         }
         /* Nested tables inside piece length */
-        #packingList table.pl-nested, table.pl-nested {
+        table.pl-nested {
             width: 100%;
             border-collapse: collapse;
         }
-        #packingList table.pl-nested > tbody > tr > td,
-        #packingList table.pl-nested > tr > td,
-        table.pl-nested > tbody > tr > td,
-        table.pl-nested > tr > td {
+        td.pl-nested-cell {
+            padding: 0;
             border: none;
         }
-        #packingList table.pl-pieces, table.pl-pieces {
+        td.pl-batch,
+        td.pl-lot,
+        td.pl-grade {
+            border: 1px solid #000 !important;
+        }
+        table.pl-pieces {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
-        #packingList table.pl-pieces td, table.pl-pieces td {
-            border: 1px solid #000;
+        table.pl-pieces td {
+            border: 1px solid #000 !important;
+        }
+        table.pl-sample,
+        table.pl-note {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.pl-sample td,
+        table.pl-note td {
+            border: 1px solid #000 !important;
         }
         </style>
         <table width="100%">
@@ -251,26 +260,46 @@ use yii\helpers\Html;
                         <?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
 
                     <!-- Batch & Lot Table -->
-                    <td style="padding: 0;">
+                    <td class="pl-nested-cell">
                         <table class="pl-nested">
                             <tr>
-                                <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000; vertical-align: middle;" title="Batch">
+                                <td class="pl-batch" style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; vertical-align: middle;" title="Batch">
                                     <?= $batchNo ?>
                                 </td>
-                                <td style="padding: 0;">
+                                <td class="pl-nested-cell">
                                     <?php 
+                                    // Filter lots that only contain Grade E (Sample) so they don't produce empty dummy lot rows
+                                    $validLots = [];
+                                    foreach ($lotsData['lots'] as $noLot => $grades) {
+                                        $hasNonSample = false;
+                                        foreach ($grades['grade'] as $gradeID => $qtys) {
+                                            if ($gradeID !== TrnStockGreige::GRADE_E) {
+                                                $hasNonSample = true;
+                                                break;
+                                            }
+                                        }
+                                        if ($hasNonSample) {
+                                            $validLots[$noLot] = $grades;
+                                        } else {
+                                            foreach ($grades['grade'] as $gradeID => $qtys) {
+                                                foreach ($qtys as $key => $value) {
+                                                    $sample += $value['qty'];
+                                                }
+                                            }
+                                        }
+                                    }
                                     $lotIdx = 0;
-                                    $lotCount = count($lotsData['lots']);
-                                    foreach ($lotsData['lots'] as $noLot => $grades): 
+                                    $lotCount = count($validLots);
+                                    foreach ($validLots as $noLot => $grades): 
                                         $lotIdx++;
                                         $borderBottom = ($lotIdx < $lotCount) ? 'border-bottom: 1px solid #000;' : '';
                                     ?>
                                     <table class="pl-nested" style="<?= $borderBottom ?>">
                                         <tr>
-                                            <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000; vertical-align: middle;" title="No. Lot">
+                                            <td class="pl-lot" style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; vertical-align: middle;" title="No. Lot">
                                                 <?= $noLot ?>
                                             </td>
-                                            <td style="padding: 0;">
+                                            <td class="pl-nested-cell">
                                                 <?php 
                                                 $gradeIdx = 0;
                                                 $gradeCountTotal = count($grades['grade']);
@@ -281,9 +310,9 @@ use yii\helpers\Html;
                                                 <table class="pl-nested" style="<?= $gradeBorderBottom ?>">
                                                     <tr>
                                                         <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
-                                                        <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 28px; border-right: 1px solid #000; vertical-align: middle;" title="Grade">
+                                                        <td class="pl-grade" style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 28px; vertical-align: middle;" title="Grade">
                                                             <?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
-                                                        <td style="padding: 0;">
+                                                        <td class="pl-nested-cell">
                                                             <table class="pl-pieces">
                                                                 <?php
                                                                 $count = count($qtys);
@@ -319,12 +348,12 @@ use yii\helpers\Html;
                                     <?php endforeach; ?>
                                     <?php 
                                         if($sample > 0){
-                                            echo '<table class="pl-nested" style="border-top: 1px solid #000;"><tr>';
+                                            echo '<table class="pl-sample"><tr>';
                                                 echo '<td colspan="12" style="text-align: center; padding: 2px 4px;">' . $sample . ' ' . $mstunit . ' Sample</td>';
                                             echo '</tr></table>';
                                         }
                                         if(!empty($colorGroup['note']) && $colorGroup['note'] !== '-'){
-                                            echo '<table class="pl-nested" style="border-top: 1px solid #000;"><tr>';
+                                            echo '<table class="pl-note"><tr>';
                                                 echo '<td colspan="12" style="text-align: center; padding: 2px 4px;">' . $colorGroup['note'] . '</td>';
                                             echo '</tr></table>';
                                         }
