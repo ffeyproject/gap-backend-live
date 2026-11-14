@@ -368,15 +368,27 @@ function printDivPL(div) {
     doc.write('  table { width: 100% !important; page-break-inside: auto; }');
     doc.write('  tr { page-break-inside: avoid; page-break-after: auto; }');
     doc.write('}');
-    doc.write('html, body { width: 100%; max-width: 780px; margin: 0 auto; padding: 5px; box-sizing: border-box; font-family: "Calibri", Arial, sans-serif; font-size:' + fontSize + 'px; letter-spacing: 0px; color: #000; }');
+    doc.write('html, body { width: 100%; max-width: 780px; margin: 0 auto; padding: 5px; box-sizing: border-box; font-family: "Calibri", Arial, sans-serif; font-size:' + fontSize + 'px; letter-spacing: 0px; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }');
     doc.write('table { width: 100%; border-spacing: 0; border-collapse: collapse; box-sizing: border-box; }');
     doc.write('th, td { padding: 3px 4px; font-size:' + fontSize + 'px; vertical-align: middle; box-sizing: border-box; }');
     doc.write('th { text-align: center; }');
+    doc.write('table.pl-table { width: 100% !important; border-collapse: collapse !important; }');
+    doc.write('table.pl-table, table.pl-table > thead > tr > th, table.pl-table > tbody > tr > td { border: 1px solid #000 !important; }');
+    doc.write('table.pl-nested { width: 100% !important; border-collapse: collapse !important; border: none !important; }');
+    doc.write('table.pl-nested > tbody > tr > td, table.pl-nested > tr > td { border: none !important; }');
+    doc.write('table.pl-pieces { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; border: none !important; }');
+    doc.write('table.pl-pieces td { border: 1px solid #000 !important; }');
+    doc.write('table.pl-pieces tr:first-child td { border-top: none !important; }');
+    doc.write('table.pl-pieces tr:last-child td { border-bottom: none !important; }');
+    doc.write('table.pl-pieces tr td:first-child { border-left: none !important; }');
+    doc.write('table.pl-pieces tr td:last-child { border-right: none !important; }');
     doc.write('.piece-cell { font-size: ' + pieceFontSize + 'px !important; font-weight: bold !important; text-align: center !important; padding: 3px 1px !important; line-height: 1.2 !important; white-space: nowrap !important; }');
     doc.write('.piece-cell.empty { background-color: transparent !important; }');
     doc.write('</style>');
     doc.write('</head><body>');
+    doc.write('<div id="' + div + '">');
     doc.write(divContentFinals);
+    doc.write('</div>');
     doc.write('</body></html>');
     doc.close();
 

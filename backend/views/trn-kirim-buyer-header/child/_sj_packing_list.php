@@ -22,52 +22,57 @@ use yii\helpers\Html;
             font-family: Calibri, "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-size: 12px;
         }
-        #packingList .piece-cell {
+        #packingList .piece-cell, .piece-cell {
             font-size: 16px;
             font-weight: bold;
             text-align: center;
         }
-        #packingList .piece-cell.empty {
+        #packingList .piece-cell.empty, .piece-cell.empty {
             background-color: transparent;
         }
-        #packingList table.pl-table {
+        #packingList table.pl-table, table.pl-table {
             width: 100%;
             border-collapse: collapse;
         }
         #packingList table.pl-table,
         #packingList table.pl-table > thead > tr > th,
-        #packingList table.pl-table > tbody > tr > td {
+        #packingList table.pl-table > tbody > tr > td,
+        table.pl-table,
+        table.pl-table > thead > tr > th,
+        table.pl-table > tbody > tr > td {
             border: 1px solid #000;
         }
         /* Nested tables inside piece length */
-        #packingList table.pl-nested {
+        #packingList table.pl-nested, table.pl-nested {
             width: 100%;
             border-collapse: collapse;
             border: none;
         }
         #packingList table.pl-nested > tbody > tr > td,
-        #packingList table.pl-nested > tr > td {
+        #packingList table.pl-nested > tr > td,
+        table.pl-nested > tbody > tr > td,
+        table.pl-nested > tr > td {
             border: none;
         }
-        #packingList table.pl-pieces {
+        #packingList table.pl-pieces, table.pl-pieces {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
             border: none;
         }
-        #packingList table.pl-pieces td {
+        #packingList table.pl-pieces td, table.pl-pieces td {
             border: 1px solid #000;
         }
-        #packingList table.pl-pieces tr:first-child td {
+        #packingList table.pl-pieces tr:first-child td, table.pl-pieces tr:first-child td {
             border-top: none;
         }
-        #packingList table.pl-pieces tr:last-child td {
+        #packingList table.pl-pieces tr:last-child td, table.pl-pieces tr:last-child td {
             border-bottom: none;
         }
-        #packingList table.pl-pieces tr td:first-child {
+        #packingList table.pl-pieces tr td:first-child, table.pl-pieces tr td:first-child {
             border-left: none;
         }
-        #packingList table.pl-pieces tr td:last-child {
+        #packingList table.pl-pieces tr td:last-child, table.pl-pieces tr td:last-child {
             border-right: none;
         }
         </style>
