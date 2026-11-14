@@ -62,6 +62,13 @@ echo Dialog::widget(['overrideYiiConfirm' => true]);
                     ])
                 ;
                 break;
+            case $model::STATUS_CLOSED:
+                echo Html::a('Open Kembali', ['reopen', 'id' => $model->id], [
+                    'class' => 'btn btn-warning',
+                    'title' => 'Open Kembali WO: '.$model->id,
+                    'onclick' => 'reopenWo(event);',
+                ]);
+                break;
         }
         ?>
     </p>

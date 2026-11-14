@@ -171,3 +171,63 @@ function batalWo(event){
         }
     });
 }
+
+function reopenWo(event){
+    event.preventDefault();
+    var button = $(event.currentTarget);
+    var href = button.attr('href');
+
+    $.confirm({
+        title: 'Konfirmasi!',
+        content: 'Apakah Anda yakin ingin membuka kembali WO ini? Status akan dikembalikan menjadi Disetujui.',
+        buttons: {
+            submit: {
+                text: 'Buka Kembali',
+                btnClass : 'btn-warning',
+                action: function(){
+                    $.ajax({
+                        method: 'POST',
+                        beforeSend: function (jqXHR, settings) {
+                            $.blockUI({
+                                message: '<h1>Processing</h1>',
+                                css: { border: '3px solid #a00' }
+                            });
+                        },
+                        url: href,
+                        error: function(jqXHR, textStatus, errorThrown ){
+                            var errorObj;
+                            try {
+                                errorObj = jQuery.parseJSON(jqXHR.responseText);
+                                if(typeof errorObj !='object'){
+                                    errorObj = {name:"Error", message:jqXHR.responseText};
+                                }
+                            } catch (e) {
+                                errorObj = {name:"Error", message:jqXHR.responseText};
+                            }
+
+                            $.unblockUI();
+
+                            $.alert({
+                                title: errorObj.name,
+                                content: errorObj.message
+                            });
+                        },
+                        success: function(data){
+                            $.unblockUI();
+                            $.alert({
+                                title: "Berhasil",
+                                content: "WO telah dibuka kembali (status disetujui).",
+                                buttons: {
+                                    ok: function () {
+                                        location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            },
+            batal: function () {}
+        }
+    });
+}

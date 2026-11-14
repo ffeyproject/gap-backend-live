@@ -393,6 +393,83 @@ class TrnWoController extends Controller
     }
 
     /**
+     * Membuka kembali WO yang berstatus closed menjadi approved (status 5)
+     * dan menghapus data closed (closed_at, closed_by, closed_note).
+     * @param integer $id
+     * @return mixed
+     * @throws ForbiddenHttpException
+     * @throws MethodNotAllowedHttpException
+     * @throws NotFoundHttpException
+     */
+    public function actionReopen($id)
+    {
+        if(Yii::$app->request->isAjax){
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $model = $this->findModel($id);
+
+            if($model->status != $model::STATUS_CLOSED){
+                throw new ForbiddenHttpException('Status tidak valid, hanya WO dengan status Closed yang bisa dibuka kembali.');
+            }
+
+            $model->status = $model::STATUS_APPROVED;
+            $model->closed_at = null;
+            $model->closed_by = null;
+            $model->closed_note = null;
+            $model->save(false, ['status', 'closed_at', 'closed_by', 'closed_note']);
+
+            // Jika pada MO induk berstatus closed, kembalikan juga status MO ke approved
+            if($model->mo->status == TrnMo::STATUS_CLOSED){
+                Yii::$app->db->createCommand()->update(
+                    TrnMo::tableName(),
+                    [
+                        'status' => TrnMo::STATUS_APPROVED,
+                        'closed_at' => null,
+                        'closed_by' => null,
+                        'closed_note' => null,
+                    ],
+                    ['id' => $model->mo_id]
+                )->execute();
+            }
+
+            return true;
+        }
+
+        $model = $this->findModel($id);
+        if($model->status != $model::STATUS_CLOSED){
+            Yii::$app->session->setFlash('error', 'Status tidak valid, hanya WO dengan status Closed yang bisa dibuka kembali.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $model->status = $model::STATUS_APPROVED;
+        $model->closed_at = null;
+        $model->closed_by = null;
+        $model->closed_note = null;
+        $model->save(false, ['status', 'closed_at', 'closed_by', 'closed_note']);
+
+        if($model->mo->status == TrnMo::STATUS_CLOSED){
+            Yii::$app->db->createCommand()->update(
+                TrnMo::tableName(),
+                [
+                    'status' => TrnMo::STATUS_APPROVED,
+                    'closed_at' => null,
+                    'closed_by' => null,
+                    'closed_note' => null,
+                ],
+                ['id' => $model->mo_id]
+            )->execute();
+        }
+
+        Yii::$app->session->setFlash('success', 'WO berhasil dibuka kembali.');
+        return $this->redirect(['view', 'id' => $model->id]);
+    }
+
+    public function actionOpenKembali($id)
+    {
+        return $this->actionReopen($id);
+    }
+
+    /**
      * Melakukan pembatalan terhadap MO.
      * Syarat pembatalan: MO berstatus disetujui, semua wo-nya harus berstatus batal.
      * @param integer $id
