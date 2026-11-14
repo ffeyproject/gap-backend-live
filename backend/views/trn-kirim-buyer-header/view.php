@@ -150,6 +150,20 @@ $formatter = Yii::$app->formatter;
                             return $data->wo ? $data->wo->no : '-';
                         }
                     ],
+                    [
+                        'label' => 'Batch',
+                        'value' => function($data){
+                            /* @var $data TrnGudangJadi*/
+                            return $data->getBatchNo();
+                        }
+                    ],
+                    [
+                        'label' => 'No. Lot',
+                        'value' => function($data){
+                            /* @var $data TrnGudangJadi*/
+                            return $data->getLotNo();
+                        }
+                    ],
                     'qty:decimal',
                     [
                         'attribute' => 'unit',
@@ -269,6 +283,20 @@ $formatter = Yii::$app->formatter;
                                 [
                                     'class' => 'kartik\grid\CheckboxColumn',
                                     // you may configure additional properties here
+                                ],
+                                [
+                                    'label' => 'Batch',
+                                    'value' => function($data){
+                                        /* @var $data TrnKirimBuyerItem*/
+                                        return $data->getBatchNo();
+                                    }
+                                ],
+                                [
+                                    'label' => 'No. Lot',
+                                    'value' => function($data){
+                                        /* @var $data TrnKirimBuyerItem*/
+                                        return $data->getLotNo();
+                                    }
                                 ],
                                 'qty:decimal',
                                 [

@@ -77,6 +77,16 @@ class TrnKirimBuyerItem extends \yii\db\ActiveRecord
 
     public function getStockGrade()
     {
-        return $this->stock->grade;
+        return $this->stock ? $this->stock->grade : null;
+    }
+
+    public function getBatchNo()
+    {
+        return $this->stock ? $this->stock->getBatchNo() : '-';
+    }
+
+    public function getLotNo()
+    {
+        return $this->stock ? $this->stock->getLotNo() : '-';
     }
 }

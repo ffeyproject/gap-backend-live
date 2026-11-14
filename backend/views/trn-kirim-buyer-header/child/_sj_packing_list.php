@@ -9,14 +9,6 @@ use yii\helpers\Html;
 
 ?>
 
-<style type="text/css">
-#packingList .piece-cell {
-    font-size: 18px;
-    font-weight: bold;
-    text-align: center;
-}
-</style>
-
 <div class="box">
     <div class="box-header with-border">
         <h3 class="box-title">PACKING LIST</h3>
@@ -25,6 +17,60 @@ use yii\helpers\Html;
         </div>
     </div>
     <div class="box-body" id="packingList">
+        <style type="text/css">
+        #packingList {
+            font-family: Calibri, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 12px;
+        }
+        #packingList .piece-cell {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        #packingList .piece-cell.empty {
+            background-color: transparent;
+        }
+        #packingList table.pl-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #packingList table.pl-table,
+        #packingList table.pl-table > thead > tr > th,
+        #packingList table.pl-table > tbody > tr > td {
+            border: 1px solid #000;
+        }
+        /* Nested tables inside piece length */
+        #packingList table.pl-nested {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+        }
+        #packingList table.pl-nested > tbody > tr > td,
+        #packingList table.pl-nested > tr > td {
+            border: none;
+        }
+        #packingList table.pl-pieces {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            border: none;
+        }
+        #packingList table.pl-pieces td {
+            border: 1px solid #000;
+        }
+        #packingList table.pl-pieces tr:first-child td {
+            border-top: none;
+        }
+        #packingList table.pl-pieces tr:last-child td {
+            border-bottom: none;
+        }
+        #packingList table.pl-pieces tr td:first-child {
+            border-left: none;
+        }
+        #packingList table.pl-pieces tr td:last-child {
+            border-right: none;
+        }
+        </style>
         <table width="100%">
             <tr>
                 <td width="40%">
@@ -52,7 +98,7 @@ use yii\helpers\Html;
 
         <p style="margin: 4px 0;"></p>
 
-        <table width="100%" border="1" style="border-collapse: collapse;">
+        <table class="pl-table">
             <thead>
                 <tr>
                     <th width="3%" rowspan="2" style="text-align: center;">BAL</th>
@@ -82,81 +128,10 @@ use yii\helpers\Html;
                         $unit = $kirimBuyerModel->unit;
                         $jenisProcess = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->process : null;
                         $kodeDesign = ($kirimBuyerModel->wo && $kirimBuyerModel->wo->mo) ? $kirimBuyerModel->wo->mo->design : '';
-                        $noLot  = ($pssk->stock && method_exists($pssk->stock, 'getNoLot')) ? $pssk->stock->noLot : '-';
+                        $batch = ($pssk->stock && method_exists($pssk->stock, 'getBatchNo')) ? $pssk->stock->getBatchNo() : (($pssk->stock && method_exists($pssk->stock, 'getNoLot')) ? $pssk->stock->noLot : '-');
+                        $noLot = ($pssk->stock && method_exists($pssk->stock, 'getLotNo')) ? $pssk->stock->getLotNo() : '-';
                         $note = $kirimBuyerModel->note ?: '-';
 
-
-                        ####################################### start of new code ver 1 ####################################################
-
-                        // first groupBy no_bal then groupBy no_wo then groupBy grade and keep the qty track by grade then sum it
-
-                        // Group by no_bal first
-                        // if (!isset($groupedByNoBal[$no_bal])) {
-                        //     $groupedByNoBal[$no_bal] = [];
-                        // }
-
-                        // // Then group by no_wo
-                        // if (!isset($groupedByNoBal[$no_bal][$no_wo])) {
-                        //     $groupedByNoBal[$no_bal][$no_wo] = [];
-                        // }
-
-                        // // Then group by color
-                        // if (!isset($groupedByNoBal[$no_bal][$no_wo][$color])) {
-                        //     $groupedByNoBal[$no_bal][$no_wo][$color] = [
-                        //         'grades' => [],
-                        //         'total_qty' => 0,
-                        //         'qty_pieces' => [],
-                        //     ];
-                        // }
-
-                        // // Sum qty based on grade and store individual qty pieces
-                        // if (!isset($groupedByNoBal[$no_bal][$no_wo][$color]['grades'][$grade])) {
-                        //     $groupedByNoBal[$no_bal][$no_wo][$color]['grades'][$grade] = 0;
-                        // }
-
-                        // $groupedByNoBal[$no_bal][$no_wo][$color]['grades'][$grade] += $qty;
-
-                        // // Store the individual qty values
-                        // $groupedByNoBal[$no_bal][$no_wo][$color]['qty_pieces'][] = [
-                        //     'qty' => $qty,
-                        //     'grade' => $grade,
-                        // ];
-
-                        // // Update total quantity for the color
-                        // $groupedByNoBal[$no_bal][$no_wo][$color]['total_qty'] += $qty;
-
-                        ####################################### end of new code ver 1 ######################################################
-
-                        ####################################### start of new code ver 2 ####################################################
-
-                            // Group by no_bal first
-                            // if (!isset($groupedByNoBal[$no_bal])) {
-                            //     $groupedByNoBal[$no_bal] = [];
-                            // }
-
-                            // // Then group by no_wo
-                            // if (!isset($groupedByNoBal[$no_bal][$no_wo])) {
-                            //     $groupedByNoBal[$no_bal][$no_wo] = [];
-                            // }
-
-                            // // Then group by grade
-                            // if (!isset($groupedByNoBal[$no_bal][$no_wo][$grade])) {
-                            //     $groupedByNoBal[$no_bal][$no_wo][$grade] = [
-                            //         'design' => $design,
-                            //         'total_qty' => 0,
-                            //         'qty_pieces' => [],
-                            //     ];
-                            // }
-
-                            // // Sum qty and store individual qty pieces
-                            // $groupedByNoBal[$no_bal][$no_wo][$grade]['total_qty'] += $qty;
-
-                            // // Store the individual qty values
-                            // $groupedByNoBal[$no_bal][$no_wo][$grade]['qty_pieces'][] = $qty;
-                        
-                        ####################################### end of new code ver 2 ######################################################
-
-                        ####################################### start of new code ver 3 ####################################################
                         if($grade === TrnStockGreige::GRADE_A_ASTERISK || $grade === TrnStockGreige::GRADE_A_PLUS){
                             $grade = TrnStockGreige::GRADE_A;
                         }
@@ -184,63 +159,38 @@ use yii\helpers\Html;
                         if (!isset($groupedByNoBal[$no_bal][$no_wo]['colors'][$color])) {
                             $groupedByNoBal[$no_bal][$no_wo]['colors'][$color] = [];
                         }
-                        // $groupedByNoBal[$no_bal][$no_wo]['colors'][$color]['batch'][$noLot][] = [
-                        //     'grade_id' => $grade,
-                        //     'grade' => TrnStockGreige::gradeOptions()[$grade],
-                        //     'qty' => $qty,
-                        // ];
-                        $groupedByNoBal[$no_bal][$no_wo]['colors'][$color]['batch'][$noLot]['grade'][$grade][] = [
+
+                        $groupedByNoBal[$no_bal][$no_wo]['colors'][$color]['batch'][$batch]['lots'][$noLot]['grade'][$grade][] = [
                             'grade_id' => $grade,
                             'grade' => TrnStockGreige::gradeOptions()[$grade],
                             'qty' => $qty,
                         ];
-                        // $groupedByNoBal[$no_bal][$no_wo]['colors'][$color][] = [
-                        //     'grade_id' => $grade,
-                        //     'grade' => TrnStockGreige::gradeOptions()[$grade],
-                        //     'qty' => $qty,
-                        // ];
-
-                        ####################################### end of new code ver 3 ######################################################
-
-                        // old code
-
-                        // Check if this no_bal already exists in the grouped array
-                        // $groupedByNoBal[$no_bal]['color'] = $color;
-                        // $groupedByNoBal[$no_bal]['no_bal'] = $no_bal;
-                        // $groupedByNoBal[$no_bal]['no_wo'] = $kirimBuyerModel->wo->no;
-                        // $groupedByNoBal[$no_bal]['design'] = $kirimBuyerModel->nama_kain_alias;
-                        
-                        // Initialize qty array if it doesn't exist and push the qty
-                        // $groupedByNoBal[$no_bal]['qty'][] = $pssk['qty'];
                     }
                 }
                 ksort($groupedByNoBal);
-                //log $groupedByNoBal
-                //    print("<pre>".print_r($groupedByNoBal ,true)."</pre>");  
-                //     die;
                 $totalSatuan1 = 0;
                 $totalSatuan2 = [];
             ?>
 
                 <?php foreach ($groupedByNoBal as $no_bal => $woGroup): ?>
                 <?php
-        $balRowspan = 0;
-        foreach ($woGroup as $no_wo => $colorGroup) {
-            foreach ($colorGroup['colors'] as $color => $batches) {
-                $balRowspan += count($batches['batch']);
-            }
-        }
-    ?>
+                $balRowspan = 0;
+                foreach ($woGroup as $no_wo => $colorGroup) {
+                    foreach ($colorGroup['colors'] as $color => $batches) {
+                        $balRowspan += count($batches['batch']);
+                    }
+                }
+                ?>
                 <tr>
                     <td rowspan="<?= $balRowspan ?>" style="text-align: center;"><?= $no_bal ?></td>
                     <?php foreach ($woGroup as $no_wo => $colorGroup): ?>
                     <?php
-                $woRowspan = 0;
-                foreach ($colorGroup['colors'] as $color => $batches) {
-                    $woRowspan += count($batches['batch']);
-                }
-                $isFirstColorRow = true;
-            ?>
+                    $woRowspan = 0;
+                    foreach ($colorGroup['colors'] as $color => $batches) {
+                        $woRowspan += count($batches['batch']);
+                    }
+                    $isFirstColorRow = true;
+                    ?>
                     <td rowspan="<?= $woRowspan ?>" style="text-align: center;"><?= $no_wo ?></td>
 
                     <!-- design -->
@@ -253,37 +203,39 @@ use yii\helpers\Html;
                     <!-- design -->
 
                     <?php foreach ($colorGroup['colors'] as $color => $batches): ?>
-                    <?php foreach ($batches['batch'] as $noLot => $grades): ?>
+                    <?php foreach ($batches['batch'] as $batchNo => $lotsData): ?>
 
                     <?php if (!$isFirstColorRow): ?>
                 <tr>
                     <?php endif; ?>
                     <td style="text-align: center;"><?= $color ?></td>
 
-                    <!-- Menampilkan kolom satuan 1 (jumlah PCS dan grade per color) -->
+                    <!-- Menampilkan kolom satuan 1 (jumlah PCS dan grade per batch) -->
                     <?php 
                         $gradeCount = []; 
                         $recount_qtys = 0; 
                         $recount_subtotal = 0; 
                         $gradeTotalQty = []; 
                         $mstunit = MstGreigeGroup::unitOptions()[$colorGroup['unit']];
+                        $sample = 0;
                         
-                        foreach ($grades['grade'] as $qtys) {
-                            foreach ($qtys as $q) {
-                                $gradeID = $q['grade_id'];
-                                $gradena = $q['grade'];
-                                if ($gradeID == TrnStockGreige::GRADE_A_ASTERISK || $gradeID == TrnStockGreige::GRADE_A_PLUS) {
-                                    $gradena = TrnStockGreige::gradeOptions()[TrnStockGreige::GRADE_A];
+                        foreach ($lotsData['lots'] as $lNo => $grades) {
+                            foreach ($grades['grade'] as $qtys) {
+                                foreach ($qtys as $q) {
+                                    $gradeID = $q['grade_id'];
+                                    $gradena = $q['grade'];
+                                    if ($gradeID == TrnStockGreige::GRADE_A_ASTERISK || $gradeID == TrnStockGreige::GRADE_A_PLUS) {
+                                        $gradena = TrnStockGreige::gradeOptions()[TrnStockGreige::GRADE_A];
+                                    }
+                                    if ($gradena == TrnStockGreige::gradeOptions()[TrnStockGreige::GRADE_E]) {
+                                        continue;
+                                    }
+                                    $recount_qtys += 1;
+                                    $recount_subtotal += $q['qty'];
+                                    $gradeCount[$gradena] = ($gradeCount[$gradena] ?? 0) + 1;
+                                    $gradeTotalQty[$gradena] = ($gradeTotalQty[$gradena] ?? 0) + $q['qty'];
                                 }
-                                if ($gradena == TrnStockGreige::gradeOptions()[TrnStockGreige::GRADE_E]) {
-                                    continue;
-                                }
-                                $recount_qtys += 1;
-                                $recount_subtotal += $q['qty'];
-                                $gradeCount[$gradena] = ($gradeCount[$gradena] ?? 0) + 1;
-                                $gradeTotalQty[$gradena] = ($gradeTotalQty[$gradena] ?? 0) + $q['qty'];
                             }
-
                         }
 
                         $output = implode('<br> ', array_map(function($gradenih, $qtycount) {
@@ -307,59 +259,84 @@ use yii\helpers\Html;
                     <td style="text-align: left; padding:0 5px; white-space: nowrap;">
                         <?= $recount_subtotal.' '.$mstunit.' <br>'.$output_total ?></td>
 
-                    <!-- Batch Table -->
+                    <!-- Batch & Lot Table -->
                     <td style="padding: 0;">
-                        <table style="width: 100%; border-collapse: collapse;" border="">
+                        <table class="pl-nested">
                             <tr>
-                                <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000;"><?= $noLot?></td>
+                                <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000; vertical-align: middle;" title="Batch">
+                                    <?= $batchNo ?>
+                                </td>
                                 <td style="padding: 0;">
-                                    <?php $sample = 0;?>
-                                    <?php foreach ($grades['grade'] as $gradeID => $qtys): ?>
-                                    <table style="width: 100%; border-collapse: collapse;" border="">
+                                    <?php 
+                                    $lotIdx = 0;
+                                    $lotCount = count($lotsData['lots']);
+                                    foreach ($lotsData['lots'] as $noLot => $grades): 
+                                        $lotIdx++;
+                                        $borderBottom = ($lotIdx < $lotCount) ? 'border-bottom: 1px solid #000;' : '';
+                                    ?>
+                                    <table class="pl-nested" style="<?= $borderBottom ?>">
                                         <tr>
-                                            <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
-                                            <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 28px; border-right: 1px solid #000;">
-                                                <?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
-                                            <td style="padding: 0;">
-                                                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;" border="1">
-                                                    <?php
-                                                    $count = count($qtys);
-                                                    $itemsPerRow = 10;
-                                                    $totalRows = ceil($count / $itemsPerRow);
-                                                    for ($row = 0; $row < $totalRows; $row++) {
-                                                        echo '<tr>';
-                                                        for ($col = 0; $col < $itemsPerRow; $col++) {
-                                                            $index = $row * $itemsPerRow + $col;
-                                                            if ($index < $count) {
-                                                                $valQty = (float)$qtys[$index]['qty'];
-                                                                echo '<td class="piece-cell" style="text-align: center; width: 10%;">' . $valQty .'</td>';
-                                                            } else {
-                                                                echo '<td class="piece-cell empty" style="width: 10%;">&nbsp;</td>';
-                                                            }
-                                                        }
-                                                        echo '</tr>';
-                                                    }
-                                                    ?>
-                                                </table>
+                                            <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 45px; border-right: 1px solid #000; vertical-align: middle;" title="No. Lot">
+                                                <?= $noLot ?>
                                             </td>
-                                            <?php }else{ 
-                                                    foreach ($qtys as $key => $value) {
-                                                        $sample += $value['qty'];
-                                                    }
-                                                } ?>
+                                            <td style="padding: 0;">
+                                                <?php 
+                                                $gradeIdx = 0;
+                                                $gradeCountTotal = count($grades['grade']);
+                                                foreach ($grades['grade'] as $gradeID => $qtys): 
+                                                    $gradeIdx++;
+                                                    $gradeBorderBottom = ($gradeIdx < $gradeCountTotal) ? 'border-bottom: 1px solid #000;' : '';
+                                                ?>
+                                                <table class="pl-nested" style="<?= $gradeBorderBottom ?>">
+                                                    <tr>
+                                                        <?php if($gradeID !== TrnStockGreige::GRADE_E){ ?>
+                                                        <td style="text-align: center; padding: 2px 4px; white-space: nowrap; width: 28px; border-right: 1px solid #000; vertical-align: middle;" title="Grade">
+                                                            <?=TrnStockGreige::gradeOptions()[$gradeID]?></td>
+                                                        <td style="padding: 0;">
+                                                            <table class="pl-pieces">
+                                                                <?php
+                                                                $count = count($qtys);
+                                                                $itemsPerRow = 10;
+                                                                $totalRows = ceil($count / $itemsPerRow);
+                                                                for ($row = 0; $row < $totalRows; $row++) {
+                                                                    echo '<tr>';
+                                                                    for ($col = 0; $col < $itemsPerRow; $col++) {
+                                                                        $index = $row * $itemsPerRow + $col;
+                                                                        if ($index < $count) {
+                                                                            $valQty = (float)$qtys[$index]['qty'];
+                                                                            echo '<td class="piece-cell" style="text-align: center; width: 10%;">' . $valQty .'</td>';
+                                                                        } else {
+                                                                            echo '<td class="piece-cell empty" style="width: 10%;">&nbsp;</td>';
+                                                                        }
+                                                                    }
+                                                                    echo '</tr>';
+                                                                }
+                                                                ?>
+                                                            </table>
+                                                        </td>
+                                                        <?php }else{ 
+                                                                foreach ($qtys as $key => $value) {
+                                                                    $sample += $value['qty'];
+                                                                }
+                                                            } ?>
+                                                    </tr>
+                                                </table>
+                                                <?php endforeach; ?>
+                                            </td>
                                         </tr>
                                     </table>
                                     <?php endforeach; ?>
                                     <?php 
                                         if($sample > 0){
-                                            echo '<tr>';
-                                                echo '<td colspan="11" style="text-align: center;">' . $sample . ' Yard Sample</td>';
-                                            echo '</tr>';
+                                            echo '<table class="pl-nested"><tr>';
+                                                echo '<td colspan="12" style="text-align: center;">' . $sample . ' ' . $mstunit . ' Sample</td>';
+                                            echo '</tr></table>';
                                         }
-                                        echo '<tr>';
-                                            echo '<td colspan="11" style="text-align: center;">' . $colorGroup['note'] . '</td>';
-                                        echo '</tr>';
-
+                                        if(!empty($colorGroup['note']) && $colorGroup['note'] !== '-'){
+                                            echo '<table class="pl-nested"><tr>';
+                                                echo '<td colspan="12" style="text-align: center;">' . $colorGroup['note'] . '</td>';
+                                            echo '</tr></table>';
+                                        }
                                     ?>
                                 </td>
                             </tr>

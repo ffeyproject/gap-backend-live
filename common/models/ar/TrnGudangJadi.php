@@ -346,6 +346,38 @@ class TrnGudangJadi extends \yii\db\ActiveRecord
     }
 
     /**
+     * Returns batch number (e.g. 'B1') from related inspecting or inspecting_mkl_bj
+     * @return string
+     */
+    public function getBatchNo()
+    {
+        $noLot = $this->getNoLot();
+        if ($noLot !== '-' && strpos($noLot, '/') !== false) {
+            $parts = explode('/', $noLot, 2);
+            return trim($parts[0]) ?: '-';
+        }
+        return $noLot;
+    }
+
+    /**
+     * Returns lot number from inspecting item, or from header if format is B1/L1
+     * @return string
+     */
+    public function getLotNo()
+    {
+        $itemLot = $this->getItemLotNo();
+        if (!empty($itemLot) && $itemLot !== '-') {
+            return $itemLot;
+        }
+        $noLot = $this->getNoLot();
+        if ($noLot !== '-' && strpos($noLot, '/') !== false) {
+            $parts = explode('/', $noLot, 2);
+            return trim($parts[1]) ?: '-';
+        }
+        return '-';
+    }
+
+    /**
      * Mendapatkan URL link untuk referensi source (Inspecting, Makloon, Retur, Beli Jadi, dll)
      * @return string|null
      */
