@@ -46,7 +46,6 @@ use yii\helpers\Html;
         #packingList table.pl-nested, table.pl-nested {
             width: 100%;
             border-collapse: collapse;
-            border: none;
         }
         #packingList table.pl-nested > tbody > tr > td,
         #packingList table.pl-nested > tr > td,
@@ -58,22 +57,9 @@ use yii\helpers\Html;
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            border: none;
         }
         #packingList table.pl-pieces td, table.pl-pieces td {
             border: 1px solid #000;
-        }
-        #packingList table.pl-pieces tr:first-child td, table.pl-pieces tr:first-child td {
-            border-top: none;
-        }
-        #packingList table.pl-pieces tr:last-child td, table.pl-pieces tr:last-child td {
-            border-bottom: none;
-        }
-        #packingList table.pl-pieces tr td:first-child, table.pl-pieces tr td:first-child {
-            border-left: none;
-        }
-        #packingList table.pl-pieces tr td:last-child, table.pl-pieces tr td:last-child {
-            border-right: none;
         }
         </style>
         <table width="100%">
@@ -333,13 +319,13 @@ use yii\helpers\Html;
                                     <?php endforeach; ?>
                                     <?php 
                                         if($sample > 0){
-                                            echo '<table class="pl-nested"><tr>';
-                                                echo '<td colspan="12" style="text-align: center;">' . $sample . ' ' . $mstunit . ' Sample</td>';
+                                            echo '<table class="pl-nested" style="border-top: 1px solid #000;"><tr>';
+                                                echo '<td colspan="12" style="text-align: center; padding: 2px 4px;">' . $sample . ' ' . $mstunit . ' Sample</td>';
                                             echo '</tr></table>';
                                         }
                                         if(!empty($colorGroup['note']) && $colorGroup['note'] !== '-'){
-                                            echo '<table class="pl-nested"><tr>';
-                                                echo '<td colspan="12" style="text-align: center;">' . $colorGroup['note'] . '</td>';
+                                            echo '<table class="pl-nested" style="border-top: 1px solid #000;"><tr>';
+                                                echo '<td colspan="12" style="text-align: center; padding: 2px 4px;">' . $colorGroup['note'] . '</td>';
                                             echo '</tr></table>';
                                         }
                                     ?>
