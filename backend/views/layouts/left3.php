@@ -125,6 +125,10 @@ $moduleId = $controller->module->id;
                         'label' => 'Paper Tube', 'icon' => 'circle', 'url' => ['/mst-papper-tube/index'],
                         'active' => $moduleId=='app-backend' && $controllerId == 'mst-papper-tube'
                     ],
+                    [
+                        'label' => 'Master K3L', 'icon' => 'circle', 'url' => ['/mst-k3l/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'mst-k3l'
+                    ],
                     // bagussona
                     [
                         'label' => 'Stock Opname', 'icon' => 'circle', 'url' => ['/mst-stock-opname/index'],
