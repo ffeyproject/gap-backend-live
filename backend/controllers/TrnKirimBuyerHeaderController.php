@@ -59,12 +59,83 @@ class TrnKirimBuyerHeaderController extends Controller
         $countLokal = TrnKirimBuyerHeader::find()->where(['or', ['is_export' => false], ['is_export' => null]])->count();
         $countExport = TrnKirimBuyerHeader::find()->where(['is_export' => true])->count();
 
+        // Akumulasi pengiriman status POSTED dari tanggal 1 sampai hari ini
+        $startDate = date('Y-m-01');
+        $endDate = date('Y-m-d');
+
+        $headerStats = (new \yii\db\Query())
+            ->select([
+                'is_export' => new \yii\db\Expression('COALESCE(is_export, false)'),
+                'total_sj' => 'count(*)',
+            ])
+            ->from(TrnKirimBuyerHeader::tableName())
+            ->where(['status' => TrnKirimBuyerHeader::STATUS_POSTED])
+            ->andWhere(['between', 'date', $startDate, $endDate])
+            ->groupBy(new \yii\db\Expression('COALESCE(is_export, false)'))
+            ->all();
+
+        $itemStats = (new \yii\db\Query())
+            ->select([
+                'is_export' => new \yii\db\Expression('COALESCE(h.is_export, false)'),
+                'unit' => new \yii\db\Expression('COALESCE(s.unit, b.unit)'),
+                'total_roll' => 'count(i.id)',
+                'total_qty' => new \yii\db\Expression('COALESCE(sum(i.qty), 0)'),
+            ])
+            ->from(['h' => TrnKirimBuyerHeader::tableName()])
+            ->innerJoin(['b' => TrnKirimBuyer::tableName()], 'b.header_id = h.id')
+            ->innerJoin(['i' => TrnKirimBuyerItem::tableName()], 'i.kirim_buyer_id = b.id')
+            ->leftJoin(['s' => TrnGudangJadi::tableName()], 's.id = i.stock_id')
+            ->where(['h.status' => TrnKirimBuyerHeader::STATUS_POSTED])
+            ->andWhere(['between', 'h.date', $startDate, $endDate])
+            ->groupBy([new \yii\db\Expression('COALESCE(h.is_export, false)'), new \yii\db\Expression('COALESCE(s.unit, b.unit)')])
+            ->all();
+
+        $summary = [
+            'lokal' => ['total_sj' => 0, 'total_roll' => 0, 'qty_yard' => 0, 'qty_meter' => 0, 'qty_pcs' => 0, 'qty_kg' => 0],
+            'export' => ['total_sj' => 0, 'total_roll' => 0, 'qty_yard' => 0, 'qty_meter' => 0, 'qty_pcs' => 0, 'qty_kg' => 0],
+            'all' => ['total_sj' => 0, 'total_roll' => 0, 'qty_yard' => 0, 'qty_meter' => 0, 'qty_pcs' => 0, 'qty_kg' => 0],
+        ];
+
+        foreach ($headerStats as $row) {
+            $key = $row['is_export'] ? 'export' : 'lokal';
+            $resCount = (int)$row['total_sj'];
+            $summary[$key]['total_sj'] += $resCount;
+            $summary['all']['total_sj'] += $resCount;
+        }
+
+        foreach ($itemStats as $row) {
+            $key = $row['is_export'] ? 'export' : 'lokal';
+            $roll = (int)$row['total_roll'];
+            $qty = (float)$row['total_qty'];
+            $unit = (int)$row['unit'];
+
+            $summary[$key]['total_roll'] += $roll;
+            $summary['all']['total_roll'] += $roll;
+
+            if ($unit === MstGreigeGroup::UNIT_YARD) {
+                $summary[$key]['qty_yard'] += $qty;
+                $summary['all']['qty_yard'] += $qty;
+            } elseif ($unit === MstGreigeGroup::UNIT_METER) {
+                $summary[$key]['qty_meter'] += $qty;
+                $summary['all']['qty_meter'] += $qty;
+            } elseif ($unit === MstGreigeGroup::UNIT_PCS) {
+                $summary[$key]['qty_pcs'] += $qty;
+                $summary['all']['qty_pcs'] += $qty;
+            } elseif ($unit === MstGreigeGroup::UNIT_KILOGRAM) {
+                $summary[$key]['qty_kg'] += $qty;
+                $summary['all']['qty_kg'] += $qty;
+            }
+        }
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'tab' => $tab,
             'countLokal' => $countLokal,
             'countExport' => $countExport,
+            'summary' => $summary,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
 
