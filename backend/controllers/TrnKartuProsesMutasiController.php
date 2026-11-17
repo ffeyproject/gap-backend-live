@@ -199,6 +199,7 @@ class TrnKartuProsesMutasiController extends Controller
             'asal_greige' => TrnStockGreige::ASAL_GREIGE_MUTASI,
             'dikerjakan_oleh' => '-',
             'jenis_printing' => TrnKartuProsesPrinting::JENIS_PRINTING_DIGITAL,
+            'no_limit_item' => true,
         ]);
 
         $selectedStocks = [];

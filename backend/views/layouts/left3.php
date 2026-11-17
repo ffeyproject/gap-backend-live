@@ -459,7 +459,11 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'PFP', 'icon' => 'circle-o', 'url' => ['/processing-pfp/index'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp' && in_array($actionId, ['index', 'view'])
+                    ],
+                    [
+                        'label' => 'Stock Pfp', 'icon' => 'circle-o', 'url' => ['/processing-pfp/stock-pfp'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp' && $actionId == 'stock-pfp'
                     ],
                     [
                         'label' => 'Celup', 'icon' => 'circle-o', 'url' => ['/processing-celup/index'],

@@ -65,6 +65,11 @@ class TrnKartuProsesPrintingController extends Controller
     {
         $model = $this->findModel($id);
 
+        if ($model->status == $model::STATUS_DRAFT && !$model->no_limit_item) {
+            $model->no_limit_item = true;
+            $model->save(false, ['no_limit_item']);
+        }
+
         $processModels = MstProcessPrinting::find()->orderBy('order')->all();
         if(empty($processModels)){
             throw new NotAcceptableHttpException('Tidak ditemukan adanya data master processing untuk Printing, silahkan input dulu master processing untuk Printing lalu kembali lagi ke halaman ini.');

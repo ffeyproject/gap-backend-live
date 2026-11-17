@@ -139,7 +139,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'value'=>'pfpJenisGudangName',
                 'filterType' => GridView::FILTER_SELECT2,
                 'filterWidgetOptions' => [
-                    'data' => TrnStockGreige::pfpJenisGudangOptions(),
+                    'data' => [TrnStockGreige::PFP_JG_ONE => 'Gudang 1'],
                     'options' => ['placeholder' => '...'],
                     'pluginOptions' => [
                         'allowClear' => true

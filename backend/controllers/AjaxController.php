@@ -1408,6 +1408,18 @@ class AjaxController extends Controller
                 if (!empty($selectedItems)) {
                     $qStockOptionList->andWhere(['not in', 'id', $selectedItems]);
                 }
+
+                $kartuPrinting = TrnKartuProsesPrinting::findOne($kartuProsesId);
+                if ($kartuPrinting !== null && !empty($kartuPrinting->jenis_printing)) {
+                    // Hanya stock PFP Gudang 2 (pfp_jenis_gudang = 2) yang difilter jenis_printing.
+                    // Stock Gudang 1 (dari /trn-buy-pfp) dan lainnya tidak diganggu.
+                    $qStockOptionList->andWhere([
+                        'or',
+                        ['!=', 'trn_stock_greige.pfp_jenis_gudang', TrnStockGreige::PFP_JG_TWO],
+                        ['trn_stock_greige.pfp_jenis_gudang' => null],
+                        ['trn_stock_greige.jenis_printing' => $kartuPrinting->jenis_printing]
+                    ]);
+                }
                 break;
 
             case TrnScGreige::PROCESS_PFP:
@@ -1452,6 +1464,10 @@ class AjaxController extends Controller
                 ' | Lot Lusi: '.$item['lot_lusi'].
                 ' | Lot Pakan: '.$item['lot_pakan'].
                 ' | Ket. Weaving: '.TrnStockGreige::tsdOptions()[$item['status_tsd']];
+
+            if ($item['pfp_jenis_gudang'] == TrnStockGreige::PFP_JG_TWO && $item['jenis_printing'] !== null && isset(TrnStockGreige::jenisPrintingOptions()[$item['jenis_printing']])) {
+                $text .= ' | Jenis Printing: ' . TrnStockGreige::jenisPrintingOptions()[$item['jenis_printing']];
+            }
 
             // Tambah warna untuk seluruh baris
             switch ($item['status_tsd']) {

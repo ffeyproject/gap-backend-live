@@ -35,6 +35,7 @@ use yii\behaviors\TimestampBehavior;
  * @property int|null $keputusan_qc
  * @property string|null $color
  * @property int|null $pfp_jenis_gudang Pembagian jenis gudang untuk kain PFP, 1=Fudang 1, 2=Gudang 2
+ * @property int|null $jenis_printing 1=Digital Printing, 2=Konvensional
  * @property boolean $is_pemotongan
  * @property boolean $is_hasil_mix
  * @property boolean $is_hasil_setting
@@ -42,6 +43,7 @@ use yii\behaviors\TimestampBehavior;
  *
  * @property string $jenisGudangName
  * @property string $pfpJenisGudangName
+ * @property string $jenisPrintingName
  * @property string $lokasiSettingName
  *
  * @property TrnKartuProsesDyeingItem[] $trnKartuProsesDyeingItems
@@ -69,6 +71,14 @@ class TrnStockGreige extends \yii\db\ActiveRecord
     public function getPfpJenisGudangName()
     {
         return ($this->pfp_jenis_gudang !== null && isset(self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang])) ? self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang] : '';
+    }
+
+    /**
+     * @return string
+     */
+    public function getJenisPrintingName()
+    {
+        return ($this->jenis_printing !== null && isset(self::jenisPrintingOptions()[$this->jenis_printing])) ? self::jenisPrintingOptions()[$this->jenis_printing] : '';
     }
 
     const ASAL_GREIGE_WJL = 1;
@@ -156,6 +166,18 @@ class TrnStockGreige extends \yii\db\ActiveRecord
         return [self::PFP_JG_ONE => 'Gudang 1', self::PFP_JG_TWO => 'Gudang 2'];
     }
 
+    const JENIS_PRINTING_DIGITAL = 1;
+    const JENIS_PRINTING_KONVENSIONAL = 2;
+    /**
+     * @return array
+     */
+    public static function jenisPrintingOptions(){
+        return [
+            self::JENIS_PRINTING_KONVENSIONAL => 'Konvensional',
+            self::JENIS_PRINTING_DIGITAL => 'Digital Printing',
+        ];
+    }
+
     const LOKASI_SETTING_GAP = 1;const LOKASI_SETTING_LUAR = 2;
     /**
      * @return array
@@ -207,6 +229,7 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             ['jenis_gudang', 'in', 'range' => [self::JG_FRESH, self::JG_WIP, self::JG_PFP, self::JG_EX_FINISH, self::JG_PFP_PERSIAPAN, self::JG_MUTASI_GD_JADI]],
 
             ['pfp_jenis_gudang', 'in', 'range' => [self::PFP_JG_ONE, self::PFP_JG_TWO]],
+            ['jenis_printing', 'in', 'range' => [self::JENIS_PRINTING_DIGITAL, self::JENIS_PRINTING_KONVENSIONAL]],
 
             ['status_tsd', 'default', 'value'=>self::STATUS_TSD_SM],
             ['status_tsd', 'in', 'range' => [self::STATUS_TSD_SM, self::STATUS_TSD_ST, self::STATUS_TSD_SA, self::STATUS_TSD_NORMAL, self::STATUS_TSD_LAIN_LAIN, self::STATUS_TSD_TSD, self::STATUS_TSD_PUTIH]],
@@ -254,8 +277,10 @@ class TrnStockGreige extends \yii\db\ActiveRecord
             'keputusan_qc' => 'Keputusan QC dan Marketing',
             'color' => 'Color',
             'pfp_jenis_gudang' => 'Jenis Gudang PFP',
+            'jenis_printing' => 'Jenis Printing',
             'jenisGudangName' => 'Jenis Gudang',
             'pfpJenisGudangName' => 'Jenis Gudang PFP',
+            'jenisPrintingName' => 'Jenis Printing',
             'is_pemotongan' => 'Hasil Pemotongan',
             'is_hasil_mix' => 'Mix Quality',
             'is_hasil_setting' => 'Hasil Setting',

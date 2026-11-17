@@ -22,7 +22,7 @@ class TrnStockGreigeSearch extends TrnStockGreige
     public function rules()
     {
         return [
-            [['id', 'greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang', 'lokasi_setting'], 'integer'],
+            [['id', 'greige_group_id', 'greige_id', 'asal_greige', 'grade', 'status_tsd', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'jenis_gudang', 'keputusan_qc', 'pfp_jenis_gudang', 'lokasi_setting', 'jenis_printing'], 'integer'],
             [['is_hasil_mix', 'is_pemotongan', 'is_hasil_setting'], 'boolean'],
             ['panjang_m', 'number'],
             [['no_lapak', 'lot_lusi', 'lot_pakan', 'no_set_lusi', 'no_document', 'pengirim', 'mengetahui', 'note', 'date', 'nomor_wo', 'color', 'greigeNamaKain', 'dateRange'], 'safe'],
@@ -106,6 +106,7 @@ class TrnStockGreigeSearch extends TrnStockGreige
             'trn_stock_greige.updated_by' => $this->updated_by,
             'jenis_gudang' => $this->jenis_gudang,
             'pfp_jenis_gudang' => $this->pfp_jenis_gudang,
+            'trn_stock_greige.jenis_printing' => $this->jenis_printing,
             'keputusan_qc' => $this->keputusan_qc,
             'is_pemotongan' => $this->is_pemotongan,
             'is_hasil_mix' => $this->is_hasil_mix,

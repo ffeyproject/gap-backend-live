@@ -10,6 +10,7 @@ use common\models\ar\TrnKartuProsesDyeing;
 use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnScGreige;
 use common\models\ar\TrnStockGreige;
+use common\models\ar\TrnStockGreigeSearch;
 use common\models\ar\TrnWo;
 use common\models\ar\TrnWoColor;
 use common\models\ar\TrnOrderPfp;
@@ -77,6 +78,25 @@ class ProcessingPfpController extends Controller
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('rekap', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Lists all TrnStockGreige models with jenis_gudang = JG_PFP and pfp_jenis_gudang = PFP_JG_TWO (Gudang 2).
+     * @return mixed
+     */
+    public function actionStockPfp()
+    {
+        $searchModel = new TrnStockGreigeSearch([
+            'jenis_gudang' => TrnStockGreige::JG_PFP,
+            'pfp_jenis_gudang' => TrnStockGreige::PFP_JG_TWO,
+        ]);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['trn_stock_greige.pfp_jenis_gudang' => TrnStockGreige::PFP_JG_TWO]);
+
+        return $this->render('stock-pfp', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);
@@ -389,6 +409,7 @@ class ProcessingPfpController extends Controller
                                 'pfp_jenis_gudang' => TrnStockGreige::PFP_JG_TWO,
                                 'grade' => TrnStockGreige::GRADE_NG,
                                 'panjang_m' => $item->qty,
+                                'jenis_printing' => $item->jenis_printing,
                                 'color' => $model->orderPfp->dasar_warna,
                                 'created_at' => $ts,
                                 'created_by' => $model->approved_by,
@@ -425,7 +446,13 @@ class ProcessingPfpController extends Controller
                     }
                 }
 
-                throw new HttpException(422, 'Data validation vailed');
+                $result = [];
+                foreach ($modelsItem as $i => $item) {
+                    foreach ($item->getErrors() as $attribute => $errors) {
+                        $result[Html::getInputId($item, "[$i]" . $attribute)] = $errors;
+                    }
+                }
+                return ['validation' => $result];
             }
 
             return $this->renderAjax('finishing', [

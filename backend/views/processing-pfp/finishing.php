@@ -1,6 +1,7 @@
 <?php
 
 use backend\models\form\FinishingProcessingPfpForm;
+use common\models\ar\TrnStockGreige;
 use common\widgets\dynamicform\DynamicFormWidget;
 use kartik\widgets\ActiveForm;
 use yii\helpers\Html;
@@ -13,13 +14,34 @@ use yii\helpers\Html;
 $js = '
 jQuery(".dynamicform_wrapper").on("afterInsert", function(e, item) {
     jQuery(".dynamicform_wrapper .item-no").each(function(index) {
-        jQuery(this).html((index + 1))
+        jQuery(this).html((index + 1));
     });
+
+    var $prevItem = jQuery(item).prev(".item");
+    if ($prevItem.length > 0) {
+        var prevVal = $prevItem.find(".jenis_printing_select").val();
+        if (prevVal) {
+            jQuery(item).find(".jenis_printing_select").val(prevVal);
+        }
+    }
 });
 
 jQuery(".dynamicform_wrapper").on("afterDelete", function(e) {
     jQuery(".dynamicform_wrapper .item-no").each(function(index) {
-        jQuery(this).html((index + 1))
+        jQuery(this).html((index + 1));
+    });
+});
+
+jQuery(document).off("change", ".jenis_printing_select").on("change", ".jenis_printing_select", function() {
+    var currentVal = jQuery(this).val();
+    if (!currentVal) return;
+
+    var $currentItem = jQuery(this).closest(".item");
+    $currentItem.nextAll(".item").each(function() {
+        var $selectBelow = jQuery(this).find(".jenis_printing_select");
+        if (!$selectBelow.val()) {
+            $selectBelow.val(currentVal);
+        }
     });
 });
 
@@ -50,6 +72,7 @@ $this->registerJs($js, $this::POS_END);
         'formId' => 'dynamic-form',
         'formFields' => [
             'qty',
+            'jenis_printing',
         ],
     ]);?>
 
@@ -58,6 +81,7 @@ $this->registerJs($js, $this::POS_END);
             <tr>
                 <th>#</th>
                 <th>Jumlah</th>
+                <th>Jenis Printing</th>
                 <th class="text-center" style="width: 90px;">
                     <button type="button" class="add-item btn btn-success btn-xs"><span class="fa fa-plus"></span></button>
                 </th>
@@ -70,7 +94,10 @@ $this->registerJs($js, $this::POS_END);
                     <td>
                         <?= $form->field($modelItem, "[{$index}]qty")->textInput(['class'=>'form-control panjang_unit', 'onchange'=>'hitungTotal()'])->label(false) ?>
                     </td>
-                    <td class="text-center vcenter" style="width: 90px; verti">
+                    <td>
+                        <?= $form->field($modelItem, "[{$index}]jenis_printing")->dropDownList(TrnStockGreige::jenisPrintingOptions(), ['class' => 'form-control jenis_printing_select', 'prompt' => 'Pilih Jenis Printing...'])->label(false) ?>
+                    </td>
+                    <td class="text-center vcenter" style="width: 90px;">
                         <button type="button" class="remove-item btn btn-danger btn-xs"><span class="fa fa-minus"></span></button>
                     </td>
                 </tr>
@@ -80,6 +107,7 @@ $this->registerJs($js, $this::POS_END);
             <tr>
                 <th>#</th>
                 <th>Jumlah</th>
+                <th>Jenis Printing</th>
                 <th class="text-center" style="width: 90px;">
                     <button type="button" class="add-item btn btn-success btn-xs"><span class="fa fa-plus"></span></button>
                 </th>

@@ -78,6 +78,14 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             self::JENIS_PRINTING_KONVENSIONAL => 'Konvensional',
         ];
     }
+
+    /**
+     * @return string
+     */
+    public function getJenisPrintingName()
+    {
+        return ($this->jenis_printing !== null && isset(self::jenisPrintingOptions()[$this->jenis_printing])) ? self::jenisPrintingOptions()[$this->jenis_printing] : '-';
+    }
     /**
      * @return array
      */
@@ -137,6 +145,24 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
         ];
     }
 
+    public function init()
+    {
+        parent::init();
+        if ($this->no_limit_item === null) {
+            $this->no_limit_item = true;
+        }
+    }
+
+    public function beforeSave($insert)
+    {
+        if ($insert) {
+            if ($this->no_limit_item === null) {
+                $this->no_limit_item = true;
+            }
+        }
+        return parent::beforeSave($insert);
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -149,6 +175,7 @@ class TrnKartuProsesPrinting extends \yii\db\ActiveRecord
             [['note', 'memo_pg', 'reject_notes', 'nomor_kartu'], 'string'],
             ['date', 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
+            [['no_limit_item'], 'boolean'],
             ['no_limit_item', 'default', 'value'=>true],
             [['no', 'no_proses', 'dikerjakan_oleh', 'lusi', 'pakan', 'memo_pg_no', 'kombinasi', 'berat'], 'string', 'max' => 255],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
