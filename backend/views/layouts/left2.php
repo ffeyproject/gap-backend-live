@@ -457,7 +457,11 @@ $moduleId = $controller->module->id;
                     ],
                     [
                         'label' => 'Stock Pfp', 'icon' => 'circle-o', 'url' => ['/processing-pfp/stock-pfp'],
-                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp' && $actionId == 'stock-pfp'
+                        'active' => $moduleId=='app-backend' && $controllerId == 'processing-pfp' && in_array($actionId, ['stock-pfp', 'riwayat-pindah-printing'])
+                    ],
+                    [
+                        'label' => 'Input Pfp', 'icon' => 'circle-o', 'url' => ['/trn-input-pfp/index'],
+                        'active' => $moduleId=='app-backend' && $controllerId == 'trn-input-pfp'
                     ],
                     [
                         'label' => 'Celup', 'icon' => 'circle-o', 'url' => ['/processing-celup/index'],

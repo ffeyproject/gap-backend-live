@@ -87,9 +87,11 @@ class PenerimaanGabunganSearch extends Model
     {
         $this->load($params);
 
+        $hasWoSearch = !empty(trim($this->wo_no ?? ''));
+
         $validation = PenerimaanGudangJadiHelper::validateEitherDateRange($this->tglKirimRange, $this->deliveredAtRange);
         $this->hasValidDateRange = $validation['hasValidDateRange'];
-        $this->dateRangeError = $validation['error'];
+        $this->dateRangeError = $hasWoSearch ? null : $validation['error'];
         $this->from_tgl_kirim = $validation['kirim']['from'];
         $this->to_tgl_kirim = $validation['kirim']['to'];
         $this->from_delivered_at = $validation['penerimaan']['from'];
@@ -127,7 +129,9 @@ class PenerimaanGabunganSearch extends Model
             ],
         ]);
 
-        if (!$this->validate() || !$this->hasValidDateRange) {
+        $canSearch = $this->hasValidDateRange || $hasWoSearch;
+
+        if (!$this->validate() || !$canSearch) {
             $outerQuery->from(['ti' => 'trn_inspecting'])->where('0=1');
             return $dataProvider;
         }
@@ -211,7 +215,8 @@ class PenerimaanGabunganSearch extends Model
      */
     public function buildSummarySourceQuery($type)
     {
-        if (!$this->hasValidDateRange) {
+        $hasWoSearch = !empty(trim($this->wo_no ?? ''));
+        if (!$this->hasValidDateRange && !$hasWoSearch) {
             return null;
         }
 

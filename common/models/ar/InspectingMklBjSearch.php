@@ -26,6 +26,7 @@ class InspectingMklBjSearch extends InspectingMklBj
     public $from_tgl_kirim;
     public $to_tgl_kirim;
     public $penerimaanMode = false;
+    public $woNo;
 
     /**
      * {@inheritdoc}
@@ -40,6 +41,7 @@ class InspectingMklBjSearch extends InspectingMklBj
                     'tgl_kirim',
                     'no_lot',
                     'no',
+                    'woNo',
                     'colorName',
                     'designName',
                     'articleName',
@@ -97,6 +99,10 @@ class InspectingMklBjSearch extends InspectingMklBj
             'asc' => ['inspecting_mkl_bj.delivered_at' => SORT_ASC],
             'desc' => ['inspecting_mkl_bj.delivered_at' => SORT_DESC],
         ];
+        $dataProvider->sort->attributes['woNo'] = [
+            'asc' => ['trn_wo.no' => SORT_ASC],
+            'desc' => ['trn_wo.no' => SORT_DESC],
+        ];
 
         $this->load($params);
 
@@ -117,6 +123,9 @@ class InspectingMklBjSearch extends InspectingMklBj
         }
         if (!empty($this->custNo) || isset($sortOrders['custNo'])) {
             $joinRelations[] = 'wo.sc.cust';
+        }
+        if (!empty($this->woNo) || isset($sortOrders['woNo'])) {
+            $joinRelations[] = 'wo';
         }
         if (!empty($joinRelations)) {
             $query->joinWith($joinRelations, false);
@@ -197,7 +206,8 @@ class InspectingMklBjSearch extends InspectingMklBj
             ->andFilterWhere(['ilike', 'trn_mo.design', $this->designName])
             ->andFilterWhere(['ilike', 'trn_mo.article', $this->articleName])
             ->andFilterWhere(['ilike', 'mst_greige.nama_kain', $this->greigeName])
-            ->andFilterWhere(['ilike', 'mst_customer.cust_no', $this->custNo]);
+            ->andFilterWhere(['ilike', 'mst_customer.cust_no', $this->custNo])
+            ->andFilterWhere(['ilike', 'trn_wo.no', $this->woNo]);
 
         return $dataProvider;
     }

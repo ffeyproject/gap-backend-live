@@ -2,6 +2,7 @@
 
 namespace common\models\ar;
 
+use common\models\User;
 use Yii;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
@@ -27,6 +28,8 @@ use yii\behaviors\TimestampBehavior;
  * @property string|null $color
  * @property int $jenis 1=Beli, 2=Hasil Makloon, 3=Lain-lain
  * @property string|null $no_referensi
+ * @property int|null $pfp_jenis_gudang 1=Gudang 1, 2=Gudang 2
+ * @property int|null $jenis_printing 1=Digital Printing, 2=Konvensional
  *
  * @property MstGreige $greige
  * @property MstGreigeGroup $greigeGroup
@@ -35,6 +38,8 @@ use yii\behaviors\TimestampBehavior;
  * @property string $greigeName
  * @property string $greigeGroupName
  * @property string $statusName
+ * @property string $jenisPrintingName
+ * @property string $pfpJenisGudangName
  */
 class TrnBuyPfp extends \yii\db\ActiveRecord
 {
@@ -62,6 +67,34 @@ class TrnBuyPfp extends \yii\db\ActiveRecord
     }
 
     /**
+     * @return array
+     */
+    public static function jenisPrintingOptions(){
+        return TrnStockGreige::jenisPrintingOptions();
+    }
+
+    /**
+     * @return string
+     */
+    public function getJenisPrintingName(){
+        return isset(self::jenisPrintingOptions()[$this->jenis_printing]) ? self::jenisPrintingOptions()[$this->jenis_printing] : '-';
+    }
+
+    /**
+     * @return array
+     */
+    public static function pfpJenisGudangOptions(){
+        return TrnStockGreige::pfpJenisGudangOptions();
+    }
+
+    /**
+     * @return string
+     */
+    public function getPfpJenisGudangName(){
+        return isset(self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang]) ? self::pfpJenisGudangOptions()[$this->pfp_jenis_gudang] : '-';
+    }
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()
@@ -85,10 +118,12 @@ class TrnBuyPfp extends \yii\db\ActiveRecord
         return [
             [['greige_id', 'no_document', 'vendor', 'date', 'color', 'jenis'], 'required'],
             [['greige_group_id', 'greige_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_time', 'approval_id'], 'default', 'value' => null],
-            [['greige_group_id', 'greige_id', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_time', 'approval_id', 'jenis'], 'integer'],
+            [['greige_group_id', 'greige_id', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_time', 'approval_id', 'jenis', 'pfp_jenis_gudang', 'jenis_printing'], 'integer'],
             [['note', 'reject_note'], 'string'],
             [['date'], 'date', 'format'=>'php:Y-m-d'],
             ['status', 'default', 'value'=>self::STATUS_DRAFT],
+            ['pfp_jenis_gudang', 'default', 'value'=>TrnStockGreige::PFP_JG_ONE],
+            ['jenis_printing', 'in', 'range' => [TrnStockGreige::JENIS_PRINTING_DIGITAL, TrnStockGreige::JENIS_PRINTING_KONVENSIONAL]],
             [['no_referensi', 'no_document', 'vendor', 'color'], 'string', 'max' => 255],
             [['greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreige::className(), 'targetAttribute' => ['greige_id' => 'id']],
             [['greige_group_id'], 'exist', 'skipOnError' => true, 'targetClass' => MstGreigeGroup::className(), 'targetAttribute' => ['greige_group_id' => 'id']],
@@ -120,6 +155,10 @@ class TrnBuyPfp extends \yii\db\ActiveRecord
             'jenis' => 'Jenis',
             'no_referensi' => 'No. Referensi',
             'jenisName' => 'Jenis',
+            'pfp_jenis_gudang' => 'Gudang PFP',
+            'pfpJenisGudangName' => 'Gudang PFP',
+            'jenis_printing' => 'Jenis Printing',
+            'jenisPrintingName' => 'Jenis Printing',
         ];
     }
 
@@ -145,6 +184,22 @@ class TrnBuyPfp extends \yii\db\ActiveRecord
     public function getTrnBuyPfpItems()
     {
         return $this->hasMany(TrnBuyPfpItem::className(), ['buy_pfp_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getApprovedBy()
+    {
+        return $this->hasOne(User::className(), ['id' => 'approval_id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCreatedBy()
+    {
+        return $this->hasOne(User::className(), ['id' => 'created_by']);
     }
 
     /**

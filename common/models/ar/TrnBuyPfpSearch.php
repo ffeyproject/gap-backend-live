@@ -22,7 +22,7 @@ class TrnBuyPfpSearch extends TrnBuyPfp
     public function rules()
     {
         return [
-            [['id', 'greige_group_id', 'greige_id', 'jenis', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time'], 'integer'],
+            [['id', 'greige_group_id', 'greige_id', 'jenis', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by', 'approval_id', 'approval_time', 'pfp_jenis_gudang', 'jenis_printing'], 'integer'],
             [['no_referensi', 'no_document', 'vendor', 'note', 'date', 'reject_note', 'color', 'greigeGroupNamaKain', 'greigeNamaKain', 'dateRange'], 'safe'],
         ];
     }
@@ -107,6 +107,8 @@ class TrnBuyPfpSearch extends TrnBuyPfp
             'trn_buy_pfp.updated_by' => $this->updated_by,
             'trn_buy_pfp.approval_id' => $this->approval_id,
             'trn_buy_pfp.approval_time' => $this->approval_time,
+            'trn_buy_pfp.pfp_jenis_gudang' => $this->pfp_jenis_gudang,
+            'trn_buy_pfp.jenis_printing' => $this->jenis_printing,
         ]);
 
         $query->andFilterWhere(['ilike', 'trn_buy_pfp.no_document', $this->no_document])

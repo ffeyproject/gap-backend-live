@@ -41,6 +41,7 @@ class TrnBuyPfpController extends Controller
     {
         $searchModel = new TrnBuyPfpSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider->query->andWhere(['or', ['trn_buy_pfp.pfp_jenis_gudang' => TrnStockGreige::PFP_JG_ONE], ['trn_buy_pfp.pfp_jenis_gudang' => null]]);
 
         return $this->render('index', [
             'searchModel' => $searchModel,

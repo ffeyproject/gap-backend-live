@@ -22,11 +22,15 @@ class GudangJadiController extends Controller
         $dataProvider->pagination->defaultPageSize = 50;
         $dataProvider->pagination->pageSizeLimit = [10, 200];
 
+        $hasWoSearch = !empty(trim($searchModel->woNo ?? '')) || !empty($searchModel->wo_id);
+
         $validation = PenerimaanGudangJadiHelper::validateEitherDateRange($searchModel->dateRange, $searchModel->deliveredAtRange);
         $hasValidDateRange = $validation['hasValidDateRange'];
-        if ($validation['error'] !== null) {
+        if ($validation['error'] !== null && !$hasWoSearch) {
             Yii::$app->session->setFlash('error', $validation['error']);
         }
+
+        $canSearch = $hasValidDateRange || $hasWoSearch;
 
         $fromDeliv = $validation['penerimaan']['from'];
         $toDeliv = $validation['penerimaan']['to'];
@@ -40,7 +44,7 @@ class GudangJadiController extends Controller
         ];
         $summaryByUnit = [];
 
-        if (!$hasValidDateRange) {
+        if (!$canSearch) {
             $dataProvider->query->where('0=1');
         } else {
             PenerimaanGudangJadiHelper::applyReceiptFilter($dataProvider->query, 'PACKING', 'trn_inspecting', $fromDeliv, $toDeliv);
@@ -87,7 +91,7 @@ class GudangJadiController extends Controller
             'inspectingTotals' => $pageDetails['inspectingTotals'],
             'isPartialMap' => $pageDetails['isPartialMap'],
             'receiptDates' => $pageDetails['receiptDates'],
-            'hasValidDateRange' => $hasValidDateRange,
+            'hasValidDateRange' => $canSearch,
             'summaryByUnit' => $summaryByUnit,
         ]);
     }
@@ -119,7 +123,10 @@ class GudangJadiController extends Controller
         $searchModel = new PenerimaanGabunganSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        if ($searchModel->dateRangeError !== null) {
+        $hasWoSearch = !empty(trim($searchModel->wo_no ?? ''));
+        $canSearch = $searchModel->hasValidDateRange || $hasWoSearch;
+
+        if ($searchModel->dateRangeError !== null && !$hasWoSearch) {
             Yii::$app->session->setFlash('error', $searchModel->dateRangeError);
         }
 
@@ -133,7 +140,7 @@ class GudangJadiController extends Controller
         $receiptDates = [];
         $summaryByUnit = [];
 
-        if ($searchModel->hasValidDateRange) {
+        if ($canSearch) {
             $packingSub = $searchModel->buildSummarySourceQuery(PenerimaanGabunganSearch::SOURCE_PACKING);
             if ($packingSub !== null) {
                 PenerimaanGudangJadiHelper::accumulateSummary($packingSub, 'PACKING', $fromDeliv, $toDeliv, $summaryByUnit);
@@ -202,7 +209,7 @@ class GudangJadiController extends Controller
             'inspectingTotals' => $inspectingTotals,
             'isPartialMap' => $isPartialMap,
             'receiptDates' => $receiptDates,
-            'hasValidDateRange' => $searchModel->hasValidDateRange,
+            'hasValidDateRange' => $canSearch,
             'summaryByUnit' => $summaryByUnit,
         ]);
     }

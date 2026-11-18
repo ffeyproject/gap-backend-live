@@ -11,6 +11,8 @@ use common\models\ar\TrnKartuProsesDyeingItem;
 use common\models\ar\TrnScGreige;
 use common\models\ar\TrnStockGreige;
 use common\models\ar\TrnStockGreigeSearch;
+use common\models\ar\TrnStockPfpPindahPrintingLog;
+use common\models\ar\TrnStockPfpPindahPrintingLogSearch;
 use common\models\ar\TrnWo;
 use common\models\ar\TrnWoColor;
 use common\models\ar\TrnOrderPfp;
@@ -47,6 +49,7 @@ class ProcessingPfpController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'pindah-jenis-printing' => ['POST'],
                 ],
             ],
         ];
@@ -97,6 +100,111 @@ class ProcessingPfpController extends Controller
         $dataProvider->query->andWhere(['trn_stock_greige.pfp_jenis_gudang' => TrnStockGreige::PFP_JG_TWO]);
 
         return $this->render('stock-pfp', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
+    /**
+     * Memindahkan jenis printing pada stock pfp Gudang 2 dan mencatat riwayat perubahannya.
+     * @return mixed
+     */
+    public function actionPindahJenisPrinting()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $stockIds = Yii::$app->request->post('stock_ids', []);
+        $jenisPrintingTujuan = Yii::$app->request->post('jenis_printing_tujuan');
+        $note = trim(Yii::$app->request->post('note', ''));
+
+        if (is_string($stockIds)) {
+            $stockIds = array_filter(explode(',', $stockIds));
+        }
+
+        if (empty($stockIds)) {
+            return ['success' => false, 'message' => 'Tidak ada roll stock yang dipilih.'];
+        }
+
+        if (empty($jenisPrintingTujuan) || !in_array((int)$jenisPrintingTujuan, [TrnStockGreige::JENIS_PRINTING_DIGITAL, TrnStockGreige::JENIS_PRINTING_KONVENSIONAL])) {
+            return ['success' => false, 'message' => 'Jenis printing tujuan tidak valid.'];
+        }
+
+        $jenisPrintingTujuan = (int)$jenisPrintingTujuan;
+        $namaTujuan = TrnStockGreige::jenisPrintingOptions()[$jenisPrintingTujuan];
+
+        $stocks = TrnStockGreige::find()
+            ->where(['id' => $stockIds])
+            ->andWhere(['jenis_gudang' => TrnStockGreige::JG_PFP, 'pfp_jenis_gudang' => TrnStockGreige::PFP_JG_TWO])
+            ->all();
+
+        if (empty($stocks)) {
+            return ['success' => false, 'message' => 'Data stock tidak ditemukan atau bukan merupakan stock PFP Gudang 2.'];
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $updatedCount = 0;
+            $skippedCount = 0;
+
+            foreach ($stocks as $stock) {
+                $oldJenis = $stock->jenis_printing;
+
+                // Jika jenis_printing sama, lewati
+                if ($oldJenis == $jenisPrintingTujuan) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $stock->jenis_printing = $jenisPrintingTujuan;
+                if (!$stock->save(false, ['jenis_printing', 'updated_at', 'updated_by'])) {
+                    $transaction->rollBack();
+                    return ['success' => false, 'message' => "Gagal memperbarui stock ID {$stock->id}."];
+                }
+
+                $log = new TrnStockPfpPindahPrintingLog([
+                    'stock_id' => $stock->id,
+                    'greige_id' => $stock->greige_id,
+                    'panjang_m' => $stock->panjang_m,
+                    'jenis_printing_asal' => $oldJenis,
+                    'jenis_printing_tujuan' => $jenisPrintingTujuan,
+                    'note' => $note,
+                ]);
+
+                if (!$log->save()) {
+                    $transaction->rollBack();
+                    return ['success' => false, 'message' => "Gagal menyimpan riwayat untuk stock ID {$stock->id}: " . implode(', ', $log->getFirstErrors())];
+                }
+
+                $updatedCount++;
+            }
+
+            if ($updatedCount == 0 && $skippedCount > 0) {
+                $transaction->rollBack();
+                return ['success' => false, 'message' => "Semua roll yang dipilih sudah berada pada jenis printing {$namaTujuan}."];
+            }
+
+            $transaction->commit();
+            $msg = "Berhasil memindahkan {$updatedCount} roll stock ke {$namaTujuan}.";
+            if ($skippedCount > 0) {
+                $msg .= " ({$skippedCount} roll dilewati karena jenis printing sudah sama).";
+            }
+            return ['success' => true, 'message' => $msg];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Menampilkan riwayat perpindahan jenis printing pada stock PFP Gudang 2.
+     * @return mixed
+     */
+    public function actionRiwayatPindahPrinting()
+    {
+        $searchModel = new TrnStockPfpPindahPrintingLogSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('riwayat-pindah-printing', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
         ]);

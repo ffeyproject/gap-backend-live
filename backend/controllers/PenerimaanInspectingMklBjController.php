@@ -78,11 +78,15 @@ class PenerimaanInspectingMklBjController extends Controller
         $dataProvider->pagination->defaultPageSize = 50;
         $dataProvider->pagination->pageSizeLimit = [10, 200];
 
+        $hasWoSearch = !empty($searchModel->wo_id) || !empty(trim($searchModel->woNo ?? ''));
+
         $validation = PenerimaanGudangJadiHelper::validateEitherDateRange($searchModel->tglKirimRange, $searchModel->deliveredAtRange);
         $hasValidDateRange = $validation['hasValidDateRange'];
-        if ($validation['error'] !== null) {
+        if ($validation['error'] !== null && !$hasWoSearch) {
             Yii::$app->session->setFlash('error', $validation['error']);
         }
+
+        $canSearch = $hasValidDateRange || $hasWoSearch;
 
         $fromDeliv = $validation['penerimaan']['from'];
         $toDeliv = $validation['penerimaan']['to'];
@@ -96,7 +100,7 @@ class PenerimaanInspectingMklBjController extends Controller
         ];
         $summaryByUnit = [];
 
-        if (!$hasValidDateRange) {
+        if (!$canSearch) {
             $dataProvider->query->where('0=1');
         } else {
             PenerimaanGudangJadiHelper::applyReceiptFilter($dataProvider->query, 'MKL_BJ', 'inspecting_mkl_bj', $fromDeliv, $toDeliv);
@@ -137,7 +141,7 @@ class PenerimaanInspectingMklBjController extends Controller
             'inspectingTotals' => $pageDetails['inspectingTotals'],
             'isPartialMap' => $pageDetails['isPartialMap'],
             'receiptDates' => $pageDetails['receiptDates'],
-            'hasValidDateRange' => $hasValidDateRange,
+            'hasValidDateRange' => $canSearch,
             'summaryByUnit' => $summaryByUnit,
         ]);
     }

@@ -63,6 +63,9 @@ foreach ($perPageOptions as $size => $label) {
         ?>
         <?php
         $periodeParts = [];
+        if (!empty($searchModel->woNo)) {
+            $periodeParts[] = 'No. WO: ' . $searchModel->woNo;
+        }
         if (!empty($searchModel->dateRange)) {
             $periodeParts[] = 'Tgl Kirim: ' . $searchModel->dateRange;
         }
@@ -93,7 +96,7 @@ foreach ($perPageOptions as $size => $label) {
         'tableOptions' => ['class' => 'gj-grid-table'],
         'emptyText' => $hasValidDateRange
             ? 'Data tidak ditemukan.'
-            : '<div class="alert alert-info" style="margin: 10px 0;"><i class="fa fa-info-circle"></i> Silakan pilih rentang <strong>Tanggal Kirim</strong> atau <strong>Tanggal Penerimaan</strong> terlebih dahulu (maksimal 1 bulan 1 minggu / 38 hari dari tanggal pertama yang dipilih) untuk menampilkan data.</div>',
+            : '<div class="alert alert-info" style="margin: 10px 0;"><i class="fa fa-info-circle"></i> Silakan cari <strong>No. WO</strong> atau pilih rentang <strong>Tanggal Kirim / Penerimaan</strong> (maksimal 1 bulan 1 minggu / 38 hari) untuk menampilkan data.</div>',
         'panel' => [
             'type' => 'default',
             'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default'])
