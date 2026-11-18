@@ -23,23 +23,75 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
+        'id' => 'MutasiExFinishGrid',
         'resizableColumns' => false,
         'responsiveWrap' => false,
         'pjax' => true,
+        'pjaxSettings' => [
+            'options' => [
+                'id' => 'MutasiExFinishGrid-pjax',
+            ],
+        ],
         'toolbar' => [
             '{toggleData}'
         ],
         'panel' => [
             'type' => 'default',
-            'before'=>Html::a('<i class="glyphicon glyphicon-refresh"></i>', ['index'], ['class' => 'btn btn-default']),
-            //'after'=>'',
-            //'footer'=>false
+            'heading' => '<i class="glyphicon glyphicon-list"></i> Daftar Stock Ex Finish GD Jadi Items',
+            'before' => Html::a('<i class="glyphicon glyphicon-refresh"></i> Refresh', ['index'], ['class' => 'btn btn-default']) . ' ' .
+                        Html::button('<i class="glyphicon glyphicon-check"></i> Tambah Semua yang Diceklis', [
+                            'id' => 'btnAddChecked',
+                            'class' => 'btn btn-primary',
+                            'title' => 'Tambahkan semua item yang diceklis di halaman ini ke daftar jual'
+                        ]) . ' ' .
+                        Html::button('<i class="glyphicon glyphicon-unchecked"></i> Hapus Ceklis Halaman Ini', [
+                            'id' => 'btnUncheckPage',
+                            'class' => 'btn btn-default',
+                            'title' => 'Hilangkan ceklis pada halaman ini'
+                        ]) . ' ' .
+                        '<span id="grid-checked-counter" class="label label-info" style="font-size: 12px; padding: 6px 10px; margin-left: 5px;">0 item diceklis di halaman ini</span>',
         ],
         'columns' => [
             ['class' => 'kartik\grid\SerialColumn'],
             [
+                'class' => 'kartik\grid\CheckboxColumn',
+                'headerOptions' => ['class' => 'kartik-sheet-style', 'style' => 'width: 35px; text-align: center; vertical-align: middle;'],
+                'contentOptions' => ['style' => 'text-align: center; vertical-align: middle;'],
+                'checkboxOptions' => function ($model, $key, $index, $column) {
+                    /* @var $model MutasiExFinishAltItem */
+                    if ($model->status != $model::STATUS_STOCK) {
+                        return ['disabled' => true];
+                    }
+
+                    $data = [
+                        'id' => $model->id,
+                        'gudang_jadi_id' => $model->gudang_jadi_id,
+                        'greige_id' => $model->gudangJadi->wo->greige_id,
+                        'motif' => $model->gudangJadi->wo->greige->nama_kain,
+                        'grade' => $model->grade,
+                        'grade_name' => TrnStockGreige::gradeOptions()[$model->grade],
+                        'qty' => (float)$model->qty,
+                        'qty_fmt' => Yii::$app->formatter->asDecimal($model->qty),
+                        'unit' => $model->gudangJadi->unit,
+                        'unit_name' => MstGreigeGroup::unitOptions()[$model->gudangJadi->unit],
+                        'status' => $model->status,
+                        'status_name' => $model->statusName,
+                        'no_wo' => $model->gudangJadi->wo->no,
+                        'nama_buyer' => $model->gudangJadi->wo->mo->scGreige->sc->customerName,
+                    ];
+
+                    return [
+                        'value' => $model->id,
+                        'class' => 'item-checkbox',
+                        'data-item' => \yii\helpers\Json::encode($data),
+                    ];
+                }
+            ],
+            [
                 'class' => 'kartik\grid\ActionColumn',
                 'template'=>'{add-mix}',
+                'headerOptions' => ['style' => 'width: 45px; text-align: center;'],
+                'contentOptions' => ['style' => 'text-align: center;'],
                 'buttons'=>[
                     'add-mix' => function($url, $model, $key){
                         /* @var $model MutasiExFinishAltItem*/
@@ -50,11 +102,12 @@ $this->params['breadcrumbs'][] = $this->title;
 
                         $data = [
                             'id' => $model->id,
+                            'gudang_jadi_id' => $model->gudang_jadi_id,
                             'greige_id' => $model->gudangJadi->wo->greige_id,
                             'motif' => $model->gudangJadi->wo->greige->nama_kain,
                             'grade' => $model->grade,
                             'grade_name' => TrnStockGreige::gradeOptions()[$model->grade],
-                            'qty' => $model->qty,
+                            'qty' => (float)$model->qty,
                             'qty_fmt' => Yii::$app->formatter->asDecimal($model->qty),
                             'unit' => $model->gudangJadi->unit,
                             'unit_name' => MstGreigeGroup::unitOptions()[$model->gudangJadi->unit],
@@ -64,8 +117,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             'nama_buyer' => $model->gudangJadi->wo->mo->scGreige->sc->customerName,
                         ];
                         $dataStr = \yii\helpers\Json::encode($data);
-                        return Html::a('<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>', '#', [
-                            'title' => 'Tambah kedalam item untuk dijual',
+                        return Html::a('<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>', '#', [
+                            'class' => 'btn btn-xs btn-primary btn-add-single',
+                            'title' => 'Tambah item ini ke daftar jual',
                             'onclick' => "addItem(event, {$dataStr})"
                         ]);
                     }
@@ -163,26 +217,47 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]); ?>
 
-    <div class="panel panel-default">
-        <div class="panel-heading"><strong>Item Untuk Dijual</strong></div>
-
-        <div class="panel-body">
-            <table id="ItemsTable" class="table table-bordered">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Motif</th>
-                    <th>Grade</th>
-                    <th>Qty</th>
-                    <th>Unit</th>
-                </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <div class="panel panel-success" style="margin-top: 20px;">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
+            <strong style="font-size: 15px;"><i class="glyphicon glyphicon-shopping-cart"></i> Item Untuk Dijual</strong>
+            <div>
+                <span id="selected-summary" class="label label-primary" style="font-size: 12px; padding: 6px 12px; margin-right: 10px;">0 Item Terpilih</span>
+                <button type="button" id="btnClearItems" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-trash"></i> Kosongkan Daftar</button>
+            </div>
         </div>
 
-        <div class="panel-footer">
-            <?=Html::button('Jual', ['id'=>'BtnJual', 'class'=>'btn btn-success'])?>
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table id="ItemsTable" class="table table-bordered table-striped table-hover" style="margin-bottom: 0;">
+                    <thead>
+                    <tr class="info">
+                        <th style="width: 40px; text-align: center;">No</th>
+                        <th style="width: 70px; text-align: center;">ID Item</th>
+                        <th style="width: 100px; text-align: center;">Stock GD Jadi</th>
+                        <th>Ex WO</th>
+                        <th>Motif</th>
+                        <th style="text-align: center;">Grade</th>
+                        <th style="text-align: right;">Qty</th>
+                        <th style="text-align: center;">Unit</th>
+                        <th>Buyer</th>
+                        <th style="width: 50px; text-align: center;">Aksi</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot>
+                    <tr class="warning" style="font-weight: bold;">
+                        <td colspan="6" class="text-right">TOTAL:</td>
+                        <td id="total-qty-cell" class="text-right">0.00</td>
+                        <td id="total-unit-cell" class="text-center">-</td>
+                        <td colspan="2"><span id="total-summary-text">0 item</span></td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel-footer text-right">
+            <?=Html::button('<i class="glyphicon glyphicon-ok"></i> Jual Item Terpilih', ['id'=>'BtnJual', 'class'=>'btn btn-success btn-lg'])?>
         </div>
     </div>
 </div>
