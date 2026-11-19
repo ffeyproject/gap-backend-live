@@ -34,13 +34,24 @@ $formatter = Yii::$app->formatter;
                     'method' => 'post',
                 ],
             ]) ?>
-            <?= Html::a('Posting', ['posting', 'id' => $model->id], [
-                'class' => 'btn btn-warning',
-                'data' => [
-                    'confirm' => 'Anda yakin akan memposting item ini?',
-                    'method' => 'post',
-                ],
-            ]) ?>
+            <?php
+            $hasItems = !empty($model->trnKartuProsesPrintingItems);
+            if ($hasItems) {
+                echo Html::a('Posting', ['posting', 'id' => $model->id], [
+                    'class' => 'btn btn-warning',
+                    'data' => [
+                        'confirm' => 'Anda yakin akan memposting item ini?',
+                        'method' => 'post',
+                    ],
+                ]);
+            } else {
+                echo Html::button('Posting', [
+                    'class' => 'btn btn-warning disabled',
+                    'title' => 'Item roll / pcs masih kosong, tambahkan item terlebih dahulu.',
+                    'onclick' => '$.alert({title: "Peringatan", content: "Item roll / pcs masih kosong, tidak bisa diposting. Silakan tambahkan item terlebih dahulu."});',
+                ]);
+            }
+            ?>
             <?php
             if(!$model->no_limit_item){
                 echo Html::a('Set No Limit Item', ['set-unlimit-item', 'id' => $model->id], [

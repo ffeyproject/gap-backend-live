@@ -334,6 +334,11 @@ class TrnKartuProsesPrintingController extends Controller
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
+        if(empty($model->trnKartuProsesPrintingItems)){
+            Yii::$app->session->setFlash('error', 'Item roll / pcs masih kosong, tidak bisa diposting.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
         $wo = $model->wo;
         $mo = $wo->mo;
         $greige = $wo->greige;
