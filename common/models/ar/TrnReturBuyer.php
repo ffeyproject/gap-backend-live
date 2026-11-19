@@ -226,47 +226,97 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
     {
         $valid = true;
         $stockIds = [];
+        $efItemIds = [];
         $qtyPerKirim = [];
+        $qtyPerSjEf = [];
 
         foreach ($modelsItem as $item) {
-            if (empty($item->kirim_buyer_id) || $item->hasErrors()) {
+            if ($item->hasErrors()) {
                 continue;
             }
 
-            $kirimBuyer = TrnKirimBuyer::findOne($item->kirim_buyer_id);
-            if ($kirimBuyer === null || $kirimBuyer->wo_id != $this->wo_id) {
-                $item->addError('kirim_buyer_id', 'Surat jalan bukan untuk WO ini.');
-                $valid = false;
-                continue;
-            }
-
-            $qtyKirimUnit = self::convertQty($item->qty, $this->unit, $kirimBuyer->unit);
-            if ($qtyKirimUnit === null) {
-                $units = MstGreigeGroup::unitOptions();
-                $item->addError('qty', 'Unit retur (' . ($units[$this->unit] ?? '-') . ') tidak bisa dikonversi ke unit surat jalan (' . ($units[$kirimBuyer->unit] ?? '-') . ').');
-                $valid = false;
-                continue;
-            }
-
-            if (!empty($item->stock_id)) {
-                if (in_array($item->stock_id, $stockIds)) {
-                    $item->addError('stock_id', 'Roll yang sama dipilih lebih dari sekali.');
+            // Validasi item dari Surat Jalan Reguler (TrnKirimBuyer)
+            if (!empty($item->kirim_buyer_id)) {
+                $kirimBuyer = TrnKirimBuyer::findOne($item->kirim_buyer_id);
+                if ($kirimBuyer === null || $kirimBuyer->wo_id != $this->wo_id) {
+                    $item->addError('kirim_buyer_id', 'Surat jalan bukan untuk WO ini.');
                     $valid = false;
                     continue;
                 }
-                $stockIds[] = $item->stock_id;
 
-                $kirimItem = TrnKirimBuyerItem::findOne(['kirim_buyer_id' => $item->kirim_buyer_id, 'stock_id' => $item->stock_id]);
-                if ($kirimItem !== null && $qtyKirimUnit > $kirimItem->qty) {
-                    $item->addError('qty', 'Qty retur melebihi qty kirim roll ini (' . Yii::$app->formatter->asDecimal($kirimItem->qty) . ').');
+                $qtyKirimUnit = self::convertQty($item->qty, $this->unit, $kirimBuyer->unit);
+                if ($qtyKirimUnit === null) {
+                    $units = MstGreigeGroup::unitOptions();
+                    $item->addError('qty', 'Unit retur (' . ($units[$this->unit] ?? '-') . ') tidak bisa dikonversi ke unit surat jalan (' . ($units[$kirimBuyer->unit] ?? '-') . ').');
                     $valid = false;
                     continue;
                 }
+
+                if (!empty($item->stock_id)) {
+                    if (in_array($item->stock_id, $stockIds)) {
+                        $item->addError('stock_id', 'Roll yang sama dipilih lebih dari sekali.');
+                        $valid = false;
+                        continue;
+                    }
+                    $stockIds[] = $item->stock_id;
+
+                    $kirimItem = TrnKirimBuyerItem::findOne(['kirim_buyer_id' => $item->kirim_buyer_id, 'stock_id' => $item->stock_id]);
+                    if ($kirimItem !== null && $qtyKirimUnit > $kirimItem->qty) {
+                        $item->addError('qty', 'Qty retur melebihi qty kirim roll ini (' . Yii::$app->formatter->asDecimal($kirimItem->qty) . ').');
+                        $valid = false;
+                        continue;
+                    }
+                }
+
+                $qtyPerKirim[$item->kirim_buyer_id] = ($qtyPerKirim[$item->kirim_buyer_id] ?? 0) + $qtyKirimUnit;
             }
 
-            $qtyPerKirim[$item->kirim_buyer_id] = ($qtyPerKirim[$item->kirim_buyer_id] ?? 0) + $qtyKirimUnit;
+            // Validasi item dari Surat Jalan Ex-Finish (SuratJalanExFinish)
+            if (!empty($item->surat_jalan_ex_finish_id)) {
+                $sjEf = SuratJalanExFinish::findOne($item->surat_jalan_ex_finish_id);
+                if ($sjEf === null) {
+                    $item->addError('kirim_buyer_id', 'Surat jalan Ex-Finish tidak ditemukan.');
+                    $valid = false;
+                    continue;
+                }
+
+                // Cek apakah item Ex-Finish yang sama dipilih lebih dari sekali
+                if (!empty($item->jual_ex_finish_item_id)) {
+                    if (in_array($item->jual_ex_finish_item_id, $efItemIds)) {
+                        $item->addError('stock_id', 'Item Ex-Finish yang sama dipilih lebih dari sekali.');
+                        $valid = false;
+                        continue;
+                    }
+                    $efItemIds[] = $item->jual_ex_finish_item_id;
+                }
+
+                $efUnit = null;
+                if (!empty($item->jual_ex_finish_item_id)) {
+                    $jualItem = JualExFinishItem::findOne($item->jual_ex_finish_item_id);
+                    if ($jualItem !== null) {
+                        $efUnit = $jualItem->unit;
+                    }
+                }
+                if ($efUnit === null && $sjEf->memo !== null && !empty($sjEf->memo->jualExFinishItems)) {
+                    $efUnit = $sjEf->memo->jualExFinishItems[0]->unit;
+                }
+                if ($efUnit === null) {
+                    $efUnit = $this->unit;
+                }
+
+                $qtyKirimUnit = self::convertQty($item->qty, $this->unit, $efUnit);
+                if ($qtyKirimUnit === null) {
+                    $units = MstGreigeGroup::unitOptions();
+                    $item->addError('qty', 'Unit retur (' . ($units[$this->unit] ?? '-') . ') tidak bisa dikonversi ke unit surat jalan (' . ($units[$efUnit] ?? '-') . ').');
+                    $valid = false;
+                    continue;
+                }
+
+                $qtyPerSjEf[$item->surat_jalan_ex_finish_id] = ($qtyPerSjEf[$item->surat_jalan_ex_finish_id] ?? 0) + $qtyKirimUnit;
+            }
         }
 
+        // Pengecekan limit per Surat Jalan Reguler
         foreach ($qtyPerKirim as $kirimBuyerId => $qtyRetur) {
             $kirimBuyer = TrnKirimBuyer::findOne($kirimBuyerId);
 
@@ -286,6 +336,37 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
                 foreach ($modelsItem as $item) {
                     if ($item->kirim_buyer_id == $kirimBuyerId) {
                         $item->addError('qty', 'Total retur untuk surat jalan ini (' . Yii::$app->formatter->asDecimal($qtyRetur) . ') melebihi qty kirim (' . Yii::$app->formatter->asDecimal($kirimBuyer->qtyKirim) . ').');
+                    }
+                }
+                $valid = false;
+            }
+        }
+
+        // Pengecekan limit per Surat Jalan Ex-Finish
+        foreach ($qtyPerSjEf as $sjEfId => $qtyRetur) {
+            $sjEf = SuratJalanExFinish::findOne($sjEfId);
+            $wo = $this->wo;
+            $woNo = $wo ? $wo->no : '';
+            $totalSjEfKirim = (float)JualExFinishItem::find()
+                ->where(['jual_id' => $sjEf->memo_id, 'no_wo' => $woNo])
+                ->sum('qty');
+
+            $others = TrnReturBuyerItem::find()
+                ->alias('i')
+                ->innerJoin(self::tableName() . ' r', 'r.id = i.retur_buyer_id')
+                ->select(['i.qty', 'r.unit'])
+                ->where(['i.surat_jalan_ex_finish_id' => $sjEfId])
+                ->andFilterWhere(['<>', 'r.id', $this->id])
+                ->asArray()
+                ->all();
+            foreach ($others as $other) {
+                $qtyRetur += (float)self::convertQty($other['qty'], $other['unit'], $this->unit);
+            }
+
+            if ($qtyRetur > $totalSjEfKirim) {
+                foreach ($modelsItem as $item) {
+                    if ($item->surat_jalan_ex_finish_id == $sjEfId) {
+                        $item->addError('qty', 'Total retur untuk surat jalan Ex-Finish ini (' . Yii::$app->formatter->asDecimal($qtyRetur) . ') melebihi qty kirim (' . Yii::$app->formatter->asDecimal($totalSjEfKirim) . ').');
                     }
                 }
                 $valid = false;
@@ -348,12 +429,13 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
     }
 
     /**
-     * Total qty kirim WO (surat jalan sudah posting) dikelompokkan per unit.
+     * Total qty kirim WO (surat jalan reguler & Ex-Finish yang sudah posting) dikelompokkan per unit.
      * @param int $woId
      * @return array [unit => qty]
      */
     public static function kirimQtyPerUnit($woId)
     {
+        // 1. Surat Jalan Reguler
         $rows = TrnKirimBuyerItem::find()
             ->alias('kbi')
             ->innerJoin(TrnKirimBuyer::tableName() . ' kb', 'kb.id = kbi.kirim_buyer_id')
@@ -363,7 +445,27 @@ class TrnReturBuyer extends \yii\db\ActiveRecord
             ->groupBy('kb.unit')
             ->asArray()
             ->all();
-        return array_map('floatval', \yii\helpers\ArrayHelper::map($rows, 'unit', 'qty'));
+        $result = array_map('floatval', \yii\helpers\ArrayHelper::map($rows, 'unit', 'qty'));
+
+        // 2. Surat Jalan Ex-Finish
+        $wo = TrnWo::findOne($woId);
+        if ($wo !== null) {
+            $efRows = (new \yii\db\Query())
+                ->select(['qty' => 'SUM(ji.qty)', 'unit' => 'ji.unit'])
+                ->from(SuratJalanExFinish::tableName() . ' sj')
+                ->innerJoin(JualExFinish::tableName() . ' j', 'j.id = sj.memo_id')
+                ->innerJoin(JualExFinishItem::tableName() . ' ji', 'ji.jual_id = j.id')
+                ->where(['ji.no_wo' => $wo->no])
+                ->groupBy('ji.unit')
+                ->all();
+            foreach ($efRows as $efRow) {
+                $u = $efRow['unit'];
+                $q = (float)$efRow['qty'];
+                $result[$u] = ($result[$u] ?? 0.0) + $q;
+            }
+        }
+
+        return $result;
     }
 
     /**

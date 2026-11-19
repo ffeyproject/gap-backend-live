@@ -335,7 +335,14 @@ class TrnReturBuyerController extends Controller
                  */
                 foreach ($modelsItem as $trnReturBuyerItem) {
                     $stockAsal = $trnReturBuyerItem->stock;
-                    $noSj = $trnReturBuyerItem->kirimBuyer !== null ? $trnReturBuyerItem->kirimBuyer->header->no : 'tidak diketahui';
+                    if ($trnReturBuyerItem->kirimBuyer !== null) {
+                        $noSj = $trnReturBuyerItem->kirimBuyer->header->no;
+                    } elseif ($trnReturBuyerItem->suratJalanExFinish !== null) {
+                        $noSj = 'Ex-Finish: ' . $trnReturBuyerItem->suratJalanExFinish->no;
+                    } else {
+                        $noSj = 'tidak diketahui';
+                    }
+
                     $modelGudangJadi = new TrnGudangJadi([
                         'jenis_gudang' => $model->jenis_gudang,
                         'wo_id' => $model->wo_id,

@@ -3,6 +3,7 @@
 namespace backend\controllers;
 
 use backend\components\Converter;
+use common\models\ar\MstCustomer;
 use common\models\ar\MstGreigeGroup;
 use common\models\ar\NomorSuratJalan;
 use common\models\ar\TrnGudangJadi;
@@ -149,14 +150,25 @@ class TrnKirimBuyerHeaderController extends Controller
     {
         $model = $this->findModel($id);
 
+        $customerIds = [$model->customer_id];
+        if ($model->customer !== null) {
+            $sameNameIds = MstCustomer::find()->select('id')->where(['name' => $model->customer->name])->column();
+            if (!empty($sameNameIds)) {
+                $customerIds = array_unique(array_merge($customerIds, $sameNameIds));
+            }
+        }
+
         $qStocks = TrnGudangJadi::find()
             ->joinWith('wo.mo.scGreige.sc')
-            ->where(['trn_gudang_jadi.status'=>TrnGudangJadi::STATUS_SIAP_KIRIM])
-            ->andWhere(['trn_sc.cust_id'=>$model->customer_id])
-            ->andWhere(['not', ['trn_gudang_jadi.status_packing'=>NULL]]) 
-            ->andWhere(['not', ['trn_gudang_jadi.status_packing'=>'N']]) 
-            ->orderBy('id')
-        ;
+            ->where(['trn_gudang_jadi.status' => TrnGudangJadi::STATUS_SIAP_KIRIM])
+            ->andWhere(['trn_sc.cust_id' => $customerIds]);
+
+        if (!$model->is_export) {
+            $qStocks->andWhere(['not', ['trn_gudang_jadi.status_packing' => null]]) 
+                    ->andWhere(['not', ['trn_gudang_jadi.status_packing' => 'N']]);
+        }
+
+        $qStocks->orderBy('trn_gudang_jadi.id');
 
         $providerStock = new ActiveDataProvider([
             'query' => $qStocks,

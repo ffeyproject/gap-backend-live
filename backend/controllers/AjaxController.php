@@ -1735,14 +1735,15 @@ class AjaxController extends Controller
 
     /**
      * Daftar roll pada satu surat jalan, dipakai pada form retur buyer.
-     * @param int $kirim_buyer_id
+     * @param string|int $kirim_buyer_id
      * @param int|null $retur_id
+     * @param int|null $wo_id
      * @return array
      */
-    public function actionReturRollList($kirim_buyer_id, $retur_id = null)
+    public function actionReturRollList($kirim_buyer_id, $retur_id = null, $wo_id = null)
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        return ['results' => TrnReturBuyerItem::rollList($kirim_buyer_id, $retur_id)];
+        return ['results' => TrnReturBuyerItem::rollList($kirim_buyer_id, $retur_id, $wo_id)];
     }
 
     /**

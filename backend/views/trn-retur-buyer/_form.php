@@ -113,6 +113,11 @@ use kartik\widgets\ActiveForm;
         <div class="col-md-12">
             <div class="box">
                 <div class="box-header with-border">
+                    <div class="box-tools pull-right">
+                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#modalPetunjukRetur">
+                            <i class="fa fa-question-circle"></i> Petunjuk Penggunaan
+                        </button>
+                    </div>
                     <h3 class="box-title">Item Retur</h3>
                     <p class="help-block" style="margin-bottom: 0">
                         <?php if($model->isNewRecord):?>
@@ -136,5 +141,7 @@ use kartik\widgets\ActiveForm;
     </div>
 
     <?php ActiveForm::end(); ?>
+
+    <?= $this->render('child/_modal_petunjuk') ?>
 
 </div>

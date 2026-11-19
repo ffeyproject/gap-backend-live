@@ -39,24 +39,31 @@ $dataProvider = new ActiveDataProvider([
                     'format'=>'raw',
                     'value'=>function($data){
                         /* @var $data \common\models\ar\TrnReturBuyerItem */
-                        if($data->kirimBuyer === null){
-                            return '<span class="text-muted">-</span>';
+                        if($data->kirimBuyer !== null){
+                            $header = $data->kirimBuyer->header;
+                            return Html::a(Html::encode($header->no), ['/trn-kirim-buyer-header/view', 'id'=>$header->id], ['target'=>'_blank']);
                         }
-                        $header = $data->kirimBuyer->header;
-                        return Html::a(Html::encode($header->no), ['/trn-kirim-buyer-header/view', 'id'=>$header->id], ['target'=>'_blank']);
+                        if($data->suratJalanExFinish !== null){
+                            $sj = $data->suratJalanExFinish;
+                            return '<span class="label label-info">Ex-Finish</span> ' . Html::a(Html::encode($sj->no), ['/surat-jalan-ex-finish/view', 'id'=>$sj->id], ['target'=>'_blank']);
+                        }
+                        return '<span class="text-muted">-</span>';
                     }
                 ],
                 [
                     'attribute'=>'stock_id',
-                    'label'=>'Roll Asal',
+                    'label'=>'Roll / Item Asal',
                     'format'=>'raw',
                     'value'=>function($data){
                         /* @var $data \common\models\ar\TrnReturBuyerItem */
-                        if($data->stock === null){
-                            return '<span class="label label-warning">Tidak diketahui</span>';
+                        if($data->stock !== null){
+                            $text = '#'.$data->stock_id.($data->stock->qr_code ? ' | '.$data->stock->qr_code : '');
+                            return Html::a(Html::encode($text), ['/trn-gudang-jadi/view', 'id'=>$data->stock_id], ['target'=>'_blank']);
                         }
-                        $text = '#'.$data->stock_id.($data->stock->qr_code ? ' | '.$data->stock->qr_code : '');
-                        return Html::a(Html::encode($text), ['/trn-gudang-jadi/view', 'id'=>$data->stock_id], ['target'=>'_blank']);
+                        if($data->jualExFinishItem !== null){
+                            return '<span class="label label-info">Ex-Finish Item #' . $data->jual_ex_finish_item_id . '</span>';
+                        }
+                        return '<span class="label label-warning">Tidak diketahui</span>';
                     }
                 ],
                 [

@@ -91,9 +91,13 @@ $grdOpts = ArrayHelper::merge($grdOptsA, $grdOptsB);
         $woId = $multiWo ? $modelItem->wo_id : $model->wo_id;
         $sjOpts = TrnReturBuyerItem::kirimBuyerOptions($woId);
 
+        $sjSelected = $modelItem->getSjValue();
+        $rollSelected = $modelItem->getRollValue();
+
         $rollOpts = [];
         $rollOptAttrs = [];
-        foreach (TrnReturBuyerItem::rollList($modelItem->kirim_buyer_id, $model->id) as $roll) {
+        $sjIdParam = !empty($modelItem->surat_jalan_ex_finish_id) ? ('ef-' . $modelItem->surat_jalan_ex_finish_id) : $modelItem->kirim_buyer_id;
+        foreach (TrnReturBuyerItem::rollList($sjIdParam, $model->id, $woId) as $roll) {
             $rollOpts[$roll['id']] = $roll['text'].($roll['returned'] ? ' (sudah diretur)' : '');
             $rollOptAttrs[$roll['id']] = ['data-qty' => $roll['qty'], 'data-grade' => $roll['grade'], 'disabled' => $roll['returned']];
         }
@@ -119,10 +123,10 @@ $grdOpts = ArrayHelper::merge($grdOptsA, $grdOptsB);
             </td>
             <?php endif;?>
             <td>
-                <?= $form->field($modelItem, "[{$index}]kirim_buyer_id")->dropDownList($sjOpts, ['prompt' => '-- Tidak diketahui --', 'class' => 'form-control retur-sj'])->label(false) ?>
+                <?= $form->field($modelItem, "[{$index}]kirim_buyer_id")->dropDownList($sjOpts, ['prompt' => '-- Tidak diketahui --', 'class' => 'form-control retur-sj', 'value' => $sjSelected])->label(false) ?>
             </td>
             <td>
-                <?= $form->field($modelItem, "[{$index}]stock_id")->dropDownList($rollOpts, ['prompt' => '-- Tidak diketahui --', 'class' => 'form-control retur-roll', 'options' => $rollOptAttrs])->label(false) ?>
+                <?= $form->field($modelItem, "[{$index}]stock_id")->dropDownList($rollOpts, ['prompt' => '-- Tidak diketahui --', 'class' => 'form-control retur-roll', 'value' => $rollSelected, 'options' => $rollOptAttrs])->label(false) ?>
             </td>
             <td><?= $form->field($modelItem, "[{$index}]qty")->textInput(['class' => 'form-control retur-qty'])->label(false) ?></td>
             <td><?= $form->field($modelItem, "[{$index}]grade")->dropDownList($grdOpts, ['class' => 'form-control retur-grade'])->label(false)?></td>

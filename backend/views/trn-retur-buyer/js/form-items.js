@@ -85,8 +85,8 @@ function returFetchSj(woId, callback) {
     }});
 }
 
-function returFetchRolls(kirimBuyerId, callback) {
-    $.ajax({method: 'GET', url: returForm.urlRoll, data: {kirim_buyer_id: kirimBuyerId, retur_id: returForm.returId}, error: returAjaxError, success: function (data) {
+function returFetchRolls(kirimBuyerId, callback, woId) {
+    $.ajax({method: 'GET', url: returForm.urlRoll, data: {kirim_buyer_id: kirimBuyerId, retur_id: returForm.returId, wo_id: woId || ''}, error: returAjaxError, success: function (data) {
         callback(data.results);
     }});
 }
@@ -115,6 +115,7 @@ function returLoadRolls($row, kirimBuyerId, selectedStockId, callback) {
     if (!kirimBuyerId) {
         return;
     }
+    var woId = returRowWoId($row);
     returFetchRolls(kirimBuyerId, function (results) {
         $roll.html(returRollOptionsHtml(results));
         if (selectedStockId) {
@@ -123,7 +124,7 @@ function returLoadRolls($row, kirimBuyerId, selectedStockId, callback) {
         if (callback) {
             callback();
         }
-    });
+    }, woId);
 }
 
 // set nilai select2 WO tanpa memicu pemuatan ulang surat jalan
@@ -320,10 +321,11 @@ $(document).on('change', '.retur-bulk-sj', function () {
     if (!$(this).val()) {
         return;
     }
+    var woId = returBulkWoId();
     returFetchRolls($(this).val(), function (results) {
         returBulkRolls = results;
         returRenderBulkRolls();
-    });
+    }, woId);
 });
 
 $(document).on('change', '.retur-bulk-all', function () {
