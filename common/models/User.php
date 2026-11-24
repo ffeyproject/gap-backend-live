@@ -286,6 +286,11 @@ class User extends ActiveRecord implements IdentityInterface
      */
         public function getSignatureUrl()
         {
+            $base64 = $this->getSignatureBase64();
+            if (!empty($base64)) {
+                return $base64;
+            }
+
             if (Yii::$app instanceof \yii\console\Application) {
                 if ($this->signature === null) {
                     return 'http://live.produksionline.xyz/images/no_image.png';
@@ -302,10 +307,27 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function getSignaturePath()
     {
-        if ($this->signature && file_exists(Yii::getAlias('@webroot/uploads/signature/' . $this->signature))) {
-            return Yii::getAlias('@webroot/uploads/signature/' . $this->signature);
+        $baseDir = Yii::getAlias('@backend/web');
+        if ($this->signature && file_exists($baseDir . '/uploads/signature/' . $this->signature)) {
+            return $baseDir . '/uploads/signature/' . $this->signature;
         }
-        return Yii::getAlias('@webroot/images/no_image.png');
+        $noImage = $baseDir . '/images/no_image.png';
+        if (file_exists($noImage)) {
+            return $noImage;
+        }
+        return null;
+    }
+
+    public function getSignatureBase64()
+    {
+        $filePath = $this->getSignaturePath();
+        if ($filePath && file_exists($filePath)) {
+            $data = file_get_contents($filePath);
+            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $mime = ($ext === 'jpg' || $ext === 'jpeg') ? 'image/jpeg' : 'image/png';
+            return 'data:' . $mime . ';base64,' . base64_encode($data);
+        }
+        return '';
     }
 
     public function getAvatarUrl()

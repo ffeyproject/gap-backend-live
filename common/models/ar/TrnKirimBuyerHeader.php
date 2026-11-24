@@ -3,6 +3,8 @@
 namespace common\models\ar;
 
 use Yii;
+use common\models\ar\MstGreigeGroup;
+use common\models\ar\TrnKirimBuyerItem;
 use yii\behaviors\BlameableBehavior;
 use yii\behaviors\TimestampBehavior;
 use yii\db\Expression;
@@ -121,6 +123,80 @@ class TrnKirimBuyerHeader extends \yii\db\ActiveRecord
     public function getTrnKirimBuyers()
     {
         return $this->hasMany(TrnKirimBuyer::className(), ['header_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[TrnKirimBuyerItems]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTrnKirimBuyerItems()
+    {
+        return $this->hasMany(TrnKirimBuyerItem::className(), ['kirim_buyer_id' => 'id'])->via('trnKirimBuyers');
+    }
+
+    /**
+     * Total rolls under this header
+     * @return int
+     */
+    public function getTotalRoll()
+    {
+        $count = 0;
+        foreach ($this->trnKirimBuyers as $kb) {
+            $count += count($kb->trnKirimBuyerItems);
+        }
+        return $count;
+    }
+
+    /**
+     * Total qty grouped by unit name
+     * @return array [unitName => float]
+     */
+    public function getQtyPerUnit()
+    {
+        $totals = [];
+        foreach ($this->trnKirimBuyers as $kb) {
+            $unitName = isset(MstGreigeGroup::unitOptions()[$kb->unit]) ? MstGreigeGroup::unitOptions()[$kb->unit] : '-';
+            if (!isset($totals[$unitName])) {
+                $totals[$unitName] = 0;
+            }
+            foreach ($kb->trnKirimBuyerItems as $item) {
+                $totals[$unitName] += (float)$item->qty;
+            }
+        }
+        return $totals;
+    }
+
+    /**
+     * Total qty sum across all units
+     * @return float
+     */
+    public function getTotalQty()
+    {
+        $total = 0;
+        foreach ($this->trnKirimBuyers as $kb) {
+            foreach ($kb->trnKirimBuyerItems as $item) {
+                $total += (float)$item->qty;
+            }
+        }
+        return $total;
+    }
+
+    /**
+     * Formatted string of total qty with unit(s)
+     * @return string
+     */
+    public function getTotalQtyFormatted()
+    {
+        $qtyPerUnit = $this->getQtyPerUnit();
+        if (empty($qtyPerUnit)) {
+            return '-';
+        }
+        $parts = [];
+        foreach ($qtyPerUnit as $unitName => $qty) {
+            $parts[] = '<strong>' . Yii::$app->formatter->asDecimal($qty, 2) . '</strong> <small class="text-muted">' . $unitName . '</small>';
+        }
+        return implode('<br>', $parts);
     }
 
     /**

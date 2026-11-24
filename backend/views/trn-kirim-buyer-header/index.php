@@ -221,6 +221,25 @@ $currEqMeter = $currSummary['qty_meter'] + \backend\components\Converter::yardTo
                         'hAlign' => 'center',
                     ],
                     [
+                        'label' => 'Total Roll',
+                        'format' => 'raw',
+                        'hAlign' => 'center',
+                        'value' => function($data){
+                            /* @var $data TrnKirimBuyerHeader */
+                            $roll = $data->totalRoll;
+                            return $roll > 0 ? '<strong>' . Yii::$app->formatter->asDecimal($roll, 0) . '</strong> <small class="text-muted">Roll</small>' : '-';
+                        },
+                    ],
+                    [
+                        'label' => 'Total Qty',
+                        'format' => 'raw',
+                        'hAlign' => 'right',
+                        'value' => function($data){
+                            /* @var $data TrnKirimBuyerHeader */
+                            return $data->totalQtyFormatted;
+                        },
+                    ],
+                    [
                         'attribute' => 'status',
                         'value' => function($data){
                             /* @var $data TrnKirimBuyerHeader */

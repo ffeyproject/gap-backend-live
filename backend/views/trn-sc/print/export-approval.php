@@ -180,12 +180,12 @@ Correspondence <?=ucwords(strtolower($bankAccount->bank_name))?> :<br>
         </td>
         <td style="width: 33.3%; text-align: center;">
             Manager,<br>
-            <?= Html::img($model->manager->signatureUrl, ['style'=>'height:100px;'])?><br>
+            <?= $model->manager ? Html::img($model->manager->signatureUrl, ['style'=>'height:100px;']) : ''?><br>
             (<?=$model->managerName?>)
         </td>
         <td style="text-align: center;">
             Marketing,<br>
-            <?= Html::img($model->marketing->signatureUrl, ['style'=>'height:100px;'])?><br>
+            <?= $model->marketing ? Html::img($model->marketing->signatureUrl, ['style'=>'height:100px;']) : ''?><br>
             (<?=$model->marketingName?>)
         </td>
     </tr>

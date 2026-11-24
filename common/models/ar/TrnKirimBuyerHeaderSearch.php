@@ -48,6 +48,7 @@ class TrnKirimBuyerHeaderSearch extends TrnKirimBuyerHeader
     {
         $query = TrnKirimBuyerHeader::find();
         $query->joinWith('customer');
+        $query->with(['trnKirimBuyers.trnKirimBuyerItems']);
 
         // add conditions that should always apply here
 

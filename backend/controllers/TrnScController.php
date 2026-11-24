@@ -344,6 +344,9 @@ class TrnScController extends Controller
     }
 
     public function actionPrintSc($id){
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         $model = $this->findModel($id);
 
         // get your HTML raw content without any layouts or scripts
@@ -418,6 +421,9 @@ class TrnScController extends Controller
 
 
     public function actionPrintScApproval($id){
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
         $model = $this->findModel($id);
 
         // get your HTML raw content without any layouts or scripts

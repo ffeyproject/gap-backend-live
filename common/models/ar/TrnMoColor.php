@@ -55,10 +55,37 @@ class TrnMoColor extends \yii\db\ActiveRecord
             [['sc_id', 'sc_greige_id', 'mo_id'], 'integer'],
             [['qty'], 'number'],
             [['color'], 'string', 'max' => 255],
+            [['color'], 'validateJetBlack'],
             [['mo_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnMo::className(), 'targetAttribute' => ['mo_id' => 'id']],
             [['sc_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnSc::className(), 'targetAttribute' => ['sc_id' => 'id']],
             [['sc_greige_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnScGreige::className(), 'targetAttribute' => ['sc_greige_id' => 'id']],
         ];
+    }
+
+    /**
+     * Validasi jika warna adalah Jet Black, maka kontrak SC harus dicentang Jet Black.
+     * @param string $attribute
+     * @param array $params
+     */
+    public function validateJetBlack($attribute, $params)
+    {
+        if ($this->color !== null && preg_match('/jet\s*[-.\/_]?\s*bl?ack/i', trim($this->color))) {
+            $sc = null;
+            if ($this->sc_id !== null) {
+                $sc = $this->sc;
+            }
+            if ($sc === null && $this->mo_id !== null && $this->mo !== null) {
+                $sc = $this->mo->sc;
+                if ($sc === null && $this->mo->scGreige !== null) {
+                    $sc = $this->mo->scGreige->sc;
+                }
+            }
+
+            if ($sc !== null && !$sc->jet_black) {
+                $scNo = !empty($sc->no) ? ' (' . $sc->no . ')' : '';
+                $this->addError($attribute, 'Kontrak SC' . $scNo . ' tidak dicentang Jet Black. Warna "' . $this->color . '" tidak diizinkan.');
+            }
+        }
     }
 
     /**

@@ -76,10 +76,11 @@ class TrnMoColorController extends Controller
                 throw new ForbiddenHttpException('Status MO tidak valid, color tidak bisa ditambahkan.');
             }
 
-            if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-                $model->sc_greige_id = $mo->sc_greige_id;
-                $model->sc_id = $mo->sc_id;
-                if($model->save(false)){
+            $model->sc_greige_id = $mo->sc_greige_id;
+            $model->sc_id = $mo->sc_id;
+
+            if ($model->load(Yii::$app->request->post())) {
+                if ($model->save()) {
                     return $this->asJson(['success' => true]);
                 }
 

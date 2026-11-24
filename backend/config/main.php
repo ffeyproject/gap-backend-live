@@ -88,11 +88,13 @@ return [
         ],
 
         'urlManager' => [
-        'class' => 'yii\web\UrlManager',
-        'hostInfo' => 'http://live.produksionline.xyz', // ganti sesuai domain
-        'baseUrl' => (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] . '://' : 'http://') . $_SERVER['SERVER_NAME'] . (($_SERVER['SERVER_PORT'] !== '80') ? ':' . $_SERVER['SERVER_PORT'] : ''),
-        'enablePrettyUrl' => true,
-        'showScriptName' => false,
+            'class' => 'yii\web\UrlManager',
+            'hostInfo' => 'http://live.produksionline.xyz', // ganti sesuai domain
+            'baseUrl' => (isset($_SERVER['SERVER_NAME']))
+                ? ((isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] . '://' : 'http://') . $_SERVER['SERVER_NAME'] . ((isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] !== '80' && $_SERVER['SERVER_PORT'] !== '443') ? ':' . $_SERVER['SERVER_PORT'] : ''))
+                : '',
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
         ],
 
         'mailer' => [
