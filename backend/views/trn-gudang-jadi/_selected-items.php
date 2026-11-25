@@ -78,41 +78,53 @@ use yii\web\JsExpression;
 
         <div class="row">
             <div class="col-md-5">
-                <label class="control-label">Pindah Gudang</label>
-                <?=Select2::widget([
-                    'name' => 'jenis_gudang_selection',
-                    'id' => 'JenisGudangSelect',
-                    'data' => \common\models\ar\TrnGudangJadi::jenisGudangOptions(),
-                    'options' => [
-                        'placeholder' => 'Pilih jenis gudang ...',
-                        'allowClear' => true
-                    ],
-                    'addon' => [
-                        'append' => [
-                            'content' => Html::a('Pindahkan', ['pindah-gudang'], ['class'=>'btn btn-warning', 'onclick' => 'pindahGudang(event);']),
-                            'asButton' => true
-                        ]
-                    ]
-                ])?>
+                <div class="form-group">
+                    <label class="control-label">Pindah Gudang</label>
+                    <div style="display: flex; align-items: stretch; gap: 6px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <?=Select2::widget([
+                                'name' => 'jenis_gudang_selection',
+                                'id' => 'JenisGudangSelect',
+                                'data' => \common\models\ar\TrnGudangJadi::jenisGudangOptions(),
+                                'options' => [
+                                    'placeholder' => 'Pilih jenis gudang ...',
+                                ],
+                                'pluginOptions' => [
+                                    'allowClear' => true,
+                                    'width' => '100%',
+                                ],
+                            ])?>
+                        </div>
+                        <div>
+                            <?=Html::a('Pindahkan', ['pindah-gudang'], ['class'=>'btn btn-warning', 'onclick' => 'pindahGudang(event);'])?>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-1"></div>
             <div class="col-md-5">
-                <label class="control-label">Print Label Palet</label>
-                <?=Select2::widget([
-                    'name' => 'locs_code',
-                    'id' => 'JenisLocationSelect',
-                    'data' => \common\models\ar\TrnGudangJadi::getLocationAreas(),
-                    'options' => [
-                        'placeholder' => 'Pilih kode lokasi ...',
-                        'allowClear' => true
-                    ],
-                    'addon' => [
-                        'append' => [
-                            'content' => Html::a('Print Label', ['print-label'], ['class'=>'btn btn-warning', 'onclick' => 'printLabel(event);']),
-                            'asButton' => true
-                        ]
-                    ]
-                ])?>
+                <div class="form-group">
+                    <label class="control-label">Print Label Palet</label>
+                    <div style="display: flex; align-items: stretch; gap: 6px;">
+                        <div style="flex: 1; min-width: 0;">
+                            <?=Select2::widget([
+                                'name' => 'locs_code',
+                                'id' => 'JenisLocationSelect',
+                                'data' => \common\models\ar\TrnGudangJadi::getLocationAreas(),
+                                'options' => [
+                                    'placeholder' => 'Pilih kode lokasi ...',
+                                ],
+                                'pluginOptions' => [
+                                    'allowClear' => true,
+                                    'width' => '100%',
+                                ],
+                            ])?>
+                        </div>
+                        <div>
+                            <?=Html::a('Print Label', ['print-label'], ['class'=>'btn btn-warning', 'onclick' => 'printLabel(event);'])?>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-1"></div>
         </div>

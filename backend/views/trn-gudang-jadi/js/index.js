@@ -329,7 +329,7 @@ function pindahGudang(event) {
 
   let select2Data = $("#JenisGudangSelect").select2("data")[0];
 
-  if (ids.length > 0 && select2Data.id !== "") {
+  if (ids.length > 0 && select2Data && select2Data.id !== "") {
     $.confirm({
       title: "Konfirmasi!",
       content:
@@ -401,8 +401,16 @@ function printLabel(event) {
   var href = button.attr("href");
 
   let select2Data = $("#JenisLocationSelect").select2("data")[0];
+  if (!select2Data || !select2Data.id) {
+    $.alert({
+      title: "Peringatan!",
+      content: "Kode lokasi belum dipilih.",
+    });
+    return;
+  }
 
-  let url = window.location.origin + href + "&locs_code=" + select2Data.text;
+  let separator = href.indexOf("?") !== -1 ? "&" : "?";
+  let url = window.location.origin + href + separator + "locs_code=" + encodeURIComponent(select2Data.id);
 
   window.location.href = url;
 }
