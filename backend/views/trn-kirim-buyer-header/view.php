@@ -189,16 +189,46 @@ $formatter = Yii::$app->formatter;
         </div>
 
         <div class="col-md-6">
-            <?php foreach ($dataProviderKirimBuyer->models as $kirimBuyerModel):?>
+            <?php
+            $kirimBuyerGroups = [];
+            if ($model->is_export) {
+                foreach ($dataProviderKirimBuyer->models as $kb) {
+                    /* @var $kb TrnKirimBuyer*/
+                    $groupKey = $kb->wo_id ?: ('id_' . $kb->id);
+                    if (!isset($kirimBuyerGroups[$groupKey])) {
+                        $kirimBuyerGroups[$groupKey] = [
+                            'model' => $kb,
+                            'kirimBuyerIds' => [$kb->id],
+                        ];
+                    } else {
+                        $kirimBuyerGroups[$groupKey]['kirimBuyerIds'][] = $kb->id;
+                    }
+                }
+            } else {
+                foreach ($dataProviderKirimBuyer->models as $kb) {
+                    /* @var $kb TrnKirimBuyer*/
+                    $kirimBuyerGroups[] = [
+                        'model' => $kb,
+                        'kirimBuyerIds' => [$kb->id],
+                    ];
+                }
+            }
+            ?>
+            <?php foreach ($kirimBuyerGroups as $group):?>
                 <?php
                 /* @var $kirimBuyerModel TrnKirimBuyer*/
-                $modelsKirimBuyerItem = $kirimBuyerModel->trnKirimBuyerItems;
+                $kirimBuyerModel = $group['model'];
+                $kirimBuyerIds = $group['kirimBuyerIds'];
+                $itemQuery = $model->is_export
+                    ? TrnKirimBuyerItem::find()->where(['kirim_buyer_id' => $kirimBuyerIds])
+                    : $kirimBuyerModel->getTrnKirimBuyerItems();
+                $totalItemsCount = (clone $itemQuery)->count();
                 ?>
                 <div class="box">
                     <div class="box-header with-border">
                         <h3 class="box-title">WO: <?= ($kirimBuyerModel->wo ? $kirimBuyerModel->wo->no : '-') ?></h3>
                         <div class="box-tools pull-right">
-                            <span class="label label-primary"><?=count($modelsKirimBuyerItem)?></span>
+                            <span class="label label-primary"><?=$totalItemsCount?></span>
                         </div>
                     </div>
                     <div class="box-body">
@@ -261,7 +291,7 @@ $formatter = Yii::$app->formatter;
 
                         <?php
                         $providerStockSiapKirim = new ActiveDataProvider([
-                            'query' => $kirimBuyerModel->getTrnKirimBuyerItems(),
+                            'query' => $itemQuery,
                             'pagination' => false,
                             'sort' => false,
                         ]);
@@ -280,7 +310,17 @@ $formatter = Yii::$app->formatter;
                                     'onclick' => 'kembalikan(event);',
                                     'title' => 'Kembalikan',
                                     'data-grid-id' => 'SiapKirimGrid-' . $kirimBuyerModel->id,
-                                ]),
+                                ]) . ($model->is_export ? ' ' . Html::a('Input No. Bal', ['set-no-bal', 'id'=>$model->id], [
+                                    'class' => 'btn btn-primary',
+                                    'onclick' => 'setNoBal(event);',
+                                    'title' => 'Input No. Bal untuk item yang diceklis',
+                                    'data-grid-id' => 'SiapKirimGrid-' . $kirimBuyerModel->id,
+                                ]) . ' ' . Html::a('Hapus No. Bal', ['set-no-bal', 'id'=>$model->id], [
+                                    'class' => 'btn btn-warning',
+                                    'onclick' => 'clearNoBal(event);',
+                                    'title' => 'Hapus No. Bal untuk item yang diceklis',
+                                    'data-grid-id' => 'SiapKirimGrid-' . $kirimBuyerModel->id,
+                                ]) : ''),
                                 'footer'=>false
                             ],
                             'columns' => [
@@ -292,6 +332,15 @@ $formatter = Yii::$app->formatter;
                                 [
                                     'attribute' => 'stock_id',
                                     'label' => 'ID Stock',
+                                ],
+                                [
+                                    'attribute' => 'no_bal',
+                                    'label' => 'No. Bal',
+                                    'visible' => (bool)$model->is_export,
+                                    'value' => function($data){
+                                        /* @var $data TrnKirimBuyerItem*/
+                                        return $data->no_bal ?: '-';
+                                    }
                                 ],
                                 [
                                     'label' => 'Batch',

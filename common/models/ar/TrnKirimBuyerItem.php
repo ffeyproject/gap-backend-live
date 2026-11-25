@@ -12,6 +12,7 @@ use Yii;
  * @property int $stock_id
  * @property int $qty
  * @property string|null $note
+ * @property string|null $no_bal
  *
  * @property TrnGudangJadi $stock
  * @property TrnKirimBuyer $kirimBuyer
@@ -36,6 +37,7 @@ class TrnKirimBuyerItem extends \yii\db\ActiveRecord
             [['kirim_buyer_id', 'stock_id', 'qty'], 'default', 'value' => null],
             [['kirim_buyer_id', 'stock_id', 'qty'], 'integer'],
             [['note'], 'string'],
+            [['no_bal'], 'string', 'max' => 45],
             [['stock_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnGudangJadi::className(), 'targetAttribute' => ['stock_id' => 'id']],
             [['kirim_buyer_id'], 'exist', 'skipOnError' => true, 'targetClass' => TrnKirimBuyer::className(), 'targetAttribute' => ['kirim_buyer_id' => 'id']],
         ];
@@ -52,6 +54,7 @@ class TrnKirimBuyerItem extends \yii\db\ActiveRecord
             'stock_id' => 'Stock ID',
             'qty' => 'Qty',
             'note' => 'Note',
+            'no_bal' => 'No. Bal',
         ];
     }
 

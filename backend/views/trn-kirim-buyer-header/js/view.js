@@ -114,6 +114,169 @@ function kembalikan(event){
     }
 }
 
+function setNoBal(event){
+    event.preventDefault();
+    var button = $(event.currentTarget);
+    var href = button.attr('href');
+
+    var gridId = button.data('grid-id');
+    var $grid = gridId ? $('#' + gridId) : button.closest('.grid-view');
+    var keys = $grid.yiiGridView('getSelectedRows');
+    if(!Array.isArray(keys) || !keys.length){
+        $.alert({
+            title: 'Peringatan!',
+            content: 'Tidak ada data yang dipilih',
+        });
+        return;
+    }
+
+    $.confirm({
+        title: 'Input No. Bal (' + keys.length + ' item)',
+        content: '' +
+            '<form action="" class="formNoBal">' +
+            '<div class="form-group">' +
+            '<label>No. Bal:</label>' +
+            '<input type="text" class="no-bal-input form-control" placeholder="Masukkan No. Bal ..." maxlength="45" autofocus />' +
+            '</div>' +
+            '</form>',
+        buttons: {
+            submit: {
+                text: 'Simpan',
+                btnClass: 'btn-primary',
+                action: function(){
+                    var noBal = this.$content.find('.no-bal-input').val();
+                    if(!noBal || !noBal.trim()){
+                        $.alert('Harap masukkan No. Bal.');
+                        return false;
+                    }
+
+                    $.ajax({
+                        method: 'POST',
+                        beforeSend: function () {
+                            $.blockUI({
+                                message: '<h1>Processing</h1>',
+                                css: { border: '3px solid #a00' }
+                            });
+                        },
+                        data: {formData: keys, no_bal: noBal.trim()},
+                        url: href,
+                        error: function(jqXHR){
+                            var errorObj;
+                            try {
+                                errorObj = jQuery.parseJSON(jqXHR.responseText);
+                                if(typeof errorObj != 'object'){
+                                    errorObj = {name: 'Error', message: jqXHR.responseText};
+                                }
+                            } catch (e) {
+                                errorObj = {name: 'Error', message: jqXHR.responseText};
+                            }
+
+                            $.unblockUI();
+                            $.alert({
+                                title: errorObj.name,
+                                content: errorObj.message
+                            });
+                        },
+                        success: function(){
+                            $.unblockUI();
+                            $.confirm({
+                                title: 'Berhasil!',
+                                content: 'No. Bal berhasil disimpan.',
+                                buttons: {
+                                    ok: function () {
+                                        location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            },
+            batal: function () {}
+        },
+        onContentReady: function(){
+            var jc = this;
+            var $input = this.$content.find('.no-bal-input');
+            setTimeout(function(){ $input.focus(); }, 150);
+            this.$content.find('form').on('submit', function (e) {
+                e.preventDefault();
+                jc.$$submit.trigger('click');
+            });
+        }
+    });
+}
+
+function clearNoBal(event){
+    event.preventDefault();
+    var button = $(event.currentTarget);
+    var href = button.attr('href');
+
+    var gridId = button.data('grid-id');
+    var $grid = gridId ? $('#' + gridId) : button.closest('.grid-view');
+    var keys = $grid.yiiGridView('getSelectedRows');
+    if(!Array.isArray(keys) || !keys.length){
+        $.alert({
+            title: 'Peringatan!',
+            content: 'Tidak ada data yang dipilih',
+        });
+        return;
+    }
+
+    $.confirm({
+        title: 'Konfirmasi!',
+        content: 'Anda yakin akan menghapus No. Bal untuk ' + keys.length + ' item terpilih?',
+        buttons: {
+            ok: {
+                text: 'Ya, Hapus',
+                btnClass: 'btn-warning',
+                action: function(){
+                    $.ajax({
+                        method: 'POST',
+                        beforeSend: function () {
+                            $.blockUI({
+                                message: '<h1>Processing</h1>',
+                                css: { border: '3px solid #a00' }
+                            });
+                        },
+                        data: {formData: keys, no_bal: ''},
+                        url: href,
+                        error: function(jqXHR){
+                            var errorObj;
+                            try {
+                                errorObj = jQuery.parseJSON(jqXHR.responseText);
+                                if(typeof errorObj != 'object'){
+                                    errorObj = {name: 'Error', message: jqXHR.responseText};
+                                }
+                            } catch (e) {
+                                errorObj = {name: 'Error', message: jqXHR.responseText};
+                            }
+
+                            $.unblockUI();
+                            $.alert({
+                                title: errorObj.name,
+                                content: errorObj.message
+                            });
+                        },
+                        success: function(){
+                            $.unblockUI();
+                            $.confirm({
+                                title: 'Berhasil!',
+                                content: 'No. Bal berhasil dihapus.',
+                                buttons: {
+                                    ok: function () {
+                                        location.reload();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+            },
+            batal: function () {}
+        }
+    });
+}
+
 function changeAlias(event){
     event.preventDefault();
     var button = $(event.currentTarget);

@@ -361,25 +361,35 @@ class TrnKirimBuyerHeaderController extends Controller
                     /* @var $woModel TrnWo*/
                     $woModel = $wo['wo'];
 
-                    $modelKirimBuyer = new TrnKirimBuyer([
-                        'header_id' => $model->id,
-                        'sc_id' => $woModel->sc_id,
-                        'sc_greige_id' => $woModel->sc_greige_id,
-                        'mo_id' => $woModel->mo_id,
-                        'wo_id' => $woModel->id,
-                        'nama_kain_alias' => $woModel->greige->nama_kain,
-                        'unit' => $wo['items'][0]['unit'],
-                    ]);
-
-                    $kmColor = '-';
-                    if(!empty($modelKirimBuyer->wo->trnWoColors)){
-                        $kmColor = $modelKirimBuyer->wo->trnWoColors[0]->moColor->color;
+                    $modelKirimBuyer = null;
+                    if ($model->is_export) {
+                        $modelKirimBuyer = TrnKirimBuyer::findOne([
+                            'header_id' => $model->id,
+                            'wo_id' => $woModel->id,
+                        ]);
                     }
-                    $modelKirimBuyer->note = $modelKirimBuyer->sc->no_po .' '.$kmColor;
 
-                    if(!$flag = $modelKirimBuyer->save(false)){
-                        $transaction->rollBack();
-                        throw new HttpException(500, 'Gagal memproses, coba lagi. (1)');
+                    if ($modelKirimBuyer === null) {
+                        $modelKirimBuyer = new TrnKirimBuyer([
+                            'header_id' => $model->id,
+                            'sc_id' => $woModel->sc_id,
+                            'sc_greige_id' => $woModel->sc_greige_id,
+                            'mo_id' => $woModel->mo_id,
+                            'wo_id' => $woModel->id,
+                            'nama_kain_alias' => $woModel->greige->nama_kain,
+                            'unit' => $wo['items'][0]['unit'],
+                        ]);
+
+                        $kmColor = '-';
+                        if(!empty($modelKirimBuyer->wo->trnWoColors)){
+                            $kmColor = $modelKirimBuyer->wo->trnWoColors[0]->moColor->color;
+                        }
+                        $modelKirimBuyer->note = $modelKirimBuyer->sc->no_po .' '.$kmColor;
+
+                        if(!$flag = $modelKirimBuyer->save(false)){
+                            $transaction->rollBack();
+                            throw new HttpException(500, 'Gagal memproses, coba lagi. (1)');
+                        }
                     }
 
                     foreach ($wo['items'] as $item) {
@@ -494,6 +504,68 @@ class TrnKirimBuyerHeaderController extends Controller
                     $transaction->commit();
                     return true;
                 }
+            }catch (\Throwable $t){
+                $transaction->rollBack();
+                throw $t;
+            }
+        }
+
+        throw new MethodNotAllowedHttpException('Metode tidak diizinkan.');
+    }
+
+    /**
+     * Set no_bal for selected TrnKirimBuyerItem records on export delivery.
+     * @param integer $id
+     * @return bool
+     * @throws ForbiddenHttpException
+     * @throws HttpException
+     * @throws MethodNotAllowedHttpException
+     * @throws NotFoundHttpException
+     * @throws \Throwable
+     */
+    public function actionSetNoBal($id){
+        if(Yii::$app->request->isAjax){
+            $model = $this->findModel($id);
+
+            if($model->status != $model::STATUS_DRAFT){
+                throw new ForbiddenHttpException('Status tidak valid, tidak bisa diproses. (1)');
+            }
+
+            if(!$model->is_export){
+                throw new ForbiddenHttpException('Fitur No. Bal hanya untuk pengiriman export.');
+            }
+
+            Yii::$app->response->format = Response::FORMAT_JSON;
+
+            $datas = Yii::$app->request->post('formData');
+            $noBal = Yii::$app->request->post('no_bal');
+
+            if(empty($datas) || !is_array($datas)){
+                throw new ForbiddenHttpException('Data kosong, tidak bisa diproses. (2)');
+            }
+
+            $noBalVal = ($noBal !== null && trim((string)$noBal) !== '') ? trim((string)$noBal) : null;
+
+            $kirimBuyerIds = $model->getTrnKirimBuyers()->select('id')->column();
+            $items = TrnKirimBuyerItem::find()
+                ->where(['id' => $datas, 'kirim_buyer_id' => $kirimBuyerIds])
+                ->all();
+
+            if(empty($items)){
+                throw new ForbiddenHttpException('Item pengiriman tidak ditemukan.');
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach ($items as $item) {
+                    $item->no_bal = $noBalVal;
+                    if(!$item->save(false, ['no_bal'])){
+                        $transaction->rollBack();
+                        throw new HttpException(500, 'Gagal menyimpan No. Bal, coba lagi.');
+                    }
+                }
+                $transaction->commit();
+                return true;
             }catch (\Throwable $t){
                 $transaction->rollBack();
                 throw $t;
