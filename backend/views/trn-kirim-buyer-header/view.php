@@ -138,6 +138,10 @@ $formatter = Yii::$app->formatter;
                         'class' => 'kartik\grid\CheckboxColumn',
                         // you may configure additional properties here
                     ],
+                    [
+                        'attribute' => 'id',
+                        'label' => 'ID Stock',
+                    ],
 
                     [
                         'label'=>'Marketing',
@@ -264,7 +268,7 @@ $formatter = Yii::$app->formatter;
 
                         echo GridView::widget([
                             'dataProvider' => $providerStockSiapKirim,
-                            'id' => 'SiapKirimGrid',
+                            'id' => 'SiapKirimGrid-' . $kirimBuyerModel->id,
                             'resizableColumns' => false,
                             'responsiveWrap' => false,
                             'toolbar' => false,
@@ -274,7 +278,8 @@ $formatter = Yii::$app->formatter;
                                 'after'=>Html::a('Kembalikan', ['kembalikan', 'id'=>$model->id], [
                                     'class' => 'btn btn-danger',
                                     'onclick' => 'kembalikan(event);',
-                                    'title' => 'Kembalikan'
+                                    'title' => 'Kembalikan',
+                                    'data-grid-id' => 'SiapKirimGrid-' . $kirimBuyerModel->id,
                                 ]),
                                 'footer'=>false
                             ],
@@ -283,6 +288,10 @@ $formatter = Yii::$app->formatter;
                                 [
                                     'class' => 'kartik\grid\CheckboxColumn',
                                     // you may configure additional properties here
+                                ],
+                                [
+                                    'attribute' => 'stock_id',
+                                    'label' => 'ID Stock',
                                 ],
                                 [
                                     'label' => 'Batch',

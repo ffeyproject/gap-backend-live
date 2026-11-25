@@ -60,7 +60,9 @@ function kembalikan(event){
     var button = $(event.currentTarget);
     var href = button.attr('href');
 
-    var keys = $('#SiapKirimGrid').yiiGridView('getSelectedRows');
+    var gridId = button.data('grid-id');
+    var $grid = gridId ? $('#' + gridId) : button.closest('.grid-view');
+    var keys = $grid.yiiGridView('getSelectedRows');
     if(Array.isArray(keys) && keys.length){
         $.ajax({
             method: 'POST',

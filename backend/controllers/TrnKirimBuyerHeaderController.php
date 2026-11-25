@@ -332,9 +332,12 @@ class TrnKirimBuyerHeaderController extends Controller
             $stocks = TrnGudangJadi::find()->where(['id'=>$datas])->all();
 
             $wos = [];
+            $invalidStocks = [];
             foreach ($stocks as $stock) {
                 if($stock->status != $stock::STATUS_SIAP_KIRIM){
-                    throw new ForbiddenHttpException('Salah satu stock tidak valid, coba lagi.');
+                    $statusName = isset($stock::statusOptions()[$stock->status]) ? $stock::statusOptions()[$stock->status] : $stock->status;
+                    $invalidStocks[] = $stock->id . ' (' . $statusName . ')';
+                    continue;
                 }
 
                 $wo = $stock->wo;
@@ -344,6 +347,10 @@ class TrnKirimBuyerHeaderController extends Controller
                     $wos[$wo->no]['wo'] = $wo;
                     $wos[$wo->no]['items'] = [$stock];
                 }
+            }
+
+            if(!empty($invalidStocks)){
+                throw new ForbiddenHttpException('Salah satu stock tidak valid (bukan Siap Kirim), coba lagi. ID Stock: ' . implode(', ', $invalidStocks));
             }
 
             $transaction = Yii::$app->db->beginTransaction();
