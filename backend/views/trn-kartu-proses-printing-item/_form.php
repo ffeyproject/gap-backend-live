@@ -24,8 +24,12 @@ $isDigital = ($kartuProses !== null && $kartuProses->jenis_printing == TrnKartuP
     <?php $form = ActiveForm::begin(['id'=>'KartuProsesItemForm']); ?>
 
     <?php
+    $placeholder = $isDigital
+        ? 'Format pencarian: {no_kartu_pfp}*{qty} (atau ketik No. Kartu PFP / Qty)'
+        : 'Format pencarian: {no_document}*{qty}*{grade}*{no_lot_lusi}*{no_lot_pakan}';
+
     echo $form->field($model, 'stock_ids')->widget(Select2::classname(), [
-        'options' => ['placeholder' => 'Format pencarian: {no_document}*{qty}*{grade}*{no_lot_lusi}*{no_lot_pakan}', 'multiple' => true],
+        'options' => ['placeholder' => $placeholder, 'multiple' => true],
         'pluginOptions' => [
             'allowClear' => true,
             'minimumInputLength' => 1,

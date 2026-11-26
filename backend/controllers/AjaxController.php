@@ -1369,24 +1369,39 @@ class AjaxController extends Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
+        $kartuPrinting = ($processId == TrnScGreige::PROCESS_PRINTING)
+            ? TrnKartuProsesPrinting::findOne($kartuProsesId)
+            : null;
+        $isDigitalPrinting = ($kartuPrinting !== null && $kartuPrinting->jenis_printing == TrnKartuProsesPrinting::JENIS_PRINTING_DIGITAL);
+
         $dataPencarian = explode('*', $q);
-        $noDocument = $dataPencarian[0] ?? null;
-        $qty        = $dataPencarian[1] ?? null;
-        $grade      = $dataPencarian[2] ?? null;
-        $lotLusi    = $dataPencarian[3] ?? null;
-        $lotPakan   = $dataPencarian[4] ?? null;
-        $ketWeaving = $dataPencarian[5] ?? null;
+        $noDocument = isset($dataPencarian[0]) && trim($dataPencarian[0]) !== '' ? trim($dataPencarian[0]) : null;
+        $qty        = isset($dataPencarian[1]) && trim($dataPencarian[1]) !== '' ? trim($dataPencarian[1]) : null;
+        $grade      = !$isDigitalPrinting ? ($dataPencarian[2] ?? null) : null;
+        $lotLusi    = !$isDigitalPrinting ? ($dataPencarian[3] ?? null) : null;
+        $lotPakan   = !$isDigitalPrinting ? ($dataPencarian[4] ?? null) : null;
+        $ketWeaving = !$isDigitalPrinting ? ($dataPencarian[5] ?? null) : null;
 
         $qStockOptionList = TrnStockGreige::find()
             ->with('greige')
             ->where(['status' => TrnStockGreige::STATUS_VALID])
             ->andWhere(['greige_id' => $greigeId])
             ->andWhere(['asal_greige' => $asalGreige])
-            ->andWhere(['jenis_gudang' => $jenisGudang])
-            ->andFilterWhere(['ilike', 'no_document', $noDocument])
-            ->andFilterWhere(['lot_lusi' => $lotLusi])
-            ->andFilterWhere(['lot_pakan' => $lotPakan])
-            ->andFilterWhere(['status_tsd' => $ketWeaving]);
+            ->andWhere(['jenis_gudang' => $jenisGudang]);
+
+        if ($isDigitalPrinting && strpos($q, '*') === false && $noDocument !== null && is_numeric($noDocument)) {
+            $qStockOptionList->andWhere([
+                'or',
+                ['ilike', 'no_document', $noDocument],
+                ['panjang_m' => (float)$noDocument],
+            ]);
+        } else {
+            $qStockOptionList
+                ->andFilterWhere(['ilike', 'no_document', $noDocument])
+                ->andFilterWhere(['lot_lusi' => $lotLusi])
+                ->andFilterWhere(['lot_pakan' => $lotPakan])
+                ->andFilterWhere(['status_tsd' => $ketWeaving]);
+        }
 
         // Exclude stock yg sudah dipakai
         switch ($processId) {

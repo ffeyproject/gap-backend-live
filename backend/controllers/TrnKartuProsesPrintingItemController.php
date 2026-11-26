@@ -237,6 +237,9 @@ class TrnKartuProsesPrintingItemController extends Controller
             $jenisGudang = TrnStockGreige::jenisGudangOptions()[$model->wo->mo->jenis_gudang];
             $jenisPrintingText = ($kartuProses->jenis_printing !== null && isset(TrnKartuProsesPrinting::jenisPrintingOptions()[$kartuProses->jenis_printing])) ? TrnKartuProsesPrinting::jenisPrintingOptions()[$kartuProses->jenis_printing] : '-';
             $searchHint = "Mencari Greige {$greige->nama_kain}, Status Valid, Asal Greige {$asalGreige}, Jenis Gudang {$jenisGudang}. (Gudang 2 difilter Jenis Printing {$jenisPrintingText})";
+            if ($kartuProses->jenis_printing == TrnKartuProsesPrinting::JENIS_PRINTING_DIGITAL) {
+                $searchHint .= " | Pencarian Digital Printing: ketik No. Kartu PFP atau Qty (format: {no_kartu_pfp}*{qty}).";
+            }
 
             return $this->renderAjax('create', [
                 'model'=>$model,
